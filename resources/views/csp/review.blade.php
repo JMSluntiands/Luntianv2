@@ -1,0 +1,36 @@
+@extends('layouts.dashboard')
+
+@section('title', 'CSP For Review')
+
+@section('body_class', 'page-csp-review')
+
+@section('content')
+    <div class="csp-list-page">
+        <div class="csp-list-header">
+            <div class="csp-list-header-text">
+                <h1 class="csp-list-title">CSP For Review</h1>
+                <p class="csp-list-subtitle">View CSP jobs pending review.</p>
+            </div>
+        </div>
+        <div class="csp-table-card">
+            <div class="csp-table-wrap">
+                <p style="padding: 2rem; color: #94a3b8; text-align: center;">No CSP jobs for review.</p>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@push('styles')
+    <style>
+        .csp-list-page { display: block; padding-bottom: 0; max-width: 100%; }
+        body.page-csp-review .content { padding-bottom: 0; }
+        .csp-list-header { margin-bottom: 1.75rem; }
+        .csp-list-title { font-size: 1.625rem; font-weight: 700; color: #fff; margin: 0 0 0.375rem 0; }
+        .csp-list-subtitle { font-size: 0.9375rem; color: #94a3b8; margin: 0; }
+        .csp-table-card { background: #0f172a; border: 1px solid #334155; border-radius: 14px; overflow: hidden; }
+        .csp-table-wrap { padding: 1rem; }
+        html[data-theme="light"] .csp-list-title { color: #1e293b; }
+        html[data-theme="light"] .csp-list-subtitle { color: #64748b; }
+        html[data-theme="light"] .csp-table-card { background: #fff; border-color: #e2e8f0; }
+    </style>
+@endpush

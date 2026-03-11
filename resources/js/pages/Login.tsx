@@ -16,13 +16,18 @@ export default function Login() {
     const saved = localStorage.getItem(THEME_KEY);
     return saved !== 'light';
   });
+  const [iconAnimating, setIconAnimating] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  const toggleTheme = () => setIsDark((prev) => !prev);
+  const toggleTheme = () => {
+    setIconAnimating(true);
+    setIsDark((prev) => !prev);
+    setTimeout(() => setIconAnimating(false), 300);
+  };
 
   const dismissToast = () => {
     setToastExiting(true);
@@ -43,23 +48,63 @@ export default function Login() {
     if (isLoading) return;
     setIsLoading(true);
     setError(null);
-    // Demo: simulate API call then show error
-    await new Promise((r) => setTimeout(r, 1500));
-    setError('Invalid username or password. Please try again.');
-    setIsLoading(false);
+
+    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+    const formData = new FormData();
+    formData.append('_token', token || '');
+    formData.append('login', email.trim());
+    formData.append('password', password);
+    formData.append('remember', rememberMe ? '1' : '0');
+
+    try {
+      const res = await fetch('/login', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+        },
+        credentials: 'same-origin',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.redirect) {
+        window.location.href = data.redirect;
+        return;
+      }
+      setError(data.message || 'Invalid username or password. Please try again.');
+    } catch {
+      setError('Invalid username or password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className={`min-h-screen font-sans flex flex-col items-center justify-center p-6 relative overflow-x-hidden ${isDark ? 'bg-[#1A2534]' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen font-sans flex flex-col items-center justify-center p-6 relative overflow-x-hidden transition-colors duration-300 ${isDark ? 'bg-[#1A2534]' : 'bg-gray-100'}`}>
       {/* Top right: theme toggle + toast */}
       <div className="absolute top-6 right-6 flex flex-col items-end gap-3 z-50">
         <button
           type="button"
           onClick={toggleTheme}
-          className={`p-2 rounded-lg transition-colors cursor-pointer ${isDark ? 'text-white hover:bg-white/10' : 'text-gray-800 hover:bg-gray-200'}`}
-          aria-label="Toggle theme"
+          disabled={iconAnimating}
+          className={`
+            relative flex items-center justify-center w-11 h-11 rounded-xl cursor-pointer
+            transition-all duration-300 ease-out active:scale-95
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
+            ${isDark
+              ? 'bg-white/10 hover:bg-white/20 focus:ring-amber-400/50 text-amber-300'
+              : 'bg-gray-200 hover:bg-gray-300 focus:ring-indigo-400/50 text-indigo-600'
+            }
+          `}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          <span className={`inline-flex items-center justify-center ${iconAnimating ? 'theme-icon-enter' : ''}`}>
+            {isDark ? (
+              <Sun className="w-5 h-5" strokeWidth={2} />
+            ) : (
+              <Moon className="w-5 h-5" strokeWidth={2} />
+            )}
+          </span>
         </button>
         {error && (
           <div
@@ -79,7 +124,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <p className={`text-2xl font-bold uppercase text-center mb-10 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          LOGO HERE
+          Luntian
         </p>
 
         {/* Form */}
@@ -89,14 +134,14 @@ export default function Login() {
             <p className={`text-sm mt-1 ${isDark ? 'text-[#A0AEC0]' : 'text-gray-600'}`}>Login your credentials.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+            {/* Username or Email */}
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2C528B]" />
               <input
-                type="email"
-                placeholder="admin@example.com"
-                autoComplete='off'
+                type="text"
+                placeholder="Username or email"
+                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-14 pr-5 py-4 rounded-xl bg-white border border-gray-200 text-[#2D3748] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2C528B]/30 focus:border-[#2C528B]"
@@ -111,6 +156,7 @@ export default function Login() {
                 placeholder="••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="off"
                 className="w-full pl-14 pr-14 py-4 rounded-xl bg-white border border-gray-200 text-[#2D3748] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2C528B]/30 focus:border-[#2C528B]"
               />
               <button
