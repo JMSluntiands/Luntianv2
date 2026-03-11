@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ClientAccount;
 use App\Models\Compliance;
 use App\Models\JobRequest;
+use App\Models\Priority;
+use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -43,10 +45,24 @@ class LbsJobController extends Controller
             abort(404);
         }
 
+        // Resolve colors for this job's priority & status from lookup tables
+        $priorityColor = null;
+        $statusColor = null;
+
+        if (!empty($job->priority)) {
+            $priorityColor = Priority::where('name', $job->priority)->value('color');
+        }
+
+        if (!empty($job->job_status)) {
+            $statusColor = Status::where('name', $job->job_status)->value('color');
+        }
+
         return view('lbs.view', [
             'sidebar_active' => 'lbs.list',
             'jobId'          => $job->job_id,
             'job'            => $job,
+            'priorityColor'  => $priorityColor,
+            'statusColor'    => $statusColor,
         ]);
     }
 
@@ -79,9 +95,22 @@ class LbsJobController extends Controller
             ->limit(200)
             ->get();
 
+        // Map priority/status name -> color (hex) for badges
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statusColors = Status::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
         return view('lbs.list', [
             'sidebar_active' => 'lbs.list',
             'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
         ]);
     }
 

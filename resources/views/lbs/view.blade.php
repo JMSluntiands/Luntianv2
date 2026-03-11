@@ -49,6 +49,12 @@
             }
         @endphp
 
+        @php
+            $isAllocated = strtolower($job->job_status ?? '') === 'allocated';
+            $statusBg = $statusColor ?? null;
+            $priorityBg = $priorityColor ?? null;
+        @endphp
+
         <div class="job-view-grid">
             <section class="job-view-card job-view-card-wide">
                 <div class="job-view-card-head">
@@ -94,9 +100,28 @@
                     <div class="job-view-dl-row">
                         <dt>Job Status</dt>
                         <dd>
-                            <span class="job-view-badge job-view-badge-accepted">
-                                {{ $job->job_status ?? '—' }}
-                            </span>
+                            @if($isAllocated)
+                                <button type="button"
+                                        class="job-view-badge job-view-status-btn"
+                                        @if($statusBg)
+                                            style="background-color: {{ $statusBg }};"
+                                        @endif
+                                        data-job-view-edit
+                                        data-edit-title="Job Status"
+                                        data-edit-target="job">
+                                    {{ $job->job_status ?? '—' }}
+                                </button>
+                            @else
+                                <span
+                                    class="job-view-badge job-view-status-badge-disabled"
+                                    @if($statusBg)
+                                        style="background-color: {{ $statusBg }};"
+                                    @endif
+                                    aria-disabled="true"
+                                >
+                                    {{ $job->job_status ?? '—' }}
+                                </span>
+                            @endif
                         </dd>
                     </div>
                     <div class="job-view-dl-row">
@@ -106,7 +131,12 @@
                     <div class="job-view-dl-row">
                         <dt>Priority</dt>
                         <dd>
-                            <span class="job-view-pill job-view-pill-high">
+                            <span
+                                class="job-view-pill"
+                                @if($priorityBg)
+                                    style="background-color: {{ $priorityBg }};"
+                                @endif
+                            >
                                 {{ $job->priority ?? '—' }}
                             </span>
                         </dd>
@@ -177,7 +207,21 @@
             <section class="job-view-card job-view-card-col-4">
                 <div class="job-view-card-head">
                     <h2 class="job-view-card-title">Plans</h2>
-                    <button type="button" class="job-view-card-action job-view-card-action-primary" data-job-view-add-files data-add-title="Plans">Add Files</button>
+                    @if($isAllocated)
+                        <button type="button"
+                                class="job-view-card-action job-view-card-action-primary"
+                                data-job-view-add-files
+                                data-add-title="Plans">
+                            Add Files
+                        </button>
+                    @else
+                        <button type="button"
+                                class="job-view-card-action job-view-card-action-primary job-view-card-action-disabled"
+                                disabled
+                                aria-disabled="true">
+                            Add Files
+                        </button>
+                    @endif
                 </div>
                 @if(!empty($planFiles) && $folderName)
                     <ul class="job-view-files">
@@ -187,17 +231,32 @@
                                 $fileUrl = asset('document/' . $folderName . '/' . $fileName);
                             @endphp
                             <li class="job-view-file-item">
-                                <span class="job-view-file-icon" aria-hidden="true">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
-                                </span>
-                                <span class="job-view-file-name">{{ $fileName }}</span>
+                                <div class="job-view-file-main">
+                                    <span class="job-view-file-icon" aria-hidden="true">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
+                                    </span>
+                                    <span class="job-view-file-name">{{ $fileName }}</span>
+                                </div>
                                 <div class="job-view-file-actions">
                                     <a href="{{ $fileUrl }}" class="job-view-file-btn" title="Download" aria-label="Download" download>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                        <span class="job-view-file-btn-label">Download</span>
                                     </a>
                                     <a href="{{ $fileUrl }}" target="_blank" class="job-view-file-btn" title="View" aria-label="View">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <span class="job-view-file-btn-label">View</span>
                                     </a>
+                                    @if($isAllocated)
+                                        <button type="button"
+                                                class="job-view-file-btn job-view-file-btn-danger job-view-file-btn-delete"
+                                                data-job-file-type="plans"
+                                                data-job-file-name="{{ $fileName }}"
+                                                title="Delete"
+                                                aria-label="Delete">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                                            <span class="job-view-file-btn-label">Delete</span>
+                                        </button>
+                                    @endif
                                 </div>
                             </li>
                         @endforeach
@@ -210,7 +269,21 @@
             <section class="job-view-card job-view-card-col-4">
                 <div class="job-view-card-head">
                     <h2 class="job-view-card-title">Documents</h2>
-                    <button type="button" class="job-view-card-action job-view-card-action-primary" data-job-view-add-files data-add-title="Documents">Add Files</button>
+                    @if($isAllocated)
+                        <button type="button"
+                                class="job-view-card-action job-view-card-action-primary"
+                                data-job-view-add-files
+                                data-add-title="Documents">
+                            Add Files
+                        </button>
+                    @else
+                        <button type="button"
+                                class="job-view-card-action job-view-card-action-primary job-view-card-action-disabled"
+                                disabled
+                                aria-disabled="true">
+                            Add Files
+                        </button>
+                    @endif
                 </div>
                 @if(!empty($docFiles) && $folderName)
                     <ul class="job-view-files">
@@ -220,17 +293,32 @@
                                 $fileUrl = asset('document/' . $folderName . '/' . $fileName);
                             @endphp
                             <li class="job-view-file-item">
-                                <span class="job-view-file-icon" aria-hidden="true">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
-                                </span>
-                                <span class="job-view-file-name">{{ $fileName }}</span>
+                                <div class="job-view-file-main">
+                                    <span class="job-view-file-icon" aria-hidden="true">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
+                                    </span>
+                                    <span class="job-view-file-name">{{ $fileName }}</span>
+                                </div>
                                 <div class="job-view-file-actions">
                                     <a href="{{ $fileUrl }}" class="job-view-file-btn" title="Download" aria-label="Download" download>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                        <span class="job-view-file-btn-label">Download</span>
                                     </a>
                                     <a href="{{ $fileUrl }}" target="_blank" class="job-view-file-btn" title="View" aria-label="View">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <span class="job-view-file-btn-label">View</span>
                                     </a>
+                                    @if($isAllocated)
+                                        <button type="button"
+                                                class="job-view-file-btn job-view-file-btn-danger job-view-file-btn-delete"
+                                                data-job-file-type="documents"
+                                                data-job-file-name="{{ $fileName }}"
+                                                title="Delete"
+                                                aria-label="Delete">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                                            <span class="job-view-file-btn-label">Delete</span>
+                                        </button>
+                                    @endif
                                 </div>
                             </li>
                         @endforeach
@@ -571,6 +659,9 @@
         html[data-theme="light"] .job-view-assigned-dropdown li:hover { background: #f1f5f9; }
         .job-view-badge { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; }
         .job-view-badge-accepted { background: rgba(34,197,94,0.2); color: #86efac; }
+        .job-view-status-btn { cursor: pointer; border: none; background: transparent; }
+        .job-view-status-btn:hover { background: rgba(34,197,94,0.18); }
+        .job-view-status-badge-disabled { opacity: 0.6; cursor: not-allowed; }
         .job-view-pill { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; }
         .job-view-pill-high { background: #ea580c; color: #fff; }
         .job-view-notes { min-height: 60px; }
@@ -584,15 +675,17 @@
         .job-view-notes-rich li { margin-bottom: 0.25em; }
         .job-view-empty { font-size: 0.875rem; color: #64748b; margin: 0; }
         .job-view-files { list-style: none; margin: 0; padding: 0; }
-        .job-view-file-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid #334155; transition: opacity 0.2s ease; }
+        .job-view-file-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 0.5rem 0; border-bottom: 1px solid #334155; transition: opacity 0.2s ease; }
         .job-view-file-item:hover { opacity: 0.95; }
         .job-view-file-item:last-child { border-bottom: none; }
+        .job-view-file-main { display: flex; align-items: center; gap: 0.5rem; width: 100%; }
         .job-view-file-icon { color: #f87171; flex-shrink: 0; }
         .job-view-file-name { font-size: 0.875rem; color: #e2e8f0; flex: 1; min-width: 0; }
-        .job-view-file-actions { display: flex; align-items: center; gap: 0.25rem; }
-        .job-view-file-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; color: #94a3b8; background: transparent; border: none; cursor: pointer; text-decoration: none; transition: color 0.2s, background 0.2s; }
+        .job-view-file-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+        .job-view-file-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 0.5rem; border-radius: 8px; color: #94a3b8; background: transparent; border: none; cursor: pointer; text-decoration: none; transition: color 0.2s, background 0.2s; font-size: 0.75rem; gap: 0.25rem; }
         .job-view-file-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
         .job-view-file-btn-danger:hover { color: #f87171; background: rgba(248,113,113,0.15); }
+        .job-view-file-btn-label { display: inline-block; }
         .job-view-checker-uploads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
         .job-view-checker-upload { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 1rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .job-view-checker-upload:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -713,6 +806,7 @@
         html[data-theme="light"] .job-view-checker-notes-label { color: #64748b; }
         html[data-theme="light"] .job-view-complexity .lbs-star-filled { color: #ca8a04; }
         html[data-theme="light"] .job-view-complexity .lbs-star-empty { color: #94a3b8; }
+        .job-view-card-action-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
         @media (max-width: 900px) {
             .job-view-grid { grid-template-columns: 1fr; }
             .job-view-card-wide,

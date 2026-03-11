@@ -147,15 +147,11 @@
                                 $dueDate2 = $due ? $due->format('g:i A') : '';
                                 $completionText = $completion ? $completion->format('F j, Y g:i A') : '—';
 
-                                $priorityClass = str_contains($priorityLower, 'high') || str_contains($priorityLower, 'top')
-                                    ? 'lbs-priority-high'
-                                    : 'lbs-priority-standard';
+                                // Colors from Priority / Status tables (hex)
+                                $priorityBg = $priorityColors[$priorityText] ?? null;
                                 $status = $job->job_status ?? 'Allocated';
-                                $statusKey = strtolower(str_replace(' ', '-', $status));
-                                $statusClass = 'lbs-badge-' . $statusKey;
-                                if (!in_array($statusClass, ['lbs-badge-pending','lbs-badge-accepted','lbs-badge-allocated','lbs-badge-awaiting-further-information','lbs-badge-completed'])) {
-                                    $statusClass = 'lbs-badge-allocated';
-                                }
+                                $statusBg = $statusColors[$status] ?? null;
+
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
@@ -188,7 +184,14 @@
                                     <span class="lbs-job-line2">{{ $job->job_request_id }}</span>
                                 </td>
                                 <td class="lbs-td lbs-td-nowrap" data-label="Priority">
-                                    <span class="lbs-priority {{ $priorityClass }}">{{ $priorityText }}</span>
+                                    <span
+                                        class="lbs-priority"
+                                        @if($priorityBg)
+                                            style="background-color: {{ $priorityBg }};"
+                                        @endif
+                                    >
+                                        {{ $priorityText }}
+                                    </span>
                                 </td>
                                 <td class="lbs-td lbs-td-nowrap" data-label="Staff">
                                     <div class="lbs-initials-wrap" data-initials-wrap data-role="staff">
@@ -216,7 +219,17 @@
                                 </td>
                                 <td class="lbs-td lbs-td-nowrap" data-label="Status">
                                     <div class="lbs-status-wrap" data-status-wrap>
-                                        <button type="button" class="lbs-badge {{ $statusClass }} lbs-status-trigger" data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="{{ $job->job_reference_no }}">
+                                        <button
+                                            type="button"
+                                            class="lbs-badge lbs-status-trigger"
+                                            @if($statusBg)
+                                                style="background-color: {{ $statusBg }};"
+                                            @endif
+                                            data-status-trigger
+                                            aria-haspopup="true"
+                                            aria-expanded="false"
+                                            data-reference="{{ $job->job_reference_no }}"
+                                        >
                                             {{ $status }}
                                         </button>
                                         <div class="lbs-status-menu" role="menu" hidden>
@@ -253,10 +266,34 @@
                                             <div class="lbs-detail-item"><span class="lbs-detail-label">Client Name</span><span class="lbs-detail-value">{{ $job->client_code ?? 'LBS' }}</span></div>
                                             <div class="lbs-detail-item"><span class="lbs-detail-label">Reference</span><span class="lbs-detail-value">{{ $job->job_reference_no }}</span></div>
                                             <div class="lbs-detail-item"><span class="lbs-detail-label">Job Type</span><span class="lbs-detail-value">{{ $job->job_type }} @if($job->job_request_id) · {{ $job->job_request_id }} @endif</span></div>
-                                            <div class="lbs-detail-item"><span class="lbs-detail-label">Priority</span><span class="lbs-detail-value"><span class="lbs-priority {{ $priorityClass }}">{{ $priorityText }}</span></span></div>
+                                            <div class="lbs-detail-item">
+                                                <span class="lbs-detail-label">Priority</span>
+                                                <span class="lbs-detail-value">
+                                                    <span
+                                                        class="lbs-priority"
+                                                        @if($priorityBg)
+                                                            style="background-color: {{ $priorityBg }};"
+                                                        @endif
+                                                    >
+                                                        {{ $priorityText }}
+                                                    </span>
+                                                </span>
+                                            </div>
                                             <div class="lbs-detail-item lbs-detail-item-staff"><span class="lbs-detail-label">Staff</span><span class="lbs-detail-value"><span class="lbs-initials lbs-detail-staff-badge">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></span></div>
                                             <div class="lbs-detail-item lbs-detail-item-checker"><span class="lbs-detail-label">Checker</span><span class="lbs-detail-value"><span class="lbs-initials lbs-detail-checker-badge">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></span></div>
-                                            <div class="lbs-detail-item"><span class="lbs-detail-label">Status</span><span class="lbs-detail-value"><span class="lbs-detail-status-badge lbs-badge {{ $statusClass }}">{{ $status }}</span></span></div>
+                                            <div class="lbs-detail-item">
+                                                <span class="lbs-detail-label">Status</span>
+                                                <span class="lbs-detail-value">
+                                                    <span
+                                                        class="lbs-detail-status-badge lbs-badge"
+                                                        @if($statusBg)
+                                                            style="background-color: {{ $statusBg }};"
+                                                        @endif
+                                                    >
+                                                        {{ $status }}
+                                                    </span>
+                                                </span>
+                                            </div>
                                             <div class="lbs-detail-item">
                                                 <span class="lbs-detail-label">Due Date</span>
                                                 <span class="lbs-detail-value">
