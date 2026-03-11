@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClientAccount;
 use App\Models\Compliance;
 use App\Models\JobRequest;
+use App\Models\ActivityLog;
 use App\Models\Priority;
 use App\Models\Status;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class LbsJobController extends Controller
                 'j.notes',
                 'j.upload_files',
                 'j.upload_project_files',
+                'j.client_account_id',
                 'ca.client_account_name'
             )
             ->where('j.job_id', $id)
@@ -46,16 +48,24 @@ class LbsJobController extends Controller
         }
 
         // Resolve colors for this job's priority & status from lookup tables
-        $priorityColor = null;
-        $statusColor = null;
+        $priorityColor = !empty($job->priority)
+            ? Priority::where('name', $job->priority)->value('color')
+            : null;
 
-        if (!empty($job->priority)) {
-            $priorityColor = Priority::where('name', $job->priority)->value('color');
-        }
+        $statusColor = !empty($job->job_status)
+            ? Status::where('name', $job->job_status)->value('color')
+            : null;
 
-        if (!empty($job->job_status)) {
-            $statusColor = Status::where('name', $job->job_status)->value('color');
-        }
+        // Dropdown data for editing
+        $priorities = Priority::orderBy('id')->get();
+        $statuses = Status::orderBy('name')->get();
+        $compliances = Compliance::orderBy('column')->get();
+        $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+
+        $activityLogs = ActivityLog::where('job_id', $job->job_id)
+            ->orderByDesc('activity_date')
+            ->limit(50)
+            ->get();
 
         return view('lbs.view', [
             'sidebar_active' => 'lbs.list',
@@ -63,7 +73,189 @@ class LbsJobController extends Controller
             'job'            => $job,
             'priorityColor'  => $priorityColor,
             'statusColor'    => $statusColor,
+            'priorities'     => $priorities,
+            'statuses'       => $statuses,
+            'compliances'    => $compliances,
+            'clientAccounts' => $clientAccounts,
+            'activityLogs'   => $activityLogs,
         ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Job not found.',
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'job_status'        => ['nullable', 'string', 'max:50'],
+            'job_address'       => ['nullable', 'string', 'max:1000'],
+            'priority'          => ['nullable', 'string', 'max:255'],
+            'job_type'          => ['nullable', 'string', 'max:255'],
+            'notes'             => ['nullable', 'string'],
+            'client_reference'  => ['nullable', 'string', 'max:255'],
+            'job_reference_no'  => ['nullable', 'string', 'max:255'],
+            'compliance'        => ['nullable', 'string', 'max:255'],
+            'client_id'         => ['nullable', 'integer'],
+        ]);
+
+        $update = [];
+        $changes = [];
+        $oldClient = null;
+        if (!empty($job->client_account_id)) {
+            $oldClient = ClientAccount::find($job->client_account_id);
+        }
+
+        if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
+            $new = ucfirst($data['job_status']);
+            if ($new !== $job->job_status) {
+                $update['job_status'] = $new;
+                $changes[] = [
+                    'field' => 'Job Status',
+                    'old'   => $job->job_status,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('job_address', $data)) {
+            $new = $data['job_address'];
+            if ($new !== $job->address_client) {
+                $update['address_client'] = $new;
+                $changes[] = [
+                    'field' => 'Job Address',
+                    'old'   => $job->address_client,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('priority', $data)) {
+            $new = $data['priority'];
+            if ($new !== $job->priority) {
+                $update['priority'] = $new;
+                $changes[] = [
+                    'field' => 'Priority',
+                    'old'   => $job->priority,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('job_type', $data)) {
+            $new = $data['job_type'];
+            if ($new !== $job->job_type) {
+                $update['job_type'] = $new;
+                $changes[] = [
+                    'field' => 'Job Type',
+                    'old'   => $job->job_type,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('notes', $data)) {
+            $new = $data['notes'];
+            if ($new !== $job->notes) {
+                $update['notes'] = $new;
+                $changes[] = [
+                    'field' => 'Notes',
+                    'old'   => null,
+                    'new'   => 'updated',
+                ];
+            }
+        }
+        if (array_key_exists('client_reference', $data)) {
+            $new = $data['client_reference'];
+            if ($new !== $job->client_reference_no) {
+                $update['client_reference_no'] = $new;
+                $changes[] = [
+                    'field' => 'Client Reference',
+                    'old'   => $job->client_reference_no,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('job_reference_no', $data)) {
+            $new = $data['job_reference_no'];
+            if ($new !== $job->job_reference_no) {
+                $update['job_reference_no'] = $new;
+                $changes[] = [
+                    'field' => 'Job Number',
+                    'old'   => $job->job_reference_no,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('compliance', $data)) {
+            $new = $data['compliance'];
+            if ($new !== $job->ncc_compliance) {
+                $update['ncc_compliance'] = $new;
+                $changes[] = [
+                    'field' => 'Compliance',
+                    'old'   => $job->ncc_compliance,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('client_id', $data) && $data['client_id']) {
+            $newId = (int) $data['client_id'];
+            if ($newId !== (int) $job->client_account_id) {
+                $newClient = ClientAccount::find($newId);
+                if ($newClient) {
+                    $update['client_account_id'] = $newId;
+                    $update['client_code'] = $newClient->client_code ?? $job->client_code;
+
+                    $oldName = $oldClient?->client_account_name ?? $job->client_code;
+                    $newName = $newClient->client_account_name ?? $newClient->client_code ?? ('ID ' . $newId);
+
+                    $changes[] = [
+                        'field' => 'Client',
+                        'old'   => $oldName,
+                        'new'   => $newName,
+                    ];
+                }
+            }
+        }
+
+        if (empty($update)) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'No changes to update.',
+            ]);
+        }
+
+        try {
+            DB::table('jobs')->where('job_id', $id)->update($update);
+
+            // Create a single activity log entry summarising all field changes
+            $now = now('Asia/Manila');
+            $lines = [];
+            foreach ($changes as $change) {
+                $old = $change['old'] ?? '—';
+                $new = $change['new'] ?? '—';
+                $lines[] = sprintf('%s: %s → %s', $change['field'], (string) $old, (string) $new);
+            }
+
+            $log = ActivityLog::create([
+                'job_id'               => $id,
+                'activity_date'        => $now->format('Y-m-d H:i:s'),
+                'activity_type'        => 'Job updated',
+                'activity_description' => implode("\n", $lines),
+                'updated_by'           => session('user_name') ?? 'LBS Account',
+            ]);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Job updated successfully.',
+                'logs'    => [$log],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Database error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function index()

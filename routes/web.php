@@ -71,6 +71,7 @@ Route::middleware('auth.session')->group(function () {
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
     Route::get('/dashboard/lbs/list', [LbsJobController::class, 'index'])->name('lbs.list');
     Route::get('/dashboard/lbs/job/{id}', [LbsJobController::class, 'show'])->name('lbs.job.view');
+    Route::put('/dashboard/lbs/job/{id}', [LbsJobController::class, 'update'])->name('lbs.job.update');
     Route::get('/dashboard/lbs/completed', function () {
         return view('lbs.completed', ['sidebar_active' => 'lbs.completed']);
     })->name('lbs.completed');

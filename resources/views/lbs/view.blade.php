@@ -56,7 +56,7 @@
         @endphp
 
         <div class="job-view-grid">
-            <section class="job-view-card job-view-card-wide">
+            <section class="job-view-card job-view-card-wide" id="jobClientCard">
                 <div class="job-view-card-head">
                     <h2 class="job-view-card-title">Client Details</h2>
                     <button type="button" class="job-view-card-action" aria-label="Edit" data-job-view-edit data-edit-title="Client Details" data-edit-target="client">Edit</button>
@@ -485,89 +485,18 @@
             </section>
 
             <aside class="job-view-sidebar">
-                <section class="job-view-card job-view-card-activity">
+                <section class="job-view-card job-view-card-activity" id="jobActivityCard">
                     <h2 class="job-view-card-title">Activity</h2>
-                    <ul class="job-view-activity">
-                        <li class="job-view-activity-item">
-                            <div class="job-view-activity-user">
-                                <span class="job-view-activity-avatar" aria-hidden="true">L</span>
-                                <span class="job-view-activity-name">LUNTIAN</span>
-                            </div>
-                            <div class="job-view-activity-content">
-                                <span class="job-view-activity-time">Mar 06, 2026 04:41 PM</span>
-                                <p class="job-view-activity-label">Job details updated</p>
-                                <ul class="job-view-activity-changes">
-                                    <li><span class="job-view-activity-old">Pending</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">Accepted</span></li>
-                                    <li><span class="job-view-activity-old">Standard 2 days</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">High 1 day</span></li>
-                                    <li><span class="job-view-activity-old">1S DB Base Model</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">19 DB Base Model · 19 Design Builder Model</span></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="job-view-activity-item">
-                            <div class="job-view-activity-user">
-                                <span class="job-view-activity-avatar" aria-hidden="true">L</span>
-                                <span class="job-view-activity-name">LUNTIAN</span>
-                            </div>
-                            <div class="job-view-activity-content">
-                                <span class="job-view-activity-time">Mar 06, 2026 04:41 PM</span>
-                                <p class="job-view-activity-label">Plan complexity updated</p>
-                                <ul class="job-view-activity-changes">
-                                    <li><span class="job-view-activity-old">3</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">4</span></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="job-view-activity-item">
-                            <div class="job-view-activity-user">
-                                <span class="job-view-activity-avatar" aria-hidden="true">L</span>
-                                <span class="job-view-activity-name">LUNTIAN</span>
-                            </div>
-                            <div class="job-view-activity-content">
-                                <span class="job-view-activity-time">Mar 06, 2026 04:41 PM</span>
-                                <p class="job-view-activity-label">Staff assigned</p>
-                                <ul class="job-view-activity-changes">
-                                    <li><span class="job-view-activity-old">—</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">SB</span></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="job-view-activity-item">
-                            <div class="job-view-activity-user">
-                                <span class="job-view-activity-avatar" aria-hidden="true">L</span>
-                                <span class="job-view-activity-name">LUNTIAN</span>
-                            </div>
-                            <div class="job-view-activity-content">
-                                <span class="job-view-activity-time">Mar 06, 2026 03:20 PM</span>
-                                <p class="job-view-activity-label">Notes updated</p>
-                                <ul class="job-view-activity-changes">
-                                    <li><span class="job-view-activity-old">(empty)</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">Added: priority review and compliance checklist</span></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="job-view-activity-item">
-                            <div class="job-view-activity-user">
-                                <span class="job-view-activity-avatar" aria-hidden="true">L</span>
-                                <span class="job-view-activity-name">LUNTIAN</span>
-                            </div>
-                            <div class="job-view-activity-content">
-                                <span class="job-view-activity-time">Mar 06, 2026 02:15 PM</span>
-                                <p class="job-view-activity-label">Notes updated</p>
-                                <ul class="job-view-activity-changes">
-                                    <li><span class="job-view-activity-old">Short note</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">Added bullet points for WOH requirements</span></li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="job-view-activity-item">
-                            <div class="job-view-activity-user">
-                                <span class="job-view-activity-avatar" aria-hidden="true">L</span>
-                                <span class="job-view-activity-name">LUNTIAN</span>
-                            </div>
-                            <div class="job-view-activity-content">
-                                <span class="job-view-activity-time">Mar 05, 2026 11:00 AM</span>
-                                <p class="job-view-activity-label">Notes created</p>
-                                <ul class="job-view-activity-changes">
-                                    <li><span class="job-view-activity-old">—</span> <span class="job-view-activity-arrow" aria-hidden="true">→</span> <span class="job-view-activity-new">Initial notes for this job</span></li>
-                                </ul>
-                            </div>
-                        </li>
+                    <ul class="job-view-activity" id="jobActivityList">
+                        @if(($activityLogs ?? collect())->isEmpty())
+                            <li class="job-view-activity-item">
+                                <div class="job-view-activity-content">
+                                    <p class="job-view-activity-text">No activity yet for this job.</p>
+                                </div>
+                            </li>
+                        @else
+                            @include('lbs.partials.activity-log-items', ['activityLogs' => $activityLogs])
+                        @endif
                     </ul>
                 </section>
             </aside>
@@ -592,6 +521,10 @@
         @keyframes jobViewSlideIn {
             from { opacity: 0; transform: translateX(-8px); }
             to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes jobViewCardSpinner {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
         .job-view-page { padding-bottom: 2rem; max-width: 1400px; margin: 0 auto; }
         .job-view-breadcrumb { font-size: 0.8125rem; color: #64748b; margin-bottom: 1rem; opacity: 0; animation: jobViewFadeInUp 0.45s ease-out forwards; }
@@ -627,8 +560,47 @@
         .job-view-card-col-4 { grid-column: span 4; }
         .job-view-card-col-6 { grid-column: span 6; }
         .job-view-sidebar { grid-column: span 12; }
-        .job-view-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem 1.5rem; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .job-view-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem 1.5rem; transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease; position: relative; }
         .job-view-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+        .job-view-card.job-view-card-reloading { opacity: 0.7; }
+        .job-view-card.job-view-card-reloading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            border: 3px solid rgba(148,163,184,0.7);
+            border-top-color: #38bdf8;
+            animation: jobViewCardSpinner 0.65s linear infinite;
+            z-index: 10;
+        }
+        .job-view-inline-toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            padding: 0.55rem 1.1rem;
+            border-radius: 999px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .job-view-inline-toast.hide {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        html[data-theme="light"] .job-view-inline-toast {
+            background: #fff;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
         .job-view-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
         .job-view-card-title { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin: 0; }
         .job-view-card-action { font-size: 0.8125rem; color: #94a3b8; background: none; border: none; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; transition: color 0.2s, background 0.2s, transform 0.2s; }
@@ -752,7 +724,17 @@
         html[data-theme="light"] .job-view-comment-text { color: #475569; }
         html[data-theme="light"] .job-view-comment-text strong { color: #1e293b; }
         .job-view-card-activity { grid-column: 1 / -1; }
-        .job-view-activity { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
+        .job-view-activity { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; scrollbar-color: rgba(148,163,184,0.7) transparent; }
+        .job-view-activity::-webkit-scrollbar { width: 6px; }
+        .job-view-activity::-webkit-scrollbar-track { background: transparent; }
+        .job-view-activity::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.7); border-radius: 999px; }
+        .job-view-activity::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.95); }
+        /* Global page scrollbar (dark theme by default) */
+        html::-webkit-scrollbar { width: 8px; }
+        html::-webkit-scrollbar-track { background: #020617; }
+        html::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.7); border-radius: 999px; }
+        html::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.95); }
+        html { scrollbar-color: rgba(148,163,184,0.7) #020617; }
         .job-view-activity-item { display: flex; gap: 1rem; align-items: flex-start; padding: 0.85rem 0; border-bottom: 1px solid #334155; opacity: 0; animation: jobViewSlideIn 0.4s ease-out forwards; animation-fill-mode: both; transition: background 0.2s ease; }
         .job-view-activity-item:nth-child(1) { animation-delay: 0.5s; }
         .job-view-activity-item:nth-child(2) { animation-delay: 0.54s; }
@@ -789,6 +771,7 @@
         html[data-theme="light"] .job-view-file-name { color: #334155; }
         html[data-theme="light"] .job-view-file-item { border-bottom-color: #e2e8f0; }
         html[data-theme="light"] .job-view-activity-item { border-bottom-color: #e2e8f0; }
+        html[data-theme="light"] .job-view-activity::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.9); }
         html[data-theme="light"] .job-view-activity-text { color: #475569; }
         html[data-theme="light"] .job-view-activity-label { color: #64748b; }
         html[data-theme="light"] .job-view-activity-changes li { color: #475569; }
@@ -798,6 +781,13 @@
         html[data-theme="light"] .job-view-activity-item { border-bottom-color: #e2e8f0; }
         html[data-theme="light"] .job-view-activity-avatar { background: #cbd5e1; color: #1e293b; }
         html[data-theme="light"] .job-view-activity-name { color: #1e293b; }
+        html[data-theme="light"] .job-view-activity { scrollbar-color: rgba(148,163,184,0.9) #e5e7eb; }
+        html[data-theme="light"] .job-view-activity::-webkit-scrollbar-track { background: #e5e7eb; }
+        html[data-theme="light"] .job-view-activity::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.9); }
+        /* Light theme: global page scrollbar to match activity log */
+        html[data-theme="light"] { scrollbar-color: rgba(148,163,184,0.9) #e5e7eb; }
+        html[data-theme="light"]::-webkit-scrollbar-track { background: #e5e7eb; }
+        html[data-theme="light"]::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.9); }
         html[data-theme="light"] .job-view-notes-rich { color: #334155; }
         html[data-theme="light"] .job-view-notes-rich strong { color: #1e293b; }
         html[data-theme="light"] .job-view-checker-upload { background: #f1f5f9; border-color: #e2e8f0; }
@@ -826,6 +816,8 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 (function() {
+    var csrfToken = '{{ csrf_token() }}';
+    var updateUrl = '{{ route('lbs.job.update', ['id' => $jobId]) }}';
     var editOverlay = document.getElementById('jobViewEditModalOverlay');
     var addOverlay = document.getElementById('jobViewAddFilesModalOverlay');
     var formClient = document.getElementById('jobViewEditFormClient');
@@ -996,6 +988,124 @@
             noFiles.hidden = false;
         }
     });
+
+    function showInlineToast(message) {
+        var existing = document.getElementById('jobViewInlineToast');
+        if (existing) existing.remove();
+        var el = document.createElement('div');
+        el.id = 'jobViewInlineToast';
+        el.className = 'job-view-inline-toast';
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(function() {
+            el.classList.add('hide');
+            setTimeout(function() { el.remove(); }, 350);
+        }, 3200);
+    }
+
+    // Save handler for Edit modal
+    var saveBtn = document.getElementById('jobViewEditSaveBtn');
+    if (saveBtn) {
+        var saveBtnOriginalHtml = saveBtn.innerHTML;
+        saveBtn.addEventListener('click', function () {
+            var payload = {};
+            if (!editOverlay) return;
+            // Determine which form is visible
+            if (!formClient.hidden) {
+                payload.client_reference = document.getElementById('edit-client-ref')?.value || '';
+                payload.job_reference_no = document.getElementById('edit-job-number')?.value || '';
+                payload.compliance = document.getElementById('edit-compliance')?.value || '';
+                var clientSelect = $('#edit-client-name');
+                var clientId = clientSelect.val();
+                var clientName = clientSelect.find('option:selected').data('name') || '';
+                payload.client_id = clientId || '';
+                payload.client_name = clientName;
+            } else if (!formJob.hidden) {
+                payload.job_status = $('#edit-job-status').val();
+                payload.job_address = document.getElementById('edit-job-address')?.value || '';
+                payload.priority = $('#edit-priority').val();
+                payload.job_type = document.getElementById('edit-job-type')?.value || '';
+            } else if (!formNotes.hidden) {
+                var notesBody = document.getElementById('jobViewEditNotesBody');
+                payload.notes = notesBody ? notesBody.innerHTML : '';
+            } else {
+                return;
+            }
+
+            // loading state + simple animation
+            saveBtn.disabled = true;
+            saveBtn.classList.add('job-view-modal-btn-loading');
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+
+            $.ajax({
+                url: updateUrl,
+                method: 'PUT',
+                data: Object.assign({_token: csrfToken}, payload),
+                success: function (res) {
+                    var msg = (res && res.message) || 'Job updated successfully.';
+                    if (window.toastr) {
+                        toastr.success(msg, 'Saved');
+                    } else {
+                        showInlineToast(msg);
+                    }
+
+                    // Realtime append of new activity logs (if any)
+                    if (res && Array.isArray(res.logs) && res.logs.length > 0) {
+                        var list = document.querySelector('.job-view-activity');
+                        if (list) {
+                            // Remove "no activity" placeholder if present
+                            if (list.children.length === 1 && list.children[0].querySelector('.job-view-activity-text')) {
+                                list.innerHTML = '';
+                            }
+                            res.logs.forEach(function(log) {
+                                var li = document.createElement('li');
+                                li.className = 'job-view-activity-item';
+                                var initial = (log.updated_by || 'L').toString().charAt(0).toUpperCase();
+                                var dateText = log.activity_date || '';
+                                li.innerHTML =
+                                    '<div class="job-view-activity-user">' +
+                                        '<span class="job-view-activity-avatar" aria-hidden="true">' + initial + '</span>' +
+                                        '<span class="job-view-activity-name">' + (log.updated_by || 'LUNTIAN') + '</span>' +
+                                    '</div>' +
+                                    '<div class="job-view-activity-content">' +
+                                        '<span class="job-view-activity-time">' + dateText + '</span>' +
+                                        '<p class="job-view-activity-label">' + (log.activity_type || 'Update') + '</p>' +
+                                        (log.activity_description ? '<p class="job-view-activity-text">' + log.activity_description + '</p>' : '') +
+                                    '</div>';
+                                list.insertBefore(li, list.firstChild);
+                            });
+                        }
+                    }
+
+                    // small loading animation on affected cards, then reload
+                    var clientCard = document.getElementById('jobClientCard');
+                    var activityCard = document.getElementById('jobActivityCard');
+                    if (clientCard) clientCard.classList.add('job-view-card-reloading');
+                    if (activityCard) activityCard.classList.add('job-view-card-reloading');
+
+                    closeEditModal();
+
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 450);
+                },
+                error: function (xhr) {
+                    var msg = 'Failed to save changes. Please try again.';
+                    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    if (window.toastr) {
+                        toastr.error(msg, 'Error');
+                    }
+                },
+                complete: function () {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('job-view-modal-btn-loading');
+                    saveBtn.innerHTML = saveBtnOriginalHtml;
+                }
+            });
+        });
+    }
 })();
 </script>
     <script>

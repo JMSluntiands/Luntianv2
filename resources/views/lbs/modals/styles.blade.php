@@ -11,11 +11,12 @@
 .job-view-modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; min-height: 0; }
 .job-view-modal-placeholder, .job-view-modal-label { font-size: 0.9375rem; color: #94a3b8; margin: 0 0 1rem 0; }
 .job-view-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #334155; }
-.job-view-modal-btn { padding: 0.5rem 1.25rem; font-size: 0.875rem; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background 0.2s, color 0.2s, transform 0.2s; }
+.job-view-modal-btn { padding: 0.5rem 1.25rem; font-size: 0.875rem; font-weight: 600; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background 0.2s, color 0.2s, transform 0.2s, opacity 0.2s; }
 .job-view-modal-btn-cancel { background: transparent; border: 1px solid #334155; color: #94a3b8; }
 .job-view-modal-btn-cancel:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
 .job-view-modal-btn-primary { background: #2563eb; border: none; color: #fff; }
 .job-view-modal-btn-primary:hover { background: #1d4ed8; transform: scale(1.02); }
+.job-view-modal-btn.job-view-modal-btn-loading { opacity: 0.75; transform: scale(0.98); cursor: default; }
 {{-- Edit form --}}
 .job-view-form-group { margin-bottom: 1rem; }
 .job-view-form-group:last-child { margin-bottom: 0; }

@@ -7,49 +7,99 @@
             <div class="job-view-edit-form job-view-edit-form-client" id="jobViewEditFormClient" hidden>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-client-log-date">Log Date</label>
-                    <input type="datetime-local" id="edit-client-log-date" class="job-view-form-input job-view-form-input-readonly" value="2026-03-06T16:40" readonly autocomplete="off">
+                    <input
+                        type="datetime-local"
+                        id="edit-client-log-date"
+                        class="job-view-form-input job-view-form-input-readonly"
+                        value="{{ !empty($job->log_date) ? \Carbon\Carbon::parse($job->log_date)->format('Y-m-d\TH:i') : '' }}"
+                        readonly
+                        autocomplete="off">
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-client-ref">Client Reference</label>
-                    <input type="text" id="edit-client-ref" class="job-view-form-input job-view-form-input-readonly" value="172726" readonly autocomplete="off">
+                    <input
+                        type="text"
+                        id="edit-client-ref"
+                        class="job-view-form-input"
+                        value="{{ $job->client_reference_no ?? '' }}"
+                        autocomplete="off">
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-job-number">Job Number</label>
-                    <input type="text" id="edit-job-number" class="job-view-form-input job-view-form-input-readonly" value="{{ $jobId ?? '42376' }}" readonly autocomplete="off">
+                    <input
+                        type="text"
+                        id="edit-job-number"
+                        class="job-view-form-input"
+                        value="{{ $job->job_reference_no ?? ($job->reference ?? $jobId ?? '') }}"
+                        autocomplete="off">
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-compliance">Compliance</label>
-                    <input type="text" id="edit-compliance" class="job-view-form-input" value="2022 Whole of Home (WOH)" autocomplete="off">
+                    <select
+                        id="edit-compliance"
+                        class="job-view-form-input select2-single"
+                        autocomplete="off">
+                        @foreach($compliances ?? [] as $c)
+                            <option value="{{ $c->column }}" @selected(($job->ncc_compliance ?? '') === ($c->column ?? ''))>
+                                {{ $c->column ?? '' }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-client-name">Client</label>
-                    <input type="text" id="edit-client-name" class="job-view-form-input" value="Summit Homes Group" autocomplete="off">
+                    <select
+                        id="edit-client-name"
+                        class="job-view-form-input select2-single"
+                        autocomplete="off">
+                        @foreach($clientAccounts ?? [] as $client)
+                            @php
+                                $displayName = $client->client_account_name ?? $client->client_code ?? '';
+                                $currentId = $job->client_account_id ?? null;
+                            @endphp
+                            <option value="{{ $client->client_account_id }}"
+                                    data-name="{{ $displayName }}"
+                                    @selected((int) $currentId === (int) $client->client_account_id)>
+                                {{ $displayName }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
             <div class="job-view-edit-form job-view-edit-form-job" id="jobViewEditFormJob" hidden>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-job-status">Job Status</label>
                     <select id="edit-job-status" class="job-view-form-input select2-single" autocomplete="off">
-                        <option value="Pending">Pending</option>
-                        <option value="Accepted" selected>Accepted</option>
-                        <option value="Allocated">Allocated</option>
-                        <option value="Completed">Completed</option>
+                        @foreach($statuses ?? [] as $status)
+                            <option value="{{ $status->name }}" @selected(($job->job_status ?? '') === $status->name)>{{ $status->name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-job-address">Job Address</label>
-                    <input type="text" id="edit-job-address" class="job-view-form-input" value="Lot 183 Seapray Drive, Dollywup, WA 6230" autocomplete="off">
+                    <input
+                        type="text"
+                        id="edit-job-address"
+                        class="job-view-form-input"
+                        value="{{ $job->address_client ?? '' }}"
+                        autocomplete="off">
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-priority">Priority</label>
                     <select id="edit-priority" class="job-view-form-input select2-single" autocomplete="off">
-                        <option value="High 1 day" selected>High 1 day</option>
-                        <option value="Standard 2 days">Standard 2 days</option>
+                        @foreach($priorities ?? [] as $priority)
+                            <option value="{{ $priority->name }}" @selected(($job->priority ?? '') === $priority->name)>{{ $priority->name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-job-type">Job Type</label>
-                    <input type="text" id="edit-job-type" class="job-view-form-input" value="19 DB Base Model · 19 Design Builder Model" autocomplete="off">
+                    <input
+                        type="text"
+                        id="edit-job-type"
+                        class="job-view-form-input"
+                        value="{{ $job->job_type ?? '' }}"
+                        autocomplete="off">
                 </div>
             </div>
             <div class="job-view-edit-form job-view-edit-form-notes" id="jobViewEditFormNotes" hidden>
@@ -68,13 +118,7 @@
                             </button>
                         </div>
                         <div id="jobViewEditNotesBody" class="job-view-modal-notes-body" contenteditable="true" data-placeholder="Enter notes...">
-                            <p>This job requires <strong>priority review</strong> due to the client's timeline. Please ensure all <em>compliance checks</em> are completed before submission.</p>
-                            <ul>
-                                <li><strong>Verify</strong> 2022 WOH requirements</li>
-                                <li>Confirm <em>address details</em> with site plan</li>
-                                <li>Check energy rating documentation</li>
-                            </ul>
-                            <p>Contact the client if any <strong><em>discrepancies</em></strong> are found.</p>
+                            {!! $job->notes ?: '' !!}
                         </div>
                     </div>
                 </div>

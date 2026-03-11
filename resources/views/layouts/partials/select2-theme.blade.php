@@ -133,4 +133,9 @@
         background: #e2e8f0 !important;
         color: #334155 !important;
     }
+    /* Light theme: force dropdown list background to white (override dark base) */
+    html[data-theme="light"] .select2-results .select2-results__options,
+    html[data-theme="light"] .select2-container--default .select2-results .select2-results__options {
+        background: #ffffff !important;
+    }
 </style>
