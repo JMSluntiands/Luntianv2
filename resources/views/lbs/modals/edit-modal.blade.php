@@ -70,9 +70,59 @@
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-job-status">Job Status</label>
                     <select id="edit-job-status" class="job-view-form-input select2-single" autocomplete="off">
-                        @foreach($statuses ?? [] as $status)
-                            <option value="{{ $status->name }}" @selected(($job->job_status ?? '') === $status->name)>{{ $status->name }}</option>
-                        @endforeach
+                        @php
+                            $currentStatus = trim($job->job_status ?? '');
+                            $currentStatusLower = strtolower($currentStatus);
+                        @endphp
+
+                        {{-- Allocation / checking flow:
+                             - If Allocated       → options: Accepted, Processing
+                             - If Accepted/Processing/Revised → option: For Checking
+                             - If For Checking    → options: For Review, Revised
+                             - Otherwise          → show all statuses
+                        --}}
+                        @if($currentStatusLower === 'allocated')
+                            {{-- Current Allocated (display only) --}}
+                            <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
+                            @foreach($statuses ?? [] as $status)
+                                @php
+                                    $name = (string) ($status->name ?? '');
+                                    $nameLower = strtolower($name);
+                                @endphp
+                                @if(in_array($nameLower, ['accepted', 'processing'], true))
+                                    <option value="{{ $name }}">{{ $name }}</option>
+                                @endif
+                            @endforeach
+                        @elseif(in_array($currentStatusLower, ['accepted', 'processing', 'revised'], true))
+                            {{-- From Accepted / Processing / Revised → can only move to For Checking --}}
+                            <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
+                            @foreach($statuses ?? [] as $status)
+                                @php
+                                    $name = (string) ($status->name ?? '');
+                                    $nameLower = strtolower($name);
+                                @endphp
+                                @if($nameLower === 'for checking')
+                                    <option value="{{ $name }}">{{ $name }}</option>
+                                @endif
+                            @endforeach
+                        @elseif($currentStatusLower === 'for checking')
+                            {{-- From For Checking → can move to For Review or Revised --}}
+                            <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
+                            @foreach($statuses ?? [] as $status)
+                                @php
+                                    $name = (string) ($status->name ?? '');
+                                    $nameLower = strtolower($name);
+                                @endphp
+                                @if(in_array($nameLower, ['for review', 'revised'], true))
+                                    <option value="{{ $name }}">{{ $name }}</option>
+                                @endif
+                            @endforeach
+                        @else
+                            {{-- Fallback: show all statuses --}}
+                            @foreach($statuses ?? [] as $status)
+                                <option value="{{ $status->name }}" @selected(($job->job_status ?? '') === $status->name)>{{ $status->name }}</option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="job-view-form-group">
@@ -94,12 +144,19 @@
                 </div>
                 <div class="job-view-form-group">
                     <label class="job-view-form-label" for="edit-job-type">Job Type</label>
-                    <input
-                        type="text"
+                    <select
                         id="edit-job-type"
-                        class="job-view-form-input"
-                        value="{{ $job->job_type ?? '' }}"
+                        class="job-view-form-input select2-single"
                         autocomplete="off">
+                        <option value="">Select job type</option>
+                        @foreach($jobRequests ?? [] as $jobRequest)
+                            <option
+                                value="{{ $jobRequest->job_request_type ?? '' }}"
+                                @selected(($job->job_type ?? '') === ($jobRequest->job_request_type ?? ''))>
+                                {{ $jobRequest->job_request_type ?? '' }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
             <div class="job-view-edit-form job-view-edit-form-notes" id="jobViewEditFormNotes" hidden>

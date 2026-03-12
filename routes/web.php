@@ -56,6 +56,12 @@ Route::middleware('auth.session')->group(function () {
         $defaultJobRequest = \App\Models\JobRequest::where('job_request_type', 'like', '%1S DB Base Model- 1S Design Builder Model%')->first()
             ?? $jobRequests->first();
 
+        $assignmentUsers = \App\Models\User::whereIn('role', ['staff', 'checker'])
+            ->orderBy('unique_code')
+            ->get(['id', 'unique_code'])
+            ->unique('unique_code')
+            ->values();
+
         return view('lbs.add', [
             'sidebar_active' => 'lbs.add',
             'compliances' => $compliances,
@@ -66,18 +72,23 @@ Route::middleware('auth.session')->group(function () {
             'defaultPriorityId' => $defaultPriority?->id,
             'jobRequests' => $jobRequests,
             'defaultJobRequestId' => $defaultJobRequest?->id,
+            'assignmentUsers' => $assignmentUsers,
         ]);
     })->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
     Route::get('/dashboard/lbs/list', [LbsJobController::class, 'index'])->name('lbs.list');
     Route::get('/dashboard/lbs/job/{id}', [LbsJobController::class, 'show'])->name('lbs.job.view');
     Route::put('/dashboard/lbs/job/{id}', [LbsJobController::class, 'update'])->name('lbs.job.update');
+    Route::post('/dashboard/lbs/job/{id}/files', [LbsJobController::class, 'uploadFiles'])->name('lbs.job.uploadFiles');
+    Route::post('/dashboard/lbs/job/{id}/file/delete', [LbsJobController::class, 'deleteFile'])->name('lbs.job.deleteFile');
+    Route::post('/dashboard/lbs/job/{id}/checker-uploads', [LbsJobController::class, 'uploadCheckerFiles'])->name('lbs.job.checkerUploads');
+    Route::post('/dashboard/lbs/job/{id}/run-comment', [LbsJobController::class, 'addRunComment'])->name('lbs.job.runComment');
+    Route::post('/dashboard/lbs/job/{id}/comment', [LbsJobController::class, 'addJobComment'])->name('lbs.job.comment');
     Route::get('/dashboard/lbs/completed', function () {
         return view('lbs.completed', ['sidebar_active' => 'lbs.completed']);
     })->name('lbs.completed');
-    Route::get('/dashboard/lbs/review', function () {
-        return view('lbs.review', ['sidebar_active' => 'lbs.review']);
-    })->name('lbs.review');
+    Route::get('/dashboard/lbs/mailbox', [LbsJobController::class, 'mailbox'])->name('lbs.mailbox');
+    Route::get('/dashboard/lbs/review', [LbsJobController::class, 'review'])->name('lbs.review');
     Route::get('/dashboard/lbs/trash', function () {
         return view('lbs.trash', ['sidebar_active' => 'lbs.trash']);
     })->name('lbs.trash');

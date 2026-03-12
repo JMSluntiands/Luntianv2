@@ -64,6 +64,7 @@
     </form>
 
     @include('layouts.partials.toast')
+    @include('layouts.partials.app-toast')
 
     <script>
     (function() {

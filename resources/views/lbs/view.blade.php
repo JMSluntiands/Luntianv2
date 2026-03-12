@@ -50,7 +50,9 @@
         @endphp
 
         @php
-            $isAllocated = strtolower($job->job_status ?? '') === 'allocated';
+            $rawStatus = $job->job_status ?? '';
+            $lowerStatus = strtolower($rawStatus);
+            $isAllocated = $lowerStatus === 'allocated';
             $statusBg = $statusColor ?? null;
             $priorityBg = $priorityColor ?? null;
         @endphp
@@ -166,15 +168,13 @@
                             <dt>Staff</dt>
                             <dd class="job-view-assigned-wrap">
                                 <button type="button" class="job-view-assigned-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Change staff" data-assigned-trigger>
-                                    <span class="job-view-assigned-value">SB</span>
+                                    <span class="job-view-assigned-value">{{ $job->staff_id ? strtoupper($job->staff_id) : '—' }}</span>
                                     <svg class="job-view-assigned-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                                 </button>
                                 <ul class="job-view-assigned-dropdown" role="listbox" id="staff-listbox" hidden>
-                                    <li role="option" data-value="SB">SB</li>
-                                    <li role="option" data-value="GM">GM</li>
-                                    <li role="option" data-value="JDR">JDR</li>
-                                    <li role="option" data-value="PEP">PEP</li>
-                                    <li role="option" data-value="JS">JS</li>
+                                    @foreach($assignmentUsers ?? [] as $user)
+                                        <li role="option" data-value="{{ $user->unique_code }}">{{ $user->unique_code }}</li>
+                                    @endforeach
                                 </ul>
                             </dd>
                         </div>
@@ -182,15 +182,13 @@
                             <dt>Checker</dt>
                             <dd class="job-view-assigned-wrap">
                                 <button type="button" class="job-view-assigned-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Change checker" data-assigned-trigger>
-                                    <span class="job-view-assigned-value">GM</span>
+                                    <span class="job-view-assigned-value">{{ $job->checker_id ? strtoupper($job->checker_id) : '—' }}</span>
                                     <svg class="job-view-assigned-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                                 </button>
                                 <ul class="job-view-assigned-dropdown" role="listbox" id="checker-listbox" hidden>
-                                    <li role="option" data-value="SB">SB</li>
-                                    <li role="option" data-value="GM">GM</li>
-                                    <li role="option" data-value="JDR">JDR</li>
-                                    <li role="option" data-value="PEP">PEP</li>
-                                    <li role="option" data-value="JS">JS</li>
+                                    @foreach($assignmentUsers ?? [] as $user)
+                                        <li role="option" data-value="{{ $user->unique_code }}">{{ $user->unique_code }}</li>
+                                    @endforeach
                                 </ul>
                             </dd>
                         </div>
@@ -198,8 +196,17 @@
                 </section>
                 <section class="job-view-card job-view-card-compact">
                     <h2 class="job-view-card-title">Complexity</h2>
+                    @php
+                        $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
+                        $complexity = max(0, min(5, $complexity));
+                    @endphp
                     <div class="job-view-complexity">
-                        <span class="job-view-stars" aria-label="4 out of 5">@include('lbs.partials.stars', ['rating' => 4])</span>
+                        <button type="button"
+                                class="job-view-complexity-button"
+                                data-complexity-rating="{{ $complexity }}"
+                                aria-label="Set complexity (current: {{ $complexity }} of 5)">
+                            @include('lbs.partials.stars', ['rating' => $complexity])
+                        </button>
                     </div>
                 </section>
             </div>
@@ -333,94 +340,73 @@
                     <h2 class="job-view-card-title">Checker Upload Files</h2>
                     <button type="button" class="job-view-card-action job-view-card-action-primary" data-job-view-add-files data-add-title="Checker Upload Files">Add Files</button>
                 </div>
-                <ul class="job-view-checker-uploads">
-                    <li class="job-view-checker-upload">
-                        <div class="job-view-checker-upload-head">Upload 1</div>
-                        <div class="job-view-file-item">
-                            <span class="job-view-file-icon" aria-hidden="true">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
-                            </span>
-                            <span class="job-view-file-name">Checker_review_172726.pdf</span>
-                            <div class="job-view-file-actions">
-                                <a href="#" class="job-view-file-btn" title="Download" aria-label="Download">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                                </a>
-                                <a href="#" class="job-view-file-btn" title="View" aria-label="View">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </a>
-                                <button type="button" class="job-view-file-btn job-view-file-btn-danger" title="Delete" aria-label="Delete">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="job-view-checker-notes">
-                            <span class="job-view-checker-notes-label">Notes</span>
-                            <div class="job-view-notes-rich">
-                                <p><strong>Review completed.</strong> All items verified. Please see <em>section 2.1</em> for energy rating.</p>
-                                <ul>
-                                    <li><strong>Plans</strong> — approved</li>
-                                    <li><em>Compliance</em> — 2022 WOH met</li>
-                                    <li>No changes required</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </li>
-                    <li class="job-view-checker-upload">
-                        <div class="job-view-checker-upload-head">Upload 2</div>
-                        <div class="job-view-file-item">
-                            <span class="job-view-file-icon" aria-hidden="true">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
-                            </span>
-                            <span class="job-view-file-name">Compliance_check_{{ $jobId ?? '42376' }}.pdf</span>
-                            <div class="job-view-file-actions">
-                                <a href="#" class="job-view-file-btn" title="Download" aria-label="Download">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                                </a>
-                                <a href="#" class="job-view-file-btn" title="View" aria-label="View">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </a>
-                                <button type="button" class="job-view-file-btn job-view-file-btn-danger" title="Delete" aria-label="Delete">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="job-view-checker-notes">
-                            <span class="job-view-checker-notes-label">Notes</span>
-                            <div class="job-view-notes-rich">
-                                <p><strong>Compliance check</strong> — 2022 WOH requirements <em>confirmed</em>.</p>
-                                <ul>
-                                    <li>Energy rating <strong>passed</strong></li>
-                                    <li>Documentation <em>complete</em></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
+                @if(($checkerUploads ?? collect())->isEmpty())
+                    <p class="job-view-empty">No checker uploads yet.</p>
+                @else
+                    <ul class="job-view-checker-uploads">
+                        @foreach($checkerUploads as $index => $upload)
+                            @php
+                                $files = json_decode($upload->files_json ?? '[]', true) ?: [];
+                                $uploadNumber = $loop->iteration;
+                            @endphp
+                            <li class="job-view-checker-upload">
+                                <div class="job-view-checker-upload-head">Upload {{ $uploadNumber }}</div>
+                                @foreach($files as $fileName)
+                                    @php
+                                        $fileName = (string) $fileName;
+                                        $fileUrl = isset($folderName) && $folderName ? asset('document/' . $folderName . '/' . $fileName) : '#';
+                                    @endphp
+                                    <div class="job-view-file-item">
+                                        <span class="job-view-file-icon" aria-hidden="true">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
+                                        </span>
+                                        <span class="job-view-file-name">{{ $fileName }}</span>
+                                        <div class="job-view-file-actions">
+                                            <a href="{{ $fileUrl }}" class="job-view-file-btn" title="Download" aria-label="Download" download>
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                            </a>
+                                            <a href="{{ $fileUrl }}" target="_blank" class="job-view-file-btn" title="View" aria-label="View">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                                @if(trim($upload->comment ?? '') !== '')
+                                    <div class="job-view-checker-notes">
+                                        <span class="job-view-checker-notes-label">Notes</span>
+                                        <div class="job-view-notes-rich">
+                                            {!! $upload->comment !!}
+                                        </div>
+                                    </div>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </section>
 
             <section class="job-view-card job-view-card-comments">
                 <h2 class="job-view-card-title">Run Comments</h2>
-                <ul class="job-view-comment-list">
-                    <li class="job-view-comment-item">
-                        <div class="job-view-comment-user">
-                            <span class="job-view-comment-avatar" aria-hidden="true">L</span>
-                            <span class="job-view-comment-name">LUNTIAN</span>
-                        </div>
-                        <div class="job-view-comment-content">
-                            <p class="job-view-comment-text">Starting the run now. Will update when <strong>section 2</strong> is done.</p>
-                            <span class="job-view-comment-time">Mar 06, 2026 04:45 PM</span>
-                        </div>
-                    </li>
-                    <li class="job-view-comment-item">
-                        <div class="job-view-comment-user">
-                            <span class="job-view-comment-avatar" aria-hidden="true">G</span>
-                            <span class="job-view-comment-name">GM</span>
-                        </div>
-                        <div class="job-view-comment-content">
-                            <p class="job-view-comment-text"><em>Noted.</em> Check compliance box before submitting.</p>
-                            <span class="job-view-comment-time">Mar 06, 2026 05:10 PM</span>
-                        </div>
-                    </li>
+                <ul class="job-view-comment-list" id="runCommentsList">
+                    @forelse($runComments as $runComment)
+                        <li class="job-view-comment-item">
+                            <div class="job-view-comment-user">
+                                @php $initial = strtoupper(mb_substr($runComment->name ?? 'L', 0, 1)); @endphp
+                                <span class="job-view-comment-avatar" aria-hidden="true">{{ $initial }}</span>
+                                <span class="job-view-comment-name">{{ $runComment->name ?? 'LUNTIAN' }}</span>
+                            </div>
+                            <div class="job-view-comment-content">
+                                <p class="job-view-comment-text">{!! $runComment->message !!}</p>
+                                <span class="job-view-comment-time">{{ $runComment->created_at }}</span>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="job-view-comment-item">
+                            <div class="job-view-comment-content">
+                                <p class="job-view-comment-text">No run comments yet.</p>
+                            </div>
+                        </li>
+                    @endforelse
                 </ul>
                 <div class="job-view-comment-editor">
                     <div class="job-view-comment-toolbar">
@@ -434,36 +420,35 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>
                         </button>
                     </div>
-                    <div class="job-view-comment-body" contenteditable="true" data-placeholder="Write a run comment..." role="textbox"></div>
+                    <div class="job-view-comment-body" id="runCommentBody" contenteditable="true" data-placeholder="Write a run comment..." role="textbox"></div>
                     <div class="job-view-comment-footer">
-                        <button type="button" class="job-view-comment-send">Send</button>
+                        <button type="button" class="job-view-comment-send" id="runCommentSendBtn">Send</button>
                     </div>
                 </div>
             </section>
 
             <section class="job-view-card job-view-card-comments">
                 <h2 class="job-view-card-title">Comments</h2>
-                <ul class="job-view-comment-list">
-                    <li class="job-view-comment-item">
-                        <div class="job-view-comment-user">
-                            <span class="job-view-comment-avatar" aria-hidden="true">L</span>
-                            <span class="job-view-comment-name">LUNTIAN</span>
-                        </div>
-                        <div class="job-view-comment-content">
-                            <p class="job-view-comment-text">Priority set to <strong>High 1 day</strong>. Client requested quick turnaround.</p>
-                            <span class="job-view-comment-time">Mar 06, 2026 04:41 PM</span>
-                        </div>
-                    </li>
-                    <li class="job-view-comment-item">
-                        <div class="job-view-comment-user">
-                            <span class="job-view-comment-avatar" aria-hidden="true">S</span>
-                            <span class="job-view-comment-name">SB</span>
-                        </div>
-                        <div class="job-view-comment-content">
-                            <p class="job-view-comment-text">Assigned to me. I'll have the <em>plans</em> reviewed by EOD.</p>
-                            <span class="job-view-comment-time">Mar 06, 2026 03:20 PM</span>
-                        </div>
-                    </li>
+                <ul class="job-view-comment-list" id="jobCommentsList">
+                    @forelse($jobComments as $comment)
+                        <li class="job-view-comment-item">
+                            <div class="job-view-comment-user">
+                                @php $initial = strtoupper(mb_substr($comment->username ?? 'L', 0, 1)); @endphp
+                                <span class="job-view-comment-avatar" aria-hidden="true">{{ $initial }}</span>
+                                <span class="job-view-comment-name">{{ $comment->username ?? 'LUNTIAN' }}</span>
+                            </div>
+                            <div class="job-view-comment-content">
+                                <p class="job-view-comment-text">{!! $comment->message !!}</p>
+                                <span class="job-view-comment-time">{{ $comment->created_at }}</span>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="job-view-comment-item">
+                            <div class="job-view-comment-content">
+                                <p class="job-view-comment-text">No comments yet.</p>
+                            </div>
+                        </li>
+                    @endforelse
                 </ul>
                 <div class="job-view-comment-editor">
                     <div class="job-view-comment-toolbar">
@@ -477,9 +462,9 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>
                         </button>
                     </div>
-                    <div class="job-view-comment-body" contenteditable="true" data-placeholder="Write a comment..." role="textbox"></div>
+                    <div class="job-view-comment-body" id="jobCommentBody" contenteditable="true" data-placeholder="Write a comment..." role="textbox"></div>
                     <div class="job-view-comment-footer">
-                        <button type="button" class="job-view-comment-send">Send</button>
+                        <button type="button" class="job-view-comment-send" id="jobCommentSendBtn">Send</button>
                     </div>
                 </div>
             </section>
@@ -495,7 +480,10 @@
                                 </div>
                             </li>
                         @else
-                            @include('lbs.partials.activity-log-items', ['activityLogs' => $activityLogs])
+                            @include('lbs.partials.activity-log-items', [
+                                'activityLogs' => $activityLogs,
+                                'jobStatus'    => $job->job_status ?? null,
+                            ])
                         @endif
                     </ul>
                 </section>
@@ -504,6 +492,27 @@
 
         @include('lbs.modals.edit-modal')
         @include('lbs.modals.add-files-modal')
+        <div class="job-view-modal-overlay" id="jobViewDeleteFileModalOverlay" aria-hidden="true">
+            <div class="job-view-modal" role="dialog" aria-modal="true" aria-labelledby="jobViewDeleteFileModalTitle">
+                <div class="job-view-modal-header">
+                    <h2 class="job-view-modal-title" id="jobViewDeleteFileModalTitle">Delete file</h2>
+                </div>
+                <div class="job-view-modal-body">
+                    <div class="job-view-delete-confirm" id="jobViewDeleteFileConfirm">
+                        <p class="job-view-modal-label">Are you sure you want to delete this file? This cannot be undone.</p>
+                    </div>
+                    <div class="job-view-delete-countdown" id="jobViewDeleteFileCountdown" hidden>
+                        <p class="job-view-countdown-text">Deleting in</p>
+                        <div class="job-view-countdown-number" id="jobViewDeleteFileCountdownNumber">3</div>
+                        <p class="job-view-countdown-cancel-hint">Click Cancel to abort</p>
+                    </div>
+                </div>
+                <div class="job-view-modal-footer">
+                    <button type="button" class="job-view-modal-btn job-view-modal-btn-cancel" id="jobViewDeleteFileModalCancel">Cancel</button>
+                    <button type="button" class="job-view-modal-btn job-view-modal-btn-primary job-view-modal-btn-danger" id="jobViewDeleteFileModalConfirm"><span class="job-view-delete-btn-text">Delete</span></button>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -580,7 +589,7 @@
             position: fixed;
             top: 1rem;
             right: 1rem;
-            z-index: 9999;
+            z-index: 99999;
             padding: 0.55rem 1.1rem;
             border-radius: 999px;
             background: #0f172a;
@@ -591,10 +600,7 @@
             transform: translateY(0);
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
-        .job-view-inline-toast.hide {
-            opacity: 0;
-            transform: translateY(-4px);
-        }
+        .job-view-inline-toast.hide { opacity: 0; transform: translateY(-4px); }
         html[data-theme="light"] .job-view-inline-toast {
             background: #fff;
             color: #1e293b;
@@ -608,6 +614,17 @@
         .job-view-card-action:hover { color: #e2e8f0; background: rgba(255,255,255,0.06); }
         .job-view-card-action-primary { color: #60a5fa; }
         .job-view-card-action-primary:hover { color: #93c5fd; background: rgba(96,165,250,0.15); }
+        .job-view-modal-btn-danger { background: #dc2626; color: #fff; }
+        .job-view-modal-btn-danger:hover { background: #b91c1c; }
+        .job-view-delete-confirm p { margin: 0; }
+        .job-view-delete-countdown { text-align: center; padding: 0.5rem 0; }
+        .job-view-countdown-text { font-size: 0.9375rem; color: #94a3b8; margin: 0 0 1rem 0; }
+        .job-view-countdown-number { font-size: 4rem; font-weight: 800; color: #f87171; line-height: 1; letter-spacing: -0.05em; min-height: 4rem; display: flex; align-items: center; justify-content: center; animation: job-view-countdown-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .job-view-countdown-cancel-hint { font-size: 0.8125rem; color: #64748b; margin: 1rem 0 0 0; }
+        @keyframes job-view-countdown-pop { 0% { opacity: 0; transform: scale(0.3); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+        html[data-theme="light"] .job-view-countdown-text { color: #64748b; }
+        html[data-theme="light"] .job-view-countdown-number { color: #dc2626; }
+        html[data-theme="light"] .job-view-countdown-cancel-hint { color: #94a3b8; }
         .job-view-dl { display: grid; gap: 0.6rem 1rem; margin: 0; }
         .job-view-dl-row { display: grid; grid-template-columns: 140px 1fr; gap: 0.5rem; align-items: baseline; }
         .job-view-dl dt { font-size: 0.8125rem; color: #64748b; font-weight: 500; margin: 0; }
@@ -619,7 +636,9 @@
         .job-view-assigned-select:hover { color: #f8fafc; }
         .job-view-assigned-arrow { flex-shrink: 0; color: #94a3b8; transition: transform 0.2s; }
         .job-view-assigned-select[aria-expanded="true"] .job-view-assigned-arrow { transform: rotate(180deg); }
-        .job-view-assigned-dropdown { position: absolute; left: 0; top: 100%; margin: 0.25rem 0 0 0; padding: 0.35rem 0; min-width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); list-style: none; z-index: 10; max-height: 200px; overflow-y: auto; }
+        .job-view-assigned-dropdown { position: absolute; left: 0; top: 100%; margin: 0.25rem 0 0 0; padding: 0.35rem 0; min-width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); list-style: none; z-index: 1000; max-height: 200px; overflow-y: auto; }
+        .job-view-notes-side.job-view-assigned-dropdown-open { z-index: 100; position: relative; overflow: visible; }
+        .job-view-notes-side .job-view-card.job-view-assigned-card-open { z-index: 100; overflow: visible; }
         .job-view-assigned-dropdown[hidden] { display: none; }
         .job-view-assigned-dropdown li { padding: 0.4rem 0.75rem; font-size: 0.875rem; color: #e2e8f0; cursor: pointer; }
         .job-view-assigned-dropdown li:hover { background: rgba(255,255,255,0.08); }
@@ -669,7 +688,10 @@
         .job-view-checker-notes .job-view-notes-rich p { margin-bottom: 0.5em; }
         .job-view-checker-notes .job-view-notes-rich ul { margin: 0.35em 0 0 0; padding-left: 1.25rem; }
         .job-view-complexity { margin-top: 0.25rem; }
-        .job-view-complexity .job-view-stars { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 140px; }
+        .job-view-complexity-button { padding: 0; border: none; background: transparent; cursor: pointer; display: inline-flex; }
+        .job-view-complexity-button:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; border-radius: 999px; }
+        .job-view-complexity .job-view-stars,
+        .job-view-complexity .job-view-complexity-button { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 140px; }
         .job-view-complexity .lbs-stars-inner { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0; }
         .job-view-complexity .lbs-star { width: 20px; height: 20px; flex-shrink: 0; }
         .job-view-complexity .lbs-star-filled { color: #eab308; }
@@ -693,6 +715,14 @@
         .job-view-comment-text { font-size: 0.875rem; color: #94a3b8; line-height: 1.45; margin: 0 0 0.25rem 0; }
         .job-view-comment-text strong { color: #e2e8f0; font-weight: 700; }
         .job-view-comment-text em { font-style: italic; }
+        .job-view-comment-text ul,
+        .job-view-comment-text ol,
+        .job-view-activity-text ul,
+        .job-view-activity-text ol {
+            margin: 0.35rem 0;
+            padding-left: 1.75rem;
+            list-style-position: outside;
+        }
         .job-view-comment-time { font-size: 0.7rem; color: #64748b; }
         .job-view-comment-editor { border: 1px solid #334155; border-radius: 10px; background: #0f172a; overflow: hidden; }
         .job-view-comment-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 10px; border-bottom: 1px solid #334155; background: #1e293b; }
@@ -744,10 +774,12 @@
         .job-view-activity-item:nth-child(6) { animation-delay: 0.7s; }
         .job-view-activity-item:hover { background: rgba(255,255,255,0.03); }
         .job-view-activity-item:last-child { border-bottom: none; }
-        .job-view-activity-user { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+        .job-view-activity-user { display: flex; align-items: flex-start; gap: 0.5rem; flex-shrink: 0; min-width: 140px; max-width: 140px; }
         .job-view-activity-avatar { width: 36px; height: 36px; border-radius: 50%; background: #475569; color: #e2e8f0; font-size: 0.9375rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+        .job-view-activity-user-meta { display: flex; flex-direction: column; margin-top: 0.05rem; }
         .job-view-activity-name { font-size: 0.8125rem; font-weight: 600; color: #e2e8f0; }
-        .job-view-activity-content { flex: 1; min-width: 0; }
+        .job-view-activity-code { font-size: 0.75rem; font-weight: 500; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.05rem; }
+        .job-view-activity-content { flex: 1; min-width: 0; padding-top: 0.2rem; }
         .job-view-activity-time { font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.25rem; }
         .job-view-activity-label { font-size: 0.8125rem; font-weight: 600; color: #94a3b8; margin: 0 0 0.4rem 0; }
         .job-view-activity-changes { list-style: none; margin: 0; padding: 0; }
@@ -781,6 +813,7 @@
         html[data-theme="light"] .job-view-activity-item { border-bottom-color: #e2e8f0; }
         html[data-theme="light"] .job-view-activity-avatar { background: #cbd5e1; color: #1e293b; }
         html[data-theme="light"] .job-view-activity-name { color: #1e293b; }
+        html[data-theme="light"] .job-view-activity-code { color: #64748b; }
         html[data-theme="light"] .job-view-activity { scrollbar-color: rgba(148,163,184,0.9) #e5e7eb; }
         html[data-theme="light"] .job-view-activity::-webkit-scrollbar-track { background: #e5e7eb; }
         html[data-theme="light"] .job-view-activity::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.9); }
@@ -818,7 +851,20 @@
 (function() {
     var csrfToken = '{{ csrf_token() }}';
     var updateUrl = '{{ route('lbs.job.update', ['id' => $jobId]) }}';
+    var uploadFilesUrl = '{{ route('lbs.job.uploadFiles', ['id' => $jobId]) }}';
+    var deleteFileUrl = '{{ route('lbs.job.deleteFile', ['id' => $jobId]) }}';
+    var checkerUploadUrl = '{{ route('lbs.job.checkerUploads', ['id' => $jobId]) }}';
+    var runCommentUrl = '{{ route('lbs.job.runComment', ['id' => $jobId]) }}';
+    var jobCommentUrl = '{{ route('lbs.job.comment', ['id' => $jobId]) }}';
+    var jobViewFilesData = {
+        planFiles: @json($planFiles ?? []),
+        docFiles: @json($docFiles ?? []),
+        documentFolderUrl: @json(asset('document/'.$folderName))
+    };
+    var currentAddFilesSection = null;
+    var currentAddFilesMode = null; // 'plans' | 'documents' | 'checker'
     var editOverlay = document.getElementById('jobViewEditModalOverlay');
+
     var addOverlay = document.getElementById('jobViewAddFilesModalOverlay');
     var formClient = document.getElementById('jobViewEditFormClient');
     var formJob = document.getElementById('jobViewEditFormJob');
@@ -858,6 +904,46 @@
             var existingWrap = document.getElementById('jobViewModalExistingWrap');
             if (checkerNotes) checkerNotes.hidden = (title !== 'Checker Upload Files');
             if (existingWrap) existingWrap.hidden = (title === 'Checker Upload Files');
+
+            if (title === 'Plans') {
+                currentAddFilesSection = 'plans';
+                currentAddFilesMode = 'plans';
+            } else if (title === 'Documents') {
+                currentAddFilesSection = 'documents';
+                currentAddFilesMode = 'documents';
+            } else if (title === 'Checker Upload Files') {
+                currentAddFilesSection = null;
+                currentAddFilesMode = 'checker';
+            } else {
+                currentAddFilesSection = null;
+                currentAddFilesMode = null;
+            }
+
+            var existingList = document.getElementById('jobViewModalExistingFiles');
+            var noFilesEl = document.getElementById('jobViewModalNoFiles');
+            if (existingList && noFilesEl) {
+                existingList.innerHTML = '';
+                var files = currentAddFilesSection === 'plans' ? (jobViewFilesData.planFiles || []) : (currentAddFilesSection === 'documents' ? (jobViewFilesData.docFiles || []) : []);
+                var baseUrl = jobViewFilesData.documentFolderUrl || '';
+                if (files.length === 0) {
+                    noFilesEl.hidden = false;
+                } else {
+                    noFilesEl.hidden = true;
+                    files.forEach(function(fileName) {
+                        var url = baseUrl + '/' + encodeURIComponent(fileName);
+                        var li = document.createElement('li');
+                        li.className = 'job-view-modal-file-item';
+                        li.innerHTML = '<span class="job-view-modal-file-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg></span>' +
+                            '<span class="job-view-modal-file-name">' + fileName + '</span>' +
+                            '<div class="job-view-modal-file-actions">' +
+                            '<a href="' + url + '" class="job-view-modal-file-btn" title="Download" aria-label="Download" download><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>' +
+                            '<a href="' + url + '" target="_blank" class="job-view-modal-file-btn" title="View" aria-label="View"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>' +
+                            '</div>';
+                        existingList.appendChild(li);
+                    });
+                }
+            }
+
             addOverlay.classList.add('is-open');
             addOverlay.setAttribute('aria-hidden', 'false');
         }
@@ -896,6 +982,227 @@
             } else {
                 selectedWrap.hidden = true;
             }
+        });
+    })();
+
+    (function bindComplexityStars() {
+        var btn = document.querySelector('.job-view-complexity-button');
+        if (!btn) return;
+        var stars = btn.querySelectorAll('.lbs-star');
+        function setStars(value) {
+            stars.forEach(function(star, idx) {
+                var i = idx + 1;
+                if (i <= value) {
+                    star.classList.add('lbs-star-filled');
+                    star.classList.remove('lbs-star-empty');
+                } else {
+                    star.classList.add('lbs-star-empty');
+                    star.classList.remove('lbs-star-filled');
+                }
+            });
+            btn.setAttribute('data-complexity-rating', String(value));
+        }
+        function sendComplexity(value) {
+            var current = parseInt(btn.getAttribute('data-complexity-rating') || '0', 10) || 0;
+            if (current === value) return;
+            var formData = new URLSearchParams();
+            formData.append('_token', csrfToken);
+            formData.append('plan_complexity', String(value));
+            fetch(updateUrl, {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: { message: r.ok ? 'Updated.' : 'Failed to update complexity.' } }; }); }).then(function(result) {
+                var msg = (result.data && result.data.message) || (result.ok ? 'Complexity updated.' : 'Failed to update complexity.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (result.ok) {
+                    setStars(value);
+                    if (result.data && Array.isArray(result.data.logs) && result.data.logs.length) {
+                        var list = document.querySelector('.job-view-activity');
+                        if (list) {
+                            if (list.children.length === 1 && list.children[0].querySelector('.job-view-activity-text')) list.innerHTML = '';
+                            result.data.logs.forEach(function(log) {
+                                var li = document.createElement('li');
+                                li.className = 'job-view-activity-item';
+                                var initial = (log.updated_by || 'L').toString().charAt(0).toUpperCase();
+                                var dateText = log.activity_date || '';
+                                li.innerHTML =
+                                    '<div class=\"job-view-activity-user\">' +
+                                        '<span class=\"job-view-activity-avatar\" aria-hidden=\"true\">' + initial + '</span>' +
+                                        '<span class=\"job-view-activity-name\">' + (log.updated_by || 'LUNTIAN') + '</span>' +
+                                    '</div>' +
+                                    '<div class=\"job-view-activity-content\">' +
+                                        '<span class=\"job-view-activity-time\">' + dateText + '</span>' +
+                                        '<p class=\"job-view-activity-label\">' + (log.activity_type || 'Update') + '</p>' +
+                                        (log.activity_description ? '<p class=\"job-view-activity-text\">' + log.activity_description + '</p>' : '') +
+                                    '</div>';
+                                list.insertBefore(li, list.firstChild);
+                            });
+                        }
+                    }
+                    setTimeout(function() { window.location.reload(); }, 1800);
+                }
+            }).catch(function() {
+                if (window.showSuccessToast) showSuccessToast('Failed to update complexity.');
+            });
+        }
+        stars.forEach(function(star, idx) {
+            star.style.cursor = 'pointer';
+            star.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var value = idx + 1;
+                sendComplexity(value);
+            });
+        });
+    })();
+
+    (function handleRunComments() {
+        var sendBtn = document.getElementById('runCommentSendBtn');
+        var bodyEl = document.getElementById('runCommentBody');
+        var list = document.getElementById('runCommentsList');
+        if (!sendBtn || !bodyEl || !list) return;
+        sendBtn.addEventListener('click', function() {
+            var html = bodyEl.innerHTML || '';
+            var text = html.replace(/<[^>]*>/g, '').trim();
+            if (!text) return;
+            sendBtn.disabled = true;
+            var formData = new URLSearchParams();
+            formData.append('_token', csrfToken);
+            formData.append('message', html);
+            fetch(runCommentUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: { message: 'Failed to add comment.' } }; }); }).then(function(result) {
+                sendBtn.disabled = false;
+                var msg = (result.data && result.data.message) || (result.ok ? 'Run comment added.' : 'Failed to add comment.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (result.ok && result.data && result.data.comment) {
+                    var c = result.data.comment;
+                    bodyEl.innerHTML = '';
+                    if (list.children.length === 1 && list.children[0].querySelector('.job-view-comment-text') && list.children[0].textContent.trim().startsWith('No run comments')) {
+                        list.innerHTML = '';
+                    }
+                    var li = document.createElement('li');
+                    li.className = 'job-view-comment-item';
+                    var initial = (c.name || 'L').toString().charAt(0).toUpperCase();
+                    li.innerHTML =
+                        '<div class="job-view-comment-user">' +
+                            '<span class="job-view-comment-avatar" aria-hidden="true">' + initial + '</span>' +
+                            '<span class="job-view-comment-name">' + (c.name || 'LUNTIAN') + '</span>' +
+                        '</div>' +
+                        '<div class="job-view-comment-content">' +
+                            '<p class="job-view-comment-text">' + (c.message || '') + '</p>' +
+                            '<span class="job-view-comment-time">' + (c.created_at || '') + '</span>' +
+                        '</div>';
+                    list.insertBefore(li, list.firstChild);
+                }
+            }).catch(function() {
+                sendBtn.disabled = false;
+                if (window.showSuccessToast) showSuccessToast('Failed to add comment.');
+            });
+        });
+    })();
+
+    (function handleJobComments() {
+        var sendBtn = document.getElementById('jobCommentSendBtn');
+        var bodyEl = document.getElementById('jobCommentBody');
+        var list = document.getElementById('jobCommentsList');
+        if (!sendBtn || !bodyEl || !list) return;
+        sendBtn.addEventListener('click', function() {
+            var html = bodyEl.innerHTML || '';
+            var text = html.replace(/<[^>]*>/g, '').trim();
+            if (!text) return;
+            sendBtn.disabled = true;
+            var formData = new URLSearchParams();
+            formData.append('_token', csrfToken);
+            formData.append('message', html);
+            fetch(jobCommentUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: { message: 'Failed to add comment.' } }; }); }).then(function(result) {
+                sendBtn.disabled = false;
+                var msg = (result.data && result.data.message) || (result.ok ? 'Comment added.' : 'Failed to add comment.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (result.ok && result.data && result.data.comment) {
+                    var c = result.data.comment;
+                    bodyEl.innerHTML = '';
+                    if (list.children.length === 1 && list.children[0].querySelector('.job-view-comment-text') && list.children[0].textContent.trim().startsWith('No comments')) {
+                        list.innerHTML = '';
+                    }
+                    var li = document.createElement('li');
+                    li.className = 'job-view-comment-item';
+                    var initial = (c.username || 'L').toString().charAt(0).toUpperCase();
+                    li.innerHTML =
+                        '<div class="job-view-comment-user">' +
+                            '<span class="job-view-comment-avatar" aria-hidden="true">' + initial + '</span>' +
+                            '<span class="job-view-comment-name">' + (c.username || 'LUNTIAN') + '</span>' +
+                        '</div>' +
+                        '<div class="job-view-comment-content">' +
+                            '<p class="job-view-comment-text">' + (c.message || '') + '</p>' +
+                            '<span class="job-view-comment-time">' + (c.created_at || '') + '</span>' +
+                        '</div>';
+                    list.insertBefore(li, list.firstChild);
+                }
+            }).catch(function() {
+                sendBtn.disabled = false;
+                if (window.showSuccessToast) showSuccessToast('Failed to add comment.');
+            });
+        });
+    })();
+
+    (function() {
+        var uploadBtn = document.getElementById('jobViewAddFilesUploadBtn');
+        var fileInput = document.getElementById('jobViewAddFilesInput');
+        if (!uploadBtn || !fileInput) return;
+        uploadBtn.addEventListener('click', function() {
+            var files = fileInput.files;
+            if (!files || files.length === 0) {
+                if (window.showSuccessToast) showSuccessToast('Choose files first.');
+                return;
+            }
+            var formData = new FormData();
+            formData.append('_token', csrfToken);
+            if (currentAddFilesMode === 'plans' || currentAddFilesMode === 'documents') {
+                formData.append('section', currentAddFilesSection);
+                for (var i = 0; i < files.length; i++) {
+                    formData.append('files[]', files[i]);
+                }
+            } else if (currentAddFilesMode === 'checker') {
+                for (var j = 0; j < files.length; j++) {
+                    formData.append('files[]', files[j]);
+                }
+                var notesBody = document.querySelector('#jobViewModalCheckerNotes .job-view-modal-notes-body');
+                if (notesBody && notesBody.innerHTML) {
+                    formData.append('notes', notesBody.innerHTML);
+                }
+            } else {
+                if (window.showSuccessToast) showSuccessToast('Please select a valid section.');
+                return;
+            }
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+            var targetUrl = currentAddFilesMode === 'checker' ? checkerUploadUrl : uploadFilesUrl;
+            fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: formData
+            }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: { message: 'Upload failed.' } }; }); }).then(function(result) {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload';
+                var msg = (result.data && result.data.message) || (result.ok ? (currentAddFilesMode === 'checker' ? 'Checker upload saved.' : 'Files added successfully.') : 'Upload failed.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (result.ok) {
+                    closeAddFilesModal();
+                    setTimeout(function() { window.location.reload(); }, 1500);
+                }
+            }).catch(function() {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload';
+                if (window.showSuccessToast) showSuccessToast('Upload failed.');
+            });
         });
     })();
     document.addEventListener('click', function(e) {
@@ -946,6 +1253,9 @@
     function closeAllAssignedDropdowns() {
         document.querySelectorAll('.job-view-assigned-dropdown').forEach(function(list) { list.hidden = true; });
         document.querySelectorAll('[data-assigned-trigger]').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
+        document.querySelectorAll('.job-view-assigned-card-open').forEach(function(card) { card.classList.remove('job-view-assigned-card-open'); });
+        var notesSide = document.querySelector('.job-view-notes-side');
+        if (notesSide) notesSide.classList.remove('job-view-assigned-dropdown-open');
     }
     document.querySelectorAll('[data-assigned-trigger]').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
@@ -957,6 +1267,10 @@
             if (list && !isOpen) {
                 list.hidden = false;
                 this.setAttribute('aria-expanded', 'true');
+                var card = this.closest('.job-view-card');
+                if (card) card.classList.add('job-view-assigned-card-open');
+                var notesSide = this.closest('.job-view-notes-side');
+                if (notesSide) notesSide.classList.add('job-view-assigned-dropdown-open');
             }
         });
     });
@@ -967,27 +1281,159 @@
             var valueEl = wrap && wrap.querySelector('.job-view-assigned-value');
             var list = wrap && wrap.querySelector('.job-view-assigned-dropdown');
             var val = this.getAttribute('data-value');
-            if (valueEl && val) valueEl.textContent = val;
+            if (!val) return;
+            if (valueEl) valueEl.textContent = val;
             if (list) list.hidden = true;
             var btn = wrap && wrap.querySelector('[data-assigned-trigger]');
             if (btn) btn.setAttribute('aria-expanded', 'false');
+            var card = wrap && wrap.closest('.job-view-card');
+            if (card) card.classList.remove('job-view-assigned-card-open');
+            var notesSide = wrap && wrap.closest('.job-view-notes-side');
+            if (notesSide) notesSide.classList.remove('job-view-assigned-dropdown-open');
+
+            var isStaff = list && list.id === 'staff-listbox';
+            var formData = new URLSearchParams();
+            formData.append('_token', csrfToken);
+            if (isStaff) formData.append('staff_id', val); else formData.append('checker_id', val);
+
+            fetch(updateUrl, {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).then(function(r) {
+                return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() {
+                    return { ok: r.ok, data: { message: r.ok ? 'Updated.' : 'Failed to update.' } };
+                });
+            }).then(function(result) {
+                var msg = (result.data && result.data.message) || (result.ok ? 'Staff/Checker updated successfully.' : 'Something went wrong.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (result.ok) setTimeout(function() { window.location.reload(); }, 2500);
+            }).catch(function() {
+                if (window.showSuccessToast) showSuccessToast('Failed to update.');
+            });
         });
     });
     document.addEventListener('click', closeAllAssignedDropdowns);
-    document.addEventListener('click', function(e) {
-        var delBtn = e.target.closest('[data-job-view-modal-delete-file]');
-        if (!delBtn) return;
-        var item = delBtn.closest('.job-view-modal-file-item');
-        if (!item) return;
-        if (typeof confirm !== 'undefined' && !confirm('Delete this file?')) return;
-        var list = document.getElementById('jobViewModalExistingFiles');
-        var noFiles = document.getElementById('jobViewModalNoFiles');
-        item.remove();
-        if (list && list.children.length === 0 && noFiles) {
-            list.hidden = true;
-            noFiles.hidden = false;
+
+    (function deleteFileModal() {
+        var overlay = document.getElementById('jobViewDeleteFileModalOverlay');
+        var confirmBlock = document.getElementById('jobViewDeleteFileConfirm');
+        var countdownBlock = document.getElementById('jobViewDeleteFileCountdown');
+        var countdownNumber = document.getElementById('jobViewDeleteFileCountdownNumber');
+        var cancelBtn = document.getElementById('jobViewDeleteFileModalCancel');
+        var confirmBtn = document.getElementById('jobViewDeleteFileModalConfirm');
+        var btnTextEl = confirmBtn && confirmBtn.querySelector('.job-view-delete-btn-text');
+        var countdownTimer = null;
+        var pendingDelete = null;
+
+        function resetDeleteFileModal() {
+            if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+            if (confirmBlock) confirmBlock.hidden = false;
+            if (countdownBlock) countdownBlock.hidden = true;
+            if (confirmBtn) confirmBtn.disabled = false;
+            if (btnTextEl) btnTextEl.textContent = 'Delete';
         }
-    });
+        function closeDeleteFileModal() {
+            if (overlay) overlay.classList.remove('is-open');
+            overlay && overlay.setAttribute('aria-hidden', 'true');
+            pendingDelete = null;
+            resetDeleteFileModal();
+        }
+
+        document.addEventListener('click', function(e) {
+            var delBtn = e.target.closest('.job-view-file-btn-delete');
+            if (delBtn) {
+                e.preventDefault();
+                var section = delBtn.getAttribute('data-job-file-type');
+                var fileName = delBtn.getAttribute('data-job-file-name');
+                var listItem = delBtn.closest('.job-view-file-item');
+                if (!section || !fileName) return;
+                pendingDelete = { section: section, fileName: fileName, listItem: listItem };
+                resetDeleteFileModal();
+                if (overlay) { overlay.classList.add('is-open'); overlay.setAttribute('aria-hidden', 'false'); }
+                return;
+            }
+            var modalDelBtn = e.target.closest('[data-job-view-modal-delete-file]');
+            if (modalDelBtn) {
+                var item = modalDelBtn.closest('.job-view-modal-file-item');
+                if (!item) return;
+                item.remove();
+                var list = document.getElementById('jobViewModalExistingFiles');
+                var noFiles = document.getElementById('jobViewModalNoFiles');
+                if (list && list.children.length === 0 && noFiles) { list.hidden = true; noFiles.hidden = false; }
+            }
+        });
+
+        if (cancelBtn) cancelBtn.addEventListener('click', closeDeleteFileModal);
+        if (overlay) overlay.addEventListener('click', function(e) { if (e.target === overlay) closeDeleteFileModal(); });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('is-open')) closeDeleteFileModal();
+        });
+
+        if (confirmBtn && confirmBlock && countdownBlock && countdownNumber) {
+            confirmBtn.addEventListener('click', function() {
+                if (!pendingDelete || countdownTimer) return;
+                confirmBlock.hidden = true;
+                countdownBlock.hidden = false;
+                confirmBtn.disabled = true;
+                if (btnTextEl) btnTextEl.textContent = 'Deleting...';
+                var count = 3;
+                countdownNumber.textContent = count;
+                countdownNumber.style.animation = 'none';
+                countdownNumber.offsetHeight;
+                countdownNumber.style.animation = '';
+                countdownTimer = setInterval(function() {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(countdownTimer);
+                        countdownTimer = null;
+                        var section = pendingDelete.section;
+                        var fileName = pendingDelete.fileName;
+                        var listItem = pendingDelete.listItem;
+                        var body = JSON.stringify({ _token: csrfToken, section: section, file_name: fileName });
+                        fetch(deleteFileUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                            body: body
+                        }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: {} }; });                         }).then(function(result) {
+                            var msg = (result.data && result.data.message) || (result.ok ? 'File removed.' : 'Failed to remove file.');
+                            if (window.showSuccessToast) showSuccessToast(msg);
+                            if (result.ok) {
+                                if (listItem) listItem.remove();
+                                if (section === 'plans' && jobViewFilesData.planFiles) {
+                                    jobViewFilesData.planFiles = (jobViewFilesData.planFiles || []).filter(function(n) { return n !== fileName; });
+                                } else if (section === 'documents' && jobViewFilesData.docFiles) {
+                                    jobViewFilesData.docFiles = (jobViewFilesData.docFiles || []).filter(function(n) { return n !== fileName; });
+                                }
+                                var log = result.data && result.data.log;
+                                if (log) {
+                                    var list = document.querySelector('.job-view-activity');
+                                    if (list) {
+                                        if (list.children.length === 1 && list.children[0].querySelector('.job-view-activity-text')) list.innerHTML = '';
+                                        var li = document.createElement('li');
+                                        li.className = 'job-view-activity-item';
+                                        var initial = (log.updated_by || 'L').toString().charAt(0).toUpperCase();
+                                        var dateText = log.activity_date || '';
+                                        li.innerHTML = '<div class="job-view-activity-user"><span class="job-view-activity-avatar" aria-hidden="true">' + initial + '</span><span class="job-view-activity-name">' + (log.updated_by || 'LUNTIAN') + '</span></div><div class="job-view-activity-content"><span class="job-view-activity-time">' + dateText + '</span><p class="job-view-activity-label">' + (log.activity_type || 'Update') + '</p>' + (log.activity_description ? '<p class="job-view-activity-text">' + log.activity_description + '</p>' : '') + '</div>';
+                                        list.insertBefore(li, list.firstChild);
+                                    }
+                                }
+                            }
+                            closeDeleteFileModal();
+                        }).catch(function() {
+                            if (window.showSuccessToast) showSuccessToast('Failed to remove file.');
+                            closeDeleteFileModal();
+                        });
+                        return;
+                    }
+                    countdownNumber.textContent = count;
+                    countdownNumber.style.animation = 'none';
+                    countdownNumber.offsetHeight;
+                    countdownNumber.style.animation = '';
+                }, 1000);
+            });
+        }
+    })();
 
     function showInlineToast(message) {
         var existing = document.getElementById('jobViewInlineToast');
@@ -1043,11 +1489,7 @@
                 data: Object.assign({_token: csrfToken}, payload),
                 success: function (res) {
                     var msg = (res && res.message) || 'Job updated successfully.';
-                    if (window.toastr) {
-                        toastr.success(msg, 'Saved');
-                    } else {
-                        showInlineToast(msg);
-                    }
+                    if (window.showSuccessToast) showSuccessToast(msg);
 
                     // Realtime append of new activity logs (if any)
                     if (res && Array.isArray(res.logs) && res.logs.length > 0) {
@@ -1087,16 +1529,14 @@
 
                     setTimeout(function () {
                         window.location.reload();
-                    }, 450);
+                    }, 2000);
                 },
                 error: function (xhr) {
                     var msg = 'Failed to save changes. Please try again.';
                     if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }
-                    if (window.toastr) {
-                        toastr.error(msg, 'Error');
-                    }
+                    if (window.showSuccessToast) showSuccessToast(msg);
                 },
                 complete: function () {
                     saveBtn.disabled = false;

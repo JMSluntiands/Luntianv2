@@ -8,6 +8,7 @@ use App\Models\JobRequest;
 use App\Models\ActivityLog;
 use App\Models\Priority;
 use App\Models\Status;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,27 +58,148 @@ class LbsJobController extends Controller
             : null;
 
         // Dropdown data for editing
-        $priorities = Priority::orderBy('id')->get();
-        $statuses = Status::orderBy('name')->get();
-        $compliances = Compliance::orderBy('column')->get();
+        $priorities    = Priority::orderBy('id')->get();
+        $statuses      = Status::orderBy('name')->get();
+        $compliances   = Compliance::orderBy('column')->get();
         $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+        $jobRequests   = JobRequest::orderBy('job_request_type')->get();
 
-        $activityLogs = ActivityLog::where('job_id', $job->job_id)
+        $activityLogs = ActivityLog::where('job_id', (int) $job->job_id)
             ->orderByDesc('activity_date')
             ->limit(50)
             ->get();
 
+        $checkerUploads = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('uploaded_at')
+            ->get();
+
+        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
+            ->orderBy('unique_code')
+            ->get(['id', 'unique_code'])
+            ->unique('unique_code')
+            ->values();
+
+        $runComments = DB::table('run_comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('run_comment_id')
+            ->limit(50)
+            ->get();
+
+        $jobComments = DB::table('comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('comment_id')
+            ->limit(50)
+            ->get();
+
         return view('lbs.view', [
-            'sidebar_active' => 'lbs.list',
-            'jobId'          => $job->job_id,
-            'job'            => $job,
-            'priorityColor'  => $priorityColor,
-            'statusColor'    => $statusColor,
-            'priorities'     => $priorities,
-            'statuses'       => $statuses,
-            'compliances'    => $compliances,
-            'clientAccounts' => $clientAccounts,
-            'activityLogs'   => $activityLogs,
+            'sidebar_active'   => 'lbs.list',
+            'jobId'            => $job->job_id,
+            'job'              => $job,
+            'priorityColor'    => $priorityColor,
+            'statusColor'      => $statusColor,
+            'priorities'       => $priorities,
+            'statuses'         => $statuses,
+            'compliances'      => $compliances,
+            'clientAccounts'   => $clientAccounts,
+            'jobRequests'      => $jobRequests,
+            'activityLogs'     => $activityLogs,
+            'assignmentUsers'  => $assignmentUsers,
+            'checkerUploads'   => $checkerUploads,
+            'runComments'      => $runComments,
+            'jobComments'      => $jobComments,
+        ]);
+    }
+
+    public function addRunComment(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $data = $request->validate([
+            'message' => ['required', 'string'],
+        ]);
+
+        $now = now('Asia/Manila');
+        $createdAt = $now->format('M d, Y h:i A');
+        $name = session('user_name') ?? 'LUNTIAN';
+
+        // Handle environments where AUTO_INCREMENT might not be configured correctly
+        $nextId = (int) DB::table('run_comments')->max('run_comment_id') + 1;
+
+        DB::table('run_comments')->insert([
+            'run_comment_id' => $nextId,
+            'job_id'         => (int) $id,
+            'name'           => $name,
+            'message'        => $data['message'],
+            'created_at'     => $createdAt,
+        ]);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Run comment',
+            'activity_description' => $data['message'],
+            'updated_by'           => $name,
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Run comment added.',
+            'comment' => [
+                'run_comment_id' => $nextId,
+                'job_id'         => (int) $id,
+                'name'           => $name,
+                'message'        => $data['message'],
+                'created_at'     => $createdAt,
+            ],
+        ]);
+    }
+
+    public function addJobComment(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $data = $request->validate([
+            'message' => ['required', 'string'],
+        ]);
+
+        $now = now('Asia/Manila');
+        $createdAt = $now->format('M d, Y h:i A');
+        $name = session('user_name') ?? 'LUNTIAN';
+        $nextId = (int) DB::table('comments')->max('comment_id') + 1;
+
+        DB::table('comments')->insert([
+            'comment_id' => $nextId,
+            'job_id'     => (int) $id,
+            'username'   => $name,
+            'message'    => $data['message'],
+            'created_at' => $createdAt,
+        ]);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Comment',
+            'activity_description' => $data['message'],
+            'updated_by'           => $name,
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Comment added.',
+            'comment' => [
+                'comment_id' => $nextId,
+                'job_id'     => (int) $id,
+                'username'   => $name,
+                'message'    => $data['message'],
+                'created_at' => $createdAt,
+            ],
         ]);
     }
 
@@ -96,11 +218,14 @@ class LbsJobController extends Controller
             'job_address'       => ['nullable', 'string', 'max:1000'],
             'priority'          => ['nullable', 'string', 'max:255'],
             'job_type'          => ['nullable', 'string', 'max:255'],
-            'notes'             => ['nullable', 'string'],
+            'notes'             => ['nullable', 'string', 'max:65535'],
             'client_reference'  => ['nullable', 'string', 'max:255'],
             'job_reference_no'  => ['nullable', 'string', 'max:255'],
             'compliance'        => ['nullable', 'string', 'max:255'],
             'client_id'         => ['nullable', 'integer'],
+            'staff_id'          => ['nullable', 'string', 'max:50'],
+            'checker_id'        => ['nullable', 'string', 'max:50'],
+            'plan_complexity'   => ['nullable', 'integer', 'between:1,5'],
         ]);
 
         $update = [];
@@ -155,13 +280,23 @@ class LbsJobController extends Controller
             }
         }
         if (array_key_exists('notes', $data)) {
-            $new = $data['notes'];
-            if ($new !== $job->notes) {
+            $new = $data['notes'] ?? '';
+            $old = $job->notes ?? '';
+            if ((string) $new !== (string) $old) {
                 $update['notes'] = $new;
+                $oldPreview = trim(preg_replace('/\s+/', ' ', strip_tags($old ?? '')));
+                $newPreview = trim(preg_replace('/\s+/', ' ', strip_tags($new ?? '')));
+                $maxLen = 120;
+                if (mb_strlen($oldPreview) > $maxLen) {
+                    $oldPreview = mb_substr($oldPreview, 0, $maxLen) . '…';
+                }
+                if (mb_strlen($newPreview) > $maxLen) {
+                    $newPreview = mb_substr($newPreview, 0, $maxLen) . '…';
+                }
                 $changes[] = [
                     'field' => 'Notes',
-                    'old'   => null,
-                    'new'   => 'updated',
+                    'old'   => $oldPreview !== '' ? $oldPreview : '(empty)',
+                    'new'   => $newPreview !== '' ? $newPreview : '(empty)',
                 ];
             }
         }
@@ -217,6 +352,42 @@ class LbsJobController extends Controller
                 }
             }
         }
+        if (array_key_exists('staff_id', $data)) {
+            $new = $data['staff_id'] ? trim($data['staff_id']) : null;
+            $old = $job->staff_id ? trim($job->staff_id) : null;
+            if ((string) $new !== (string) $old) {
+                $update['staff_id'] = $new;
+                $changes[] = [
+                    'field' => 'Staff',
+                    'old'   => $old ?? '—',
+                    'new'   => $new ?? '—',
+                ];
+            }
+        }
+        if (array_key_exists('checker_id', $data)) {
+            $new = $data['checker_id'] ? trim($data['checker_id']) : null;
+            $old = $job->checker_id ? trim($job->checker_id) : null;
+            if ((string) $new !== (string) $old) {
+                $update['checker_id'] = $new;
+                $changes[] = [
+                    'field' => 'Checker',
+                    'old'   => $old ?? '—',
+                    'new'   => $new ?? '—',
+                ];
+            }
+        }
+        if (array_key_exists('plan_complexity', $data) && $data['plan_complexity'] !== null) {
+            $new = (int) $data['plan_complexity'];
+            $old = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
+            if ($new !== $old) {
+                $update['plan_complexity'] = $new;
+                $changes[] = [
+                    'field' => 'Complexity',
+                    'old'   => $old ?: 0,
+                    'new'   => $new,
+                ];
+            }
+        }
 
         if (empty($update)) {
             return response()->json([
@@ -237,11 +408,16 @@ class LbsJobController extends Controller
                 $lines[] = sprintf('%s: %s → %s', $change['field'], (string) $old, (string) $new);
             }
 
+            $description = implode("\n", $lines);
+            if ($description === '') {
+                $description = 'Details updated';
+            }
+
             $log = ActivityLog::create([
-                'job_id'               => $id,
+                'job_id'               => (int) $id,
                 'activity_date'        => $now->format('Y-m-d H:i:s'),
                 'activity_type'        => 'Job updated',
-                'activity_description' => implode("\n", $lines),
+                'activity_description' => $description,
                 'updated_by'           => session('user_name') ?? 'LBS Account',
             ]);
 
@@ -258,12 +434,212 @@ class LbsJobController extends Controller
         }
     }
 
+    public function uploadFiles(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $request->validate([
+            'section' => ['required', 'string', 'in:plans,documents'],
+            'files'   => ['required', 'array'],
+            'files.*' => ['file', 'max:51200'],
+        ]);
+
+        $section = $request->input('section');
+        $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
+        $current = $job->{$column};
+        $list = is_string($current) ? (json_decode($current, true) ?? []) : [];
+        if (!is_array($list)) {
+            $list = [];
+        }
+
+        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+        $uploadDir = public_path('document/' . $folderName);
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0775, true);
+        }
+
+        $uploaded = [];
+        foreach ($request->file('files', []) as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            $original = $file->getClientOriginalName() ?: $file->hashName();
+            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+            $file->move($uploadDir, $safeName);
+            $list[] = $safeName;
+            $uploaded[] = $safeName;
+        }
+
+        if (empty($uploaded)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No valid files to upload.',
+            ], 422);
+        }
+
+        DB::table('jobs')->where('job_id', $id)->update([$column => json_encode($list)]);
+
+        $sectionLabel = $section === 'plans' ? 'Plans' : 'Documents';
+        $description = $sectionLabel . ': ' . implode(', ', $uploaded);
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Files uploaded',
+            'activity_description' => $description,
+            'updated_by'           => session('user_name') ?? 'LBS Account',
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Files added successfully.',
+            'files'   => $list,
+        ]);
+    }
+
+    public function deleteFile(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $request->validate([
+            'section'   => ['required', 'string', 'in:plans,documents'],
+            'file_name' => ['required', 'string', 'max:500'],
+        ]);
+
+        $section = $request->input('section');
+        $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
+        $current = $job->{$column};
+        $list = is_string($current) ? (json_decode($current, true) ?? []) : [];
+        if (!is_array($list)) {
+            $list = [];
+        }
+
+        $fileName = $request->input('file_name');
+        $list = array_values(array_filter($list, function ($name) use ($fileName) {
+            return (string) $name !== (string) $fileName;
+        }));
+
+        DB::table('jobs')->where('job_id', $id)->update([$column => json_encode($list)]);
+
+        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+        $path = public_path('document/' . $folderName . '/' . $fileName);
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        $sectionLabel = $section === 'plans' ? 'Plans' : 'Documents';
+        $now = now('Asia/Manila');
+        $log = ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'File deleted',
+            'activity_description' => $sectionLabel . ': ' . $fileName,
+            'updated_by'           => session('user_name') ?? 'LBS Account',
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'File removed.',
+            'files'   => $list,
+            'log'     => [
+                'activity_date'        => $log->activity_date,
+                'activity_type'        => $log->activity_type,
+                'activity_description' => $log->activity_description,
+                'updated_by'           => $log->updated_by,
+            ],
+        ]);
+    }
+
+    public function uploadCheckerFiles(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $request->validate([
+            'files'   => ['required', 'array'],
+            'files.*' => ['file', 'max:51200'],
+            'notes'   => ['nullable', 'string'],
+        ]);
+
+        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+        $uploadDir = public_path('document/' . $folderName);
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0775, true);
+        }
+
+        $now = now('Asia/Manila');
+        $fileNames = [];
+        foreach ($request->file('files', []) as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            $original = $file->getClientOriginalName() ?: $file->hashName();
+            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+            $file->move($uploadDir, $safeName);
+            $fileNames[] = $safeName;
+        }
+
+        if (empty($fileNames)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No valid files to upload.',
+            ], 422);
+        }
+
+        $notesHtml = $request->input('notes') ?? '';
+
+        // Some environments may not have AUTO_INCREMENT correctly configured for file_id,
+        // so we compute the next ID manually to avoid SQL errors.
+        $nextId = (int) DB::table('staff_uploaded_files')->max('file_id') + 1;
+
+        DB::table('staff_uploaded_files')->insert([
+            'file_id'     => $nextId,
+            'job_id'      => (int) $id,
+            'files_json'  => json_encode($fileNames),
+            'comment'     => $notesHtml,
+            'uploaded_at' => $now->format('Y-m-d H:i:s'),
+            'uploaded_by' => session('user_name') ?? 'LUNTIAN',
+        ]);
+
+        $descriptionLines = [];
+        $descriptionLines[] = 'Checker upload files: ' . implode(', ', $fileNames);
+        if (trim(strip_tags($notesHtml)) !== '') {
+            $preview = trim(preg_replace('/\s+/', ' ', strip_tags($notesHtml)));
+            if (mb_strlen($preview) > 160) {
+                $preview = mb_substr($preview, 0, 160) . '…';
+            }
+            $descriptionLines[] = 'Notes: ' . $preview;
+        }
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Checker upload',
+            'activity_description' => implode("\n", $descriptionLines),
+            'updated_by'           => session('user_name') ?? 'LBS Account',
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Checker upload saved.',
+        ]);
+    }
+
     public function index()
     {
         $jobs = DB::table('jobs as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
             // Only show new LBS jobs created via this app (reference starting with "JOBS")
             ->where('j.reference', 'like', 'JOBS%')
+            // Exclude jobs that should only appear in dedicated views
+            ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation'])
             ->select(
                 'j.job_id',
                 'j.reference',
@@ -303,6 +679,100 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statusColors' => $statusColors,
+        ]);
+    }
+
+    public function review()
+    {
+        $jobs = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', 'For Review')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit(200)
+            ->get();
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statusColors = Status::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return view('lbs.review', [
+            'sidebar_active' => 'lbs.review',
+            'jobs'           => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors'   => $statusColors,
+        ]);
+    }
+
+    public function mailbox()
+    {
+        $jobs = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', 'For Email Confirmation')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit(200)
+            ->get();
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statusColors = Status::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return view('lbs.mailbox', [
+            'sidebar_active' => 'lbs.mailbox',
+            'jobs'           => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors'   => $statusColors,
         ]);
     }
 

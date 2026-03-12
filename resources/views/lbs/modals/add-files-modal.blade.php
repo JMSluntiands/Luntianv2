@@ -7,42 +7,7 @@
             <p class="job-view-modal-label">Adding files to <strong id="jobViewAddFilesModalSection">this section</strong>.</p>
             <div class="job-view-modal-existing" id="jobViewModalExistingWrap">
                 <h3 class="job-view-modal-existing-title">Existing files</h3>
-                <ul class="job-view-modal-files" id="jobViewModalExistingFiles">
-                    <li class="job-view-modal-file-item">
-                        <span class="job-view-modal-file-icon" aria-hidden="true">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
-                        </span>
-                        <span class="job-view-modal-file-name">172726_PLANS_LBS42376.pdf</span>
-                        <div class="job-view-modal-file-actions">
-                            <a href="#" class="job-view-modal-file-btn" title="Download" aria-label="Download">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            </a>
-                            <a href="#" class="job-view-modal-file-btn" title="View" aria-label="View">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </a>
-                            <button type="button" class="job-view-modal-file-btn job-view-modal-file-btn-danger" title="Delete" aria-label="Delete" data-job-view-modal-delete-file>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-                            </button>
-                        </div>
-                    </li>
-                    <li class="job-view-modal-file-item">
-                        <span class="job-view-modal-file-icon" aria-hidden="true">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg>
-                        </span>
-                        <span class="job-view-modal-file-name">Compliance_doc_LBS42376.pdf</span>
-                        <div class="job-view-modal-file-actions">
-                            <a href="#" class="job-view-modal-file-btn" title="Download" aria-label="Download">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            </a>
-                            <a href="#" class="job-view-modal-file-btn" title="View" aria-label="View">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </a>
-                            <button type="button" class="job-view-modal-file-btn job-view-modal-file-btn-danger" title="Delete" aria-label="Delete" data-job-view-modal-delete-file>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-                            </button>
-                        </div>
-                    </li>
-                </ul>
+                <ul class="job-view-modal-files" id="jobViewModalExistingFiles"></ul>
                 <p class="job-view-modal-no-files" id="jobViewModalNoFiles" hidden>No files in this section yet.</p>
             </div>
             <div class="job-view-modal-file-zone">

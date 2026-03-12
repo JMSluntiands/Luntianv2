@@ -37,7 +37,7 @@
                     <a href="{{ route('lbs.list') }}" class="nav-subitem {{ $active === 'lbs.list' ? 'active' : '' }}"><span class="nav-subitem-label">List</span><span class="nav-badge nav-badge-danger" data-lbs-sidebar="allocated">{{ $lbsListCount }}</span></a>
                     <a href="{{ route('lbs.completed') }}" class="nav-subitem {{ $active === 'lbs.completed' ? 'active' : '' }}">Completed</a>
                     <a href="{{ route('lbs.review') }}" class="nav-subitem {{ $active === 'lbs.review' ? 'active' : '' }}"><span class="nav-subitem-label">For Review</span><span class="nav-badge nav-badge-danger" data-lbs-sidebar="for-review">{{ $lbsReviewCount }}</span></a>
-                    <a href="#" class="nav-subitem"><span class="nav-subitem-label">Mailbox</span><span class="nav-badge nav-badge-danger">{{ $lbsMailboxCount }}</span></a>
+                    <a href="{{ route('lbs.mailbox') }}" class="nav-subitem {{ $active === 'lbs.mailbox' ? 'active' : '' }}"><span class="nav-subitem-label">Mailbox</span><span class="nav-badge nav-badge-danger">{{ $lbsMailboxCount }}</span></a>
                     <a href="{{ route('lbs.trash') }}" class="nav-subitem {{ $active === 'lbs.trash' ? 'active' : '' }}">Archive</a>
                 </div>
             </div>

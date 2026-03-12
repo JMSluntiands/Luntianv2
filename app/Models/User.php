@@ -25,6 +25,7 @@ class User extends Authenticatable
         'role',
         'branch',
         'task',
+        'status',
         'password',
         'profile_image',
     ];

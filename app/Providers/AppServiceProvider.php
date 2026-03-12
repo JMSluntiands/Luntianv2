@@ -35,13 +35,14 @@ class AppServiceProvider extends ServiceProvider
                     ->where('reference', 'like', 'JOBS%')
                     ->selectRaw("
                         SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count
+                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
                     ")
                     ->first();
 
                 $view->with('lbs_list_count', (int) ($counts->allocated_count ?? 0));
                 $view->with('lbs_review_count', (int) ($counts->review_count ?? 0));
-                $view->with('lbs_mailbox_count', 0);
+                $view->with('lbs_mailbox_count', (int) ($counts->mailbox_count ?? 0));
             });
         } catch (\Throwable) {
             // Fail silently; sidebar will use default fallback values

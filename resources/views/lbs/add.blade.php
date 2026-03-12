@@ -161,24 +161,24 @@
                         <label class="lbs-form-label" for="assigned_to">Assigned To</label>
                         <select id="assigned_to" name="assigned_to" class="lbs-form-select select2-single">
                             <option value="">Select user</option>
-                            <option value="gm" selected>GM</option>
-                            <option value="ajs">AJS</option>
-                            <option value="sb">SB</option>
-                            <option value="pep">PEP</option>
-                            <option value="jdr">JDR</option>
-                            <option value="js">JS</option>
+                            <option value="GM" selected>GM</option>
+                            @foreach($assignmentUsers ?? [] as $user)
+                                @if(strtoupper($user->unique_code ?? '') !== 'GM')
+                                    <option value="{{ $user->unique_code }}">{{ $user->unique_code }}</option>
+                                @endif
+                            @endforeach
                         </select>
                     </div>
                     <div class="lbs-form-group">
                         <label class="lbs-form-label" for="checked_by">Checked By</label>
                         <select id="checked_by" name="checked_by" class="lbs-form-select select2-single">
                             <option value="">Select user</option>
-                            <option value="gm" selected>GM</option>
-                            <option value="ajs">AJS</option>
-                            <option value="sb">SB</option>
-                            <option value="pep">PEP</option>
-                            <option value="jdr">JDR</option>
-                            <option value="js">JS</option>
+                            <option value="GM" selected>GM</option>
+                            @foreach($assignmentUsers ?? [] as $user)
+                                @if(strtoupper($user->unique_code ?? '') !== 'GM')
+                                    <option value="{{ $user->unique_code }}">{{ $user->unique_code }}</option>
+                                @endif
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -371,16 +371,12 @@
                     },
                     success: function(resp) {
                         if (resp.status === 'success') {
-                            if (window.toastr) {
-                                toastr.success(resp.message || 'Job saved.', 'Success');
-                            }
+                            if (window.showSuccessToast) showSuccessToast(resp.message || 'Job saved.');
                             formEl.reset();
                             $('#lbs-notes-body').empty();
                             showLbsAfterSavePrompt();
                         } else {
-                            if (window.toastr) {
-                                toastr.error(resp.message || 'Failed to save job.', 'Error');
-                            }
+                            if (window.showSuccessToast) showSuccessToast(resp.message || 'Failed to save job.');
                         }
                     },
                     error: function(xhr) {
@@ -388,9 +384,7 @@
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             msg = xhr.responseJSON.message;
                         }
-                        if (window.toastr) {
-                            toastr.error(msg, 'Error');
-                        }
+                        if (window.showSuccessToast) showSuccessToast(msg);
                     },
                     complete: function() {
                         $btn.prop('disabled', false)

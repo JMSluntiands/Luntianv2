@@ -7,14 +7,31 @@
             <span class="job-view-activity-avatar" aria-hidden="true">
                 {{ strtoupper(substr($log->updated_by ?? 'L', 0, 1)) }}
             </span>
-            <span class="job-view-activity-name">{{ $log->updated_by ?? 'LUNTIAN' }}</span>
+            <div class="job-view-activity-user-meta">
+                <span class="job-view-activity-name">{{ $log->updated_by ?? 'LUNTIAN' }}</span>
+                @php
+                    $status = strtolower($jobStatus ?? '');
+                    $label = in_array($status, ['accepted', 'processing'], true) ? 'For Checking' : '';
+                @endphp
+                @if($label !== '')
+                    <span class="job-view-activity-code">{{ $label }}</span>
+                @endif
+            </div>
         </div>
         <div class="job-view-activity-content">
             <span class="job-view-activity-time">{{ $date->format('M d, Y h:i A') }}</span>
             <p class="job-view-activity-label">{{ $log->activity_type ?? 'Update' }}</p>
-            @if(!empty($log->activity_description))
-                <p class="job-view-activity-text">{!! nl2br(e($log->activity_description)) !!}</p>
-            @endif
+            @php
+                $type = trim($log->activity_type ?? '');
+                $isRich = in_array($type, ['Run comment', 'Comment', 'Checker upload'], true);
+            @endphp
+            <p class="job-view-activity-text">
+                @if($isRich)
+                    {!! $log->activity_description !!}
+                @else
+                    {!! !empty(trim($log->activity_description ?? '')) ? nl2br(e($log->activity_description)) : '—' !!}
+                @endif
+            </p>
         </div>
     </li>
 @endforeach
