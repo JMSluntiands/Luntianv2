@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sun, Moon, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sun, Moon, Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 const THEME_KEY = 'theme';
 
@@ -9,6 +9,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'required' | 'failed'>('failed');
   const [isLoading, setIsLoading] = useState(false);
   const [toastExiting, setToastExiting] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
@@ -53,13 +54,21 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setErrorType('required');
+      setError('Please enter your username or email and password.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
     const formData = new FormData();
     formData.append('_token', token || '');
-    formData.append('login', email.trim());
+    formData.append('login', trimmedEmail);
     formData.append('password', password);
     formData.append('remember', rememberMe ? '1' : '0');
 
@@ -83,8 +92,10 @@ export default function Login() {
         }, 2200);
         return;
       }
+      setErrorType('failed');
       setError(data.message || 'Invalid username or password. Please try again.');
     } catch {
+      setErrorType('failed');
       setError('Invalid username or password. Please try again.');
     } finally {
       setIsLoading(false);
@@ -153,14 +164,54 @@ export default function Login() {
           <div
             role="alert"
             onClick={dismissToast}
-            className={`bg-white rounded-xl shadow-lg p-4 max-w-[280px] flex items-center gap-3 cursor-pointer hover:shadow-xl transition-shadow border border-red-100 text-left ${toastExiting ? 'animate-toast-out' : 'animate-toast-in'}`}
+            className={`
+              flex items-start gap-3 p-4 max-w-[300px] rounded-xl shadow-lg cursor-pointer
+              text-left border transition-all duration-200 hover:shadow-xl hover:scale-[1.02] active:scale-[0.99]
+              ${toastExiting ? 'animate-toast-out' : 'animate-toast-in'}
+              ${errorType === 'required'
+                ? isDark
+                  ? 'bg-amber-500/15 border-amber-400/30 text-amber-50'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
+                : isDark
+                  ? 'bg-red-500/15 border-red-400/30 text-red-50'
+                  : 'bg-red-50 border-red-200 text-red-900'
+              }
+            `}
           >
-            <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
-              <Mail className="w-4 h-4 text-red-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-800">Login failed</p>
-              <p className="text-sm text-slate-600 font-normal break-words mt-0.5">{error}</p>
+            <span
+              className={`
+                flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
+                ${errorType === 'required'
+                  ? isDark ? 'bg-amber-400/25 text-amber-400' : 'bg-amber-100 text-amber-600'
+                  : isDark ? 'bg-red-400/25 text-red-400' : 'bg-red-100 text-red-600'
+                }
+              `}
+            >
+              {errorType === 'required' ? (
+                <AlertTriangle className="w-5 h-5" aria-hidden />
+              ) : (
+                <XCircle className="w-5 h-5" aria-hidden />
+              )}
+            </span>
+            <div className="flex-1 min-w-0 pt-0.5">
+              <p
+                className={`font-semibold ${
+                  errorType === 'required'
+                    ? isDark ? 'text-amber-200' : 'text-amber-800'
+                    : isDark ? 'text-red-200' : 'text-red-800'
+                }`}
+              >
+                {errorType === 'required' ? 'Required fields' : 'Login failed'}
+              </p>
+              <p
+                className={`text-sm mt-1 break-words ${
+                  errorType === 'required'
+                    ? isDark ? 'text-amber-300/90' : 'text-amber-700'
+                    : isDark ? 'text-red-300/90' : 'text-red-700'
+                }`}
+              >
+                {error}
+              </p>
             </div>
           </div>
         )}
