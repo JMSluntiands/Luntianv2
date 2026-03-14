@@ -96,15 +96,15 @@
                         @elseif(in_array($currentStatusLower, ['accepted', 'processing', 'revised'], true))
                             {{-- From Accepted / Processing / Revised → can only move to For Checking --}}
                             <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
-                            @foreach($statuses ?? [] as $status)
-                                @php
-                                    $name = (string) ($status->name ?? '');
-                                    $nameLower = strtolower($name);
-                                @endphp
-                                @if($nameLower === 'for checking')
-                                    <option value="{{ $name }}">{{ $name }}</option>
-                                @endif
-                            @endforeach
+                            @php
+                                $forCheckingName = null;
+                                foreach ($statuses ?? [] as $s) {
+                                    if (strtolower(trim((string)($s->name ?? ''))) === 'for checking') { $forCheckingName = $s->name; break; }
+                                }
+                            @endphp
+                            @if($forCheckingName)
+                                <option value="{{ $forCheckingName }}">{{ $forCheckingName }}</option>
+                            @endif
                         @elseif($currentStatusLower === 'for checking')
                             {{-- From For Checking → can move to For Review or Revised --}}
                             <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>

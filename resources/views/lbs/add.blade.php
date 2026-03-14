@@ -13,26 +13,33 @@
 
         <form id="lbsAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data">
             @csrf
+            @php
+                $preRef = isset($duplicateJob) ? ($duplicateJob->reference_no ?? '') : 'JOBS0823-003';
+                $selCompliance = isset($duplicateJob) ? ($duplicateJob->compliance_id ?? null) : ($defaultComplianceId ?? null);
+                $selClient = isset($duplicateJob) ? ($duplicateJob->client_account_id ?? null) : ($defaultClientAccountId ?? null);
+                $selPriority = isset($duplicateJob) ? ($duplicateJob->priority_id ?? null) : ($defaultPriorityId ?? null);
+                $selJobRequest = isset($duplicateJob) ? ($duplicateJob->job_request_id ?? null) : ($defaultJobRequestId ?? null);
+            @endphp
             <div class="lbs-form-card">
                 <div class="lbs-form-card-header">
                     <h2 class="lbs-form-section-title">Client Details</h2>
-                    <span class="lbs-form-ref" id="jobReferenceContent">JOBS0823-003</span>
+                    <span class="lbs-form-ref" id="jobReferenceContent">{{ $preRef ?: 'JOBS0823-003' }}</span>
                 </div>
                 <div class="lbs-form-grid">
                     <div class="lbs-form-group">
                         <label class="lbs-form-label" for="reference_no">Reference No.</label>
-                        <input type="text" id="reference_no" name="reference_no" class="lbs-form-input" placeholder="Enter Reference Number" autocomplete="off">
+                        <input type="text" id="reference_no" name="reference_no" class="lbs-form-input {{ isset($duplicateJob) ? 'lbs-form-input-readonly' : '' }}" placeholder="Enter Reference Number" autocomplete="off" value="{{ isset($duplicateJob) ? e($duplicateJob->reference_no ?? '') : '' }}" {{ isset($duplicateJob) ? 'readonly' : '' }}>
                     </div>
                     <div class="lbs-form-group">
                         <label class="lbs-form-label" for="client_reference">Client Reference</label>
-                        <input type="text" id="client_reference" name="client_reference" class="lbs-form-input" placeholder="Enter Client Reference" autocomplete="off">
+                        <input type="text" id="client_reference" name="client_reference" class="lbs-form-input {{ isset($duplicateJob) ? 'lbs-form-input-readonly' : '' }}" placeholder="Enter Client Reference" autocomplete="off" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" {{ isset($duplicateJob) ? 'readonly' : '' }}>
                     </div>
                     <div class="lbs-form-group">
                         <label class="lbs-form-label" for="compliance">Compliance</label>
                         <select id="compliance" name="compliance" class="lbs-form-select select2-single" autocomplete="off">
                             <option value="">Select compliance</option>
                             @foreach($compliances ?? [] as $c)
-                                <option value="{{ $c->id }}" {{ (isset($defaultComplianceId) && (int) $defaultComplianceId === (int) $c->id) ? 'selected' : '' }}>
+                                <option value="{{ $c->id }}" {{ $selCompliance !== null && (int) $selCompliance === (int) $c->id ? 'selected' : '' }}>
                                     {{ $c->column ?? '' }}
                                 </option>
                             @endforeach
@@ -43,7 +50,7 @@
                         <select id="client" name="client" class="lbs-form-select select2-single" autocomplete="off">
                             <option value="">Select client</option>
                             @foreach($clientAccounts ?? [] as $client)
-                                <option value="{{ $client->client_account_id }}" {{ (isset($defaultClientAccountId) && (int) $defaultClientAccountId === (int) $client->client_account_id) ? 'selected' : '' }}>
+                                <option value="{{ $client->client_account_id }}" {{ $selClient !== null && (int) $selClient === (int) $client->client_account_id ? 'selected' : '' }}>
                                     {{ $client->client_account_name ?? '' }}
                                 </option>
                             @endforeach
@@ -57,7 +64,7 @@
                 <div class="lbs-form-grid">
                     <div class="lbs-form-group full-width">
                         <label class="lbs-form-label" for="job_address">Job Address</label>
-                        <input type="text" id="job_address" name="job_address" class="lbs-form-input" placeholder="Complete Address" autocomplete="off">
+                        <input type="text" id="job_address" name="job_address" class="lbs-form-input" placeholder="Complete Address" autocomplete="off" value="{{ isset($duplicateJob) ? e($duplicateJob->job_address ?? '') : '' }}">
                     </div>
                     <div class="lbs-form-row-three">
                         <div class="lbs-form-group">
@@ -65,7 +72,7 @@
                             <select id="priority" name="priority" class="lbs-form-select select2-single" autocomplete="off">
                                 <option value="">Select priority</option>
                                 @foreach($priorities ?? [] as $priority)
-                                    <option value="{{ $priority->id }}" {{ (isset($defaultPriorityId) && (int) $defaultPriorityId === (int) $priority->id) ? 'selected' : '' }}>
+                                    <option value="{{ $priority->id }}" {{ $selPriority !== null && (int) $selPriority === (int) $priority->id ? 'selected' : '' }}>
                                         {{ $priority->name ?? '' }}
                                     </option>
                                 @endforeach
@@ -76,7 +83,7 @@
                             <select id="job_type" name="job_type" class="lbs-form-select select2-single" autocomplete="off">
                                 <option value="">Select job type</option>
                                 @foreach($jobRequests ?? [] as $jobRequest)
-                                    <option value="{{ $jobRequest->id }}" {{ (isset($defaultJobRequestId) && (int) $defaultJobRequestId === (int) $jobRequest->id) ? 'selected' : '' }}>
+                                    <option value="{{ $jobRequest->id }}" {{ $selJobRequest !== null && (int) $selJobRequest === (int) $jobRequest->id ? 'selected' : '' }}>
                                         {{ $jobRequest->job_request_type ?? '' }}
                                     </option>
                                 @endforeach
@@ -154,6 +161,10 @@
                 </div>
             </div>
 
+            @php
+                $selAssigned = isset($duplicateJob) ? ($duplicateJob->staff_id ?? 'GM') : 'GM';
+                $selChecked = isset($duplicateJob) ? ($duplicateJob->checker_id ?? 'GM') : 'GM';
+            @endphp
             <div class="lbs-form-card">
                 <h2 class="lbs-form-section-title">Assignment</h2>
                 <div class="lbs-form-grid">
@@ -161,10 +172,10 @@
                         <label class="lbs-form-label" for="assigned_to">Assigned To</label>
                         <select id="assigned_to" name="assigned_to" class="lbs-form-select select2-single">
                             <option value="">Select user</option>
-                            <option value="GM" selected>GM</option>
+                            <option value="GM" {{ strtoupper($selAssigned ?? '') === 'GM' ? 'selected' : '' }}>GM</option>
                             @foreach($assignmentUsers ?? [] as $user)
                                 @if(strtoupper($user->unique_code ?? '') !== 'GM')
-                                    <option value="{{ $user->unique_code }}">{{ $user->unique_code }}</option>
+                                    <option value="{{ $user->unique_code }}" {{ strtoupper($user->unique_code ?? '') === strtoupper($selAssigned ?? '') ? 'selected' : '' }}>{{ $user->unique_code }}</option>
                                 @endif
                             @endforeach
                         </select>
@@ -173,10 +184,10 @@
                         <label class="lbs-form-label" for="checked_by">Checked By</label>
                         <select id="checked_by" name="checked_by" class="lbs-form-select select2-single">
                             <option value="">Select user</option>
-                            <option value="GM" selected>GM</option>
+                            <option value="GM" {{ strtoupper($selChecked ?? '') === 'GM' ? 'selected' : '' }}>GM</option>
                             @foreach($assignmentUsers ?? [] as $user)
                                 @if(strtoupper($user->unique_code ?? '') !== 'GM')
-                                    <option value="{{ $user->unique_code }}">{{ $user->unique_code }}</option>
+                                    <option value="{{ $user->unique_code }}" {{ strtoupper($user->unique_code ?? '') === strtoupper($selChecked ?? '') ? 'selected' : '' }}>{{ $user->unique_code }}</option>
                                 @endif
                             @endforeach
                         </select>
@@ -213,6 +224,7 @@
         .lbs-form-input, .lbs-form-select { width: 100%; padding: 0.625rem 0.875rem; font-size: 0.9375rem; line-height: 1.4; border: 1px solid #334155; border-radius: 10px; background: #1e293b; color: #e2e8f0; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; min-height: 2.75rem; }
         .lbs-form-input::placeholder { color: #64748b; }
         .lbs-form-input:focus, .lbs-form-select:focus { outline: none; border-color: #2C528B; box-shadow: 0 0 0 3px rgba(44,82,139,0.25); }
+        .lbs-form-input-readonly { cursor: not-allowed; opacity: 0.85; }
         .lbs-notes-editor { border: 1px solid #334155; border-radius: 10px; background: #1e293b; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
         .lbs-notes-editor:focus-within { outline: none; border-color: #2C528B; box-shadow: 0 0 0 3px rgba(44,82,139,0.25); }
         .lbs-notes-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 10px; border-bottom: 1px solid #334155; background: #1e293b; }
@@ -320,6 +332,16 @@
             notesBody.addEventListener('mouseup', updateNotesActiveState);
 
             $('.select2-single').select2({ width: '100%', allowClear: false });
+
+            @if(isset($duplicateJob) && ($duplicateJob->notes ?? '') !== '')
+                (function() {
+                    var notesHtml = {!! json_encode($duplicateJob->notes ?? '') !!};
+                    var notesEl = document.getElementById('lbs-notes-body');
+                    var notesHidden = document.getElementById('notes');
+                    if (notesEl) notesEl.innerHTML = notesHtml;
+                    if (notesHidden) notesHidden.value = notesHtml;
+                })();
+            @endif
 
             var $btn = $('#submitLBSBtn');
             var originalBtnHtml = $btn.html();

@@ -55,6 +55,26 @@
             $isAllocated = $lowerStatus === 'allocated';
             $statusBg = $statusColor ?? null;
             $priorityBg = $priorityColor ?? null;
+            // Same flow as Edit Job Details modal: Allocated→Accepted/Processing; Accepted/Processing/Revised→For Checking; For Checking→For Review/Revised
+            $canEditStatusInline = in_array($lowerStatus, ['allocated', 'accepted', 'processing', 'revised', 'for checking'], true);
+            $inlineStatusOptions = [];
+            if ($lowerStatus === 'allocated') {
+                foreach ($statuses ?? [] as $s) {
+                    $n = strtolower((string)($s->name ?? ''));
+                    if (in_array($n, ['accepted', 'processing'], true)) $inlineStatusOptions[] = $s->name;
+                }
+            } elseif (in_array($lowerStatus, ['accepted', 'processing', 'revised'], true)) {
+                foreach ($statuses ?? [] as $s) {
+                    if (strtolower((string)($s->name ?? '')) === 'for checking') $inlineStatusOptions[] = $s->name;
+                }
+            } elseif ($lowerStatus === 'for checking') {
+                foreach ($statuses ?? [] as $s) {
+                    $n = strtolower((string)($s->name ?? ''));
+                    if (in_array($n, ['for review', 'revised'], true)) $inlineStatusOptions[] = $s->name;
+                }
+            } else {
+                foreach ($statuses ?? [] as $s) { $inlineStatusOptions[] = $s->name; }
+            }
         @endphp
 
         <div class="job-view-grid">
@@ -102,20 +122,27 @@
                     <div class="job-view-dl-row">
                         <dt>Job Status</dt>
                         <dd>
-                            @if($isAllocated)
-                                <button type="button"
-                                        class="job-view-badge job-view-status-btn"
-                                        @if($statusBg)
-                                            style="background-color: {{ $statusBg }};"
-                                        @endif
-                                        data-job-view-edit
-                                        data-edit-title="Job Status"
-                                        data-edit-target="job">
-                                    {{ $job->job_status ?? '—' }}
-                                </button>
+                            @if($canEditStatusInline && count($inlineStatusOptions) > 0)
+                                <div class="lbs-status-wrap job-view-inline-status" data-status-wrap>
+                                    <button type="button"
+                                            class="lbs-badge lbs-status-trigger"
+                                            @if($statusBg)
+                                                style="background-color: {{ $statusBg }};"
+                                            @endif
+                                            data-status-trigger
+                                            aria-haspopup="true"
+                                            aria-expanded="false">
+                                        {{ $job->job_status ?? '—' }}
+                                    </button>
+                                    <div class="lbs-status-menu" role="menu" hidden>
+                                        @foreach($inlineStatusOptions as $opt)
+                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="{{ $opt }}">{{ $opt }}</button>
+                                        @endforeach
+                                    </div>
+                                </div>
                             @else
                                 <span
-                                    class="job-view-badge job-view-status-badge-disabled"
+                                    class="lbs-badge job-view-status-badge-disabled"
                                     @if($statusBg)
                                         style="background-color: {{ $statusBg }};"
                                     @endif
@@ -166,30 +193,40 @@
                     <dl class="job-view-dl job-view-dl-compact job-view-dl-assigned">
                         <div class="job-view-dl-row">
                             <dt>Staff</dt>
-                            <dd class="job-view-assigned-wrap">
-                                <button type="button" class="job-view-assigned-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Change staff" data-assigned-trigger>
-                                    <span class="job-view-assigned-value">{{ $job->staff_id ? strtoupper($job->staff_id) : '—' }}</span>
-                                    <svg class="job-view-assigned-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                                </button>
-                                <ul class="job-view-assigned-dropdown" role="listbox" id="staff-listbox" hidden>
-                                    @foreach($assignmentUsers ?? [] as $user)
-                                        <li role="option" data-value="{{ $user->unique_code }}">{{ $user->unique_code }}</li>
-                                    @endforeach
-                                </ul>
+                            <dd>
+                                <div class="lbs-initials-wrap" data-initials-wrap data-role="staff">
+                                    <button type="button" class="lbs-initials lbs-initials-trigger" data-initials-trigger aria-haspopup="true" aria-expanded="false" aria-label="Change staff">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</button>
+                                    <div class="lbs-initials-menu" role="menu" hidden>
+                                        @forelse($assignmentUsers ?? [] as $user)
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="{{ $user->unique_code }}">{{ $user->unique_code }}</button>
+                                        @empty
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="SB">SB</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="GM">GM</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="PEP">PEP</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="JDR">JDR</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="JS">JS</button>
+                                        @endforelse
+                                    </div>
+                                </div>
                             </dd>
                         </div>
                         <div class="job-view-dl-row">
                             <dt>Checker</dt>
-                            <dd class="job-view-assigned-wrap">
-                                <button type="button" class="job-view-assigned-select" aria-haspopup="listbox" aria-expanded="false" aria-label="Change checker" data-assigned-trigger>
-                                    <span class="job-view-assigned-value">{{ $job->checker_id ? strtoupper($job->checker_id) : '—' }}</span>
-                                    <svg class="job-view-assigned-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                                </button>
-                                <ul class="job-view-assigned-dropdown" role="listbox" id="checker-listbox" hidden>
-                                    @foreach($assignmentUsers ?? [] as $user)
-                                        <li role="option" data-value="{{ $user->unique_code }}">{{ $user->unique_code }}</li>
-                                    @endforeach
-                                </ul>
+                            <dd>
+                                <div class="lbs-initials-wrap" data-initials-wrap data-role="checker">
+                                    <button type="button" class="lbs-initials lbs-initials-trigger" data-initials-trigger aria-haspopup="true" aria-expanded="false" aria-label="Change checker">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</button>
+                                    <div class="lbs-initials-menu" role="menu" hidden>
+                                        @forelse($assignmentUsers ?? [] as $user)
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="{{ $user->unique_code }}">{{ $user->unique_code }}</button>
+                                        @empty
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="SB">SB</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="GM">GM</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="PEP">PEP</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="JDR">JDR</button>
+                                            <button type="button" role="menuitem" class="lbs-initials-option" data-value="JS">JS</button>
+                                        @endforelse
+                                    </div>
+                                </div>
                             </dd>
                         </div>
                     </dl>
@@ -235,7 +272,7 @@
                         @foreach($planFiles as $file)
                             @php
                                 $fileName = (string) $file;
-                                $fileUrl = asset('document/' . $folderName . '/' . $fileName);
+                                $fileUrl = route('lbs.job.file', ['id' => $jobId, 'file' => $fileName]);
                             @endphp
                             <li class="job-view-file-item">
                                 <div class="job-view-file-main">
@@ -297,7 +334,7 @@
                         @foreach($docFiles as $file)
                             @php
                                 $fileName = (string) $file;
-                                $fileUrl = asset('document/' . $folderName . '/' . $fileName);
+                                $fileUrl = route('lbs.job.file', ['id' => $jobId, 'file' => $fileName]);
                             @endphp
                             <li class="job-view-file-item">
                                 <div class="job-view-file-main">
@@ -354,7 +391,7 @@
                                 @foreach($files as $fileName)
                                     @php
                                         $fileName = (string) $fileName;
-                                        $fileUrl = isset($folderName) && $folderName ? asset('document/' . $folderName . '/' . $fileName) : '#';
+                                        $fileUrl = isset($folderName) && $folderName ? route('lbs.job.file', ['id' => $jobId, 'file' => $fileName]) : '#';
                                     @endphp
                                     <div class="job-view-file-item">
                                         <span class="job-view-file-icon" aria-hidden="true">
@@ -483,6 +520,7 @@
                             @include('lbs.partials.activity-log-items', [
                                 'activityLogs' => $activityLogs,
                                 'jobStatus'    => $job->job_status ?? null,
+                                'userRoleMap'  => $userRoleMap ?? [],
                             ])
                         @endif
                     </ul>
@@ -518,6 +556,7 @@
 
 @push('styles')
     @include('lbs.modals.styles')
+    <link rel="stylesheet" href="{{ asset('css/lbs-list.css') }}">
     <style>
         @keyframes jobViewFadeInUp {
             from { opacity: 0; transform: translateY(16px); }
@@ -858,9 +897,9 @@
     var jobCommentUrl = '{{ route('lbs.job.comment', ['id' => $jobId]) }}';
     var jobViewFilesData = {
         planFiles: @json($planFiles ?? []),
-        docFiles: @json($docFiles ?? []),
-        documentFolderUrl: @json(asset('document/'.$folderName))
+        docFiles: @json($docFiles ?? [])
     };
+    var jobViewFileUrlTemplate = @json(route('lbs.job.file', ['id' => $jobId, 'file' => '__FILE__']));
     var currentAddFilesSection = null;
     var currentAddFilesMode = null; // 'plans' | 'documents' | 'checker'
     var editOverlay = document.getElementById('jobViewEditModalOverlay');
@@ -924,13 +963,12 @@
             if (existingList && noFilesEl) {
                 existingList.innerHTML = '';
                 var files = currentAddFilesSection === 'plans' ? (jobViewFilesData.planFiles || []) : (currentAddFilesSection === 'documents' ? (jobViewFilesData.docFiles || []) : []);
-                var baseUrl = jobViewFilesData.documentFolderUrl || '';
                 if (files.length === 0) {
                     noFilesEl.hidden = false;
                 } else {
                     noFilesEl.hidden = true;
                     files.forEach(function(fileName) {
-                        var url = baseUrl + '/' + encodeURIComponent(fileName);
+                        var url = jobViewFileUrlTemplate.replace('__FILE__', encodeURIComponent(fileName));
                         var li = document.createElement('li');
                         li.className = 'job-view-modal-file-item';
                         li.innerHTML = '<span class="job-view-modal-file-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg></span>' +
@@ -1250,70 +1288,105 @@
     document.querySelectorAll('.job-view-comment-body, .job-view-modal-notes-body').forEach(function(body) {
         body.addEventListener('paste', function(e) { e.preventDefault(); var t = e.clipboardData.getData('text/plain'); document.execCommand('insertText', false, t); });
     });
-    function closeAllAssignedDropdowns() {
-        document.querySelectorAll('.job-view-assigned-dropdown').forEach(function(list) { list.hidden = true; });
-        document.querySelectorAll('[data-assigned-trigger]').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
-        document.querySelectorAll('.job-view-assigned-card-open').forEach(function(card) { card.classList.remove('job-view-assigned-card-open'); });
-        var notesSide = document.querySelector('.job-view-notes-side');
-        if (notesSide) notesSide.classList.remove('job-view-assigned-dropdown-open');
+    function closeAllLbsMenus() {
+        document.querySelectorAll('.lbs-status-menu').forEach(function(m) { m.hidden = true; });
+        document.querySelectorAll('.lbs-initials-menu').forEach(function(m) { m.hidden = true; });
+        document.querySelectorAll('[data-status-trigger]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
+        document.querySelectorAll('[data-initials-trigger]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
     }
-    document.querySelectorAll('[data-assigned-trigger]').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
+    document.querySelectorAll('[data-initials-wrap]').forEach(function(wrap) {
+        var trigger = wrap.querySelector('[data-initials-trigger]');
+        var menu = wrap.querySelector('.lbs-initials-menu');
+        var role = wrap.getAttribute('data-role');
+        if (!trigger || !menu) return;
+        trigger.addEventListener('click', function(e) {
             e.stopPropagation();
-            var wrap = this.closest('.job-view-assigned-wrap');
-            var list = wrap && wrap.querySelector('.job-view-assigned-dropdown');
-            var isOpen = list && !list.hidden;
-            closeAllAssignedDropdowns();
-            if (list && !isOpen) {
-                list.hidden = false;
-                this.setAttribute('aria-expanded', 'true');
-                var card = this.closest('.job-view-card');
-                if (card) card.classList.add('job-view-assigned-card-open');
-                var notesSide = this.closest('.job-view-notes-side');
-                if (notesSide) notesSide.classList.add('job-view-assigned-dropdown-open');
+            if (!menu.hidden) {
+                menu.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+                return;
             }
+            closeAllLbsMenus();
+            var rect = this.getBoundingClientRect();
+            menu.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;min-width:' + Math.max(rect.width, 70) + 'px;';
+            menu.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
         });
-    });
-    document.querySelectorAll('.job-view-assigned-dropdown li').forEach(function(option) {
-        option.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var wrap = this.closest('.job-view-assigned-wrap');
-            var valueEl = wrap && wrap.querySelector('.job-view-assigned-value');
-            var list = wrap && wrap.querySelector('.job-view-assigned-dropdown');
-            var val = this.getAttribute('data-value');
-            if (!val) return;
-            if (valueEl) valueEl.textContent = val;
-            if (list) list.hidden = true;
-            var btn = wrap && wrap.querySelector('[data-assigned-trigger]');
-            if (btn) btn.setAttribute('aria-expanded', 'false');
-            var card = wrap && wrap.closest('.job-view-card');
-            if (card) card.classList.remove('job-view-assigned-card-open');
-            var notesSide = wrap && wrap.closest('.job-view-notes-side');
-            if (notesSide) notesSide.classList.remove('job-view-assigned-dropdown-open');
-
-            var isStaff = list && list.id === 'staff-listbox';
-            var formData = new URLSearchParams();
-            formData.append('_token', csrfToken);
-            if (isStaff) formData.append('staff_id', val); else formData.append('checker_id', val);
-
-            fetch(updateUrl, {
-                method: 'PUT',
-                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString()
-            }).then(function(r) {
-                return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() {
-                    return { ok: r.ok, data: { message: r.ok ? 'Updated.' : 'Failed to update.' } };
+        menu.querySelectorAll('.lbs-initials-option').forEach(function(opt) {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var val = this.getAttribute('data-value');
+                if (!val) return;
+                trigger.textContent = val;
+                menu.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+                var formData = new URLSearchParams();
+                formData.append('_token', csrfToken);
+                if (role === 'staff') formData.append('staff_id', val); else formData.append('checker_id', val);
+                fetch(updateUrl, {
+                    method: 'PUT',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                }).then(function(r) {
+                    return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: {} }; });
+                }).then(function(result) {
+                    var msg = (result.data && result.data.message) || (result.ok ? 'Staff/Checker updated successfully.' : 'Something went wrong.');
+                    if (window.showSuccessToast) showSuccessToast(msg);
+                    if (result.ok) setTimeout(function() { window.location.reload(); }, 2500);
+                }).catch(function() {
+                    if (window.showSuccessToast) showSuccessToast('Failed to update.');
                 });
-            }).then(function(result) {
-                var msg = (result.data && result.data.message) || (result.ok ? 'Staff/Checker updated successfully.' : 'Something went wrong.');
-                if (window.showSuccessToast) showSuccessToast(msg);
-                if (result.ok) setTimeout(function() { window.location.reload(); }, 2500);
-            }).catch(function() {
-                if (window.showSuccessToast) showSuccessToast('Failed to update.');
             });
         });
     });
-    document.addEventListener('click', closeAllAssignedDropdowns);
+    document.querySelectorAll('[data-status-wrap]').forEach(function(wrap) {
+        var trigger = wrap.querySelector('[data-status-trigger]');
+        var menu = wrap.querySelector('.lbs-status-menu');
+        if (!trigger || !menu) return;
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!menu.hidden) {
+                menu.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+                return;
+            }
+            closeAllLbsMenus();
+            var rect = this.getBoundingClientRect();
+            menu.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;min-width:' + Math.max(rect.width, 90) + 'px;';
+            menu.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
+        });
+        menu.querySelectorAll('.lbs-status-option').forEach(function(opt) {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var val = this.getAttribute('data-status-value');
+                if (!val) return;
+                var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
+                ['lbs-badge-pending', 'lbs-badge-accepted', 'lbs-badge-allocated', 'lbs-badge-awaiting-further-information', 'lbs-badge-completed', 'lbs-badge-for-email-confirmation', 'lbs-badge-processing', 'lbs-badge-for-checking', 'lbs-badge-for-review', 'lbs-badge-revised'].forEach(function(c) { trigger.classList.remove(c); });
+                trigger.classList.add(badgeClass);
+                trigger.textContent = val;
+                menu.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+                var formData = new URLSearchParams();
+                formData.append('_token', csrfToken);
+                formData.append('job_status', val);
+                fetch(updateUrl, {
+                    method: 'PUT',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                }).then(function(r) {
+                    return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: {} }; });
+                }).then(function(result) {
+                    var msg = (result.data && result.data.message) || (result.ok ? 'Status updated successfully.' : 'Something went wrong.');
+                    if (window.showSuccessToast) showSuccessToast(msg);
+                    if (result.ok) setTimeout(function() { window.location.reload(); }, 2500);
+                }).catch(function() {
+                    if (window.showSuccessToast) showSuccessToast('Failed to update status.');
+                });
+            });
+        });
+    });
+    document.addEventListener('click', closeAllLbsMenus);
 
     (function deleteFileModal() {
         var overlay = document.getElementById('jobViewDeleteFileModalOverlay');

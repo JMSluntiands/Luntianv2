@@ -12,6 +12,7 @@ use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\LbsJobController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\AccountSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,58 +30,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth.session')->group(function () {
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dashboard/lbs/add', function () {
-        $compliances = \App\Models\Compliance::orderBy('column')->get();
-        $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos($c->column, '2022') !== false)
-            ?? $compliances->first(fn ($c) => $c->column && stripos($c->column, 'WOH') !== false)
-            ?? $compliances->first();
-
-        $clientAccounts = \App\Models\ClientAccount::orderBy('client_account_name')->get();
-        $defaultClient = \App\Models\ClientAccount::where('client_account_name', 'like', '%Summit Homes Group%')->first()
-            ?? \App\Models\ClientAccount::where('client_account_name', 'like', '%Summit%')
-                ->where('client_account_name', 'like', '%Homes%')
-                ->first()
-            ?? \App\Models\ClientAccount::where('client_account_name', 'like', '%Summit%')->first();
-        if ($defaultClient) {
-            $clientAccounts = $clientAccounts
-                ->reject(fn ($c) => (int) $c->client_account_id === (int) $defaultClient->client_account_id)
-                ->prepend($defaultClient)
-                ->values();
-        }
-
-        $priorities = \App\Models\Priority::orderBy('id')->get();
-        $defaultPriority = \App\Models\Priority::where('name', 'like', '%Top (COB)%')->first()
-            ?? $priorities->first();
-
-        $jobRequests = \App\Models\JobRequest::orderBy('job_request_type')->get();
-        $defaultJobRequest = \App\Models\JobRequest::where('job_request_type', 'like', '%1S DB Base Model- 1S Design Builder Model%')->first()
-            ?? $jobRequests->first();
-
-        $assignmentUsers = \App\Models\User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
-
-        return view('lbs.add', [
-            'sidebar_active' => 'lbs.add',
-            'compliances' => $compliances,
-            'defaultComplianceId' => $defaultCompliance?->id,
-            'clientAccounts' => $clientAccounts,
-            'defaultClientAccountId' => $defaultClient?->client_account_id,
-            'priorities' => $priorities,
-            'defaultPriorityId' => $defaultPriority?->id,
-            'jobRequests' => $jobRequests,
-            'defaultJobRequestId' => $defaultJobRequest?->id,
-            'assignmentUsers' => $assignmentUsers,
-        ]);
-    })->name('lbs.add');
+    Route::get('/dashboard/lbs/add', [LbsJobController::class, 'addForm'])->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
     Route::get('/dashboard/lbs/list', [LbsJobController::class, 'index'])->name('lbs.list');
     Route::get('/dashboard/lbs/job/{id}', [LbsJobController::class, 'show'])->name('lbs.job.view');
     Route::put('/dashboard/lbs/job/{id}', [LbsJobController::class, 'update'])->name('lbs.job.update');
     Route::post('/dashboard/lbs/job/{id}/files', [LbsJobController::class, 'uploadFiles'])->name('lbs.job.uploadFiles');
     Route::post('/dashboard/lbs/job/{id}/file/delete', [LbsJobController::class, 'deleteFile'])->name('lbs.job.deleteFile');
+    Route::get('/dashboard/lbs/job/{id}/file/{file}', [LbsJobController::class, 'downloadFile'])->name('lbs.job.file');
     Route::post('/dashboard/lbs/job/{id}/checker-uploads', [LbsJobController::class, 'uploadCheckerFiles'])->name('lbs.job.checkerUploads');
     Route::post('/dashboard/lbs/job/{id}/run-comment', [LbsJobController::class, 'addRunComment'])->name('lbs.job.runComment');
     Route::post('/dashboard/lbs/job/{id}/comment', [LbsJobController::class, 'addJobComment'])->name('lbs.job.comment');
@@ -218,4 +175,9 @@ Route::middleware('auth.session')->group(function () {
 
     Route::get('/dashboard/accounts/users/archive', [UserAccountController::class, 'archive'])->name('users.archive');
     Route::post('/dashboard/accounts/users/{user}/restore', [UserAccountController::class, 'restore'])->name('users.restore');
+
+    // My account settings (per logged-in user)
+    Route::get('/dashboard/account/settings', [AccountSettingsController::class, 'edit'])->name('account.settings.edit');
+    Route::post('/dashboard/account/settings', [AccountSettingsController::class, 'update'])->name('account.settings.update');
+    Route::get('/dashboard/account/profile-image', [AccountSettingsController::class, 'profileImage'])->name('account.settings.image');
 });

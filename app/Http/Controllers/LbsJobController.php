@@ -11,6 +11,7 @@ use App\Models\Status;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class LbsJobController extends Controller
 {
@@ -69,6 +70,23 @@ class LbsJobController extends Controller
             ->limit(50)
             ->get();
 
+        $userRoleMap = [];
+        $updatedByNames = $activityLogs->pluck('updated_by')->unique()->filter();
+        if ($updatedByNames->isNotEmpty()) {
+            $users = User::whereIn('fullname', $updatedByNames)
+                ->orWhereIn('unique_code', $updatedByNames)
+                ->get(['fullname', 'unique_code', 'role']);
+            foreach ($users as $u) {
+                $role = ucfirst((string) ($u->role ?? ''));
+                if ($u->fullname) {
+                    $userRoleMap[$u->fullname] = $role;
+                }
+                if ($u->unique_code) {
+                    $userRoleMap[$u->unique_code] = $role;
+                }
+            }
+        }
+
         $checkerUploads = DB::table('staff_uploaded_files')
             ->where('job_id', (int) $job->job_id)
             ->orderByDesc('uploaded_at')
@@ -104,6 +122,7 @@ class LbsJobController extends Controller
             'clientAccounts'   => $clientAccounts,
             'jobRequests'      => $jobRequests,
             'activityLogs'     => $activityLogs,
+            'userRoleMap'      => $userRoleMap,
             'assignmentUsers'  => $assignmentUsers,
             'checkerUploads'   => $checkerUploads,
             'runComments'      => $runComments,
@@ -455,12 +474,6 @@ class LbsJobController extends Controller
             $list = [];
         }
 
-        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
-        $uploadDir = public_path('document/' . $folderName);
-        if (!is_dir($uploadDir)) {
-            @mkdir($uploadDir, 0775, true);
-        }
-
         $uploaded = [];
         foreach ($request->file('files', []) as $file) {
             if (!$file || !$file->isValid()) {
@@ -468,7 +481,9 @@ class LbsJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $file->move($uploadDir, $safeName);
+            $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+            $path = 'lbs-documents/' . $folderName . '/' . $safeName;
+            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
             $list[] = $safeName;
             $uploaded[] = $safeName;
         }
@@ -527,10 +542,8 @@ class LbsJobController extends Controller
         DB::table('jobs')->where('job_id', $id)->update([$column => json_encode($list)]);
 
         $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
-        $path = public_path('document/' . $folderName . '/' . $fileName);
-        if (is_file($path)) {
-            @unlink($path);
-        }
+        $storagePath = 'lbs-documents/' . $folderName . '/' . $fileName;
+        Storage::disk('local')->delete($storagePath);
 
         $sectionLabel = $section === 'plans' ? 'Plans' : 'Documents';
         $now = now('Asia/Manila');
@@ -568,12 +581,6 @@ class LbsJobController extends Controller
             'notes'   => ['nullable', 'string'],
         ]);
 
-        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
-        $uploadDir = public_path('document/' . $folderName);
-        if (!is_dir($uploadDir)) {
-            @mkdir($uploadDir, 0775, true);
-        }
-
         $now = now('Asia/Manila');
         $fileNames = [];
         foreach ($request->file('files', []) as $file) {
@@ -582,7 +589,9 @@ class LbsJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $file->move($uploadDir, $safeName);
+            $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+            $path = 'lbs-documents/' . $folderName . '/' . $safeName;
+            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
             $fileNames[] = $safeName;
         }
 
@@ -674,11 +683,14 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
+        $statuses = Status::orderBy('name')->get();
+
         return view('lbs.list', [
             'sidebar_active' => 'lbs.list',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statusColors' => $statusColors,
+            'statuses' => $statuses,
         ]);
     }
 
@@ -806,6 +818,19 @@ class LbsJobController extends Controller
         $headerRef = $request->input('header_reference');
         $now = now('Asia/Manila');
 
+        // Ensure reference column starts with JOBS so the job appears in LBS list; append -1
+        $referenceValue = $headerRef ?: ($data['reference_no'] ?? '');
+        if ($referenceValue !== '' && stripos($referenceValue, 'JOBS') !== 0) {
+            $referenceValue = 'JOBS-' . $referenceValue;
+        }
+        if ($referenceValue !== '') {
+            $referenceValue = $referenceValue . '-1';
+        }
+
+        // Client Name in table = unique_code of user who added the job (stored in client_code)
+        $currentUser = session('user_id') ? User::find(session('user_id')) : null;
+        $clientCodeForJob = $currentUser && !empty($currentUser->unique_code) ? $currentUser->unique_code : ($client->client_code ?? '');
+
         // Map priority ID -> name string (e.g. "High 1 day") if available
         $priorityText = (string) $data['priority'];
         try {
@@ -817,14 +842,7 @@ class LbsJobController extends Controller
         }
 
         try {
-            // Handle file uploads (plans & docs) similar to legacy flow
-            $folderName = $data['reference_no']
-                ?: ($data['client_reference'] ?: 'AUTO_' . $now->format('YmdHis'));
-            $uploadDir = public_path('document/' . $folderName);
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0775, true);
-            }
-
+            // Handle file uploads (plans & docs) similar to legacy flow, but store securely in storage
             $planNames = [];
             foreach ((array) $request->file('plans', []) as $file) {
                 if (!$file) {
@@ -832,7 +850,10 @@ class LbsJobController extends Controller
                 }
                 $original = $file->getClientOriginalName() ?: $file->hashName();
                 $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-                $file->move($uploadDir, $safeName);
+                $folderName = $data['reference_no']
+                    ?: ($data['client_reference'] ?: 'AUTO_' . $now->format('YmdHis'));
+                $path = 'lbs-documents/' . $folderName . '/' . $safeName;
+                Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
                 $planNames[] = $safeName;
             }
 
@@ -843,14 +864,17 @@ class LbsJobController extends Controller
                 }
                 $original = $file->getClientOriginalName() ?: $file->hashName();
                 $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-                $file->move($uploadDir, $safeName);
+                $folderName = $data['reference_no']
+                    ?: ($data['client_reference'] ?: 'AUTO_' . $now->format('YmdHis'));
+                $path = 'lbs-documents/' . $folderName . '/' . $safeName;
+                Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
                 $docNames[] = $safeName;
             }
 
             $jobId = DB::table('jobs')->insertGetId([
-                'reference'           => $headerRef ?: ($data['reference_no'] ?? ''),
+                'reference'           => $referenceValue,
                 'log_date'            => $now->format('Y-m-d H:i:s'),
-                'client_code'         => $client->client_code ?? '',
+                'client_code'         => $clientCodeForJob,
                 'job_reference_no'    => $data['reference_no'] ?? '',
                 'client_reference_no' => $data['client_reference'] ?? null,
                 'staff_id'            => $data['assigned_to'] ?? null,
@@ -884,6 +908,178 @@ class LbsJobController extends Controller
                 'message' => 'Database error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function downloadFile(int $id, string $file)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            abort(404);
+        }
+
+        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+        $fileName = $file;
+
+        $planFiles = [];
+        if (is_string($job->upload_files)) {
+            $planFiles = json_decode($job->upload_files, true) ?: [];
+        }
+
+        $docFiles = [];
+        if (is_string($job->upload_project_files)) {
+            $docFiles = json_decode($job->upload_project_files, true) ?: [];
+        }
+
+        $checkerUploads = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $job->job_id)
+            ->get();
+        $checkerFiles = [];
+        foreach ($checkerUploads as $upload) {
+            $files = json_decode($upload->files_json ?? '[]', true) ?: [];
+            foreach ($files as $name) {
+                $checkerFiles[] = (string) $name;
+            }
+        }
+
+        $allowed = in_array($fileName, $planFiles, true)
+            || in_array($fileName, $docFiles, true)
+            || in_array($fileName, $checkerFiles, true);
+
+        if (!$allowed) {
+            abort(404);
+        }
+
+        $storagePath = 'lbs-documents/' . $folderName . '/' . $fileName;
+        if (!Storage::disk('local')->exists($storagePath)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($storagePath, $fileName);
+    }
+
+    /**
+     * Show the Add New Job form, optionally pre-filled from a job to duplicate.
+     * When duplicating, reference_no and client_reference get suffix -1, -2, etc.
+     */
+    public function addForm(Request $request)
+    {
+        $compliances = Compliance::orderBy('column')->get();
+        $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos($c->column, '2022') !== false)
+            ?? $compliances->first(fn ($c) => $c->column && stripos($c->column, 'WOH') !== false)
+            ?? $compliances->first();
+
+        $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+        $defaultClient = ClientAccount::where('client_account_name', 'like', '%Summit Homes Group%')->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Summit%')
+                ->where('client_account_name', 'like', '%Homes%')
+                ->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Summit%')->first();
+        if ($defaultClient) {
+            $clientAccounts = $clientAccounts
+                ->reject(fn ($c) => (int) $c->client_account_id === (int) $defaultClient->client_account_id)
+                ->prepend($defaultClient)
+                ->values();
+        }
+
+        $priorities = Priority::orderBy('id')->get();
+        $defaultPriority = Priority::where('name', 'like', '%Top (COB)%')->first()
+            ?? $priorities->first();
+
+        $jobRequests = JobRequest::orderBy('job_request_type')->get();
+        $defaultJobRequest = JobRequest::where('job_request_type', 'like', '%1S DB Base Model- 1S Design Builder Model%')->first()
+            ?? $jobRequests->first();
+
+        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
+            ->orderBy('unique_code')
+            ->get(['id', 'unique_code'])
+            ->unique('unique_code')
+            ->values();
+
+        $duplicateJob = null;
+        $duplicateId = $request->query('duplicate');
+        if ($duplicateId && is_numeric($duplicateId)) {
+            $job = DB::table('jobs')->where('job_id', (int) $duplicateId)->first();
+            if ($job) {
+                $nextSuffix = $this->getNextDuplicateSuffix(
+                    (string) ($job->job_reference_no ?? $job->reference ?? '')
+                );
+                $baseRef = trim((string) ($job->job_reference_no ?? $job->reference ?? ''));
+                $baseClientRef = trim((string) ($job->client_reference_no ?? ''));
+                $suggestedRef = $baseRef !== '' ? $baseRef . '-' . $nextSuffix : '';
+                $suggestedClientRef = $baseClientRef !== '' ? $baseClientRef . '-' . $nextSuffix : '';
+
+                $complianceId = null;
+                if (!empty($job->ncc_compliance)) {
+                    $comp = Compliance::where('column', $job->ncc_compliance)->first();
+                    $complianceId = $comp?->id;
+                }
+                $priorityId = null;
+                if (!empty($job->priority)) {
+                    $pri = Priority::where('name', $job->priority)->first();
+                    $priorityId = $pri?->id;
+                }
+                $jobRequestId = null;
+                if (!empty($job->job_request_id)) {
+                    $jr = JobRequest::where('job_request_id', $job->job_request_id)
+                        ->orWhere('job_request_type', $job->job_type)
+                        ->first();
+                    $jobRequestId = $jr?->id ?? $job->job_request_id;
+                }
+
+                $duplicateJob = (object) [
+                    'reference_no'      => $suggestedRef,
+                    'client_reference'   => $suggestedClientRef,
+                    'compliance_id'      => $complianceId,
+                    'client_account_id'  => $job->client_account_id ?? null,
+                    'job_address'       => $job->address_client ?? '',
+                    'priority_id'       => $priorityId,
+                    'job_request_id'    => $jobRequestId,
+                    'notes'              => $job->notes ?? '',
+                    'staff_id'           => $job->staff_id ?? '',
+                    'checker_id'        => $job->checker_id ?? '',
+                ];
+            }
+        }
+
+        return view('lbs.add', [
+            'sidebar_active'       => 'lbs.add',
+            'compliances'          => $compliances,
+            'defaultComplianceId'  => $defaultCompliance?->id,
+            'clientAccounts'        => $clientAccounts,
+            'defaultClientAccountId' => $defaultClient?->client_account_id,
+            'priorities'           => $priorities,
+            'defaultPriorityId'     => $defaultPriority?->id,
+            'jobRequests'          => $jobRequests,
+            'defaultJobRequestId'   => $defaultJobRequest?->id,
+            'assignmentUsers'      => $assignmentUsers,
+            'duplicateJob'         => $duplicateJob,
+        ]);
+    }
+
+    /**
+     * Get next duplicate suffix (1, 2, 3...) for a base reference.
+     * Counts existing job_reference_no that are baseRef or baseRef-N.
+     */
+    private function getNextDuplicateSuffix(string $baseRef): int
+    {
+        if ($baseRef === '') {
+            return 1;
+        }
+        $pattern = $baseRef . '-%';
+        $refs = DB::table('jobs')
+            ->where('job_reference_no', 'like', $pattern)
+            ->pluck('job_reference_no');
+        $max = 0;
+        foreach ($refs as $ref) {
+            $suffix = substr((string) $ref, strlen($baseRef) + 1);
+            if (preg_match('/^\d+$/', $suffix)) {
+                $n = (int) $suffix;
+                if ($n > $max) {
+                    $max = $n;
+                }
+            }
+        }
+        return $max + 1;
     }
 }
 

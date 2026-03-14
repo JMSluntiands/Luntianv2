@@ -1,6 +1,7 @@
 $(function () {
   var $table = $('#lbsTable');
   var $search = $('#lbsSearch');
+  var csrfToken = document.querySelector('meta[name="csrf-token"]') && document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
   function recalcStatusSummary() {
     if (!$table.length) return;
@@ -93,15 +94,51 @@ $(function () {
     $menu.find('.lbs-initials-option').on('click', function (e) {
       e.stopPropagation();
       var val = $(this).data('value');
-      $trigger.text(val);
+      var $row = $wrap.closest('tr.lbs-data-row');
+      var updateUrl = $row.length && $row.data('update-url');
+      var prevVal = $trigger.text();
       $menu.prop('hidden', true);
       $trigger.attr('aria-expanded', 'false');
-      var $row = $wrap.closest('tr');
+
+      if (!updateUrl || !csrfToken) {
+        $trigger.text(val);
+        var $detail = $row.next('.lbs-row-detail');
+        if ($detail.length) {
+          var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
+          $detail.find(selector).text(val);
+        }
+        return;
+      }
+
+      $trigger.text(val);
       var $detail = $row.next('.lbs-row-detail');
       if ($detail.length) {
         var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
         $detail.find(selector).text(val);
       }
+
+      var payload = new URLSearchParams();
+      payload.append('_token', csrfToken);
+      if (role === 'staff') payload.append('staff_id', val); else payload.append('checker_id', val);
+
+      $.ajax({
+        url: updateUrl,
+        method: 'PUT',
+        data: payload.toString(),
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
+      }).done(function (res) {
+        var msg = (res && res.message) || 'Staff/Checker updated successfully.';
+        if (window.showSuccessToast) window.showSuccessToast(msg);
+        setTimeout(function () { window.location.reload(); }, 800);
+      }).fail(function (xhr) {
+        var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update.';
+        if (window.showSuccessToast) window.showSuccessToast(msg);
+        $trigger.text(prevVal);
+        if ($detail.length) {
+          var sel = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
+          $detail.find(sel).text(prevVal);
+        }
+      });
     });
   });
 
@@ -133,30 +170,58 @@ $(function () {
     $menu.find('.lbs-status-option').on('click', function (e) {
       e.stopPropagation();
       var val = $(this).data('status-value');
+      var $row = $wrap.closest('tr.lbs-data-row');
+      var updateUrl = $row.length && $row.data('update-url');
+      var prevText = $trigger.text();
+      var prevClass = 'lbs-badge-' + String(prevText).toLowerCase().replace(/\s+/g, '-');
+      $menu.prop('hidden', true);
+      $trigger.attr('aria-expanded', 'false');
+
       var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
       var allClasses = [
         'lbs-badge-pending',
         'lbs-badge-accepted',
         'lbs-badge-allocated',
         'lbs-badge-awaiting-further-information',
-        'lbs-badge-completed'
+        'lbs-badge-completed',
+        'lbs-badge-for-email-confirmation',
+        'lbs-badge-for-review',
+        'lbs-badge-processing',
+        'lbs-badge-for-checking',
+        'lbs-badge-revised'
       ];
-      $trigger.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val);
-      $menu.prop('hidden', true);
-      $trigger.attr('aria-expanded', 'false');
-
-      var $row = $wrap.closest('tr');
+      $trigger.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
       var $detail = $row.next('.lbs-row-detail');
-      if ($detail.length) {
-        var $badge = $detail.find('.lbs-detail-status-badge');
-        if ($badge.length) {
-          $badge
-            .removeClass(allClasses.join(' '))
-            .addClass(badgeClass)
-            .text(val);
-        }
+      var $badge = $detail.find('.lbs-detail-status-badge');
+      if ($detail.length && $badge.length) {
+        $badge.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
       }
       recalcStatusSummary();
+
+      if (!updateUrl || !csrfToken) return;
+
+      var payload = new URLSearchParams();
+      payload.append('_token', csrfToken);
+      payload.append('job_status', val);
+
+      $.ajax({
+        url: updateUrl,
+        method: 'PUT',
+        data: payload.toString(),
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
+      }).done(function (res) {
+        var msg = (res && res.message) || 'Status updated successfully.';
+        if (window.showSuccessToast) window.showSuccessToast(msg);
+        setTimeout(function () { window.location.reload(); }, 800);
+      }).fail(function (xhr) {
+        var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';
+        if (window.showSuccessToast) window.showSuccessToast(msg);
+        $trigger.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
+        if ($detail.length && $badge.length) {
+          $badge.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
+        }
+        recalcStatusSummary();
+      });
     });
   });
 

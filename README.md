@@ -74,3 +74,20 @@ Then open **http://localhost:8000**
 | `npm run build` | Production frontend build |
 | `php artisan serve` | Laravel dev server only |
 | `php artisan migrate` | Run DB migrations |
+
+## Existing PDF uploads (LBS jobs)
+
+After securing file uploads, all new plan/docs/checker files for LBS jobs are stored under:
+
+- `storage/app/lbs-documents/{folderName}/{fileName}`
+  - `folderName` is normally the job’s reference number or client reference (same naming used before under `public/document/{folderName}`).
+
+If you already have existing PDF files under the old path:
+
+- `public/document/{folderName}/{fileName}.pdf`
+
+you can keep the same folder names and move them manually into:
+
+- `storage/app/lbs-documents/{folderName}/{fileName}.pdf`
+
+Only files listed in the `jobs.upload_files`, `jobs.upload_project_files`, or `staff_uploaded_files.files_json` columns will be downloadable through the app.

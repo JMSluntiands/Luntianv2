@@ -152,16 +152,37 @@
 
                                 $status = $job->job_status ?? 'Allocated';
                                 $statusBg  = $statusColors[$status] ?? null;
+                                $statusLower = strtolower($status);
+                                // Same flow as Edit Job Details modal: Allocated→Accepted/Processing; Accepted/Processing/Revised→For Checking; For Checking→For Review/Revised
+                                $canEditStatus = in_array($statusLower, ['allocated', 'accepted', 'processing', 'revised', 'for checking'], true);
+                                $statusOptions = [];
+                                if ($statusLower === 'allocated') {
+                                    foreach ($statuses ?? [] as $s) {
+                                        $n = strtolower((string)($s->name ?? ''));
+                                        if (in_array($n, ['accepted', 'processing'], true)) $statusOptions[] = $s->name;
+                                    }
+                                } elseif (in_array($statusLower, ['accepted', 'processing', 'revised'], true)) {
+                                    foreach ($statuses ?? [] as $s) {
+                                        if (strtolower((string)($s->name ?? '')) === 'for checking') $statusOptions[] = $s->name;
+                                    }
+                                } elseif ($statusLower === 'for checking') {
+                                    foreach ($statuses ?? [] as $s) {
+                                        $n = strtolower((string)($s->name ?? ''));
+                                        if (in_array($n, ['for review', 'revised'], true)) $statusOptions[] = $s->name;
+                                    }
+                                } else {
+                                    foreach ($statuses ?? [] as $s) { $statusOptions[] = $s->name; }
+                                }
 
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
-                            <tr>
+                            <tr class="lbs-data-row" data-job-id="{{ $job->job_id }}" data-update-url="{{ route('lbs.job.update', ['id' => $job->job_id]) }}">
                                 <td class="lbs-td lbs-td-action">
                                     <div class="lbs-action-btns">
-                                        <button type="button" class="lbs-action-icon lbs-action-duplicate" title="Duplicate" aria-label="Duplicate">
+                                        <a href="{{ route('lbs.add', ['duplicate' => $job->job_id]) }}" class="lbs-action-icon lbs-action-duplicate" title="Duplicate" aria-label="Duplicate job to Add New form">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                        </button>
+                                        </a>
                                         <a href="{{ route('lbs.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon lbs-action-view" title="View" aria-label="View job {{ $job->job_reference_no }}">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
@@ -219,28 +240,38 @@
                                     </div>
                                 </td>
                                 <td class="lbs-td lbs-td-nowrap" data-label="Status">
-                                    <div class="lbs-status-wrap" data-status-wrap>
-                                        <button
-                                            type="button"
-                                            class="lbs-badge lbs-status-trigger"
+                                    @if($canEditStatus && count($statusOptions) > 0)
+                                        <div class="lbs-status-wrap" data-status-wrap>
+                                            <button
+                                                type="button"
+                                                class="lbs-badge lbs-status-trigger"
+                                                @if($statusBg)
+                                                    style="background-color: {{ $statusBg }};"
+                                                @endif
+                                                data-status-trigger
+                                                aria-haspopup="true"
+                                                aria-expanded="false"
+                                                data-reference="{{ $job->job_reference_no }}"
+                                            >
+                                                {{ $status }}
+                                            </button>
+                                            <div class="lbs-status-menu" role="menu" hidden>
+                                                @foreach($statusOptions as $opt)
+                                                    <button type="button" role="menuitem" class="lbs-status-option" data-status-value="{{ $opt }}">{{ $opt }}</button>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span
+                                            class="lbs-badge lbs-status-badge-readonly"
                                             @if($statusBg)
                                                 style="background-color: {{ $statusBg }};"
                                             @endif
-                                            data-status-trigger
-                                            aria-haspopup="true"
-                                            aria-expanded="false"
-                                            data-reference="{{ $job->job_reference_no }}"
+                                            aria-disabled="true"
                                         >
                                             {{ $status }}
-                                        </button>
-                                        <div class="lbs-status-menu" role="menu" hidden>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Pending">Pending</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Accepted">Accepted</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Allocated">Allocated</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Awaiting Further Information">Awaiting Further Information</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Completed">Completed</button>
-                                        </div>
-                                    </div>
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="lbs-td lbs-td-due" data-label="Due Date" data-sort="{{ $due ? $due->format('Y-m-d H:i:s') : '' }}" data-overdue="{{ $isOverdue ? '1' : '0' }}">
                                     <span class="lbs-date-line1 {{ $isOverdue ? 'lbs-overdue' : '' }}">{{ $dueDate1 }}</span>

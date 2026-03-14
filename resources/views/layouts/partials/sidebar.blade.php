@@ -1,5 +1,7 @@
 @php
     $active = $sidebar_active ?? 'dashboard';
+    $userRole = session('user_role');
+    $isStaff = strtolower((string) ($userRole ?? '')) === 'staff';
     $lbsOpen = in_array($active, ['lbs.add', 'lbs.list', 'lbs.completed', 'lbs.review', 'lbs.mailbox', 'lbs.trash']) || str_starts_with((string)$active, 'lbs.');
     $bphOpen = in_array($active, ['bph.add', 'bph.list']) || str_starts_with((string)$active, 'bph.');
     $bluinqOpen = in_array($active, ['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.trash']) || str_starts_with((string)$active, 'bluinq.');
@@ -33,12 +35,29 @@
             </button>
             <div class="nav-submenu" id="nav-sub-lbs" role="region" aria-label="LBS submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('lbs.add') }}" class="nav-subitem {{ $active === 'lbs.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('lbs.list') }}" class="nav-subitem {{ $active === 'lbs.list' ? 'active' : '' }}"><span class="nav-subitem-label">List</span><span class="nav-badge nav-badge-danger" data-lbs-sidebar="allocated">{{ $lbsListCount }}</span></a>
-                    <a href="{{ route('lbs.completed') }}" class="nav-subitem {{ $active === 'lbs.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('lbs.review') }}" class="nav-subitem {{ $active === 'lbs.review' ? 'active' : '' }}"><span class="nav-subitem-label">For Review</span><span class="nav-badge nav-badge-danger" data-lbs-sidebar="for-review">{{ $lbsReviewCount }}</span></a>
-                    <a href="{{ route('lbs.mailbox') }}" class="nav-subitem {{ $active === 'lbs.mailbox' ? 'active' : '' }}"><span class="nav-subitem-label">Mailbox</span><span class="nav-badge nav-badge-danger">{{ $lbsMailboxCount }}</span></a>
-                    <a href="{{ route('lbs.trash') }}" class="nav-subitem {{ $active === 'lbs.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('lbs.list') }}" class="nav-subitem {{ $active === 'lbs.list' ? 'active' : '' }}">
+                            <span class="nav-subitem-label">List</span>
+                            <span class="nav-badge nav-badge-danger" data-lbs-sidebar="allocated">{{ $lbsListCount }}</span>
+                        </a>
+                        <a href="{{ route('lbs.completed') }}" class="nav-subitem {{ $active === 'lbs.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('lbs.add') }}" class="nav-subitem {{ $active === 'lbs.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('lbs.list') }}" class="nav-subitem {{ $active === 'lbs.list' ? 'active' : '' }}">
+                            <span class="nav-subitem-label">List</span>
+                            <span class="nav-badge nav-badge-danger" data-lbs-sidebar="allocated">{{ $lbsListCount }}</span>
+                        </a>
+                        <a href="{{ route('lbs.completed') }}" class="nav-subitem {{ $active === 'lbs.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('lbs.review') }}" class="nav-subitem {{ $active === 'lbs.review' ? 'active' : '' }}">
+                            <span class="nav-subitem-label">For Review</span>
+                            <span class="nav-badge nav-badge-danger" data-lbs-sidebar="for-review">{{ $lbsReviewCount }}</span>
+                        </a>
+                        <a href="{{ route('lbs.mailbox') }}" class="nav-subitem {{ $active === 'lbs.mailbox' ? 'active' : '' }}">
+                            <span class="nav-subitem-label">Mailbox</span>
+                            <span class="nav-badge nav-badge-danger">{{ $lbsMailboxCount }}</span>
+                        </a>
+                        <a href="{{ route('lbs.trash') }}" class="nav-subitem {{ $active === 'lbs.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -52,12 +71,17 @@
             </button>
             <div class="nav-submenu" id="nav-sub-bph" role="region" aria-label="BPH submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('bph.add') }}" class="nav-subitem {{ $active === 'bph.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('bph.list') }}" class="nav-subitem {{ $active === 'bph.list' ? 'active' : '' }}">List</a>
-                    <a href="#" class="nav-subitem">Completed</a>
-                    <a href="#" class="nav-subitem">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="#" class="nav-subitem">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('bph.list') }}" class="nav-subitem {{ $active === 'bph.list' ? 'active' : '' }}">List</a>
+                        <a href="#" class="nav-subitem">Completed</a>
+                    @else
+                        <a href="{{ route('bph.add') }}" class="nav-subitem {{ $active === 'bph.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('bph.list') }}" class="nav-subitem {{ $active === 'bph.list' ? 'active' : '' }}">List</a>
+                        <a href="#" class="nav-subitem">Completed</a>
+                        <a href="#" class="nav-subitem">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="#" class="nav-subitem">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -71,12 +95,17 @@
             </button>
             <div class="nav-submenu" id="nav-sub-bluinq" role="region" aria-label="BLUINQ submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('bluinq.add') }}" class="nav-subitem {{ $active === 'bluinq.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('bluinq.list') }}" class="nav-subitem {{ $active === 'bluinq.list' ? 'active' : '' }}">List</a>
-                    <a href="{{ route('bluinq.completed') }}" class="nav-subitem {{ $active === 'bluinq.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('bluinq.review') }}" class="nav-subitem {{ $active === 'bluinq.review' ? 'active' : '' }}">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="{{ route('bluinq.trash') }}" class="nav-subitem {{ $active === 'bluinq.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('bluinq.list') }}" class="nav-subitem {{ $active === 'bluinq.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('bluinq.completed') }}" class="nav-subitem {{ $active === 'bluinq.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('bluinq.add') }}" class="nav-subitem {{ $active === 'bluinq.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('bluinq.list') }}" class="nav-subitem {{ $active === 'bluinq.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('bluinq.completed') }}" class="nav-subitem {{ $active === 'bluinq.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('bluinq.review') }}" class="nav-subitem {{ $active === 'bluinq.review' ? 'active' : '' }}">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="{{ route('bluinq.trash') }}" class="nav-subitem {{ $active === 'bluinq.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -90,12 +119,17 @@
             </button>
             <div class="nav-submenu" id="nav-sub-csp" role="region" aria-label="CSP submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('csp.add') }}" class="nav-subitem {{ $active === 'csp.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('csp.list') }}" class="nav-subitem {{ $active === 'csp.list' ? 'active' : '' }}">List</a>
-                    <a href="{{ route('csp.completed') }}" class="nav-subitem {{ $active === 'csp.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('csp.review') }}" class="nav-subitem {{ $active === 'csp.review' ? 'active' : '' }}">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="{{ route('csp.trash') }}" class="nav-subitem {{ $active === 'csp.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('csp.list') }}" class="nav-subitem {{ $active === 'csp.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('csp.completed') }}" class="nav-subitem {{ $active === 'csp.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('csp.add') }}" class="nav-subitem {{ $active === 'csp.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('csp.list') }}" class="nav-subitem {{ $active === 'csp.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('csp.completed') }}" class="nav-subitem {{ $active === 'csp.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('csp.review') }}" class="nav-subitem {{ $active === 'csp.review' ? 'active' : '' }}">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="{{ route('csp.trash') }}" class="nav-subitem {{ $active === 'csp.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -109,12 +143,17 @@
             </button>
             <div class="nav-submenu" id="nav-sub-nh" role="region" aria-label="NH submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('nh.add') }}" class="nav-subitem {{ $active === 'nh.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('nh.list') }}" class="nav-subitem {{ $active === 'nh.list' ? 'active' : '' }}">List</a>
-                    <a href="{{ route('nh.completed') }}" class="nav-subitem {{ $active === 'nh.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('nh.review') }}" class="nav-subitem {{ $active === 'nh.review' ? 'active' : '' }}">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="{{ route('nh.trash') }}" class="nav-subitem {{ $active === 'nh.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('nh.list') }}" class="nav-subitem {{ $active === 'nh.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('nh.completed') }}" class="nav-subitem {{ $active === 'nh.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('nh.add') }}" class="nav-subitem {{ $active === 'nh.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('nh.list') }}" class="nav-subitem {{ $active === 'nh.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('nh.completed') }}" class="nav-subitem {{ $active === 'nh.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('nh.review') }}" class="nav-subitem {{ $active === 'nh.review' ? 'active' : '' }}">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="{{ route('nh.trash') }}" class="nav-subitem {{ $active === 'nh.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -128,12 +167,17 @@
             </button>
             <div class="nav-submenu" id="nav-sub-lc-home-builder" role="region" aria-label="LC HOME BUILDER submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('lc_home_builder.add') }}" class="nav-subitem {{ $active === 'lc_home_builder.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('lc_home_builder.list') }}" class="nav-subitem {{ $active === 'lc_home_builder.list' ? 'active' : '' }}">List</a>
-                    <a href="{{ route('lc_home_builder.completed') }}" class="nav-subitem {{ $active === 'lc_home_builder.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('lc_home_builder.review') }}" class="nav-subitem {{ $active === 'lc_home_builder.review' ? 'active' : '' }}">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="{{ route('lc_home_builder.trash') }}" class="nav-subitem {{ $active === 'lc_home_builder.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('lc_home_builder.list') }}" class="nav-subitem {{ $active === 'lc_home_builder.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('lc_home_builder.completed') }}" class="nav-subitem {{ $active === 'lc_home_builder.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('lc_home_builder.add') }}" class="nav-subitem {{ $active === 'lc_home_builder.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('lc_home_builder.list') }}" class="nav-subitem {{ $active === 'lc_home_builder.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('lc_home_builder.completed') }}" class="nav-subitem {{ $active === 'lc_home_builder.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('lc_home_builder.review') }}" class="nav-subitem {{ $active === 'lc_home_builder.review' ? 'active' : '' }}">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="{{ route('lc_home_builder.trash') }}" class="nav-subitem {{ $active === 'lc_home_builder.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -147,12 +191,17 @@
             </button>
             <div class="nav-submenu" id="nav-sub-efficient-living" role="region" aria-label="EFFICIENT LIVING submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('efficient_living.add') }}" class="nav-subitem {{ $active === 'efficient_living.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('efficient_living.list') }}" class="nav-subitem {{ $active === 'efficient_living.list' ? 'active' : '' }}">List</a>
-                    <a href="{{ route('efficient_living.completed') }}" class="nav-subitem {{ $active === 'efficient_living.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('efficient_living.review') }}" class="nav-subitem {{ $active === 'efficient_living.review' ? 'active' : '' }}">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="{{ route('efficient_living.trash') }}" class="nav-subitem {{ $active === 'efficient_living.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('efficient_living.list') }}" class="nav-subitem {{ $active === 'efficient_living.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('efficient_living.completed') }}" class="nav-subitem {{ $active === 'efficient_living.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('efficient_living.add') }}" class="nav-subitem {{ $active === 'efficient_living.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('efficient_living.list') }}" class="nav-subitem {{ $active === 'efficient_living.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('efficient_living.completed') }}" class="nav-subitem {{ $active === 'efficient_living.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('efficient_living.review') }}" class="nav-subitem {{ $active === 'efficient_living.review' ? 'active' : '' }}">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="{{ route('efficient_living.trash') }}" class="nav-subitem {{ $active === 'efficient_living.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -166,15 +215,21 @@
             </button>
             <div class="nav-submenu" id="nav-sub-leading-energy" role="region" aria-label="LEADING ENERGY submenu">
                 <div class="nav-submenu-inner">
-                    <a href="{{ route('leading_energy.add') }}" class="nav-subitem {{ $active === 'leading_energy.add' ? 'active' : '' }}">Add New</a>
-                    <a href="{{ route('leading_energy.list') }}" class="nav-subitem {{ $active === 'leading_energy.list' ? 'active' : '' }}">List</a>
-                    <a href="{{ route('leading_energy.completed') }}" class="nav-subitem {{ $active === 'leading_energy.completed' ? 'active' : '' }}">Completed</a>
-                    <a href="{{ route('leading_energy.review') }}" class="nav-subitem {{ $active === 'leading_energy.review' ? 'active' : '' }}">For Review</a>
-                    <a href="#" class="nav-subitem">Mailbox</a>
-                    <a href="{{ route('leading_energy.trash') }}" class="nav-subitem {{ $active === 'leading_energy.trash' ? 'active' : '' }}">Archive</a>
+                    @if($isStaff)
+                        <a href="{{ route('leading_energy.list') }}" class="nav-subitem {{ $active === 'leading_energy.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('leading_energy.completed') }}" class="nav-subitem {{ $active === 'leading_energy.completed' ? 'active' : '' }}">Completed</a>
+                    @else
+                        <a href="{{ route('leading_energy.add') }}" class="nav-subitem {{ $active === 'leading_energy.add' ? 'active' : '' }}">Add New</a>
+                        <a href="{{ route('leading_energy.list') }}" class="nav-subitem {{ $active === 'leading_energy.list' ? 'active' : '' }}">List</a>
+                        <a href="{{ route('leading_energy.completed') }}" class="nav-subitem {{ $active === 'leading_energy.completed' ? 'active' : '' }}">Completed</a>
+                        <a href="{{ route('leading_energy.review') }}" class="nav-subitem {{ $active === 'leading_energy.review' ? 'active' : '' }}">For Review</a>
+                        <a href="#" class="nav-subitem">Mailbox</a>
+                        <a href="{{ route('leading_energy.trash') }}" class="nav-subitem {{ $active === 'leading_energy.trash' ? 'active' : '' }}">Archive</a>
+                    @endif
                 </div>
             </div>
         </div>
+        @unless($isStaff)
         <div class="nav-category">Reports</div>
         <a href="{{ route('reports') }}" class="nav-item {{ $active === 'reports' ? 'active' : '' }}">
             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2zM9 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H9a2 2 0 01-2-2V5z"/></svg>
@@ -277,5 +332,6 @@
                 </div>
             </div>
         </div>
+        @endunless
     </nav>
 </aside>

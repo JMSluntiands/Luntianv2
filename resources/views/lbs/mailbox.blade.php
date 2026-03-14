@@ -110,7 +110,7 @@
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
-                            <tr>
+                            <tr class="lbs-data-row" data-job-id="{{ $job->job_id }}" data-update-url="{{ route('lbs.job.update', ['id' => $job->job_id]) }}">
                                 <td class="lbs-td lbs-td-action">
                                     <div class="lbs-action-btns">
                                         <button type="button" class="lbs-action-icon lbs-action-duplicate" title="Duplicate" aria-label="Duplicate">
@@ -293,3 +293,7 @@
     </style>
 @endpush
 
+@push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="{{ asset('js/lbs-list.js') }}"></script>
+@endpush

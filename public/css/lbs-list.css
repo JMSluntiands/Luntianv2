@@ -83,10 +83,16 @@ html[data-theme="light"] .lbs-list-summary-item-danger .lbs-list-summary-badge {
 .lbs-badge-pending { background: rgba(234, 179, 8, 0.2); color: #fde047; }
 .lbs-badge-accepted { background: rgba(34, 197, 94, 0.2); color: #86efac; }
 .lbs-badge-awaiting-further-information { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+.lbs-badge-for-email-confirmation { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+.lbs-badge-for-review { background: rgba(168, 85, 247, 0.2); color: #c4b5fd; }
+.lbs-badge-processing { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; }
+.lbs-badge-for-checking { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+.lbs-badge-revised { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; }
 .lbs-status-wrap { position: relative; display: inline-block; }
 .lbs-status-trigger { border: none; cursor: pointer; font-family: inherit; margin: 0; line-height: 1.3; }
 .lbs-status-trigger:hover { opacity: 0.9; }
 .lbs-status-trigger:focus { outline: none; box-shadow: 0 0 0 2px rgba(44,82,139,0.4); border-radius: 6px; }
+.lbs-status-badge-readonly { cursor: default; pointer-events: none; opacity: 0.95; }
 .lbs-status-menu { position: fixed; background: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; padding: 4px; display: flex; flex-direction: column; gap: 2px; min-width: 90px; }
 .lbs-status-menu[hidden] { display: none !important; }
 .lbs-status-option { display: block; width: 100%; padding: 0.4rem 0.6rem; font-size: 0.75rem; font-weight: 500; text-align: left; border: none; border-radius: 6px; background: transparent; color: #e2e8f0; cursor: pointer; font-family: inherit; }

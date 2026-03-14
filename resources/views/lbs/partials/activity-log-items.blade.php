@@ -9,12 +9,8 @@
             </span>
             <div class="job-view-activity-user-meta">
                 <span class="job-view-activity-name">{{ $log->updated_by ?? 'LUNTIAN' }}</span>
-                @php
-                    $status = strtolower($jobStatus ?? '');
-                    $label = in_array($status, ['accepted', 'processing'], true) ? 'For Checking' : '';
-                @endphp
-                @if($label !== '')
-                    <span class="job-view-activity-code">{{ $label }}</span>
+                @if(!empty($userRoleMap[$log->updated_by ?? '']))
+                    <span class="job-view-activity-code">{{ strtoupper($userRoleMap[$log->updated_by]) }}</span>
                 @endif
             </div>
         </div>
