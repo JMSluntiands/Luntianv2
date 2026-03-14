@@ -455,6 +455,47 @@ class LbsJobController extends Controller
         }
     }
 
+    public function archiveJob(int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $currentStatus = $job->job_status ?? '';
+        if (strtolower($currentStatus) === 'archived') {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Job is already archived.',
+                'redirect' => route('lbs.trash'),
+            ]);
+        }
+
+        try {
+            DB::table('jobs')->where('job_id', $id)->update(['job_status' => 'Archived']);
+
+            $now = now('Asia/Manila');
+            ActivityLog::create([
+                'job_id'               => (int) $id,
+                'activity_date'        => $now->format('Y-m-d H:i:s'),
+                'activity_type'        => 'Job archived',
+                'activity_description' => 'Job status changed to Archived.',
+                'updated_by'           => session('user_name') ?? 'LBS Account',
+            ]);
+
+            return response()->json([
+                'status'   => 'success',
+                'message'  => 'Job archived successfully.',
+                'redirect' => route('lbs.trash'),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to archive: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function uploadFiles(Request $request, int $id)
     {
         $job = DB::table('jobs')->where('job_id', $id)->first();
@@ -649,8 +690,8 @@ class LbsJobController extends Controller
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
             // Only show new LBS jobs created via this app (reference starting with "JOBS")
             ->where('j.reference', 'like', 'JOBS%')
-            // Exclude jobs that should only appear in dedicated views
-            ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation'])
+            // Exclude jobs that should only appear in dedicated views, and Completed
+            ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
             ->select(
                 'j.job_id',
                 'j.reference',
@@ -694,6 +735,77 @@ class LbsJobController extends Controller
             'statusColors' => $statusColors,
             'statuses' => $statuses,
         ]);
+    }
+
+    public function trash()
+    {
+        $jobs = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', 'Archived')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit(500)
+            ->get();
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statusColors = Status::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return view('lbs.trash', [
+            'sidebar_active' => 'lbs.trash',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
+        ]);
+    }
+
+    public function restoreJob(int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return redirect()->route('lbs.trash')->with('error', 'Job not found.');
+        }
+        if (($job->job_status ?? '') !== 'Archived') {
+            return redirect()->route('lbs.trash')->with('message', 'Job is not archived.');
+        }
+        $now = now('Asia/Manila');
+        DB::table('jobs')->where('job_id', $id)->update([
+            'job_status' => 'Allocated',
+            'log_date'   => $now->format('Y-m-d H:i:s'),
+        ]);
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Job restored',
+            'activity_description' => 'Job restored from archive to Allocated. Log date updated to restore time.',
+            'updated_by'           => session('user_name') ?? 'LBS Account',
+        ]);
+        return redirect()->route('lbs.trash')->with('success', 'Job restored to list.');
     }
 
     public function review()

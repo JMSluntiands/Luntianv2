@@ -56,86 +56,110 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="lbs-td lbs-td-action">
-                                <div class="lbs-action-btns">
-                                    <button type="button" class="lbs-action-icon lbs-action-restore" title="Restore" aria-label="Restore"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-                                    <button type="button" class="lbs-action-icon lbs-action-view" title="View" aria-label="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                                    <button type="button" class="lbs-action-icon lbs-action-expand" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row><svg class="lbs-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
-                                </div>
-                            </td>
-                            <td class="lbs-td lbs-td-log-date" data-label="Log Date"><span class="lbs-date-line1">February 20, 2026</span><span class="lbs-date-line2">9:15 AM</span></td>
-                            <td class="lbs-td lbs-td-client" data-label="Client"><span class="lbs-client-name">Summit Homes Group</span><span class="lbs-client-project">2022 Whole of Home (WOH)</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Client Name">LBS</td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Reference">42180</td>
-                            <td class="lbs-td lbs-td-job-type" data-label="Job Type"><span class="lbs-job-line1">1S DB Base Model</span><span class="lbs-job-line2">1S Design Builder Model</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Priority"><span class="lbs-priority lbs-priority-standard">Standard 2 days</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Staff"><span class="lbs-initials">JS</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Checker"><span class="lbs-initials">GM</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Status"><span class="lbs-badge lbs-badge-trashed">Archived</span></td>
-                            <td class="lbs-td lbs-td-due" data-label="Due Date"><span class="lbs-date-line1">February 22, 2026</span><span class="lbs-date-line2">8:00 AM</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Completion Date">—</td>
-                            <td class="lbs-td lbs-td-nowrap" data-sort="3" data-label="Complexity"><span class="lbs-stars" data-rating="3" aria-label="3 out of 5">@include('lbs.partials.stars', ['rating' => 3])</span></td>
-                        </tr>
-                        <tr class="lbs-row-detail" id="lbs-detail-0" hidden>
-                            <td colspan="13" class="lbs-td-detail">
-                                <div class="lbs-detail-panel"><div class="lbs-detail-grid">
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Log Date</span><span class="lbs-detail-value">February 20, 2026 9:15 AM</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Client</span><span class="lbs-detail-value">Summit Homes Group · 2022 Whole of Home (WOH)</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Client Name</span><span class="lbs-detail-value">LBS</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Reference</span><span class="lbs-detail-value">42180</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Job Type</span><span class="lbs-detail-value">1S DB Base Model · 1S Design Builder Model</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Priority</span><span class="lbs-detail-value"><span class="lbs-priority lbs-priority-standard">Standard 2 days</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Staff</span><span class="lbs-detail-value"><span class="lbs-initials">JS</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Checker</span><span class="lbs-detail-value"><span class="lbs-initials">GM</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Status</span><span class="lbs-detail-value"><span class="lbs-badge lbs-badge-trashed">Archived</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Due Date</span><span class="lbs-detail-value">February 22, 2026 8:00 AM</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Completion Date</span><span class="lbs-detail-value">—</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Complexity</span><span class="lbs-detail-value">@include('lbs.partials.stars', ['rating' => 3])</span></div>
-                                </div></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="lbs-td lbs-td-action">
-                                <div class="lbs-action-btns">
-                                    <button type="button" class="lbs-action-icon lbs-action-restore" title="Restore" aria-label="Restore"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-                                    <button type="button" class="lbs-action-icon lbs-action-view" title="View" aria-label="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                                    <button type="button" class="lbs-action-icon lbs-action-expand" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row><svg class="lbs-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
-                                </div>
-                            </td>
-                            <td class="lbs-td lbs-td-log-date" data-label="Log Date"><span class="lbs-date-line1">February 18, 2026</span><span class="lbs-date-line2">3:00 PM</span></td>
-                            <td class="lbs-td lbs-td-client" data-label="Client"><span class="lbs-client-name">Non Account</span><span class="lbs-client-project">2022 Whole of Home (WOH)</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Client Name">LBS</td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Reference">42155</td>
-                            <td class="lbs-td lbs-td-job-type" data-label="Job Type"><span class="lbs-job-line1">2S DB Base Model</span><span class="lbs-job-line2">2S Design Builder Model</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Priority"><span class="lbs-priority lbs-priority-high">High 1 day</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Staff"><span class="lbs-initials">PEP</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Checker"><span class="lbs-initials">PEP</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Status"><span class="lbs-badge lbs-badge-trashed">Archived</span></td>
-                            <td class="lbs-td lbs-td-due" data-label="Due Date"><span class="lbs-date-line1">February 19, 2026</span><span class="lbs-date-line2">8:00 AM</span></td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Completion Date">—</td>
-                            <td class="lbs-td lbs-td-nowrap" data-sort="4" data-label="Complexity"><span class="lbs-stars" data-rating="4" aria-label="4 out of 5">@include('lbs.partials.stars', ['rating' => 4])</span></td>
-                        </tr>
-                        <tr class="lbs-row-detail" id="lbs-detail-1" hidden>
-                            <td colspan="13" class="lbs-td-detail">
-                                <div class="lbs-detail-panel"><div class="lbs-detail-grid">
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Log Date</span><span class="lbs-detail-value">February 18, 2026 3:00 PM</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Client</span><span class="lbs-detail-value">Non Account · 2022 Whole of Home (WOH)</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Client Name</span><span class="lbs-detail-value">LBS</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Reference</span><span class="lbs-detail-value">42155</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Job Type</span><span class="lbs-detail-value">2S DB Base Model · 2S Design Builder Model</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Priority</span><span class="lbs-detail-value"><span class="lbs-priority lbs-priority-high">High 1 day</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Staff</span><span class="lbs-detail-value"><span class="lbs-initials">PEP</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Checker</span><span class="lbs-detail-value"><span class="lbs-initials">PEP</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Status</span><span class="lbs-detail-value"><span class="lbs-badge lbs-badge-trashed">Archived</span></span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Due Date</span><span class="lbs-detail-value">February 19, 2026 8:00 AM</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Completion Date</span><span class="lbs-detail-value">—</span></div>
-                                    <div class="lbs-detail-item"><span class="lbs-detail-label">Complexity</span><span class="lbs-detail-value">@include('lbs.partials.stars', ['rating' => 4])</span></div>
-                                </div></div>
-                            </td>
-                        </tr>
+                        @forelse($jobs as $index => $job)
+                            @php
+                                $log = $job->log_date ? \Carbon\Carbon::parse($job->log_date, 'Asia/Manila') : null;
+                                $logDate1 = $log ? $log->format('F j, Y') : '—';
+                                $logDate2 = $log ? $log->format('g:i A') : '';
+
+                                $priorityText = $job->priority ?? '';
+                                $priorityLower = strtolower($priorityText);
+                                $due = null;
+                                if ($log) {
+                                    $start = $log->copy();
+                                    $startOfDay = $start->copy()->setTime(8, 0, 0);
+                                    $cutoff = $start->copy()->setTime(15, 0, 0);
+                                    if ($start->lt($startOfDay)) $start = $startOfDay;
+                                    $isTop = str_contains($priorityLower, 'top');
+                                    if (!$isTop && $start->gt($cutoff)) $start = $start->copy()->addDay()->setTime(8, 0, 0);
+                                    if ($isTop) {
+                                        $due = $start->copy()->addHours(6);
+                                    } else {
+                                        $days = 0;
+                                        if (preg_match('/(\d+)\s*day/', $priorityLower, $m)) $days = (int) ($m[1] ?? 0);
+                                        if ($days > 0) $due = $start->copy()->addDays($days);
+                                    }
+                                }
+                                $completion = $job->completion_date ? \Carbon\Carbon::parse($job->completion_date, 'Asia/Manila') : null;
+                                $isOverdue = $due && !$completion && $due->lt(now('Asia/Manila'));
+                                $dueDate1 = $due ? $due->format('F j, Y') : '—';
+                                $dueDate2 = $due ? $due->format('g:i A') : '';
+                                $completionDate1 = $completion ? $completion->format('F j, Y') : '—';
+                                $completionDate2 = $completion ? $completion->format('g:i A') : '';
+                                $completionText = $completion ? $completionDate1 . ' ' . $completionDate2 : '—';
+                                $priorityBg = $priorityColors[$priorityText] ?? null;
+                                $statusBg = $statusColors['Archived'] ?? null;
+                                $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
+                                $complexity = max(0, min(5, $complexity));
+                            @endphp
+                            <tr>
+                                <td class="lbs-td lbs-td-action">
+                                    <div class="lbs-action-btns">
+                                        <button type="button" class="lbs-action-icon lbs-action-restore lbs-restore-trigger" title="Restore" aria-label="Restore" data-restore-url="{{ route('lbs.job.restore', ['id' => $job->job_id]) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                                        <a href="{{ route('lbs.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon lbs-action-view" title="View" aria-label="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                        <button type="button" class="lbs-action-icon lbs-action-expand" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row><svg class="lbs-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+                                    </div>
+                                </td>
+                                <td class="lbs-td lbs-td-log-date" data-label="Log Date" data-sort="{{ $job->log_date }}"><span class="lbs-date-line1">{{ $logDate1 }}</span>@if($logDate2)<span class="lbs-date-line2">{{ $logDate2 }}</span>@endif</td>
+                                <td class="lbs-td lbs-td-client" data-label="Client"><span class="lbs-client-name">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span><span class="lbs-client-project">{{ $job->ncc_compliance ?? '' }}</span></td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Client Name">{{ $job->client_code ?? 'LBS' }}</td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Reference" data-sort="{{ $job->job_reference_no }}">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</td>
+                                <td class="lbs-td lbs-td-job-type" data-label="Job Type"><span class="lbs-job-line1">{{ $job->job_type ?? '—' }}</span><span class="lbs-job-line2">{{ $job->job_request_id ?? '' }}</span></td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Priority"><span class="lbs-priority" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span></td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Staff"><span class="lbs-initials">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Checker"><span class="lbs-initials">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Status"><span class="lbs-badge lbs-badge-trashed">Archived</span></td>
+                                <td class="lbs-td lbs-td-due" data-label="Due Date" data-sort="{{ $due ? $due->format('Y-m-d H:i:s') : '' }}"><span class="lbs-date-line1 {{ $isOverdue ? 'lbs-overdue' : '' }}">{{ $dueDate1 }}</span>@if($dueDate2)<span class="lbs-date-line2">{{ $dueDate2 }}</span>@endif @if($isOverdue)<span class="lbs-overdue">(Overdue)</span>@endif</td>
+                                <td class="lbs-td lbs-td-nowrap" data-label="Completion Date"><span class="lbs-date-line1">{{ $completionDate1 }}</span>@if($completionDate2)<span class="lbs-date-line2">{{ $completionDate2 }}</span>@endif</td>
+                                <td class="lbs-td lbs-td-nowrap" data-sort="{{ $complexity }}" data-label="Complexity"><span class="lbs-stars" data-rating="{{ $complexity }}" aria-label="{{ $complexity }} out of 5">@include('lbs.partials.stars', ['rating' => $complexity])</span></td>
+                            </tr>
+                            <tr class="lbs-row-detail" id="lbs-detail-{{ $index }}" hidden>
+                                <td colspan="13" class="lbs-td-detail">
+                                    <div class="lbs-detail-panel"><div class="lbs-detail-grid">
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Log Date</span><span class="lbs-detail-value">{{ $logDate1 }} {{ $logDate2 }}</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Client</span><span class="lbs-detail-value">{{ $job->client_account_name ?? $job->client_code ?? '—' }} @if($job->ncc_compliance) · {{ $job->ncc_compliance }} @endif</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Client Name</span><span class="lbs-detail-value">{{ $job->client_code ?? 'LBS' }}</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Reference</span><span class="lbs-detail-value">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Job Type</span><span class="lbs-detail-value">{{ $job->job_type ?? '—' }} @if($job->job_request_id) · {{ $job->job_request_id }} @endif</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Priority</span><span class="lbs-detail-value"><span class="lbs-priority" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span></span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Staff</span><span class="lbs-detail-value"><span class="lbs-initials">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Checker</span><span class="lbs-detail-value"><span class="lbs-initials">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Status</span><span class="lbs-detail-value"><span class="lbs-badge lbs-badge-trashed">Archived</span></span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Due Date</span><span class="lbs-detail-value">{{ $dueDate1 }} {{ $dueDate2 }} @if($isOverdue)<br><span class="lbs-overdue">(Overdue)</span>@endif</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Completion Date</span><span class="lbs-detail-value">{{ $completionText }}</span></div>
+                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Complexity</span><span class="lbs-detail-value">@include('lbs.partials.stars', ['rating' => $complexity])</span></div>
+                                    </div></div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="13" class="lbs-td" style="text-align:center; padding:1.5rem; color:#94a3b8;">No archived jobs.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <div class="lbs-trash-modal-overlay" id="lbsTrashRestoreModalOverlay" aria-hidden="true">
+            <div class="lbs-trash-modal" role="dialog" aria-modal="true" aria-labelledby="lbsTrashRestoreModalTitle">
+                <div class="lbs-trash-modal-header">
+                    <h2 class="lbs-trash-modal-title" id="lbsTrashRestoreModalTitle">Restore job</h2>
+                </div>
+                <div class="lbs-trash-modal-body">
+                    <div class="lbs-trash-restore-confirm" id="lbsTrashRestoreConfirm">
+                        <p class="lbs-trash-modal-label">Restore this job back to the list? It will be set to Allocated.</p>
+                    </div>
+                    <div class="lbs-trash-restore-countdown" id="lbsTrashRestoreCountdown" hidden>
+                        <p class="lbs-trash-countdown-text">Restoring in</p>
+                        <div class="lbs-trash-countdown-number" id="lbsTrashRestoreCountdownNumber">3</div>
+                        <p class="lbs-trash-countdown-cancel-hint">Click Cancel to abort</p>
+                    </div>
+                </div>
+                <div class="lbs-trash-modal-footer">
+                    <button type="button" class="lbs-trash-modal-btn lbs-trash-modal-btn-cancel" id="lbsTrashRestoreModalCancel">Cancel</button>
+                    <button type="button" class="lbs-trash-modal-btn lbs-trash-modal-btn-primary lbs-trash-modal-btn-restore" id="lbsTrashRestoreModalConfirm"><span class="lbs-trash-restore-btn-text">Restore</span></button>
+                </div>
             </div>
         </div>
     </div>
@@ -246,6 +270,29 @@
         html[data-theme="light"] .lbs-detail-value { color: #1e293b; }
         @media (max-width: 768px) { .lbs-list-header { margin-bottom: 1.25rem; flex-direction: column; align-items: stretch; } .lbs-list-search-wrap { width: 100%; } .lbs-search-input-wrap { min-width: 0; width: 100%; } .lbs-list-title { font-size: 1.25rem; } .lbs-list-subtitle { font-size: 0.875rem; } .lbs-table { min-width: 1320px; } .lbs-th { padding: 0.6rem 0.75rem; font-size: 0.8125rem; } .lbs-td { padding: 0.6rem 0.75rem; font-size: 0.8125rem; } .lbs-detail-grid { grid-template-columns: 1fr; gap: 0.5rem 0; padding: 1rem; } }
         @media (max-width: 480px) { .lbs-th { padding: 0.5rem 0.6rem; font-size: 0.75rem; } .lbs-td { padding: 0.5rem 0.6rem; font-size: 0.75rem; } .lbs-detail-grid { padding: 0.75rem; } }
+        .lbs-trash-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; }
+        .lbs-trash-modal-overlay.is-open { opacity: 1; visibility: visible; }
+        .lbs-trash-modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; max-width: 400px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.3); opacity: 0; transform: scale(0.95); transition: opacity 0.2s ease, transform 0.2s ease; }
+        .lbs-trash-modal-overlay.is-open .lbs-trash-modal { opacity: 1; transform: scale(1); }
+        .lbs-trash-modal-header { padding: 1rem 1.25rem; border-bottom: 1px solid #334155; }
+        .lbs-trash-modal-title { font-size: 1.125rem; font-weight: 600; color: #e2e8f0; margin: 0; }
+        .lbs-trash-modal-body { padding: 1.25rem 1.25rem; }
+        .lbs-trash-modal-label { font-size: 0.9375rem; color: #94a3b8; margin: 0; line-height: 1.45; }
+        .lbs-trash-restore-countdown { text-align: center; padding: 0.5rem 0; }
+        .lbs-trash-countdown-text { font-size: 0.9375rem; color: #94a3b8; margin: 0 0 1rem 0; }
+        .lbs-trash-countdown-number { font-size: 4rem; font-weight: 800; color: #22c55e; line-height: 1; letter-spacing: -0.05em; min-height: 4rem; display: flex; align-items: center; justify-content: center; animation: lbs-trash-countdown-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .lbs-trash-countdown-cancel-hint { font-size: 0.8125rem; color: #64748b; margin: 1rem 0 0 0; }
+        @keyframes lbs-trash-countdown-pop { 0% { opacity: 0; transform: scale(0.3); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+        .lbs-trash-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.25rem; border-top: 1px solid #334155; }
+        .lbs-trash-modal-btn { padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; border-radius: 8px; cursor: pointer; border: none; transition: background 0.2s, color 0.2s; }
+        .lbs-trash-modal-btn-cancel { background: transparent; color: #94a3b8; }
+        .lbs-trash-modal-btn-cancel:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+        .lbs-trash-modal-btn-restore { background: #22c55e; color: #0f172a; }
+        .lbs-trash-modal-btn-restore:hover { background: #16a34a; color: #fff; }
+        html[data-theme="light"] .lbs-trash-modal { background: #fff; border-color: #e2e8f0; }
+        html[data-theme="light"] .lbs-trash-modal-title { color: #1e293b; }
+        html[data-theme="light"] .lbs-trash-modal-label { color: #64748b; }
+        html[data-theme="light"] .lbs-trash-countdown-number { color: #16a34a; }
     </style>
 @endpush
 
@@ -322,6 +369,76 @@
                     if (detail && detail.classList.contains('lbs-row-detail')) tbody.appendChild(detail);
                 });
             });
+        })();
+
+        (function restoreModal() {
+            var overlay = document.getElementById('lbsTrashRestoreModalOverlay');
+            var confirmBlock = document.getElementById('lbsTrashRestoreConfirm');
+            var countdownBlock = document.getElementById('lbsTrashRestoreCountdown');
+            var countdownNumber = document.getElementById('lbsTrashRestoreCountdownNumber');
+            var cancelBtn = document.getElementById('lbsTrashRestoreModalCancel');
+            var confirmBtn = document.getElementById('lbsTrashRestoreModalConfirm');
+            var btnTextEl = confirmBtn && confirmBtn.querySelector('.lbs-trash-restore-btn-text');
+            var countdownTimer = null;
+            var pendingRestoreUrl = null;
+
+            function resetRestoreModal() {
+                if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+                if (confirmBlock) confirmBlock.hidden = false;
+                if (countdownBlock) countdownBlock.hidden = true;
+                if (confirmBtn) confirmBtn.disabled = false;
+                if (btnTextEl) btnTextEl.textContent = 'Restore';
+            }
+            function closeRestoreModal() {
+                if (overlay) { overlay.classList.remove('is-open'); overlay.setAttribute('aria-hidden', 'true'); }
+                pendingRestoreUrl = null;
+                resetRestoreModal();
+            }
+
+            document.addEventListener('click', function(e) {
+                var trigger = e.target.closest('.lbs-restore-trigger');
+                if (trigger) {
+                    e.preventDefault();
+                    pendingRestoreUrl = trigger.getAttribute('data-restore-url');
+                    if (!pendingRestoreUrl) return;
+                    resetRestoreModal();
+                    if (overlay) { overlay.classList.add('is-open'); overlay.setAttribute('aria-hidden', 'false'); }
+                }
+            });
+
+            if (cancelBtn) cancelBtn.addEventListener('click', closeRestoreModal);
+            if (overlay) overlay.addEventListener('click', function(e) { if (e.target === overlay) closeRestoreModal(); });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && overlay && overlay.classList.contains('is-open')) closeRestoreModal();
+            });
+
+            if (confirmBtn && confirmBlock && countdownBlock && countdownNumber) {
+                confirmBtn.addEventListener('click', function() {
+                    if (!pendingRestoreUrl || countdownTimer) return;
+                    confirmBlock.hidden = true;
+                    countdownBlock.hidden = false;
+                    confirmBtn.disabled = true;
+                    if (btnTextEl) btnTextEl.textContent = 'Restoring...';
+                    var count = 3;
+                    countdownNumber.textContent = count;
+                    countdownNumber.style.animation = 'none';
+                    countdownNumber.offsetHeight;
+                    countdownNumber.style.animation = '';
+                    countdownTimer = setInterval(function() {
+                        count--;
+                        if (count <= 0) {
+                            clearInterval(countdownTimer);
+                            countdownTimer = null;
+                            window.location.href = pendingRestoreUrl;
+                            return;
+                        }
+                        countdownNumber.textContent = count;
+                        countdownNumber.style.animation = 'none';
+                        countdownNumber.offsetHeight;
+                        countdownNumber.style.animation = '';
+                    }, 1000);
+                });
+            }
         })();
     </script>
 @endpush

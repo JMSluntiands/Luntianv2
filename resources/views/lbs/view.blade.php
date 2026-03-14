@@ -16,6 +16,9 @@
             </span>
         </nav>
 
+        @php
+            $isArchived = strtolower($job->job_status ?? '') === 'archived';
+        @endphp
         <header class="job-view-header">
             <div class="job-view-header-inner">
                 <h1 class="job-view-title">Job Details</h1>
@@ -23,10 +26,18 @@
                     Reference: {{ $job->reference ?? $job->job_reference_no ?? $jobId ?? '—' }}
                 </p>
             </div>
-            <a href="{{ route('lbs.list') }}" class="job-view-back">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                Back to List
-            </a>
+            <div class="job-view-header-actions">
+                @if(!$isArchived)
+                    <button type="button" class="job-view-archive-btn" id="jobViewArchiveJobBtn" aria-label="Archive this job">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+                        Archive this job
+                    </button>
+                @endif
+                <a href="{{ route('lbs.list') }}" class="job-view-back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Back to List
+                </a>
+            </div>
         </header>
 
         @php
@@ -551,6 +562,28 @@
                 </div>
             </div>
         </div>
+
+        <div class="job-view-modal-overlay" id="jobViewArchiveJobModalOverlay" aria-hidden="true">
+            <div class="job-view-modal" role="dialog" aria-modal="true" aria-labelledby="jobViewArchiveJobModalTitle">
+                <div class="job-view-modal-header">
+                    <h2 class="job-view-modal-title" id="jobViewArchiveJobModalTitle">Archive this job</h2>
+                </div>
+                <div class="job-view-modal-body">
+                    <div class="job-view-delete-confirm" id="jobViewArchiveJobConfirm">
+                        <p class="job-view-modal-label">Are you sure you want to archive this job? The job will be moved to the archive list.</p>
+                    </div>
+                    <div class="job-view-delete-countdown" id="jobViewArchiveJobCountdown" hidden>
+                        <p class="job-view-countdown-text">Archiving in</p>
+                        <div class="job-view-countdown-number" id="jobViewArchiveJobCountdownNumber">3</div>
+                        <p class="job-view-countdown-cancel-hint">Click Cancel to abort</p>
+                    </div>
+                </div>
+                <div class="job-view-modal-footer">
+                    <button type="button" class="job-view-modal-btn job-view-modal-btn-cancel" id="jobViewArchiveJobModalCancel">Cancel</button>
+                    <button type="button" class="job-view-modal-btn job-view-modal-btn-primary job-view-modal-btn-archive" id="jobViewArchiveJobModalConfirm"><span class="job-view-archive-btn-text">Archive</span></button>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -581,6 +614,13 @@
         .job-view-breadcrumb-sep { margin: 0 0.35rem; opacity: 0.7; }
         .job-view-breadcrumb-current { color: #e2e8f0; }
         .job-view-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; opacity: 0; animation: jobViewFadeInUp 0.5s ease-out 0.06s forwards; }
+        .job-view-header-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        .job-view-archive-btn { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #f59e0b; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.35); padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; transition: color 0.2s, background 0.2s, transform 0.2s; }
+        .job-view-archive-btn:hover { color: #fbbf24; background: rgba(245,158,11,0.25); transform: translateY(-1px); }
+        .job-view-modal-btn-archive { background: #f59e0b; color: #0f172a; }
+        .job-view-modal-btn-archive:hover { background: #d97706; color: #fff; }
+        html[data-theme="light"] .job-view-archive-btn { color: #b45309; background: rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.4); }
+        html[data-theme="light"] .job-view-archive-btn:hover { color: #92400e; background: rgba(245,158,11,0.3); }
         .job-view-back { transition: transform 0.2s ease; }
         .job-view-back:hover { transform: translateX(-2px); }
         .job-view-header-inner { min-width: 0; }
@@ -892,6 +932,7 @@
     var updateUrl = '{{ route('lbs.job.update', ['id' => $jobId]) }}';
     var uploadFilesUrl = '{{ route('lbs.job.uploadFiles', ['id' => $jobId]) }}';
     var deleteFileUrl = '{{ route('lbs.job.deleteFile', ['id' => $jobId]) }}';
+    var archiveJobUrl = '{{ route('lbs.job.archive', ['id' => $jobId]) }}';
     var checkerUploadUrl = '{{ route('lbs.job.checkerUploads', ['id' => $jobId]) }}';
     var runCommentUrl = '{{ route('lbs.job.runComment', ['id' => $jobId]) }}';
     var jobCommentUrl = '{{ route('lbs.job.comment', ['id' => $jobId]) }}';
@@ -1496,6 +1537,85 @@
                         }).catch(function() {
                             if (window.showSuccessToast) showSuccessToast('Failed to remove file.');
                             closeDeleteFileModal();
+                        });
+                        return;
+                    }
+                    countdownNumber.textContent = count;
+                    countdownNumber.style.animation = 'none';
+                    countdownNumber.offsetHeight;
+                    countdownNumber.style.animation = '';
+                }, 1000);
+            });
+        }
+    })();
+
+    (function archiveJobModal() {
+        var archiveBtn = document.getElementById('jobViewArchiveJobBtn');
+        var overlay = document.getElementById('jobViewArchiveJobModalOverlay');
+        var confirmBlock = document.getElementById('jobViewArchiveJobConfirm');
+        var countdownBlock = document.getElementById('jobViewArchiveJobCountdown');
+        var countdownNumber = document.getElementById('jobViewArchiveJobCountdownNumber');
+        var cancelBtn = document.getElementById('jobViewArchiveJobModalCancel');
+        var confirmBtn = document.getElementById('jobViewArchiveJobModalConfirm');
+        var btnTextEl = confirmBtn && confirmBtn.querySelector('.job-view-archive-btn-text');
+        var countdownTimer = null;
+
+        function resetArchiveModal() {
+            if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+            if (confirmBlock) confirmBlock.hidden = false;
+            if (countdownBlock) countdownBlock.hidden = true;
+            if (confirmBtn) confirmBtn.disabled = false;
+            if (btnTextEl) btnTextEl.textContent = 'Archive';
+        }
+        function closeArchiveModal() {
+            if (overlay) { overlay.classList.remove('is-open'); overlay.setAttribute('aria-hidden', 'true'); }
+            resetArchiveModal();
+        }
+
+        if (archiveBtn) {
+            archiveBtn.addEventListener('click', function() {
+                resetArchiveModal();
+                if (overlay) { overlay.classList.add('is-open'); overlay.setAttribute('aria-hidden', 'false'); }
+            });
+        }
+        if (cancelBtn) cancelBtn.addEventListener('click', closeArchiveModal);
+        if (overlay) overlay.addEventListener('click', function(e) { if (e.target === overlay) closeArchiveModal(); });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('is-open')) closeArchiveModal();
+        });
+
+        if (confirmBtn && confirmBlock && countdownBlock && countdownNumber) {
+            confirmBtn.addEventListener('click', function() {
+                if (countdownTimer) return;
+                confirmBlock.hidden = true;
+                countdownBlock.hidden = false;
+                confirmBtn.disabled = true;
+                if (btnTextEl) btnTextEl.textContent = 'Archiving...';
+                var count = 3;
+                countdownNumber.textContent = count;
+                countdownNumber.style.animation = 'none';
+                countdownNumber.offsetHeight;
+                countdownNumber.style.animation = '';
+                countdownTimer = setInterval(function() {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(countdownTimer);
+                        countdownTimer = null;
+                        var formData = new URLSearchParams();
+                        formData.append('_token', csrfToken);
+                        fetch(archiveJobUrl, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: formData.toString()
+                        }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: {} }; }); }).then(function(result) {
+                            var msg = (result.data && result.data.message) || (result.ok ? 'Job archived.' : 'Failed to archive.');
+                            if (window.showSuccessToast) showSuccessToast(msg);
+                            var redirect = (result.data && result.data.redirect) || '{{ route('lbs.trash') }}';
+                            if (result.ok && redirect) { window.location.href = redirect; return; }
+                            closeArchiveModal();
+                        }).catch(function() {
+                            if (window.showSuccessToast) showSuccessToast('Failed to archive.');
+                            closeArchiveModal();
                         });
                         return;
                     }

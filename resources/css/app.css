@@ -59,3 +59,231 @@
 .theme-icon-enter {
     animation: theme-icon-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
+/* Login – architectural background animation */
+.login-bg-arch {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Animated gradient layer */
+.login-bg-arch-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        125deg,
+        transparent 0%,
+        rgba(16, 185, 129, 0.03) 25%,
+        transparent 50%,
+        rgba(148, 163, 184, 0.04) 75%,
+        transparent 100%
+    );
+    background-size: 200% 200%;
+    animation: arch-gradient-move 12s ease-in-out infinite;
+}
+
+.login-bg-arch-dark .login-bg-arch-gradient {
+    background: linear-gradient(
+        125deg,
+        transparent 0%,
+        rgba(148, 163, 184, 0.04) 25%,
+        transparent 50%,
+        rgba(52, 211, 153, 0.03) 75%,
+        transparent 100%
+    );
+    background-size: 200% 200%;
+}
+
+/* Blueprint-style grid – slow drift + opacity pulse */
+.login-bg-arch::before {
+    content: '';
+    position: absolute;
+    inset: -100%;
+    background-image:
+        linear-gradient(to right, currentColor 1px, transparent 1px),
+        linear-gradient(to bottom, currentColor 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.08;
+    animation: arch-grid-drift 50s linear infinite, arch-grid-pulse 6s ease-in-out infinite;
+}
+
+/* Perspective / section lines – subtle float */
+.login-bg-arch::after {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    background-image:
+        linear-gradient(100deg, currentColor 1px, transparent 1px),
+        linear-gradient(170deg, currentColor 1px, transparent 1px),
+        linear-gradient(80deg, currentColor 1px, transparent 1px);
+    background-size: 140px 140px, 110px 110px, 90px 90px;
+    background-position: 0 0, 30px 50px, 50px 30px;
+    opacity: 0.05;
+    animation: arch-perspective-drift 70s linear infinite reverse, arch-grid-pulse-subtle 8s ease-in-out infinite 1s;
+}
+
+.login-bg-arch-dark {
+    color: rgb(148 163 184);
+}
+
+.login-bg-arch-light {
+    color: rgb(16 185 129);
+}
+
+@keyframes arch-grid-drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(40px, 40px); }
+}
+
+@keyframes arch-grid-pulse {
+    0%, 100% { opacity: 0.06; }
+    50% { opacity: 0.12; }
+}
+
+@keyframes arch-grid-pulse-subtle {
+    0%, 100% { opacity: 0.04; }
+    50% { opacity: 0.08; }
+}
+
+@keyframes arch-perspective-drift {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(15px, -10px); }
+    100% { transform: translate(0, 0); }
+}
+
+@keyframes arch-gradient-move {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Login success overlay – animation before dashboard redirect */
+.login-success-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    animation: login-success-overlay-in 0.4s ease-out forwards;
+}
+
+.login-success-overlay-light {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.login-success-overlay-light .login-success-progress {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.login-success-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 320px;
+    animation: login-success-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.login-success-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.2);
+    animation: login-success-icon-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+}
+
+.login-success-icon {
+    width: 48px;
+    height: 48px;
+    color: rgb(16 185 129);
+    animation: login-success-check-in 0.4s ease-out 0.5s both;
+}
+
+.login-success-progress {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    margin-top: 1.5rem;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.login-success-progress::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    border-radius: 2px;
+    background: rgb(16 185 129);
+    transform-origin: left;
+    animation: login-success-progress-fill 2s ease-in-out forwards;
+}
+
+.login-success-overlay-light .login-success-progress::after {
+    background: rgb(16 185 129);
+}
+
+@keyframes login-success-overlay-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes login-success-card-in {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes login-success-icon-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes login-success-check-in {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes login-success-progress-fill {
+    from {
+        transform: scaleX(0);
+        transform-origin: left;
+    }
+    to {
+        transform: scaleX(1);
+        transform-origin: left;
+    }
+}

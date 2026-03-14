@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="logo-url" content="{{ asset('storage/logo-light.png') }}">
     <title>{{ config('app.name', 'BLIUNQ') }}</title>
     <style>
         html, body { margin: 0; min-height: 100vh; overflow-x: hidden; }

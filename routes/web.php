@@ -38,6 +38,8 @@ Route::middleware('auth.session')->group(function () {
     Route::put('/dashboard/lbs/job/{id}', [LbsJobController::class, 'update'])->name('lbs.job.update');
     Route::post('/dashboard/lbs/job/{id}/files', [LbsJobController::class, 'uploadFiles'])->name('lbs.job.uploadFiles');
     Route::post('/dashboard/lbs/job/{id}/file/delete', [LbsJobController::class, 'deleteFile'])->name('lbs.job.deleteFile');
+    Route::post('/dashboard/lbs/job/{id}/archive', [LbsJobController::class, 'archiveJob'])->name('lbs.job.archive');
+    Route::get('/dashboard/lbs/job/{id}/restore', [LbsJobController::class, 'restoreJob'])->name('lbs.job.restore');
     Route::get('/dashboard/lbs/job/{id}/file/{file}', [LbsJobController::class, 'downloadFile'])->name('lbs.job.file');
     Route::post('/dashboard/lbs/job/{id}/checker-uploads', [LbsJobController::class, 'uploadCheckerFiles'])->name('lbs.job.checkerUploads');
     Route::post('/dashboard/lbs/job/{id}/run-comment', [LbsJobController::class, 'addRunComment'])->name('lbs.job.runComment');
@@ -49,9 +51,7 @@ Route::middleware('auth.session')->group(function () {
     Route::get('/dashboard/lbs/job/{id}/email-preview', [LbsJobController::class, 'emailPreview'])->name('lbs.job.emailPreview');
     Route::post('/dashboard/lbs/job/{id}/send-mailbox-email', [LbsJobController::class, 'sendMailboxEmail'])->name('lbs.job.sendMailboxEmail');
     Route::get('/dashboard/lbs/review', [LbsJobController::class, 'review'])->name('lbs.review');
-    Route::get('/dashboard/lbs/trash', function () {
-        return view('lbs.trash', ['sidebar_active' => 'lbs.trash']);
-    })->name('lbs.trash');
+    Route::get('/dashboard/lbs/trash', [LbsJobController::class, 'trash'])->name('lbs.trash');
     Route::get('/dashboard/bph/add', function () {
         return view('bph.add', ['sidebar_active' => 'bph.add']);
     })->name('bph.add');

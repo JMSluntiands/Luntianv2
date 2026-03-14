@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Windows reserved device name – prevents "failed to insert into database" on git add
+nul

@@ -145,7 +145,9 @@
 
                                 $dueDate1 = $due ? $due->format('F j, Y') : '—';
                                 $dueDate2 = $due ? $due->format('g:i A') : '';
-                                $completionText = $completion ? $completion->format('F j, Y g:i A') : '—';
+                                $completionDate1 = $completion ? $completion->format('F j, Y') : '—';
+                                $completionDate2 = $completion ? $completion->format('g:i A') : '';
+                                $completionText = $completion ? $completionDate1 . ' ' . $completionDate2 : '—';
 
                                 // Colors from Priority / Status tables (hex)
                                 $priorityBg = $priorityColors[$priorityText] ?? null;
@@ -287,7 +289,12 @@
                                         @endif
                                     @endif
                                 </td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Completion Date">{{ $completionText }}</td>
+                                <td class="lbs-td lbs-td-due" data-label="Completion Date">
+                                    <span class="lbs-date-line1">{{ $completionDate1 }}</span>
+                                    @if($completionDate2)
+                                        <span class="lbs-date-line2">{{ $completionDate2 }}</span>
+                                    @endif
+                                </td>
                                 <td class="lbs-td lbs-td-nowrap" data-sort="{{ $complexity }}" data-label="Complexity">
                                     <span class="lbs-stars" data-rating="{{ $complexity }}" aria-label="{{ $complexity }} out of 5">
                                         @include('lbs.partials.stars', ['rating' => $complexity])

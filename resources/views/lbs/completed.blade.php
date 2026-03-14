@@ -131,7 +131,7 @@
                                 <span class="lbs-date-line1">March 3, 2026</span>
                                 <span class="lbs-date-line2">8:00 AM</span>
                             </td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Completion Date">
+                            <td class="lbs-td lbs-td-due" data-label="Completion Date">
                                 <span class="lbs-date-line1">March 2, 2026</span>
                                 <span class="lbs-date-line2">5:30 PM</span>
                             </td>
@@ -193,7 +193,7 @@
                                 <span class="lbs-date-line1">March 2, 2026</span>
                                 <span class="lbs-date-line2">8:00 AM</span>
                             </td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Completion Date">
+                            <td class="lbs-td lbs-td-due" data-label="Completion Date">
                                 <span class="lbs-date-line1">March 1, 2026</span>
                                 <span class="lbs-date-line2">11:00 AM</span>
                             </td>
@@ -255,7 +255,7 @@
                                 <span class="lbs-date-line1">February 27, 2026</span>
                                 <span class="lbs-date-line2">8:00 AM</span>
                             </td>
-                            <td class="lbs-td lbs-td-nowrap" data-label="Completion Date">
+                            <td class="lbs-td lbs-td-due" data-label="Completion Date">
                                 <span class="lbs-date-line1">February 27, 2026</span>
                                 <span class="lbs-date-line2">9:20 AM</span>
                             </td>
