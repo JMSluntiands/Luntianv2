@@ -27,7 +27,7 @@
             <div class="jobrequest-card">
                 <div class="jobrequest-form-group">
                     <label class="jobrequest-label" for="client_code">Client Code</label>
-                    <select id="client_code" name="client_code" class="jobrequest-select" required>
+                    <select id="client_code" name="client_code" class="jobrequest-select select2-single" required>
                         <option value="">— Select client —</option>
                         @foreach($clients as $client)
                             <option value="{{ $client->client_code }}" {{ old('client_code', $jobRequest->client_code) === $client->client_code ? 'selected' : '' }}>
@@ -96,10 +96,14 @@
 @endpush
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         (function() {
             var form = document.querySelector('.jobrequest-form');
             var btn = document.getElementById('jobRequestSaveBtn');
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2-single').select2({ width: '100%', allowClear: false });
+            }
             if (form && btn) {
                 form.addEventListener('submit', function() {
                     btn.disabled = true;

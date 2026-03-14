@@ -12,7 +12,7 @@
     $leadingEnergyOpen = in_array($active, ['leading_energy.add', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.trash']) || str_starts_with((string)$active, 'leading_energy.');
     $jobOpen = in_array($active, ['compliance.index', 'compliance.create', 'compliance.edit', 'priority.index', 'priority.create', 'priority.edit', 'status.index', 'status.create', 'status.edit', 'job_request.index', 'job_request.create', 'job_request.edit', 'client.index', 'client.create', 'client.edit']) || str_starts_with((string)$active, 'compliance.') || str_starts_with((string)$active, 'priority.') || str_starts_with((string)$active, 'status.') || str_starts_with((string)$active, 'job_request.') || str_starts_with((string)$active, 'client.');
     $branchOpen = in_array($active, ['branch.index', 'branch.create', 'branch.edit', 'branch.archive']) || str_starts_with((string)$active, 'branch.');
-    $accountsOpen = in_array($active, ['users.index', 'users.create', 'users.edit', 'users.archive']) || str_starts_with((string)$active, 'users.');
+    $accountsOpen = in_array($active, ['users.index', 'users.create', 'users.edit', 'users.archive', 'accounts.clients.index', 'accounts.clients.create', 'accounts.clients.edit']) || str_starts_with((string)$active, 'users.') || str_starts_with((string)$active, 'accounts.clients.');
     $lbsListCount = $lbs_list_count ?? 13;
     $lbsReviewCount = $lbs_review_count ?? 28;
     $lbsMailboxCount = $lbs_mailbox_count ?? 55;
@@ -284,7 +284,7 @@
             <div class="nav-submenu" id="nav-sub-accounts" role="region" aria-label="Accounts submenu">
                 <div class="nav-submenu-inner">
                     <a href="{{ route('users.index') }}" class="nav-subitem {{ in_array($active, ['users.index', 'users.create', 'users.edit']) ? 'active' : '' }}">User Accounts</a>
-                    <a href="#" class="nav-subitem">Client Accounts</a>
+                    <a href="{{ route('accounts.clients.index') }}" class="nav-subitem {{ in_array($active, ['accounts.clients.index', 'accounts.clients.create', 'accounts.clients.edit']) ? 'active' : '' }}">Client Accounts</a>
                     <a href="{{ route('users.archive') }}" class="nav-subitem {{ $active === 'users.archive' ? 'active' : '' }}">Archive</a>
                 </div>
             </div>

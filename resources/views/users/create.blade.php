@@ -43,7 +43,7 @@
                     </div>
                     <div class="staff-form-group">
                         <label class="staff-label" for="role">Role</label>
-                        <select id="role" name="role" class="staff-input">
+                        <select id="role" name="role" class="staff-input select2-single">
                             <option value="">Select role</option>
                             <option value="Branch" {{ old('role') === 'Branch' ? 'selected' : '' }}>Branch</option>
                             <option value="Admin" {{ old('role') === 'Admin' ? 'selected' : '' }}>Admin</option>
@@ -58,7 +58,7 @@
                     </div>
                     <div class="staff-form-group">
                         <label class="staff-label" for="branch">Branch</label>
-                        <select id="branch" name="branch" class="staff-input">
+                        <select id="branch" name="branch" class="staff-input select2-single">
                             <option value="">Select branch</option>
                             @foreach($branches as $branch)
                                 <option value="{{ $branch->branch_name }}" {{ old('branch') === $branch->branch_name ? 'selected' : '' }}>
@@ -127,6 +127,7 @@
 @endpush
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         (function() {
             var form = document.querySelector('.staff-form');
@@ -134,6 +135,10 @@
             var roleSelect = document.getElementById('role');
             var branchSelect = document.getElementById('branch');
             var branchNote = document.getElementById('branchNote');
+
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2-single').select2({ width: '100%', allowClear: false });
+            }
 
             function updateBranchRequirement() {
                 if (!roleSelect || !branchSelect || !branchNote) return;

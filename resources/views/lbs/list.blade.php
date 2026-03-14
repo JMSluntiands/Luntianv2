@@ -154,7 +154,7 @@
                                 $statusBg  = $statusColors[$status] ?? null;
                                 $statusLower = strtolower($status);
                                 // Same flow as Edit Job Details modal: Allocated→Accepted/Processing; Accepted/Processing/Revised→For Checking; For Checking→For Review/Revised
-                                $canEditStatus = in_array($statusLower, ['allocated', 'accepted', 'processing', 'revised', 'for checking'], true);
+                                $canEditStatus = in_array($statusLower, ['allocated', 'accepted', 'processing', 'revised', 'for checking', 'for review'], true);
                                 $statusOptions = [];
                                 if ($statusLower === 'allocated') {
                                     foreach ($statuses ?? [] as $s) {
@@ -168,7 +168,12 @@
                                 } elseif ($statusLower === 'for checking') {
                                     foreach ($statuses ?? [] as $s) {
                                         $n = strtolower((string)($s->name ?? ''));
-                                        if (in_array($n, ['for review', 'revised'], true)) $statusOptions[] = $s->name;
+                                        if (in_array($n, ['for review', 'revised', 'for email confirmation', 'cancelled'], true)) $statusOptions[] = $s->name;
+                                    }
+                                } elseif ($statusLower === 'for review') {
+                                    foreach ($statuses ?? [] as $s) {
+                                        $n = strtolower((string)($s->name ?? ''));
+                                        if (in_array($n, ['for email confirmation', 'cancelled', 'revised', 'for checking'], true)) $statusOptions[] = $s->name;
                                     }
                                 } else {
                                     foreach ($statuses ?? [] as $s) { $statusOptions[] = $s->name; }

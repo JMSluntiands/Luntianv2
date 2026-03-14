@@ -84,6 +84,7 @@ html[data-theme="light"] .lbs-list-summary-item-danger .lbs-list-summary-badge {
 .lbs-badge-accepted { background: rgba(34, 197, 94, 0.2); color: #86efac; }
 .lbs-badge-awaiting-further-information { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
 .lbs-badge-for-email-confirmation { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+.lbs-badge-cancelled { background: rgba(100, 116, 139, 0.3); color: #94a3b8; }
 .lbs-badge-for-review { background: rgba(168, 85, 247, 0.2); color: #c4b5fd; }
 .lbs-badge-processing { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; }
 .lbs-badge-for-checking { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }

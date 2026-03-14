@@ -11,7 +11,9 @@ use App\Models\Status;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 class LbsJobController extends Controller
 {
@@ -745,6 +747,7 @@ class LbsJobController extends Controller
     {
         $jobs = DB::table('jobs as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
             ->where('j.reference', 'like', 'JOBS%')
             ->where('j.job_status', '=', 'For Email Confirmation')
             ->select(
@@ -753,18 +756,10 @@ class LbsJobController extends Controller
                 'j.log_date',
                 'j.client_code',
                 'j.job_reference_no',
-                'j.client_reference_no',
-                'j.staff_id',
-                'j.checker_id',
-                'j.ncc_compliance',
-                'j.job_request_id',
-                'j.address_client',
-                'j.job_type',
-                'j.priority',
-                'j.plan_complexity',
-                'j.job_status',
-                'j.completion_date',
-                'ca.client_account_name'
+                'j.upload_files',
+                'j.upload_project_files',
+                'ca.client_account_name',
+                'cl.client_email as to_email'
             )
             ->orderByDesc('j.log_date')
             ->limit(200)
@@ -785,6 +780,145 @@ class LbsJobController extends Controller
             'jobs'           => $jobs,
             'priorityColors' => $priorityColors,
             'statusColors'   => $statusColors,
+        ]);
+    }
+
+    /**
+     * Get email preview data for a job (for mailbox Preview modal).
+     */
+    public function emailPreview(int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $assessorEmail = null;
+        if (!empty($job->staff_id)) {
+            $user = User::where('unique_code', $job->staff_id)->first();
+            $assessorEmail = $user ? $user->email : null;
+        }
+
+        return response()->json([
+            'status'          => 'success',
+            'job_reference_no' => $job->job_reference_no ?? $job->reference ?? '',
+            'job_status'      => $job->job_status ?? 'For Email Confirmation',
+            'assessor'        => $job->staff_id ?? '',
+            'assessor_email'  => $assessorEmail,
+            'notes'           => $job->notes ?? '',
+        ]);
+    }
+
+    /**
+     * Send mailbox email: same design as preview, attachments = latest checker upload files.
+     * Uses SMTP config from database (e.g. SMTP2Go).
+     */
+    public function sendMailboxEmail(Request $request, int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
+        if (empty($toEmail)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No recipient email found for this job (client not found or no client_email).',
+            ], 422);
+        }
+
+        $assessorEmail = null;
+        if (!empty($job->staff_id)) {
+            $user = User::where('unique_code', $job->staff_id)->first();
+            $assessorEmail = $user ? $user->email : '';
+        }
+
+        $clientAccountName = null;
+        if (!empty($job->client_account_id)) {
+            $clientAccount = ClientAccount::find($job->client_account_id);
+            $clientAccountName = $clientAccount?->client_account_name;
+        }
+
+        $jobReferenceNo = $job->job_reference_no ?? $job->reference ?? '';
+        $jobStatus = $job->job_status ?? 'For Email Confirmation';
+        $assessor = $job->staff_id ?? '';
+        $notes = $job->notes ?? '';
+
+        $reference = $job->reference ?? '';
+        $clientReferenceNo = $job->client_reference_no ?? '';
+        $subjectParts = [];
+        if (!empty($clientAccountName)) {
+            $subjectParts[] = $clientAccountName;
+        }
+        if (!empty($reference)) {
+            $subjectParts[] = $reference;
+        }
+        if (!empty($clientReferenceNo)) {
+            $subjectParts[] = $clientReferenceNo;
+        }
+        $emailSubject = 'Job Update';
+        if (!empty($subjectParts)) {
+            $emailSubject .= ' : ' . implode(' ', $subjectParts);
+        } elseif (!empty($jobReferenceNo)) {
+            $emailSubject .= ' : ' . $jobReferenceNo;
+        }
+
+        $logoUrl = $this->getLogoDataUriForEmail();
+
+        $viewData = [
+            'logoUrl'         => $logoUrl,
+            'jobReferenceNo'  => $jobReferenceNo,
+            'jobStatus'       => $jobStatus,
+            'assessor'        => $assessor,
+            'assessorEmail'   => $assessorEmail,
+            'notes'           => $notes,
+        ];
+
+        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+        $basePath = 'lbs-documents/' . $folderName . '/';
+
+        $attachments = [];
+        $latestCheckerUpload = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $id)
+            ->orderByDesc('uploaded_at')
+            ->first();
+
+        if ($latestCheckerUpload && !empty($latestCheckerUpload->files_json)) {
+            $files = json_decode($latestCheckerUpload->files_json, true);
+            if (is_array($files)) {
+                foreach ($files as $fileName) {
+                    $storagePath = $basePath . $fileName;
+                    if (Storage::disk('local')->exists($storagePath)) {
+                        $attachments[] = [
+                            'path' => Storage::disk('local')->path($storagePath),
+                            'name' => $fileName,
+                        ];
+                    }
+                }
+            }
+        }
+
+        try {
+            Mail::send('emails.lbs-status-update', $viewData, function ($message) use ($toEmail, $emailSubject, $attachments) {
+                $message->to($toEmail);
+                $message->subject($emailSubject);
+                foreach ($attachments as $att) {
+                    $message->attach($att['path'], ['as' => $att['name']]);
+                }
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        DB::table('jobs')->where('job_id', $id)->update(['job_status' => 'Completed']);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Email sent successfully. Status updated to Completed.',
         ]);
     }
 
@@ -1080,6 +1214,67 @@ class LbsJobController extends Controller
             }
         }
         return $max + 1;
+    }
+
+    /**
+     * Logo for email: embed as base64 in HTML so it displays in body and never as attachment.
+     * Prefers logo-email.png (small, under 40KB) if present; else resizes logo-light.png via GD or embeds raw if small.
+     */
+    private function getLogoDataUriForEmail(): string
+    {
+        $smallPath = storage_path('app/public/logo-email.png');
+        if ($smallPath && is_file($smallPath) && filesize($smallPath) <= 40000) {
+            $raw = @file_get_contents($smallPath);
+            if ($raw !== false && $raw !== '') {
+                return 'data:image/png;base64,' . base64_encode($raw);
+            }
+        }
+
+        $path = storage_path('app/public/logo-light.png');
+        if (!$path || !is_file($path)) {
+            return config('app.url') . '/storage/logo-light.png';
+        }
+
+        $maxEmbedBytes = 35000; // ~47KB base64; keep email from being clipped
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return config('app.url') . '/storage/logo-light.png';
+        }
+
+        if (function_exists('imagecreatefromstring') && function_exists('imagepng') && function_exists('imagesx')) {
+            $img = @imagecreatefromstring($raw);
+            if ($img) {
+                $w = imagesx($img);
+                $h = imagesy($img);
+                $maxW = 180;
+                $newW = min($w, $maxW);
+                $newH = (int) round($h * ($newW / $w));
+                $out = @imagecreatetruecolor($newW, $newH);
+                if ($out) {
+                    imagealphablending($out, false);
+                    imagesavealpha($out, true);
+                    $trans = imagecolorallocatealpha($out, 255, 255, 255, 127);
+                    imagefill($out, 0, 0, $trans);
+                    imagecopyresampled($out, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                    imagedestroy($img);
+                    ob_start();
+                    imagepng($out, null, 6);
+                    $bin = ob_get_clean();
+                    imagedestroy($out);
+                    if ($bin !== false && $bin !== '') {
+                        return 'data:image/png;base64,' . base64_encode($bin);
+                    }
+                } else {
+                    imagedestroy($img);
+                }
+            }
+        }
+
+        if (strlen($raw) <= $maxEmbedBytes) {
+            return 'data:image/png;base64,' . base64_encode($raw);
+        }
+
+        return config('app.url') . '/storage/logo-light.png';
     }
 }
 

@@ -142,90 +142,98 @@ $(function () {
     });
   });
 
-  $('[data-status-wrap]').each(function () {
-    var $wrap = $(this);
-    var $trigger = $wrap.find('[data-status-trigger]');
+  $(document).on('click', '[data-status-trigger]', function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+    var $trigger = $(this);
+    var $wrap = $trigger.closest('[data-status-wrap]');
     var $menu = $wrap.find('.lbs-status-menu');
-    if (!$trigger.length || !$menu.length) return;
+    if (!$menu.length) return;
 
-    $trigger.on('click', function (e) {
-      e.stopPropagation();
-      if (!$menu.prop('hidden')) {
-        $menu.prop('hidden', true);
-        $trigger.attr('aria-expanded', 'false');
-        return;
-      }
-      closeAllStatusMenus();
-      closeAllInitialsMenus();
-      var rect = this.getBoundingClientRect();
-      $menu.css({
-        top: rect.bottom + 4,
-        left: rect.left,
-        minWidth: Math.max(rect.width, 90)
-      });
-      $menu.prop('hidden', false);
-      $trigger.attr('aria-expanded', 'true');
-    });
-
-    $menu.find('.lbs-status-option').on('click', function (e) {
-      e.stopPropagation();
-      var val = $(this).data('status-value');
-      var $row = $wrap.closest('tr.lbs-data-row');
-      var updateUrl = $row.length && $row.data('update-url');
-      var prevText = $trigger.text();
-      var prevClass = 'lbs-badge-' + String(prevText).toLowerCase().replace(/\s+/g, '-');
+    if (!$menu.prop('hidden')) {
       $menu.prop('hidden', true);
       $trigger.attr('aria-expanded', 'false');
+      return;
+    }
+    closeAllStatusMenus();
+    closeAllInitialsMenus();
+    var rect = this.getBoundingClientRect();
+    $menu.css({
+      position: 'fixed',
+      top: (rect.bottom + 4) + 'px',
+      left: rect.left + 'px',
+      minWidth: Math.max(rect.width, 90) + 'px',
+      display: 'flex',
+      visibility: 'visible'
+    });
+    $menu.prop('hidden', false).removeAttr('hidden');
+    $trigger.attr('aria-expanded', 'true');
+  });
 
-      var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
-      var allClasses = [
-        'lbs-badge-pending',
-        'lbs-badge-accepted',
-        'lbs-badge-allocated',
-        'lbs-badge-awaiting-further-information',
-        'lbs-badge-completed',
-        'lbs-badge-for-email-confirmation',
-        'lbs-badge-for-review',
-        'lbs-badge-processing',
-        'lbs-badge-for-checking',
-        'lbs-badge-revised'
-      ];
-      $trigger.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
-      var $detail = $row.next('.lbs-row-detail');
-      var $badge = $detail.find('.lbs-detail-status-badge');
+  $(document).on('click', '[data-status-wrap] .lbs-status-option', function (e) {
+    e.stopPropagation();
+    var $option = $(this);
+    var $wrap = $option.closest('[data-status-wrap]');
+    var $trigger = $wrap.find('[data-status-trigger]');
+    var $menu = $wrap.find('.lbs-status-menu');
+    var val = $option.data('status-value');
+    var $row = $wrap.closest('tr.lbs-data-row');
+    var updateUrl = $row.length && $row.data('update-url');
+    var prevText = $trigger.text();
+    var prevClass = 'lbs-badge-' + String(prevText).toLowerCase().replace(/\s+/g, '-');
+    $menu.prop('hidden', true);
+    $trigger.attr('aria-expanded', 'false');
+
+    var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
+    var allClasses = [
+      'lbs-badge-pending',
+      'lbs-badge-accepted',
+      'lbs-badge-allocated',
+      'lbs-badge-awaiting-further-information',
+      'lbs-badge-completed',
+      'lbs-badge-for-email-confirmation',
+      'lbs-badge-cancelled',
+      'lbs-badge-for-review',
+      'lbs-badge-processing',
+      'lbs-badge-for-checking',
+      'lbs-badge-revised'
+    ];
+    $trigger.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
+    var $detail = $row.next('.lbs-row-detail');
+    var $badge = $detail.find('.lbs-detail-status-badge');
+    if ($detail.length && $badge.length) {
+      $badge.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
+    }
+    recalcStatusSummary();
+
+    if (!updateUrl || !csrfToken) return;
+
+    var payload = new URLSearchParams();
+    payload.append('_token', csrfToken);
+    payload.append('job_status', val);
+
+    $.ajax({
+      url: updateUrl,
+      method: 'PUT',
+      data: payload.toString(),
+      headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
+    }).done(function (res) {
+      var msg = (res && res.message) || 'Status updated to ' + val + '.';
+      if (window.showSuccessToast) window.showSuccessToast(msg);
+      setTimeout(function () { window.location.reload(); }, 1500);
+    }).fail(function (xhr) {
+      var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';
+      if (window.showSuccessToast) window.showSuccessToast(msg);
+      $trigger.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
       if ($detail.length && $badge.length) {
-        $badge.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
+        $badge.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
       }
       recalcStatusSummary();
-
-      if (!updateUrl || !csrfToken) return;
-
-      var payload = new URLSearchParams();
-      payload.append('_token', csrfToken);
-      payload.append('job_status', val);
-
-      $.ajax({
-        url: updateUrl,
-        method: 'PUT',
-        data: payload.toString(),
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
-      }).done(function (res) {
-        var msg = (res && res.message) || 'Status updated successfully.';
-        if (window.showSuccessToast) window.showSuccessToast(msg);
-        setTimeout(function () { window.location.reload(); }, 800);
-      }).fail(function (xhr) {
-        var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';
-        if (window.showSuccessToast) window.showSuccessToast(msg);
-        $trigger.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
-        if ($detail.length && $badge.length) {
-          $badge.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
-        }
-        recalcStatusSummary();
-      });
     });
   });
 
-  $(document).on('click', function () {
+  $(document).on('click', function (e) {
+    if ($(e.target).closest('[data-status-trigger], .lbs-status-menu').length) return;
     closeAllStatusMenus();
     closeAllInitialsMenus();
   });

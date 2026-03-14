@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountClientsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\ClientAccountController;
@@ -45,6 +46,8 @@ Route::middleware('auth.session')->group(function () {
         return view('lbs.completed', ['sidebar_active' => 'lbs.completed']);
     })->name('lbs.completed');
     Route::get('/dashboard/lbs/mailbox', [LbsJobController::class, 'mailbox'])->name('lbs.mailbox');
+    Route::get('/dashboard/lbs/job/{id}/email-preview', [LbsJobController::class, 'emailPreview'])->name('lbs.job.emailPreview');
+    Route::post('/dashboard/lbs/job/{id}/send-mailbox-email', [LbsJobController::class, 'sendMailboxEmail'])->name('lbs.job.sendMailboxEmail');
     Route::get('/dashboard/lbs/review', [LbsJobController::class, 'review'])->name('lbs.review');
     Route::get('/dashboard/lbs/trash', function () {
         return view('lbs.trash', ['sidebar_active' => 'lbs.trash']);
@@ -175,6 +178,13 @@ Route::middleware('auth.session')->group(function () {
 
     Route::get('/dashboard/accounts/users/archive', [UserAccountController::class, 'archive'])->name('users.archive');
     Route::post('/dashboard/accounts/users/{user}/restore', [UserAccountController::class, 'restore'])->name('users.restore');
+
+    Route::get('/dashboard/accounts/clients', [AccountClientsController::class, 'index'])->name('accounts.clients.index');
+    Route::get('/dashboard/accounts/clients/create', [AccountClientsController::class, 'create'])->name('accounts.clients.create');
+    Route::post('/dashboard/accounts/clients', [AccountClientsController::class, 'store'])->name('accounts.clients.store');
+    Route::get('/dashboard/accounts/clients/{client}/edit', [AccountClientsController::class, 'edit'])->name('accounts.clients.edit');
+    Route::put('/dashboard/accounts/clients/{client}', [AccountClientsController::class, 'update'])->name('accounts.clients.update');
+    Route::delete('/dashboard/accounts/clients/{client}', [AccountClientsController::class, 'destroy'])->name('accounts.clients.destroy');
 
     // My account settings (per logged-in user)
     Route::get('/dashboard/account/settings', [AccountSettingsController::class, 'edit'])->name('account.settings.edit');

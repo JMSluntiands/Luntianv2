@@ -193,12 +193,8 @@
                                             {{ $status }}
                                         </button>
                                         <div class="lbs-status-menu" role="menu" hidden>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="For Review">For Review</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Pending">Pending</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Accepted">Accepted</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Allocated">Allocated</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Awaiting Further Information">Awaiting Further Information</button>
-                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Completed">Completed</button>
+                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="For Email Confirmation">For Email Confirmation</button>
+                                            <button type="button" role="menuitem" class="lbs-status-option" data-status-value="Cancelled">Cancelled</button>
                                         </div>
                                     </div>
                                 </td>
@@ -463,95 +459,6 @@
                     detailRow.hidden = true;
                 });
             });
-            function closeAllStatusMenus() {
-                document.querySelectorAll('.lbs-status-menu').forEach(function(m) { m.hidden = true; });
-                document.querySelectorAll('[data-status-trigger]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-            }
-            function closeAllInitialsMenus() {
-                document.querySelectorAll('.lbs-initials-menu').forEach(function(m) { m.hidden = true; });
-                document.querySelectorAll('[data-initials-trigger]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-            }
-            document.querySelectorAll('[data-status-wrap]').forEach(function(wrap) {
-                var trigger = wrap.querySelector('[data-status-trigger]');
-                var menu = wrap.querySelector('.lbs-status-menu');
-                if (!trigger || !menu) return;
-                trigger.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (!menu.hidden) {
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                        return;
-                    }
-                    closeAllStatusMenus();
-                    closeAllInitialsMenus();
-                    var rect = trigger.getBoundingClientRect();
-                    menu.style.top = (rect.bottom + 4) + 'px';
-                    menu.style.left = rect.left + 'px';
-                    menu.style.minWidth = Math.max(rect.width, 90) + 'px';
-                    menu.hidden = false;
-                    trigger.setAttribute('aria-expanded', 'true');
-                });
-                menu.querySelectorAll('.lbs-status-option').forEach(function(opt) {
-                    opt.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        var val = this.getAttribute('data-status-value');
-                        var badgeClass = 'lbs-badge-' + val.toLowerCase().replace(/\s+/g, '-');
-                        ['lbs-badge-pending', 'lbs-badge-accepted', 'lbs-badge-allocated', 'lbs-badge-for-review', 'lbs-badge-awaiting-further-information', 'lbs-badge-completed'].forEach(function(c) { trigger.classList.remove(c); });
-                        trigger.classList.add(badgeClass);
-                        trigger.textContent = val;
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                        var row = wrap.closest('tr');
-                        var detailRow = row && row.nextElementSibling && row.nextElementSibling.classList.contains('lbs-row-detail') ? row.nextElementSibling : null;
-                        if (detailRow) {
-                            var badge = detailRow.querySelector('.lbs-detail-status-badge');
-                            if (badge) {
-                                badge.textContent = val;
-                                ['lbs-badge-pending', 'lbs-badge-accepted', 'lbs-badge-allocated', 'lbs-badge-for-review', 'lbs-badge-awaiting-further-information', 'lbs-badge-completed'].forEach(function(c) { badge.classList.remove(c); });
-                                badge.classList.add(badgeClass);
-                            }
-                        }
-                    });
-                });
-            });
-            document.querySelectorAll('[data-initials-wrap]').forEach(function(wrap) {
-                var trigger = wrap.querySelector('[data-initials-trigger]');
-                var menu = wrap.querySelector('.lbs-initials-menu');
-                var role = wrap.getAttribute('data-role');
-                if (!trigger || !menu) return;
-                trigger.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (!menu.hidden) {
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                        return;
-                    }
-                    closeAllStatusMenus();
-                    closeAllInitialsMenus();
-                    var rect = trigger.getBoundingClientRect();
-                    menu.style.top = (rect.bottom + 4) + 'px';
-                    menu.style.left = rect.left + 'px';
-                    menu.style.minWidth = Math.max(rect.width, 70) + 'px';
-                    menu.hidden = false;
-                    trigger.setAttribute('aria-expanded', 'true');
-                });
-                menu.querySelectorAll('.lbs-initials-option').forEach(function(opt) {
-                    opt.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        var val = this.getAttribute('data-value');
-                        trigger.textContent = val;
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                        var row = wrap.closest('tr');
-                        var detailRow = row && row.nextElementSibling && row.nextElementSibling.classList.contains('lbs-row-detail') ? row.nextElementSibling : null;
-                        if (detailRow) {
-                            var badge = detailRow.querySelector(role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge');
-                            if (badge) badge.textContent = val;
-                        }
-                    });
-                });
-            });
-            document.addEventListener('click', function() { closeAllStatusMenus(); closeAllInitialsMenus(); });
             if (!table) return;
             var thead = table.querySelector('thead');
             thead.addEventListener('click', function(e) {
