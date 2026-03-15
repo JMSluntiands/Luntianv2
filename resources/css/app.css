@@ -731,3 +731,112 @@ body.sidebar-open #sidebarNav {
 .login-bg-arch-light .login-bg-arch-gradient {
     background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255,255,255,0.5) 0%, rgba(241, 245, 249, 0.2) 70%, transparent 100%);
 }
+
+/* ========== Select2 light theme (dashboard) – keep design in light mode ========== */
+html:not([data-theme="dark"]) .select2-container--default .select2-selection--single,
+[data-theme="light"] .select2-container--default .select2-selection--single {
+    background-color: #fff;
+    border: 1px solid #cbd5e1;
+    color: #1e293b;
+    height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+}
+html:not([data-theme="dark"]) .select2-container--default .select2-selection--single .select2-selection__rendered,
+[data-theme="light"] .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #1e293b;
+    line-height: 1.5;
+}
+html:not([data-theme="dark"]) .select2-container--default .select2-selection--single .select2-selection__placeholder,
+[data-theme="light"] .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #64748b;
+}
+html:not([data-theme="dark"]) .select2-dropdown,
+[data-theme="light"] .select2-dropdown {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+}
+html:not([data-theme="dark"]) .select2-results__option,
+[data-theme="light"] .select2-results__option {
+    color: #334155;
+}
+
+/* ========== Select2 dark theme (dashboard) ========== */
+[data-theme="dark"] .select2-container--default .select2-selection--single {
+    background-color: #1e293b;
+    border-color: #475569;
+    color: #f1f5f9;
+    height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+}
+[data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #f1f5f9;
+    line-height: 1.5;
+}
+[data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #94a3b8;
+}
+[data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 2.5rem;
+}
+[data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: #94a3b8 transparent transparent transparent;
+}
+[data-theme="dark"] .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent #94a3b8 transparent;
+}
+[data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__clear {
+    color: #94a3b8;
+}
+[data-theme="dark"] .select2-dropdown {
+    background-color: #1e293b;
+    border-color: #475569;
+}
+[data-theme="dark"] .select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: #0f172a;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+
+/* Dropdown nasa body – target direct sa .select2-dropdown para sigurado */
+[data-theme="dark"] .select2-dropdown .select2-results__option {
+    color: #e2e8f0;
+}
+[data-theme="dark"] .select2-dropdown .select2-results__option[aria-selected=true] {
+    background-color: #334155;
+    color: #f1f5f9;
+}
+/* Hover / highlighted – i-override lahat ng default light grey, max specificity */
+/* Walang hover highlight – highlighted option same as normal */
+[data-theme="dark"] .select2-dropdown .select2-results__option--highlighted,
+[data-theme="dark"] .select2-dropdown .select2-results__option--highlighted[aria-selected],
+html[data-theme="dark"] .select2-results__option--highlighted,
+html[data-theme="dark"] .select2-container--default .select2-results__option--highlighted {
+    background-color: transparent !important;
+    color: #e2e8f0 !important;
+}
+[data-theme="dark"] .select2-results__option {
+    color: #e2e8f0;
+}
+[data-theme="dark"] .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #334155;
+    color: #f1f5f9;
+}
+[data-theme="dark"] .select2-results__message {
+    color: #94a3b8;
+}
+
+/* ========== Sidebar active state – dark mode: readable (not white) ========== */
+[data-theme="dark"] .nav-item-active,
+[data-theme="dark"] .nav-subitem.nav-item-active {
+    background-color: rgba(16, 185, 129, 0.18) !important;
+    color: #34d399 !important;
+}
+[data-theme="dark"] .nav-item-active .nav-icon,
+[data-theme="dark"] .nav-subitem.nav-item-active .nav-icon {
+    color: #34d399;
+}
+[data-theme="dark"] .nav-item-active:hover,
+[data-theme="dark"] .nav-subitem.nav-item-active:hover {
+    background-color: rgba(16, 185, 129, 0.25) !important;
+    color: #6ee7b7 !important;
+}
