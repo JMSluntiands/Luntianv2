@@ -12,6 +12,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\LbsJobController;
+use App\Http\Controllers\BphJobController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\AccountSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -53,9 +54,7 @@ Route::middleware('auth.session')->group(function () {
     Route::post('/dashboard/lbs/job/{id}/send-mailbox-email', [LbsJobController::class, 'sendMailboxEmail'])->name('lbs.job.sendMailboxEmail');
     Route::get('/dashboard/lbs/review', [LbsJobController::class, 'review'])->name('lbs.review');
     Route::get('/dashboard/lbs/trash', [LbsJobController::class, 'trash'])->name('lbs.trash');
-    Route::get('/dashboard/bph/add', function () {
-        return view('bph.add', ['sidebar_active' => 'bph.add']);
-    })->name('bph.add');
+    Route::get('/dashboard/bph/add', [BphJobController::class, 'addForm'])->name('bph.add');
     Route::get('/dashboard/bph/list', function () {
         return view('bph.list', ['sidebar_active' => 'bph.list']);
     })->name('bph.list');
