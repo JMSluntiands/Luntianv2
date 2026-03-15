@@ -105,61 +105,7 @@
 @endsection
 
 @push('styles')
-    <style>
-        .jobrequest-page { display: block; padding-bottom: 0; max-width: 100%; }
-        body.page-job-request-index .content { padding-bottom: 0; }
-        .jobrequest-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; }
-        .jobrequest-header-text { min-width: 0; }
-        .jobrequest-title { font-size: 1.625rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; margin: 0 0 0.375rem 0; }
-        .jobrequest-subtitle { font-size: 0.9375rem; color: #94a3b8; margin: 0; line-height: 1.4; }
-        .btn-jobrequest-add { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; font-size: 0.9375rem; font-weight: 600; color: #fff; background: #2C528B; border-radius: 10px; text-decoration: none; transition: background 0.2s; box-shadow: 0 2px 6px rgba(44,82,139,0.35); }
-        .btn-jobrequest-add:hover { background: #234a77; color: #fff; }
-        .jobrequest-alert { padding: 0.875rem 1rem; border-radius: 10px; margin-bottom: 1.25rem; }
-        .jobrequest-alert-success { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #86efac; }
-        .jobrequest-page-enter { animation: jobrequest-page-in 0.4s ease-out; }
-        @keyframes jobrequest-page-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        .jobrequest-table-card { background: #0f172a; border: 1px solid #334155; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 100%; }
-        .jobrequest-table-wrap { overflow-x: auto; }
-        .jobrequest-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-        .jobrequest-col-id { width: 80px; }
-        .jobrequest-col-client { width: 100px; }
-        .jobrequest-col-request-id { width: 180px; }
-        .jobrequest-col-type { width: auto; }
-        .jobrequest-col-action { width: 100px; }
-        .jobrequest-th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #94a3b8; background: #1e293b; border-bottom: 1px solid #334155; }
-        .jobrequest-th-action { text-align: center; }
-        .jobrequest-td { padding: 0.75rem 1rem; border-bottom: 1px solid #334155; color: #e2e8f0; vertical-align: middle; }
-        .jobrequest-td-action { text-align: center; }
-        .jobrequest-td .jobrequest-code { font-family: ui-monospace, monospace; font-size: 0.8125rem; background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 6px; }
-        .jobrequest-td-empty { text-align: center; color: #94a3b8; padding: 2rem; }
-        .jobrequest-td-empty a { color: #2C528B; text-decoration: none; }
-        .jobrequest-td-empty a:hover { text-decoration: underline; }
-        .jobrequest-action-btns { display: flex; align-items: center; gap: 0.35rem; justify-content: center; flex-wrap: wrap; }
-        .jobrequest-delete-form { display: inline; margin: 0; padding: 0; }
-        .jobrequest-action-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: none; border-radius: 8px; background: transparent; color: #94a3b8; cursor: pointer; transition: background 0.15s, color 0.15s; text-decoration: none; }
-        .jobrequest-action-icon:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
-        .jobrequest-action-icon svg { display: block; pointer-events: none; }
-        .jobrequest-action-edit:hover { color: #93c5fd; background: rgba(44,82,139,0.25); }
-        .jobrequest-action-delete:hover { color: #fca5a5; background: rgba(248,113,113,0.15); }
-        .jobrequest-pagination { padding: 1rem; border-top: 1px solid #334155; }
-        .jobrequest-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-        html[data-theme="light"] .jobrequest-table-card { background: #fff; border-color: #e2e8f0; }
-        html[data-theme="light"] .jobrequest-title { color: #1e293b; }
-        html[data-theme="light"] .jobrequest-subtitle { color: #64748b; }
-        html[data-theme="light"] .jobrequest-th { background: #f8fafc; color: #64748b; border-bottom-color: #e2e8f0; }
-        html[data-theme="light"] .jobrequest-td { border-bottom-color: #e2e8f0; color: #1e293b; }
-        html[data-theme="light"] .jobrequest-td .jobrequest-code { background: #f1f5f9; color: #334155; }
-        html[data-theme="light"] .jobrequest-table tbody tr:hover { background: #f8fafc; }
-        html[data-theme="light"] .jobrequest-action-icon { color: #64748b; }
-        html[data-theme="light"] .jobrequest-action-icon:hover { color: #334155; background: #e2e8f0; }
-        .delete-modal-confirm p { margin: 0; }
-        .delete-modal-countdown { text-align: center; padding: 0.5rem 0; }
-        .delete-countdown-text { font-size: 0.9375rem; color: #94a3b8; margin: 0 0 1rem 0; }
-        .delete-countdown-number { font-size: 4rem; font-weight: 800; color: #f87171; line-height: 1; letter-spacing: -0.05em; min-height: 4rem; display: flex; align-items: center; justify-content: center; animation: delete-countdown-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .delete-countdown-cancel-hint { font-size: 0.8125rem; color: #64748b; margin: 1rem 0 0 0; }
-        @keyframes delete-countdown-pop { 0% { opacity: 0; transform: scale(0.3); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
-    </style>
-@endpush
+    @endpush
 
 @push('scripts')
     <script>

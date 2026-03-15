@@ -21,16 +21,4 @@
 @endsection
 
 @push('styles')
-    <style>
-        .nh-list-page { display: block; padding-bottom: 0; max-width: 100%; }
-        body.page-nh-trash .content { padding-bottom: 0; }
-        .nh-list-header { margin-bottom: 1.75rem; }
-        .nh-list-title { font-size: 1.625rem; font-weight: 700; color: #fff; margin: 0 0 0.375rem 0; }
-        .nh-list-subtitle { font-size: 0.9375rem; color: #94a3b8; margin: 0; }
-        .nh-table-card { background: #0f172a; border: 1px solid #334155; border-radius: 14px; overflow: hidden; }
-        .nh-table-wrap { padding: 1rem; }
-        html[data-theme="light"] .nh-list-title { color: #1e293b; }
-        html[data-theme="light"] .nh-list-subtitle { color: #64748b; }
-        html[data-theme="light"] .nh-table-card { background: #fff; border-color: #e2e8f0; }
-    </style>
-@endpush
+    @endpush

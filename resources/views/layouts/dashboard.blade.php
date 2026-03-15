@@ -14,11 +14,11 @@
     </script>
     @include('layouts.partials.dashboard-styles')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    @vite(['resources/js/layout.ts'])
+    @vite(['resources/css/app.css', 'resources/js/layout.ts'])
     @stack('styles')
     @include('layouts.partials.select2-theme')
 </head>
-<body class="@yield('body_class', '')">
+<body class="overflow-x-hidden @yield('body_class', '')">
     <div class="page-loader" id="pageLoader" aria-hidden="true" data-theme="">
         <div class="page-loader-spinner"></div>
         <span class="page-loader-logo">Luntian</span>
@@ -35,26 +35,29 @@
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true" tabindex="-1"></div>
     @include('layouts.partials.sidebar')
 
-    <div class="main-wrap">
-        @include('layouts.partials.header')
-
-        <main class="content">
+    <div class="main-wrap ml-0 flex h-screen min-h-0 min-w-0 flex-col overflow-hidden transition-[margin] duration-250 ease-out lg:ml-60 lg:w-[calc(100%-15rem)]">
+        <header class="header-wrap flex-shrink-0">
+            @include('layouts.partials.header')
+        </header>
+        <main class="content min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-4 dark:bg-slate-900 md:p-6">
             @yield('content')
         </main>
     </div>
 
-    <div class="modal-backdrop" id="logoutModal" role="dialog" aria-labelledby="logoutModalTitle" aria-modal="true">
-        <div class="modal-box">
-            <div class="modal-header">
-                <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                <h2 class="modal-title" id="logoutModalTitle">Logout</h2>
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 opacity-0 pointer-events-none transition-opacity duration-200" id="logoutModal" role="dialog" aria-labelledby="logoutModalTitle" aria-modal="true">
+        <div class="w-full max-w-sm rounded-2xl shadow-xl overflow-hidden bg-white border border-slate-200 dark:bg-[#2D3748] dark:border-slate-600" role="document">
+            <div class="flex items-center gap-3 px-5 py-5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </span>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="logoutModalTitle">Logout</h2>
             </div>
-            <div class="modal-body">
-                <p id="logoutModalMessage">Are you sure you want to logout?</p>
+            <div class="px-5 pb-4">
+                <p id="logoutModalMessage" class="text-slate-600 dark:text-slate-200 text-[15px]">Are you sure you want to logout?</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-cancel" id="logoutModalCancel">Cancel</button>
-                <button type="button" class="btn btn-confirm" id="logoutModalConfirm"><span class="btn-text">Logout</span></button>
+            <div class="flex justify-end gap-3 px-5 pb-5 pt-1">
+                <button type="button" class="cursor-pointer rounded-lg bg-slate-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-700 dark:focus:ring-offset-[#2D3748]" id="logoutModalCancel">Cancel</button>
+                <button type="button" class="cursor-pointer rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-pink-500 border border-pink-500 transition-colors hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#2D3748]" id="logoutModalConfirm"><span class="btn-text">Logout</span></button>
             </div>
         </div>
     </div>
@@ -68,14 +71,15 @@
 
     <script>
     (function() {
+        /* Sidebar nav dropdowns – run inline so they work even if layout.ts loads late */
         document.querySelectorAll('.nav-dropdown[data-dropdown]').forEach(function(wrap) {
-            var trigger = wrap.querySelector('.nav-dropdown-trigger');
+            var trigger = wrap.querySelector('button');
             if (!trigger) return;
             trigger.addEventListener('click', function() {
                 var isOpen = wrap.classList.contains('open');
                 document.querySelectorAll('.nav-dropdown.open').forEach(function(open) {
                     open.classList.remove('open');
-                    var t = open.querySelector('.nav-dropdown-trigger');
+                    var t = open.querySelector('button');
                     if (t) t.setAttribute('aria-expanded', 'false');
                 });
                 if (!isOpen) {
@@ -161,39 +165,38 @@
                 applyTheme(localStorage.getItem('theme') === 'light' ? 'light' : 'dark');
             }
         })();
-        (function announcementLoop() {
-            var textEl = document.getElementById('announcementText');
-            var trackEl = document.querySelector('.announcement-ticker-track');
-            if (!textEl || !trackEl) return;
-            function setVarsAndStart() {
-                var trackW = trackEl.offsetWidth;
-                var textW = textEl.offsetWidth;
-                textEl.style.setProperty('--start-x', trackW + 'px');
-                textEl.style.setProperty('--end-x', (-textW) + 'px');
-                textEl.style.transform = 'translateX(' + trackW + 'px)';
+        (function announcementMarqueeGap() {
+            var marquee = document.getElementById('announcementMarquee');
+            if (!marquee) return;
+            function setGap() {
+                marquee.style.setProperty('--marquee-gap', marquee.offsetWidth + 'px');
             }
-            setVarsAndStart();
-            requestAnimationFrame(function() { textEl.classList.add('run'); });
-            textEl.addEventListener('animationend', function() {
-                setVarsAndStart();
-                textEl.classList.remove('run');
-                requestAnimationFrame(function() {
-                    void textEl.offsetWidth;
-                    textEl.classList.add('run');
-                });
-            });
+            if (document.readyState === 'complete') {
+                requestAnimationFrame(setGap);
+            } else {
+                window.addEventListener('load', function() { requestAnimationFrame(setGap); });
+            }
+            window.addEventListener('resize', setGap);
         })();
         (function hidePageLoader() {
             var loader = document.getElementById('pageLoader');
             if (!loader) return;
+            var minShowMs = 450;
+            var start = Date.now();
             function hide() {
-                loader.classList.add('hide');
-                setTimeout(function() { loader.remove(); }, 350);
+                var elapsed = Date.now() - start;
+                var delay = Math.max(0, minShowMs - elapsed);
+                setTimeout(function() {
+                    loader.classList.add('hide');
+                    loader.style.pointerEvents = 'none';
+                    try { document.dispatchEvent(new CustomEvent('pageLoaderHidden')); } catch (e) {}
+                    setTimeout(function() { loader.remove(); }, 350);
+                }, delay);
             }
             if (document.readyState === 'complete') {
-                setTimeout(hide, 80);
+                hide();
             } else {
-                window.addEventListener('load', function() { setTimeout(hide, 80); });
+                window.addEventListener('load', hide);
             }
         })();
         (function sidebarMobile() {

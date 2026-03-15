@@ -64,44 +64,7 @@
 @endsection
 
 @push('styles')
-    <style>
-        .ac-client-form-page { display: block; padding-bottom: 0; max-width: 720px; }
-        body.page-accounts-clients-edit .content { padding-bottom: 0; }
-        .ac-client-form-header { margin-bottom: 1.75rem; }
-        .ac-client-form-title { font-size: 1.625rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; margin: 0 0 0.375rem 0; }
-        .ac-client-form-subtitle { font-size: 0.9375rem; color: #94a3b8; margin: 0; line-height: 1.4; }
-        .ac-client-alert { padding: 0.875rem 1rem; border-radius: 10px; margin-bottom: 1.25rem; }
-        .ac-client-alert-error { background: rgba(248, 113, 113, 0.15); border: 1px solid rgba(248, 113, 113, 0.4); color: #fca5a5; }
-        .ac-client-error-list { margin: 0; padding-left: 1.25rem; }
-        .ac-client-card { background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .ac-client-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 1.5rem; }
-        .ac-client-form-group-full { grid-column: 1 / -1; }
-        @media (max-width: 640px) { .ac-client-form-grid { grid-template-columns: 1fr; } }
-        .ac-client-form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .ac-client-label { font-size: 0.8125rem; font-weight: 600; color: #94a3b8; }
-        .ac-client-required { color: #f87171; }
-        .ac-client-input { width: 100%; padding: 0.625rem 0.875rem; font-size: 0.9375rem; line-height: 1.4; border: 1px solid #334155; border-radius: 10px; background: #1e293b; color: #e2e8f0; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; min-height: 2.75rem; }
-        .ac-client-input:focus { outline: none; border-color: #2C528B; box-shadow: 0 0 0 3px rgba(44,82,139,0.25); }
-        .ac-client-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2.25rem; }
-        .ac-client-hint { font-size: 0.75rem; color: #64748b; margin: 0.25rem 0 0; }
-        .ac-client-form-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid #334155; }
-        .btn-ac-client-save { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: linear-gradient(135deg, #2C528B 0%, #2B6CB0 100%); color: #fff; padding: 0.75rem 1.5rem; font-size: 0.9375rem; font-weight: 600; border-radius: 10px; cursor: pointer; border: none; box-shadow: 0 2px 8px rgba(44,82,139,0.4); transition: transform 0.2s; min-width: 110px; }
-        .btn-ac-client-save:hover { transform: translateY(-1px); }
-        .btn-ac-client-save:disabled { cursor: not-allowed; opacity: 0.85; transform: none; }
-        .btn-ac-client-save .btn-spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: ac-client-spin 0.7s linear infinite; }
-        .btn-ac-client-save.is-saving .btn-text { display: none; }
-        .btn-ac-client-save.is-saving .btn-spinner { display: inline-block; }
-        @keyframes ac-client-spin { to { transform: rotate(360deg); } }
-        .btn-ac-client-cancel { padding: 0.75rem 1.5rem; font-size: 0.9375rem; font-weight: 600; border-radius: 10px; color: #94a3b8; text-decoration: none; transition: color 0.2s, background 0.2s; }
-        .btn-ac-client-cancel:hover { color: #e2e8f0; }
-        html[data-theme="light"] .ac-client-card { background: #fff; border-color: #e2e8f0; }
-        html[data-theme="light"] .ac-client-form-title { color: #1e293b; }
-        html[data-theme="light"] .ac-client-form-subtitle { color: #64748b; }
-        html[data-theme="light"] .ac-client-input { background: #f8fafc; border-color: #e2e8f0; color: #1e293b; }
-        html[data-theme="light"] .ac-client-form-actions { border-top-color: #e2e8f0; }
-        html[data-theme="light"] .ac-client-hint { color: #64748b; }
-    </style>
-@endpush
+    @endpush
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

@@ -51,26 +51,6 @@ export default function AnnouncementTicker({
           {text}
         </div>
       </div>
-      <style>{`
-        .announcement-ticker {
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          margin: 0 1rem;
-          height: 100%;
-        }
-        .announcement-ticker__track {
-          width: 100%;
-          overflow: hidden;
-        }
-        .announcement-ticker__text {
-          white-space: nowrap;
-          color: #e2e8f0;
-          font-size: 0.9rem;
-        }
-      `}</style>
     </div>
   );
 }

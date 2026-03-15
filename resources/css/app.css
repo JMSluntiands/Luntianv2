@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 @import 'tailwindcss';
 
+/* Dashboard theme: match login – use data-theme so dark: works */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
@@ -13,153 +16,604 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Toast / Alert animation */
-@keyframes toast-in {
-    0% {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0);
-    }
+/* Walang white line sa taas – ireset ang margin/padding */
+html, body {
+    margin: 0;
+    padding: 0;
 }
 
-@keyframes toast-out {
-    0% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-    100% {
-        opacity: 0;
-        transform: translateX(100%);
-    }
+/* Dashboard layout: only main content scrolls, navbar stays fixed */
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+.main-wrap {
+    height: 100%;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.main-wrap .content {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.main-wrap .header-wrap {
+    flex: 0 0 auto;
 }
 
-.animate-toast-in {
-    animation: toast-in 0.35s ease-out forwards;
+/* Main content scrollbar – light mode */
+.main-wrap .content {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+.main-wrap .content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.main-wrap .content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.main-wrap .content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.main-wrap .content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+.main-wrap .content::-webkit-scrollbar-corner {
+    background: #f1f5f9;
 }
 
-.animate-toast-out {
-    animation: toast-out 0.25s ease-in forwards;
+/* Main content scrollbar – dark mode */
+[data-theme="dark"] .main-wrap .content {
+    scrollbar-color: #475569 #1e293b;
+}
+[data-theme="dark"] .main-wrap .content::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+[data-theme="dark"] .main-wrap .content::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+[data-theme="dark"] .main-wrap .content::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+[data-theme="dark"] .main-wrap .content::-webkit-scrollbar-corner {
+    background: #1e293b;
 }
 
-/* Theme toggle (dark mode) animations */
-@keyframes theme-icon-in {
-    0% {
-        opacity: 0;
-        transform: rotate(-90deg) scale(0.5);
-    }
-    100% {
-        opacity: 1;
-        transform: rotate(0deg) scale(1);
-    }
+/* Page loader – shows on every full page load */
+@keyframes page-loader-spin {
+    to { transform: rotate(360deg); }
 }
-
-.theme-icon-enter {
-    animation: theme-icon-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+@keyframes page-loader-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
-
-/* Login – architectural background animation */
-.login-bg-arch {
+.page-loader {
     position: fixed;
     inset: 0;
-    z-index: 0;
-    overflow: hidden;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    background: #0f172a;
+    transition: opacity 0.35s ease-out;
+}
+[data-theme="dark"] .page-loader {
+    background: #020617;
+}
+.page-loader-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #34d399;
+    border-radius: 50%;
+    animation: page-loader-spin 0.8s linear infinite;
+}
+.page-loader-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #e2e8f0;
+    animation: page-loader-pulse 1.2s ease-in-out infinite;
+}
+[data-theme="dark"] .page-loader-logo {
+    color: #f1f5f9;
+}
+.page-loader.hide {
     pointer-events: none;
+    opacity: 0;
 }
 
-/* Animated gradient layer */
-.login-bg-arch-gradient {
+/* Dashboard layout: sidebar overlay & mobile open state */
+.sidebar-overlay {
+    @apply fixed inset-0 z-20 bg-black/40 opacity-0 invisible pointer-events-none transition-all duration-250 ease-out;
+}
+body.sidebar-open .sidebar-overlay {
+    @apply opacity-100 visible pointer-events-auto;
+}
+body.sidebar-open #sidebarNav {
+    @apply translate-x-0 shadow-xl;
+}
+
+/* Dropdown visible state (user menu, notifications) */
+.notification-dropdown.show,
+.user-dropdown.show {
+    @apply opacity-100 visible pointer-events-auto translate-y-0;
+}
+
+/* Logout modal visible state (Tailwind-styled modal) */
+#logoutModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Hide scrollbar on sidebar nav */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Marquee keyframes – gamit ng Tailwind animate-[...] at .animate-marquee */
+@keyframes announcement-marquee {
+    0% {
+        transform: translateX(-50%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* Utility para sa moving announcement (fallback kung hindi gumana arbitrary) */
+.animate-marquee {
+    animation: announcement-marquee 25s linear infinite;
+}
+
+/* Dashboard calendar – match sidebar dark mode (slate-900, emerald) */
+.dashboard-calendar-wrapper .dashboard-calendar {
+    @apply w-full max-w-full;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-header {
+    @apply flex items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-600;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-nav {
+    @apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-title {
+    @apply text-sm font-semibold text-slate-800 dark:text-slate-100;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-body {
+    @apply mt-3;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-weekdays {
+    @apply grid grid-cols-7 gap-1 text-center;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-weekday {
+    @apply py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-grid {
+    @apply grid grid-cols-7 gap-1;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell {
+    @apply flex h-9 w-full items-center justify-center rounded-lg text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.other-month {
+    @apply text-slate-400 dark:text-slate-500;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.selected {
+    @apply bg-emerald-500 font-semibold text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-600;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-grid--animate {
+    @apply opacity-100 transition-opacity duration-200;
+}
+
+/* ========== Dashboard animations ========== */
+@keyframes dashboard-fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes dashboard-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+.animate-dashboard-card {
+    animation: dashboard-fade-in-up 0.5s ease-out forwards;
+}
+.animate-dashboard-panel {
+    animation: dashboard-scale-in 0.4s ease-out forwards;
+}
+.dashboard-card-animate-delay-0 { animation-delay: 0.05s; opacity: 0; }
+.dashboard-card-animate-delay-1 { animation-delay: 0.12s; opacity: 0; }
+.dashboard-card-animate-delay-2 { animation-delay: 0.19s; opacity: 0; }
+.dashboard-card-animate-delay-3 { animation-delay: 0.26s; opacity: 0; }
+.dashboard-panel-animate-delay-0 { animation-delay: 0.15s; opacity: 0; }
+.dashboard-panel-animate-delay-1 { animation-delay: 0.25s; opacity: 0; }
+
+/* ========== Dashboard page (fallback / shared) ========== */
+.dashboard-page {
+    width: 100%;
+    min-height: 0;
+}
+.dashboard-page__header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.dashboard-page__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #0f172a;
+}
+[data-theme="dark"] .dashboard-page__title {
+    color: #f8fafc;
+}
+.dashboard-page__subtitle {
+    margin-top: 0.375rem;
+    font-size: 0.9375rem;
+    color: #475569;
+}
+[data-theme="dark"] .dashboard-page__subtitle {
+    color: #94a3b8;
+}
+
+/* Stats cards grid (fallback blade) */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+@media (min-width: 640px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+}
+@media (min-width: 1024px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Legacy card classes for Blade fallback */
+.dashboard-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    transition: transform 0.25s ease;
+}
+
+.dashboard-card__inner {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+}
+.dashboard-card__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.dashboard-card__value {
+    margin-top: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+}
+@media (min-width: 640px) {
+    .dashboard-card__inner { padding: 1rem 1.25rem; }
+    .dashboard-card__value { font-size: 1.875rem; }
+}
+/* Icon as card background (Blade fallback) – 100px, no border, no bg */
+.dashboard-card__icon {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        125deg,
-        transparent 0%,
-        rgba(16, 185, 129, 0.03) 25%,
-        transparent 50%,
-        rgba(148, 163, 184, 0.04) 75%,
-        transparent 100%
-    );
-    background-size: 200% 200%;
-    animation: arch-gradient-move 12s ease-in-out infinite;
+    right: -0.5rem;
+    top: -0.5rem;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.2;
+    pointer-events: none;
+    background: none;
+    border: none;
+}
+.dashboard-card__icon svg {
+    width: 100%;
+    height: 100%;
+}
+.dashboard-card__gradient { display: none; }
+.dashboard-card__sep {
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.dashboard-card__rows {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.dashboard-card__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.375rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    transition: background 0.15s ease;
+}
+.dashboard-card__row-label { font-weight: 500; }
+.dashboard-card__row-value {
+    padding: 0.25rem 0.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-radius: 9999px;
 }
 
-.login-bg-arch-dark .login-bg-arch-gradient {
-    background: linear-gradient(
-        125deg,
-        transparent 0%,
-        rgba(148, 163, 184, 0.04) 25%,
-        transparent 50%,
-        rgba(52, 211, 153, 0.03) 75%,
-        transparent 100%
-    );
-    background-size: 200% 200%;
+/* Count Up Animation – applied to all dashboard stat numbers */
+.count-up-animation {
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+    transition: opacity 0.1s ease-out;
 }
 
-/* Blueprint-style grid – slow drift + opacity pulse */
-.login-bg-arch::before {
+/* Continuous line animation – segment moves along path in a loop */
+@keyframes dashboard-graph-continuous {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 0.34; }
+}
+@keyframes dashboard-graph-fill-in {
+    to { opacity: 1; }
+}
+.dashboard-graph-fill {
+    opacity: 0;
+    animation: dashboard-graph-fill-in 0.5s ease-out 0.3s forwards;
+}
+.dashboard-graph-continuous {
+    animation: dashboard-graph-continuous 2.2s linear infinite;
+}
+.dashboard-graph-continuous-2 { animation-delay: 0.35s; }
+.dashboard-graph-continuous-3 { animation-delay: 0.7s; }
+/* Different speed per card */
+.dashboard-graph-continuous.dashboard-graph-continuous-total { animation-duration: 2s; }
+.dashboard-graph-continuous.dashboard-graph-continuous-completed { animation-duration: 2.5s; animation-direction: reverse; }
+.dashboard-graph-continuous.dashboard-graph-continuous-processing { animation-duration: 1.6s; }
+.dashboard-graph-continuous.dashboard-graph-continuous-pending { animation-duration: 2.2s; animation-direction: reverse; }
+
+/* Line graph for cards (Blade fallback) – static chart lines, no sliding image */
+.dashboard-card::before {
     content: '';
     position: absolute;
-    inset: -100%;
-    background-image:
-        linear-gradient(to right, currentColor 1px, transparent 1px),
-        linear-gradient(to bottom, currentColor 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.08;
-    animation: arch-grid-drift 50s linear infinite, arch-grid-pulse 6s ease-in-out infinite;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 55%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cpath fill='white' fill-opacity='0.06' d='M0 72 Q50 58 100 45 T200 28 L200 80 L0 80 Z'/%3E%3Cpath fill='none' stroke='white' stroke-opacity='0.2' stroke-width='1.5' d='M0 65 Q30 55 60 42 T120 30 T180 20 L200 18'/%3E%3Cpath fill='none' stroke='white' stroke-opacity='0.12' stroke-width='1' d='M0 58 Q40 48 80 38 T160 22 L200 15'/%3E%3Cpath fill='none' stroke='white' stroke-opacity='0.1' stroke-width='1' d='M0 70 Q25 60 50 48 T100 38 T150 28 T200 20'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    background-position: bottom left;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 0;
+}
+.dashboard-card--pending::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cpath fill='%23475569' fill-opacity='0.06' d='M0 72 Q50 58 100 45 T200 28 L200 80 L0 80 Z'/%3E%3Cpath fill='none' stroke='%23475569' stroke-opacity='0.2' stroke-width='1.5' d='M0 65 Q30 55 60 42 T120 30 T180 20 L200 18'/%3E%3Cpath fill='none' stroke='%23475569' stroke-opacity='0.12' stroke-width='1' d='M0 58 Q40 48 80 38 T160 22 L200 15'/%3E%3Cpath fill='none' stroke='%23475569' stroke-opacity='0.08' stroke-width='1' d='M0 70 Q25 60 50 48 T100 38 T150 28 T200 20'/%3E%3C/svg%3E");
 }
 
-/* Perspective / section lines – subtle float */
-.login-bg-arch::after {
-    content: '';
-    position: absolute;
-    inset: -30%;
-    background-image:
-        linear-gradient(100deg, currentColor 1px, transparent 1px),
-        linear-gradient(170deg, currentColor 1px, transparent 1px),
-        linear-gradient(80deg, currentColor 1px, transparent 1px);
-    background-size: 140px 140px, 110px 110px, 90px 90px;
-    background-position: 0 0, 30px 50px, 50px 30px;
-    opacity: 0.05;
-    animation: arch-perspective-drift 70s linear infinite reverse, arch-grid-pulse-subtle 8s ease-in-out infinite 1s;
+.dashboard-card--total {
+    background: #FFA500;
+    color: #fff;
+}
+.dashboard-card--total:hover {
+    transform: translateY(-4px);
+}
+.dashboard-card--total .dashboard-card__label,
+.dashboard-card--total .dashboard-card__row-label { color: rgba(255,255,255,0.9); }
+.dashboard-card--total .dashboard-card__icon { color: #fff; }
+.dashboard-card--total .dashboard-card__row-value {
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+}
+.dashboard-card--completed {
+    background: #8B4513;
+    color: #fff;
+}
+.dashboard-card--completed:hover {
+    transform: translateY(-4px);
+}
+.dashboard-card--completed .dashboard-card__label,
+.dashboard-card--completed .dashboard-card__row-label { color: rgba(255,255,255,0.9); }
+.dashboard-card--completed .dashboard-card__icon { color: #fff; }
+.dashboard-card--completed .dashboard-card__row-value {
+    background: rgba(0,0,0,0.25);
+    color: #fff;
+}
+.dashboard-card--processing {
+    background: #FFC107;
+    color: #fff;
+}
+.dashboard-card--processing:hover {
+    transform: translateY(-4px);
+}
+.dashboard-card--processing .dashboard-card__label,
+.dashboard-card--processing .dashboard-card__row-label { color: rgba(255,255,255,0.95); }
+.dashboard-card--processing .dashboard-card__icon { color: #fff; }
+.dashboard-card--processing .dashboard-card__row-value {
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+}
+.dashboard-card--pending {
+    background: #F5DEB3;
+    color: #1e293b;
+}
+.dashboard-card--pending:hover {
+    transform: translateY(-4px);
+}
+.dashboard-card--pending .dashboard-card__label,
+.dashboard-card--pending .dashboard-card__row-label { color: #334155; }
+.dashboard-card--pending .dashboard-card__icon { color: #475569; }
+.dashboard-card--pending .dashboard-card__row-value {
+    background: rgba(71, 85, 105, 0.2);
+    color: #1e293b;
+}
+.dashboard-card--pending .dashboard-card__sep {
+    border-top-color: rgba(71, 85, 105, 0.2);
 }
 
-.login-bg-arch-dark {
-    color: rgb(148 163 184);
+/* Panels (Calendar & Holidays) */
+.dashboard-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+@media (min-width: 1024px) {
+    .dashboard-section {
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+}
+.dashboard-panel {
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: #fff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+}
+[data-theme="dark"] .dashboard-panel {
+    border-color: rgba(51, 65, 85, 0.6);
+    background: rgba(30, 41, 59, 0.9);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+.dashboard-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem 0.75rem 1rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    background: rgba(248, 250, 252, 0.85);
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+@media (min-width: 640px) {
+    .dashboard-panel__header {
+        padding: 1rem 1.25rem;
+    }
+}
+[data-theme="dark"] .dashboard-panel__header {
+    border-bottom-color: rgba(51, 65, 85, 0.6);
+    background: rgba(30, 41, 59, 0.6);
+    color: #f1f5f9;
+}
+.dashboard-panel__icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background: rgba(16, 185, 129, 0.2);
+    color: #059669;
+}
+[data-theme="dark"] .dashboard-panel__icon {
+    background: rgba(16, 185, 129, 0.28);
+    color: #34d399;
+}
+.dashboard-panel__body {
+    padding: 1rem 1.25rem;
+}
+@media (min-width: 640px) {
+    .dashboard-panel__body {
+        padding: 1.25rem 1.5rem;
+    }
 }
 
-.login-bg-arch-light {
-    color: rgb(16 185 129);
+/* Holidays sub-cards */
+.dashboard-holidays {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.dashboard-holiday-box {
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.7) 100%);
+}
+[data-theme="dark"] .dashboard-holiday-box {
+    border-color: rgba(71, 85, 105, 0.5);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.7) 100%);
+}
+.dashboard-holiday-box__title {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    color: #64748b;
+}
+[data-theme="dark"] .dashboard-holiday-box__title {
+    border-bottom-color: rgba(71, 85, 105, 0.5);
+    color: #94a3b8;
+}
+.dashboard-holiday-box__text {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: #475569;
+}
+[data-theme="dark"] .dashboard-holiday-box__text {
+    color: #94a3b8;
 }
 
-@keyframes arch-grid-drift {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(40px, 40px); }
+/* Login success overlay – animation before redirect to dashboard */
+@keyframes login-success-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
-
-@keyframes arch-grid-pulse {
-    0%, 100% { opacity: 0.06; }
-    50% { opacity: 0.12; }
+@keyframes login-success-scale-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
-
-@keyframes arch-grid-pulse-subtle {
-    0%, 100% { opacity: 0.04; }
-    50% { opacity: 0.08; }
+@keyframes login-success-icon-pop {
+    0% { opacity: 0; transform: scale(0.5); }
+    50% { transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
 }
-
-@keyframes arch-perspective-drift {
-    0% { transform: translate(0, 0); }
-    50% { transform: translate(15px, -10px); }
-    100% { transform: translate(0, 0); }
+@keyframes login-success-progress-fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
 }
-
-@keyframes arch-gradient-move {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-}
-
-/* Login success overlay – animation before dashboard redirect */
 .login-success-overlay {
     position: fixed;
     inset: 0;
@@ -167,123 +621,113 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(8px);
-    animation: login-success-overlay-in 0.4s ease-out forwards;
+    animation: login-success-fade-in 0.35s ease-out forwards;
 }
-
 .login-success-overlay-light {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(241, 245, 249, 0.9);
 }
-
-.login-success-overlay-light .login-success-progress {
-    background: rgba(0, 0, 0, 0.08);
-}
-
 .login-success-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
-    max-width: 320px;
-    animation: login-success-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+    padding: 2rem 2.5rem;
+    animation: login-success-scale-in 0.4s ease-out 0.1s both;
 }
-
 .login-success-icon-wrap {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 80px;
-    height: 80px;
+    width: 4.5rem;
+    height: 4.5rem;
     border-radius: 50%;
     background: rgba(16, 185, 129, 0.2);
-    animation: login-success-icon-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+    color: #10b981;
 }
-
+.login-success-overlay-light .login-success-icon-wrap {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
 .login-success-icon {
-    width: 48px;
-    height: 48px;
-    color: rgb(16 185 129);
-    animation: login-success-check-in 0.4s ease-out 0.5s both;
+    width: 2.5rem;
+    height: 2.5rem;
+    animation: login-success-icon-pop 0.5s ease-out 0.25s both;
 }
-
 .login-success-progress {
-    position: relative;
-    width: 100%;
-    height: 4px;
     margin-top: 1.5rem;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.1);
+    height: 4px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2);
     overflow: hidden;
 }
-
+.login-success-overlay-light .login-success-progress {
+    background: rgba(15, 23, 42, 0.12);
+}
 .login-success-progress::after {
     content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    display: block;
+    height: 100%;
     width: 100%;
-    border-radius: 2px;
-    background: rgb(16 185 129);
+    background: linear-gradient(90deg, #059669, #34d399);
+    border-radius: 9999px;
     transform-origin: left;
-    animation: login-success-progress-fill 2s ease-in-out forwards;
+    animation: login-success-progress-fill 2s ease-out 0.4s forwards;
 }
-
 .login-success-overlay-light .login-success-progress::after {
-    background: rgb(16 185 129);
+    background: linear-gradient(90deg, #059669, #10b981);
 }
 
-@keyframes login-success-overlay-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+/* Login – architectural background and animation */
+.login-bg-arch {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
 }
-
-@keyframes login-success-card-in {
-    from {
-        opacity: 0;
-        transform: scale(0.85) translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
+.login-bg-arch-dark {
+    background: #0f172a;
 }
-
-@keyframes login-success-icon-pop {
-    from {
-        opacity: 0;
-        transform: scale(0.3);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+.login-bg-arch-light {
+    background: rgba(236, 254, 255, 0.85);
 }
-
-@keyframes login-success-check-in {
-    from {
-        opacity: 0;
-        transform: scale(0.5);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+.login-bg-arch::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-size: 48px 48px, 48px 48px, 96px 96px, 96px 96px;
+    background-position: 0 0, 24px 24px, 0 0, 48px 48px;
 }
-
-@keyframes login-success-progress-fill {
-    from {
-        transform: scaleX(0);
-        transform-origin: left;
-    }
-    to {
-        transform: scaleX(1);
-        transform-origin: left;
-    }
+.login-bg-arch-dark::before {
+    background-image:
+        linear-gradient(rgba(71, 85, 105, 0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(71, 85, 105, 0.25) 1px, transparent 1px),
+        linear-gradient(rgba(100, 116, 139, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 116, 139, 0.12) 1px, transparent 1px);
+}
+.login-bg-arch-light::before {
+    background-image:
+        linear-gradient(rgba(100, 116, 139, 0.22) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 116, 139, 0.22) 1px, transparent 1px),
+        linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+}
+.login-bg-arch::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath fill='none' stroke='%23475569' stroke-width='0.5' stroke-opacity='0.15' d='M0 60 L120 60 M60 0 L60 120 M0 0 L120 120 M0 120 L120 0'/%3E%3C/svg%3E") repeat;
+    background-size: 120px 120px;
+    opacity: 0.9;
+}
+.login-bg-arch-light::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='0.45' stroke-opacity='0.2' d='M0 60 L120 60 M60 0 L60 120 M0 0 L120 120 M0 120 L120 0'/%3E%3C/svg%3E");
+}
+.login-bg-arch-gradient {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, transparent 0%, rgba(15, 23, 42, 0.4) 100%);
+    pointer-events: none;
+}
+.login-bg-arch-light .login-bg-arch-gradient {
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255,255,255,0.5) 0%, rgba(241, 245, 249, 0.2) 70%, transparent 100%);
 }

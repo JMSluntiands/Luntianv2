@@ -1,12 +1,12 @@
 import './bootstrap';
 import { createRoot } from 'react-dom/client';
-import Calendar from './components/Calendar';
+import Dashboard from './components/Dashboard';
 import AnnouncementTicker from './components/AnnouncementTicker';
 
 function mountDashboard() {
-  const calendarRoot = document.getElementById('calendar-root');
-  if (calendarRoot) {
-    createRoot(calendarRoot).render(<Calendar />);
+  const dashboardRoot = document.getElementById('dashboard-root');
+  if (dashboardRoot) {
+    createRoot(dashboardRoot).render(<Dashboard />);
   }
 
   const announcementRoot = document.getElementById('announcement-root');

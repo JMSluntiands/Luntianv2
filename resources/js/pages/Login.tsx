@@ -116,7 +116,14 @@ export default function Login() {
   };
 
   return (
-    <div className={`min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-x-hidden transition-colors duration-300 ${isDarkClasses.bg}`}>
+    <div className="min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-x-hidden transition-colors duration-300">
+      {/* Architectural background – grid, cross pattern, gradient (inside container so visible) */}
+      <div
+        className={`login-bg-arch ${isDark ? 'login-bg-arch-dark' : 'login-bg-arch-light'}`}
+        aria-hidden
+      >
+        <div className="login-bg-arch-gradient" />
+      </div>
       {/* Login success overlay – animation before redirect to dashboard */}
       {loginSuccess && (
         <div
@@ -140,15 +147,8 @@ export default function Login() {
         </div>
       )}
 
-      {/* Architectural background animation */}
-      <div
-        className={`login-bg-arch ${isDark ? 'login-bg-arch-dark' : 'login-bg-arch-light'}`}
-        aria-hidden
-      >
-        <div className="login-bg-arch-gradient" />
-      </div>
       {/* Top right: theme toggle + toast */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex flex-col items-end gap-3 z-50">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex flex-col items-end gap-3 z-10">
         <button
           type="button"
           onClick={toggleTheme}
@@ -217,7 +217,7 @@ export default function Login() {
         )}
       </div>
 
-      <div className="w-full max-w-[400px] relative z-10">
+      <div className="w-full max-w-[400px] relative z-10 shrink-0">
         {/* Card container – matches logo branding */}
         <div className={`rounded-2xl border px-6 sm:px-8 py-8 sm:py-10 transition-colors duration-300 ${isDarkClasses.card}`}>
           {/* Logo – Luntian branding */}

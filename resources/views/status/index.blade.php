@@ -109,66 +109,7 @@
 @endsection
 
 @push('styles')
-    <style>
-        .status-page { display: block; padding-bottom: 0; max-width: 100%; }
-        body.page-status-index .content { padding-bottom: 0; }
-        .status-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; }
-        .status-header-text { min-width: 0; }
-        .status-title { font-size: 1.625rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; margin: 0 0 0.375rem 0; }
-        .status-subtitle { font-size: 0.9375rem; color: #94a3b8; margin: 0; line-height: 1.4; }
-        .btn-status-add { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; font-size: 0.9375rem; font-weight: 600; color: #fff; background: #2C528B; border-radius: 10px; text-decoration: none; transition: background 0.2s; box-shadow: 0 2px 6px rgba(44,82,139,0.35); }
-        .btn-status-add:hover { background: #234a77; color: #fff; }
-        .status-page-enter { animation: status-page-in 0.4s ease-out; }
-        @keyframes status-page-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        .status-table-card { background: #0f172a; border: 1px solid #334155; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 100%; }
-        .status-table-wrap { overflow-x: auto; }
-        .status-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-        .status-col-id { width: 80px; }
-        .status-col-name { width: auto; }
-        .status-col-color { width: 140px; }
-        .status-col-created { width: 160px; }
-        .status-col-updated { width: 160px; }
-        .status-col-action { width: 100px; }
-        .status-th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #94a3b8; background: #1e293b; border-bottom: 1px solid #334155; }
-        .status-th-action { text-align: center; }
-        .status-td { padding: 0.75rem 1rem; border-bottom: 1px solid #334155; color: #e2e8f0; vertical-align: middle; }
-        .status-td-action { text-align: center; }
-        .status-td-color { vertical-align: middle; }
-        .status-td-color .status-color-swatch { display: inline-block; width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset; flex-shrink: 0; vertical-align: middle; margin-right: 0.5rem; }
-        .status-td-color .status-color-hex { display: inline-block; font-family: ui-monospace, monospace; font-size: 0.8125rem; color: #94a3b8; white-space: nowrap; vertical-align: middle; background: none; padding: 0; }
-        .status-td-empty { text-align: center; color: #94a3b8; padding: 2rem; }
-        .status-td-empty a { color: #2C528B; text-decoration: none; }
-        .status-td-empty a:hover { text-decoration: underline; }
-        .status-action-btns { display: flex; align-items: center; gap: 0.35rem; justify-content: center; flex-wrap: wrap; }
-        .status-delete-form { display: inline; margin: 0; padding: 0; }
-        .status-action-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: none; border-radius: 8px; background: transparent; color: #94a3b8; cursor: pointer; transition: background 0.15s, color 0.15s; text-decoration: none; }
-        .status-action-icon:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
-        .status-action-icon svg { display: block; pointer-events: none; }
-        .status-action-edit:hover { color: #93c5fd; background: rgba(44,82,139,0.25); }
-        .status-action-delete:hover { color: #fca5a5; background: rgba(248,113,113,0.15); }
-        .status-pagination { padding: 1rem; border-top: 1px solid #334155; }
-        .status-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-        html[data-theme="light"] .status-table-card { background: #fff; border-color: #e2e8f0; }
-        html[data-theme="light"] .status-title { color: #1e293b; }
-        html[data-theme="light"] .status-subtitle { color: #64748b; }
-        html[data-theme="light"] .status-th { background: #f8fafc; color: #64748b; border-bottom-color: #e2e8f0; }
-        html[data-theme="light"] .status-td { border-bottom-color: #e2e8f0; color: #1e293b; }
-        html[data-theme="light"] .status-color-swatch { border-color: rgba(0,0,0,0.12); box-shadow: 0 0 0 1px rgba(255,255,255,0.5) inset; }
-        html[data-theme="light"] .status-color-hex { color: #64748b; }
-        html[data-theme="light"] .status-table tbody tr:hover { background: #f8fafc; }
-        html[data-theme="light"] .status-action-icon { color: #64748b; }
-        html[data-theme="light"] .status-action-icon:hover { color: #334155; background: #e2e8f0; }
-        .delete-modal-confirm p { margin: 0; }
-        .delete-modal-countdown { text-align: center; padding: 0.5rem 0; }
-        .delete-countdown-text { font-size: 0.9375rem; color: #94a3b8; margin: 0 0 1rem 0; }
-        .delete-countdown-number { font-size: 4rem; font-weight: 800; color: #f87171; line-height: 1; letter-spacing: -0.05em; min-height: 4rem; display: flex; align-items: center; justify-content: center; animation: delete-countdown-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .delete-countdown-cancel-hint { font-size: 0.8125rem; color: #64748b; margin: 1rem 0 0 0; }
-        @keyframes delete-countdown-pop { 0% { opacity: 0; transform: scale(0.3); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
-        html[data-theme="light"] .delete-countdown-text { color: #64748b; }
-        html[data-theme="light"] .delete-countdown-number { color: #dc2626; }
-        html[data-theme="light"] .delete-countdown-cancel-hint { color: #94a3b8; }
-    </style>
-@endpush
+    @endpush
 
 @push('scripts')
     <script>
