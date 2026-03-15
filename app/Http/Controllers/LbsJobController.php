@@ -170,11 +170,12 @@ class LbsJobController extends Controller
             'status'  => 'success',
             'message' => 'Run comment added.',
             'comment' => [
-                'run_comment_id' => $nextId,
-                'job_id'         => (int) $id,
-                'name'           => $name,
-                'message'        => $data['message'],
-                'created_at'     => $createdAt,
+                'run_comment_id'      => $nextId,
+                'job_id'              => (int) $id,
+                'name'                => $name,
+                'message'             => $data['message'],
+                'created_at'           => $createdAt,
+                'profile_image_url'   => session('user_profile_image') ? route('account.settings.image') : null,
             ],
         ]);
     }
@@ -215,11 +216,12 @@ class LbsJobController extends Controller
             'status'  => 'success',
             'message' => 'Comment added.',
             'comment' => [
-                'comment_id' => $nextId,
-                'job_id'     => (int) $id,
-                'username'   => $name,
-                'message'    => $data['message'],
-                'created_at' => $createdAt,
+                'comment_id'         => $nextId,
+                'job_id'             => (int) $id,
+                'username'           => $name,
+                'message'            => $data['message'],
+                'created_at'          => $createdAt,
+                'profile_image_url'   => session('user_profile_image') ? route('account.settings.image') : null,
             ],
         ]);
     }
@@ -1154,6 +1156,86 @@ class LbsJobController extends Controller
                 'message' => 'Database error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Send job submission email (after user chooses "Create another job" or "Go to LBS list").
+     */
+    public function sendJobSubmissionEmail(int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
+        if (empty($toEmail)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No recipient email found for this job.',
+            ], 422);
+        }
+
+        $client = $job->client_account_id ? ClientAccount::find($job->client_account_id) : null;
+        $accountClient = $client ? $client->client_account_name : '';
+        $lbsRef = trim($job->job_reference_no ?? '') ?: ($job->reference ?? '');
+        $clientRef = trim($job->client_reference_no ?? '') ?: '—';
+        $nccCompliance = $job->ncc_compliance ?? '';
+        $jobTypeLabel = $job->job_type ?? '';
+        $priorityText = $job->priority ?? '';
+
+        $jobTypeShort = (stripos($jobTypeLabel, 'base') !== false)
+            ? 'BASE'
+            : strtoupper(\Illuminate\Support\Str::limit(str_replace('-', '_', \Illuminate\Support\Str::slug($jobTypeLabel)), 12, ''));
+        $headerTitle = $lbsRef . '_' . $jobTypeShort . '_' . $clientRef;
+
+        $clientRefSubj = trim($job->client_reference_no ?? '') ?: '';
+        $emailSubject = 'LUNTIAN Job Submission: ' . trim($accountClient) . ' LUNTIAN' . $lbsRef
+            . ($clientRefSubj !== '' ? '-' . $clientRefSubj : '') . '-' . $nccCompliance;
+
+        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+        $basePath = 'lbs-documents/' . $folderName . '/';
+        $planNames = json_decode($job->upload_files ?? '[]', true) ?: [];
+        $docNames = json_decode($job->upload_project_files ?? '[]', true) ?: [];
+        $attachments = [];
+        foreach (array_merge($planNames, $docNames) as $fileName) {
+            $storagePath = $basePath . $fileName;
+            if (Storage::disk('local')->exists($storagePath)) {
+                $attachments[] = [
+                    'path' => Storage::disk('local')->path($storagePath),
+                    'name' => $fileName,
+                ];
+            }
+        }
+
+        try {
+            Mail::send('emails.lbs-job-submission', [
+                'headerTitle'    => $headerTitle,
+                'lbsRef'         => $lbsRef,
+                'clientRef'      => $clientRef,
+                'accountClient'  => $accountClient,
+                'nccCompliance'  => $nccCompliance,
+                'jobType'        => $jobTypeLabel,
+                'priority'       => $priorityText,
+                'hasAttachment'  => count($attachments) > 0,
+            ], function ($message) use ($toEmail, $emailSubject, $attachments) {
+                $message->to($toEmail);
+                $message->subject($emailSubject);
+                foreach ($attachments as $att) {
+                    $message->attach($att['path'], ['as' => $att['name']]);
+                }
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Submission email sent.',
+        ]);
     }
 
     public function downloadFile(int $id, string $file)

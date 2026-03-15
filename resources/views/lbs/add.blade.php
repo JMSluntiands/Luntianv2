@@ -8,13 +8,8 @@
     <div class="w-full max-w-full px-0">
         {{-- Page Header --}}
         <div class="mb-8">
-            <div class="flex items-center gap-3 mb-2">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                </span>
-                <h1 class="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (LBS)</h1>
-            </div>
-            <p class="ml-[3.25rem] text-slate-500 dark:text-slate-400">Fill in the form below to create a new LBS job.</p>
+            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (LBS)</h1>
+            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new LBS job.</p>
         </div>
 
         <form id="lbsAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
@@ -219,6 +214,28 @@
     </div>
 @endsection
 
+@push('styles')
+<style>
+/* Post-save modal: backdrop fade-in, dialog scale-in */
+.lbs-after-save-overlay { animation: lbsOverlayFadeIn 0.25s ease forwards; }
+.lbs-after-save-dialog {
+    animation: lbsDialogScaleIn 0.35s ease 0.1s forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
+.lbs-email-sent-animate {
+    animation: lbsEmailSentFadeIn 0.5s ease 0.3s forwards;
+    opacity: 0;
+}
+@keyframes lbsOverlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lbsDialogScaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+@keyframes lbsEmailSentFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+@endpush
+
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -239,8 +256,10 @@
             }
 
             noteBtns.forEach(function(btn) {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
                     var cmd = this.getAttribute('data-cmd');
+                    if (!cmd || !notesBody) return;
                     notesBody.focus();
                     document.execCommand(cmd, false, null);
                     updateNotesActiveState();
@@ -333,7 +352,7 @@
                             $('#lbs-notes-body').empty();
                             document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
                             document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
-                            showLbsAfterSavePrompt();
+                            showLbsAfterSavePrompt(resp.job_id);
                         } else {
                             if (window.showSuccessToast) showSuccessToast(resp.message || 'Failed to save job.');
                         }
@@ -349,20 +368,36 @@
                 });
             });
 
-            function showLbsAfterSavePrompt() {
+            function showLbsAfterSavePrompt(jobId) {
+                var sendUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-submission-email';
+                var listUrl = '{{ route('lbs.list') }}';
+
                 var $overlay = $(
-                    '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">' +
-                        '<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden">' +
-                            '<div class="p-6 text-center">' +
+                    '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay">' +
+                        '<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden lbs-after-save-dialog">' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-question">' +
                                 '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">' +
                                     '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
                                 '</div>' +
                                 '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
-                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Do you want to create another LBS job?</p>' +
+                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another LBS job?</p>' +
                                 '<div class="mt-6 flex gap-3">' +
                                     '<button type="button" data-lbs-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to LBS list</button>' +
                                     '<button type="button" data-lbs-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
                                 '</div>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sending" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">' +
+                                    '<span class="lbs-send-spinner inline-block h-7 w-7 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending submission email...</h3>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sent" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 lbs-email-sent-animate">' +
+                                    '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Email sent!</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Submission email has been sent.</p>' +
                             '</div>' +
                         '</div>' +
                     '</div>'
@@ -374,10 +409,39 @@
                     if (e.target === this) $overlay.remove();
                 });
 
-                $overlay.find('[data-lbs-new-job]').on('click', function() { $overlay.remove(); });
+                function sendEmailThen(action) {
+                    var $dialog = $overlay.find('.lbs-after-save-dialog');
+                    $overlay.find('.lbs-modal-step-question').hide();
+                    $overlay.find('.lbs-modal-step-sending').show();
+                    $overlay.find('.lbs-modal-step-sent').hide();
+
+                    $.ajax({
+                        url: sendUrl,
+                        method: 'POST',
+                        data: { _token: '{{ csrf_token() }}' },
+                        dataType: 'json'
+                    }).done(function() {
+                        $overlay.find('.lbs-modal-step-sending').hide();
+                        $overlay.find('.lbs-modal-step-sent').show().addClass('lbs-email-sent-animate');
+                        setTimeout(function() {
+                            $overlay.remove();
+                            if (action === 'list') {
+                                window.location.href = listUrl;
+                            }
+                        }, 1200);
+                    }).fail(function() {
+                        $overlay.find('.lbs-modal-step-sending').hide();
+                        $overlay.find('.lbs-modal-step-question').show();
+                        if (window.showSuccessToast) showSuccessToast('Could not send email. Try again or go to list.');
+                    });
+                }
+
+                $overlay.find('[data-lbs-new-job]').on('click', function() {
+                    sendEmailThen('stay');
+                });
 
                 $overlay.find('[data-lbs-go-list]').on('click', function() {
-                    window.location.href = '{{ route('lbs.list') }}';
+                    sendEmailThen('list');
                 });
             }
         });

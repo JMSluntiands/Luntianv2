@@ -5,54 +5,54 @@
 @section('body_class', 'page-lbs-trash')
 
 @section('content')
-    <div class="lbs-list-page">
-        <div class="lbs-list-header">
-            <div class="lbs-list-header-text">
-                <h1 class="lbs-list-title">LBS Archive</h1>
-                <p class="lbs-list-subtitle">View archived LBS jobs.</p>
+    <div class="block max-w-full pb-0">
+        <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-white dark:text-white">LBS Archive</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-400">View archived LBS jobs.</p>
             </div>
-            <div class="lbs-list-search-wrap">
-                <label for="lbsSearch" class="lbs-search-label">Search</label>
-                <div class="lbs-search-input-wrap">
-                    <svg class="lbs-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="lbsSearch" class="lbs-search-input" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search archived LBS jobs">
+            <div class="shrink-0">
+                <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-400">Search</label>
+                <div class="relative flex min-w-[260px] items-center">
+                    <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search archived LBS jobs">
                 </div>
             </div>
         </div>
 
-        <div class="lbs-table-card">
-            <div class="lbs-table-wrap">
-                <table class="lbs-table" id="lbsTable">
+        <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
+            <div class="max-w-full overflow-x-auto">
+                <table class="lbs-table w-full min-w-[1320px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
-                        <col class="lbs-col-action">
-                        <col class="lbs-col-log-date">
-                        <col class="lbs-col-client">
-                        <col class="lbs-col-client-name">
-                        <col class="lbs-col-reference">
-                        <col class="lbs-col-job-type">
-                        <col class="lbs-col-priority">
-                        <col class="lbs-col-staff">
-                        <col class="lbs-col-checker">
-                        <col class="lbs-col-status">
-                        <col class="lbs-col-due-date">
-                        <col class="lbs-col-completion">
-                        <col class="lbs-col-complexity">
+                        <col style="width: 110px">
+                        <col style="width: 140px">
+                        <col style="width: 200px">
+                        <col style="width: 90px">
+                        <col style="width: 105px">
+                        <col style="width: 200px">
+                        <col style="width: 150px">
+                        <col style="width: 70px">
+                        <col style="width: 70px">
+                        <col style="width: 200px">
+                        <col style="width: 155px">
+                        <col style="width: 115px">
+                        <col style="width: 95px">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th class="lbs-th lbs-th-action" data-sort=""><span>Action</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Log Date</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Client</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Client Name</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Reference</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Job Type</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Priority</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Staff</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Checker</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Status</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Due Date</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Completion Date</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
-                            <th class="lbs-th" data-sort=""><span>Complexity</span><span class="lbs-sort-icon" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort=""><span>Action</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Log Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client Name</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Reference</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Job Type</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Priority</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Staff</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Checker</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Status</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Due Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Completion Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Complexity</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,48 +92,48 @@
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
-                            <tr>
-                                <td class="lbs-td lbs-td-action">
-                                    <div class="lbs-action-btns">
-                                        <button type="button" class="lbs-action-icon lbs-action-restore lbs-restore-trigger" title="Restore" aria-label="Restore" data-restore-url="{{ route('lbs.job.restore', ['id' => $job->job_id]) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-                                        <a href="{{ route('lbs.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon lbs-action-view" title="View" aria-label="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
-                                        <button type="button" class="lbs-action-icon lbs-action-expand" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row><svg class="lbs-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+                            <tr class="border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
+                                <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
+                                    <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
+                                        <button type="button" class="lbs-restore-trigger inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-400 dark:text-slate-400 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="Restore" aria-label="Restore" data-restore-url="{{ route('lbs.job.restore', ['id' => $job->job_id]) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                                        <a href="{{ route('lbs.job.view', ['id' => $job->job_id]) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                        <button type="button" class="lbs-action-expand inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-400 dark:text-slate-400 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row><svg class="lbs-expand-icon block transition-transform duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
                                     </div>
                                 </td>
-                                <td class="lbs-td lbs-td-log-date" data-label="Log Date" data-sort="{{ $job->log_date }}"><span class="lbs-date-line1">{{ $logDate1 }}</span>@if($logDate2)<span class="lbs-date-line2">{{ $logDate2 }}</span>@endif</td>
-                                <td class="lbs-td lbs-td-client" data-label="Client"><span class="lbs-client-name">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span><span class="lbs-client-project">{{ $job->ncc_compliance ?? '' }}</span></td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Client Name">{{ $job->client_code ?? 'LBS' }}</td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Reference" data-sort="{{ $job->job_reference_no }}">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</td>
-                                <td class="lbs-td lbs-td-job-type" data-label="Job Type"><span class="lbs-job-line1">{{ $job->job_type ?? '—' }}</span><span class="lbs-job-line2">{{ $job->job_request_id ?? '' }}</span></td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Priority"><span class="lbs-priority" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span></td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Staff"><span class="lbs-initials">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Checker"><span class="lbs-initials">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Status"><span class="lbs-badge lbs-badge-trashed">Archived</span></td>
-                                <td class="lbs-td lbs-td-due" data-label="Due Date" data-sort="{{ $due ? $due->format('Y-m-d H:i:s') : '' }}"><span class="lbs-date-line1 {{ $isOverdue ? 'lbs-overdue' : '' }}">{{ $dueDate1 }}</span>@if($dueDate2)<span class="lbs-date-line2">{{ $dueDate2 }}</span>@endif @if($isOverdue)<span class="lbs-overdue">(Overdue)</span>@endif</td>
-                                <td class="lbs-td lbs-td-nowrap" data-label="Completion Date"><span class="lbs-date-line1">{{ $completionDate1 }}</span>@if($completionDate2)<span class="lbs-date-line2">{{ $completionDate2 }}</span>@endif</td>
-                                <td class="lbs-td lbs-td-nowrap" data-sort="{{ $complexity }}" data-label="Complexity"><span class="lbs-stars" data-rating="{{ $complexity }}" aria-label="{{ $complexity }} out of 5">@include('lbs.partials.stars', ['rating' => $complexity])</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Log Date" data-sort="{{ $job->log_date }}"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $logDate1 }}</span>@if($logDate2)<span class="block text-[0.8125rem] text-slate-400">{{ $logDate2 }}</span>@endif</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span><span class="block text-[0.8125rem] text-slate-400">{{ $job->ncc_compliance ?? '' }}</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client Name" style="white-space: nowrap;">{{ $job->client_code ?? 'LBS' }}</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Reference" data-sort="{{ $job->job_reference_no }}" style="white-space: nowrap;">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Type"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->job_type ?? '—' }}</span><span class="block text-[0.8125rem] text-slate-400">{{ $job->job_request_id ?? '' }}</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Priority" style="white-space: nowrap;"><span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Staff" style="white-space: nowrap;"><span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Checker" style="white-space: nowrap;"><span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Status" style="white-space: nowrap;"><span class="inline-block rounded-md bg-slate-500/20 px-2 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400">Archived</span></td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Due Date" data-sort="{{ $due ? $due->format('Y-m-d H:i:s') : '' }}"><span class="block font-medium text-slate-800 dark:text-slate-200 {{ $isOverdue ? 'text-red-400 dark:text-red-400' : '' }}">{{ $dueDate1 }}</span>@if($dueDate2)<span class="block text-[0.8125rem] text-slate-400">{{ $dueDate2 }}</span>@endif @if($isOverdue)<span class="block text-[0.8125rem] font-medium text-red-400 mt-0.5">(Overdue)</span>@endif</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Completion Date"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $completionDate1 }}</span>@if($completionDate2)<span class="block text-[0.8125rem] text-slate-400">{{ $completionDate2 }}</span>@endif</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Complexity" data-sort="{{ $complexity }}" style="white-space: nowrap;"><span class="lbs-stars inline-flex items-center" data-rating="{{ $complexity }}" aria-label="{{ $complexity }} out of 5">@include('lbs.partials.stars', ['rating' => $complexity])</span></td>
                             </tr>
-                            <tr class="lbs-row-detail" id="lbs-detail-{{ $index }}" hidden>
-                                <td colspan="13" class="lbs-td-detail">
-                                    <div class="lbs-detail-panel"><div class="lbs-detail-grid">
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Log Date</span><span class="lbs-detail-value">{{ $logDate1 }} {{ $logDate2 }}</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Client</span><span class="lbs-detail-value">{{ $job->client_account_name ?? $job->client_code ?? '—' }} @if($job->ncc_compliance) · {{ $job->ncc_compliance }} @endif</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Client Name</span><span class="lbs-detail-value">{{ $job->client_code ?? 'LBS' }}</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Reference</span><span class="lbs-detail-value">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Job Type</span><span class="lbs-detail-value">{{ $job->job_type ?? '—' }} @if($job->job_request_id) · {{ $job->job_request_id }} @endif</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Priority</span><span class="lbs-detail-value"><span class="lbs-priority" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span></span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Staff</span><span class="lbs-detail-value"><span class="lbs-initials">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Checker</span><span class="lbs-detail-value"><span class="lbs-initials">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Status</span><span class="lbs-detail-value"><span class="lbs-badge lbs-badge-trashed">Archived</span></span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Due Date</span><span class="lbs-detail-value">{{ $dueDate1 }} {{ $dueDate2 }} @if($isOverdue)<br><span class="lbs-overdue">(Overdue)</span>@endif</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Completion Date</span><span class="lbs-detail-value">{{ $completionText }}</span></div>
-                                        <div class="lbs-detail-item"><span class="lbs-detail-label">Complexity</span><span class="lbs-detail-value">@include('lbs.partials.stars', ['rating' => $complexity])</span></div>
-                                    </div></div>
+                            <tr class="lbs-row-detail border-b border-slate-200 dark:border-slate-700" id="lbs-detail-{{ $index }}" hidden>
+                                <td colspan="13" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
+                                    <div class="grid gap-x-6 gap-y-4 px-5 py-5" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Log Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $logDate1 }} {{ $logDate2 }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $job->client_account_name ?? $job->client_code ?? '—' }} @if($job->ncc_compliance) · {{ $job->ncc_compliance }} @endif</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client Name</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $job->client_code ?? 'LBS' }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Reference</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Job Type</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $job->job_type ?? '—' }} @if($job->job_request_id) · {{ $job->job_request_id }} @endif</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Priority</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold mt-0.5" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span></span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Staff</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 mt-0.5 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Checker</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 mt-0.5 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Status</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="inline-block rounded-md bg-slate-500/20 px-2 py-1 text-xs font-semibold text-slate-600 mt-0.5 dark:text-slate-400">Archived</span></span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Due Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $dueDate1 }} {{ $dueDate2 }} @if($isOverdue)<br><span class="text-red-400">(Overdue)</span>@endif</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Completion Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $completionText }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Complexity</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">@include('lbs.partials.stars', ['rating' => $complexity])</span></div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="13" class="lbs-td" style="text-align:center; padding:1.5rem; color:#94a3b8;">No archived jobs.</td>
+                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="13">No archived jobs.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -141,24 +141,24 @@
             </div>
         </div>
 
-        <div class="lbs-trash-modal-overlay" id="lbsTrashRestoreModalOverlay" aria-hidden="true">
-            <div class="lbs-trash-modal" role="dialog" aria-modal="true" aria-labelledby="lbsTrashRestoreModalTitle">
-                <div class="lbs-trash-modal-header">
-                    <h2 class="lbs-trash-modal-title" id="lbsTrashRestoreModalTitle">Restore job</h2>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200 [&.is-open]:opacity-100 [&.is-open]:pointer-events-auto" id="lbsTrashRestoreModalOverlay" aria-hidden="true">
+            <div class="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800" role="dialog" aria-modal="true" aria-labelledby="lbsTrashRestoreModalTitle">
+                <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                    <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="lbsTrashRestoreModalTitle">Restore job</h2>
                 </div>
-                <div class="lbs-trash-modal-body">
-                    <div class="lbs-trash-restore-confirm" id="lbsTrashRestoreConfirm">
-                        <p class="lbs-trash-modal-label">Restore this job back to the list? It will be set to Allocated.</p>
+                <div class="px-5 py-4">
+                    <div id="lbsTrashRestoreConfirm">
+                        <p class="text-slate-600 dark:text-slate-300">Restore this job back to the list? It will be set to Allocated.</p>
                     </div>
-                    <div class="lbs-trash-restore-countdown" id="lbsTrashRestoreCountdown" hidden>
-                        <p class="lbs-trash-countdown-text">Restoring in</p>
-                        <div class="lbs-trash-countdown-number" id="lbsTrashRestoreCountdownNumber">3</div>
-                        <p class="lbs-trash-countdown-cancel-hint">Click Cancel to abort</p>
+                    <div id="lbsTrashRestoreCountdown" hidden>
+                        <p class="text-slate-600 dark:text-slate-300">Restoring in</p>
+                        <div class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400" id="lbsTrashRestoreCountdownNumber">3</div>
+                        <p class="mt-1 text-sm text-slate-500">Click Cancel to abort</p>
                     </div>
                 </div>
-                <div class="lbs-trash-modal-footer">
-                    <button type="button" class="lbs-trash-modal-btn lbs-trash-modal-btn-cancel" id="lbsTrashRestoreModalCancel">Cancel</button>
-                    <button type="button" class="lbs-trash-modal-btn lbs-trash-modal-btn-primary lbs-trash-modal-btn-restore" id="lbsTrashRestoreModalConfirm"><span class="lbs-trash-restore-btn-text">Restore</span></button>
+                <div class="flex justify-end gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                    <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" id="lbsTrashRestoreModalCancel">Cancel</button>
+                    <button type="button" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600" id="lbsTrashRestoreModalConfirm"><span class="lbs-trash-restore-btn-text">Restore</span></button>
                 </div>
             </div>
         </div>
@@ -166,7 +166,15 @@
 @endsection
 
 @push('styles')
-    @endpush
+<style>
+.lbs-th[data-sort="asc"] .lbs-sort-icon { font-size: 0; }
+.lbs-th[data-sort="asc"] .lbs-sort-icon::before { content: '↑'; font-size: 0.75rem; }
+.lbs-th[data-sort="desc"] .lbs-sort-icon { font-size: 0; }
+.lbs-th[data-sort="desc"] .lbs-sort-icon::before { content: '↓'; font-size: 0.75rem; }
+.lbs-th:not([data-sort=""]) .lbs-sort-icon { opacity: 1; }
+.lbs-action-expand[aria-expanded="true"] .lbs-expand-icon { transform: rotate(180deg); }
+</style>
+@endpush
 
 @push('scripts')
     <script>

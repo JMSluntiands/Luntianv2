@@ -183,6 +183,7 @@ $(function () {
     var prevClass = 'lbs-badge-' + String(prevText).toLowerCase().replace(/\s+/g, '-');
     $menu.prop('hidden', true);
     $trigger.attr('aria-expanded', 'false');
+    $trigger.addClass('lbs-status-updating');
 
     var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
     var allClasses = [
@@ -218,10 +219,12 @@ $(function () {
       data: payload.toString(),
       headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
     }).done(function (res) {
+      $trigger.removeClass('lbs-status-updating').addClass('lbs-status-success');
       var msg = (res && res.message) || 'Status updated to ' + val + '.';
       if (window.showSuccessToast) window.showSuccessToast(msg);
-      setTimeout(function () { window.location.reload(); }, 1500);
+      setTimeout(function () { $trigger.removeClass('lbs-status-success'); window.location.reload(); }, 1500);
     }).fail(function (xhr) {
+      $trigger.removeClass('lbs-status-updating');
       var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';
       if (window.showSuccessToast) window.showSuccessToast(msg);
       $trigger.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
