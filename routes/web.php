@@ -6,6 +6,8 @@ use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\ClientAccountController;
 use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\EmailConfigController;
+use App\Http\Controllers\SlackConfigController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\JobRequestController;
 use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\StaffController;
@@ -30,10 +32,15 @@ Route::get('/login', function () {
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::middleware('auth.session')->group(function () {
+Route::middleware(['auth.session', 'check.permission'])->group(function () {
+    Route::get('/dashboard/unauthorized', function () {
+        return view('unauthorized', ['sidebar_active' => 'unauthorized']);
+    })->name('unauthorized');
+
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/lbs/add', [LbsJobController::class, 'addForm'])->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
+    Route::post('/dashboard/lbs/job/{id}/send-slack', [LbsJobController::class, 'sendJobSlackNotification'])->name('lbs.job.sendSlack');
     Route::post('/dashboard/lbs/job/{id}/send-submission-email', [LbsJobController::class, 'sendJobSubmissionEmail'])->name('lbs.job.sendSubmissionEmail');
     Route::get('/dashboard/lbs/list', [LbsJobController::class, 'index'])->name('lbs.list');
     Route::get('/dashboard/lbs/job/{id}', [LbsJobController::class, 'show'])->name('lbs.job.view');
@@ -110,6 +117,10 @@ Route::middleware('auth.session')->group(function () {
 
     Route::get('/dashboard/settings/email-config', [EmailConfigController::class, 'index'])->name('settings.email_config');
     Route::post('/dashboard/settings/email-config', [EmailConfigController::class, 'store'])->name('settings.email_config.store');
+    Route::get('/dashboard/settings/slack-config', [SlackConfigController::class, 'index'])->name('settings.slack_config');
+    Route::post('/dashboard/settings/slack-config', [SlackConfigController::class, 'store'])->name('settings.slack_config.store');
+    Route::get('/dashboard/settings/permission', [PermissionController::class, 'index'])->name('settings.permission');
+    Route::post('/dashboard/settings/permission', [PermissionController::class, 'store'])->name('settings.permission.store');
 
     Route::get('/dashboard/compliance', [ComplianceController::class, 'index'])->name('compliance.index');
     Route::get('/dashboard/compliance/create', [ComplianceController::class, 'create'])->name('compliance.create');

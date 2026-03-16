@@ -1159,6 +1159,83 @@ class LbsJobController extends Controller
     }
 
     /**
+     * Send Slack notification for an LBS job (called after modal is shown so modal appears first).
+     */
+    public function sendJobSlackNotification(int $id)
+    {
+        $job = DB::table('jobs')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $slackConfig = \App\Models\SlackConfig::first();
+        $slackWebhook = ($slackConfig && $slackConfig->is_active && !empty($slackConfig->webhook_url))
+            ? $slackConfig->webhook_url
+            : config('services.slack.lbs_webhook');
+
+        if (!$slackWebhook) {
+            return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);
+        }
+
+        $client = $job->client_account_id ? ClientAccount::find($job->client_account_id) : null;
+        $reference = $job->reference ?? '';
+        $client_ref = trim($job->client_reference_no ?? '') ?: '—';
+        $client_account_name = $client ? ($client->client_account_name ?? '') : '';
+        $status = $job->job_status ?? '';
+        $complianceLabel = $job->ncc_compliance ?? '';
+        $job_request_type = $job->job_type ?? '';
+        $priorityLabel = $job->priority ?? '';
+        $address = $job->address_client ?? '';
+        $assigned = $job->staff_id ?? '';
+        $checked = $job->checker_id ?? '';
+
+        try {
+            $slackMessage = [
+                'text' => '🆕 New LBS Job Submitted',
+                'attachments' => [
+                    [
+                        'color' => '#f57c00',
+                        'fields' => [
+                            ['title' => 'LBS Ref #', 'value' => $reference, 'short' => true],
+                            ['title' => 'Client Ref #', 'value' => $client_ref, 'short' => true],
+                            ['title' => 'Account Client', 'value' => $client_account_name, 'short' => true],
+                            ['title' => 'Status', 'value' => $status, 'short' => true],
+                            ['title' => 'NCC Compliance', 'value' => $complianceLabel, 'short' => true],
+                            ['title' => 'Job Type', 'value' => $job_request_type, 'short' => true],
+                            ['title' => 'Priority', 'value' => $priorityLabel, 'short' => true],
+                            ['title' => 'Address', 'value' => $address, 'short' => false],
+                            ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
+                            ['title' => 'Checked By', 'value' => $checked, 'short' => true],
+                        ],
+                        'footer' => 'Luntian LBS Job Management',
+                        'ts' => time(),
+                    ],
+                ],
+            ];
+
+            $ch = curl_init($slackWebhook);
+            curl_setopt_array($ch, [
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => json_encode($slackMessage),
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+            ]);
+            curl_exec($ch);
+            $slackError = curl_error($ch);
+            curl_close($ch);
+
+            if ($slackError) {
+                \Log::warning('LBS Slack notification failed', ['error' => $slackError, 'job_id' => $id]);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('LBS Slack exception', ['message' => $e->getMessage(), 'job_id' => $id]);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    /**
      * Send job submission email (after user chooses "Create another job" or "Go to LBS list").
      */
     public function sendJobSubmissionEmail(int $id)

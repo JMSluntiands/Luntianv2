@@ -1,68 +1,80 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Priority List')
+@section('title', 'Priority')
 
 @section('body_class', 'page-priority-index')
 
 @section('content')
-    <div class="priority-page priority-page-enter">
-        <div class="priority-header">
-            <div class="priority-header-text">
-                <h1 class="priority-title">Priority</h1>
-                <p class="priority-subtitle">View and manage priority records with colors (hex).</p>
+    <div class="w-full">
+        {{-- Header --}}
+        <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div class="flex items-start gap-4">
+                <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-500/20 shadow-lg dark:bg-emerald-500/30">
+                    <svg class="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Priority</h1>
+                    <p class="text-slate-600 dark:text-slate-400">View and manage priority levels and their colors used across jobs.</p>
+                </div>
             </div>
-            <a href="{{ route('priority.create') }}" class="btn-priority-add">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <a href="{{ route('priority.create') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Add New
             </a>
         </div>
 
-        <div class="priority-table-card">
-            <div class="priority-table-wrap">
-                <table class="priority-table" id="priorityTable">
-                    <colgroup>
-                        <col class="priority-col-id">
-                        <col class="priority-col-name">
-                        <col class="priority-col-color">
-                        <col class="priority-col-created">
-                        <col class="priority-col-updated">
-                        <col class="priority-col-action">
-                    </colgroup>
+        @if(session('success'))
+            <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-700/70 dark:bg-emerald-900/30 dark:text-emerald-200">
+                <span class="mt-0.5 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white dark:bg-emerald-500">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <span class="flex-1">{{ session('success') }}</span>
+            </div>
+        @endif
+
+        {{-- Table card --}}
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] border-collapse text-sm" id="priorityTable">
                     <thead>
-                        <tr>
-                            <th class="priority-th">ID</th>
-                            <th class="priority-th">Name</th>
-                            <th class="priority-th">Color</th>
-                            <th class="priority-th">Created</th>
-                            <th class="priority-th">Updated</th>
-                            <th class="priority-th priority-th-action">Action</th>
+                        <tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80">
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">ID</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Name</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Color</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Created</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Updated</th>
+                            <th class="w-24 px-5 py-3.5 text-right font-semibold text-slate-600 dark:text-slate-300">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($priorities as $priority)
-                            <tr>
-                                <td class="priority-td">{{ $priority->id }}</td>
-                                <td class="priority-td">{{ $priority->name ?? '—' }}</td>
-                                <td class="priority-td priority-td-color">
+                            <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50">
+                                <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $priority->id }}</td>
+                                <td class="px-5 py-3.5 font-medium text-slate-800 dark:text-slate-200">{{ $priority->name ?? '—' }}</td>
+                                <td class="px-5 py-3.5">
                                     @if($priority->color)
-                                        <span class="priority-color-swatch" style="background-color: {{ $priority->color }};" title="{{ $priority->color }}" aria-hidden="true"></span>
-                                        <code class="priority-color-hex">{{ $priority->color }}</code>
+                                        <div class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600">
+                                            <span class="h-4 w-4 rounded-full ring-2 ring-slate-200 dark:ring-slate-700" style="background-color: {{ $priority->color }};" aria-hidden="true"></span>
+                                            <code class="font-medium">{{ $priority->color }}</code>
+                                        </div>
                                     @else
-                                        —
+                                        <span class="text-slate-400 dark:text-slate-500">—</span>
                                     @endif
                                 </td>
-                                <td class="priority-td">{{ $priority->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
-                                <td class="priority-td">{{ $priority->updated_at?->format('M j, Y g:i A') ?? '—' }}</td>
-                                <td class="priority-td priority-td-action">
-                                    <div class="priority-action-btns">
-                                        <a href="{{ route('priority.edit', $priority) }}" class="priority-action-icon priority-action-edit" title="Edit" aria-label="Edit">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $priority->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                                <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $priority->updated_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                                <td class="px-5 py-3.5 text-right">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <a href="{{ route('priority.edit', $priority) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-emerald-500/15 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400" title="Edit" aria-label="Edit">
+                                            <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </a>
-                                        <form action="{{ route('priority.destroy', $priority) }}" method="POST" class="priority-delete-form" data-delete-form autocomplete="off">
+                                        <form action="{{ route('priority.destroy', $priority) }}" method="POST" class="inline" data-delete-form autocomplete="off">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" class="priority-action-icon priority-action-delete" data-delete-trigger title="Delete" aria-label="Delete">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                            <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-500/15 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400" data-delete-trigger title="Delete" aria-label="Delete">
+                                                <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             </button>
                                         </form>
                                     </div>
@@ -70,46 +82,50 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="priority-td priority-td-empty">No priority records yet. <a href="{{ route('priority.create') }}">Add one</a>.</td>
+                                <td colspan="6" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
+                                    <svg class="mx-auto mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <p class="font-medium">No priority records yet.</p>
+                                    <p class="mt-1 text-sm"><a href="{{ route('priority.create') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Add one</a> to get started.</p>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             @if($priorities->hasPages())
-                <div class="priority-pagination">
+                <div class="border-t border-slate-200 bg-slate-50/50 px-5 py-3 dark:border-slate-700 dark:bg-slate-800/40">
                     {{ $priorities->links() }}
                 </div>
             @endif
         </div>
     </div>
 
-    <div class="modal-backdrop" id="deletePriorityModal" role="dialog" aria-labelledby="deletePriorityModalTitle" aria-modal="true">
-        <div class="modal-box">
-            <div class="modal-header">
-                <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                <h2 class="modal-title" id="deletePriorityModalTitle">Delete Priority</h2>
+    {{-- Delete confirmation modal --}}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200 backdrop-blur-sm" id="deletePriorityModal" role="dialog" aria-labelledby="deletePriorityModalTitle" aria-modal="true">
+        <div class="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800" role="document">
+            <div class="flex items-center gap-3 px-5 py-5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/20 text-red-600 dark:bg-red-500/30 dark:text-red-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </span>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="deletePriorityModalTitle">Delete priority</h2>
             </div>
-            <div class="modal-body">
-                <div class="delete-modal-confirm" id="deleteModalConfirm">
-                    <p>Are you sure you want to delete this priority? This action cannot be undone.</p>
+            <div class="px-5 pb-4">
+                <div id="deleteModalConfirm">
+                    <p class="text-slate-600 dark:text-slate-300">This priority will be removed. Jobs using it may be affected. This action cannot be undone.</p>
                 </div>
-                <div class="delete-modal-countdown" id="deleteModalCountdown" hidden>
-                    <p class="delete-countdown-text">Deleting in</p>
-                    <div class="delete-countdown-number" id="deleteCountdownNumber">3</div>
-                    <p class="delete-countdown-cancel-hint">Click Cancel to abort</p>
+                <div class="hidden" id="deleteModalCountdown">
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Deleting in</p>
+                    <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400" id="deleteCountdownNumber">3</div>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-500">Click Cancel to abort</p>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-cancel" id="deletePriorityModalCancel">Cancel</button>
-                <button type="button" class="btn btn-confirm btn-danger" id="deletePriorityModalConfirm"><span class="btn-text">Delete</span></button>
+            <div class="flex justify-end gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 dark:focus:ring-offset-slate-800" id="deletePriorityModalCancel">Cancel</button>
+                <button type="button" class="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800" id="deletePriorityModalConfirm"><span class="btn-text">Delete</span></button>
             </div>
         </div>
     </div>
 @endsection
-
-@push('styles')
-    @endpush
 
 @push('scripts')
     <script>
@@ -124,12 +140,17 @@
             var countdownTimer = null;
 
             function resetModal() {
-                if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+                if (countdownTimer) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
                 confirmBlock.hidden = false;
                 countdownBlock.hidden = true;
+                countdownBlock.classList.add('hidden');
                 confirmBtn.disabled = false;
                 confirmBtn.querySelector('.btn-text').textContent = 'Delete';
             }
+
             function closeModal() {
                 modal.classList.remove('show');
                 formToSubmit = null;
@@ -140,22 +161,27 @@
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     formToSubmit = this.closest('[data-delete-form]');
-                    if (formToSubmit && modal) { resetModal(); modal.classList.add('show'); }
+                    if (formToSubmit && modal) {
+                        resetModal();
+                        modal.classList.add('show');
+                    }
                 });
             });
+
             if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-            if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+            if (modal) modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
+            });
             if (confirmBtn) confirmBtn.addEventListener('click', function() {
-                if (!formToSubmit || countdownTimer) return;
+                if (!formToSubmit) return;
+                if (countdownTimer) return;
                 confirmBlock.hidden = true;
                 countdownBlock.hidden = false;
+                countdownBlock.classList.remove('hidden');
                 confirmBtn.disabled = true;
                 confirmBtn.querySelector('.btn-text').textContent = 'Deleting...';
                 var count = 3;
                 countdownNumber.textContent = count;
-                countdownNumber.style.animation = 'none';
-                countdownNumber.offsetHeight;
-                countdownNumber.style.animation = '';
                 countdownTimer = setInterval(function() {
                     count--;
                     if (count <= 0) {
@@ -165,11 +191,16 @@
                         return;
                     }
                     countdownNumber.textContent = count;
-                    countdownNumber.style.animation = 'none';
-                    countdownNumber.offsetHeight;
-                    countdownNumber.style.animation = '';
                 }, 1000);
             });
         })();
+
+        @if(session('success'))
+        (function() {
+            if (typeof window.showSuccessToast === 'function') {
+                window.showSuccessToast(@json(session('success')));
+            }
+        })();
+        @endif
     </script>
 @endpush

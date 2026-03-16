@@ -223,6 +223,20 @@
     transform: scale(0.9);
     opacity: 0;
 }
+/* Slack step & email step: animate in */
+.lbs-modal-step-slack,
+.lbs-modal-step-sending {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.lbs-modal-step-slack.lbs-step-animate-in,
+.lbs-modal-step-sending.lbs-sending-animate-in {
+    animation: lbsSendingStepIn 0.4s ease forwards;
+}
+.lbs-slack-spinner,
+.lbs-send-spinner {
+    animation: lbsSpinner 0.8s linear infinite;
+}
 .lbs-email-sent-animate {
     animation: lbsEmailSentFadeIn 0.5s ease 0.3s forwards;
     opacity: 0;
@@ -231,6 +245,13 @@
 @keyframes lbsDialogScaleIn {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
+}
+@keyframes lbsSendingStepIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lbsSpinner {
+    to { transform: rotate(360deg); }
 }
 @keyframes lbsEmailSentFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 </style>
@@ -369,6 +390,7 @@
             });
 
             function showLbsAfterSavePrompt(jobId) {
+                var sendSlackUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-slack';
                 var sendUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-submission-email';
                 var listUrl = '{{ route('lbs.list') }}';
 
@@ -386,11 +408,19 @@
                                     '<button type="button" data-lbs-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
                                 '</div>' +
                             '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-slack" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#4A154B]/10 dark:bg-[#4A154B]/20">' +
+                                    '<span class="lbs-slack-spinner inline-block h-7 w-7 rounded-full border-2 border-[#4A154B]/30 border-t-[#4A154B] dark:border-t-[#E01E5A]"></span>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending to Slack...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Notifying your channel.</p>' +
+                            '</div>' +
                             '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sending" style="display:none;">' +
                                 '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">' +
-                                    '<span class="lbs-send-spinner inline-block h-7 w-7 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span>' +
+                                    '<span class="lbs-send-spinner inline-block h-7 w-7 rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span>' +
                                 '</div>' +
                                 '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending submission email...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p>' +
                             '</div>' +
                             '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sent" style="display:none;">' +
                                 '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 lbs-email-sent-animate">' +
@@ -410,29 +440,49 @@
                 });
 
                 function sendEmailThen(action) {
-                    var $dialog = $overlay.find('.lbs-after-save-dialog');
-                    $overlay.find('.lbs-modal-step-question').hide();
-                    $overlay.find('.lbs-modal-step-sending').show();
-                    $overlay.find('.lbs-modal-step-sent').hide();
+                    var $question = $overlay.find('.lbs-modal-step-question');
+                    var $slack = $overlay.find('.lbs-modal-step-slack');
+                    var $sending = $overlay.find('.lbs-modal-step-sending');
+                    var $sent = $overlay.find('.lbs-modal-step-sent');
+
+                    $question.hide();
+                    $slack.show().addClass('lbs-step-animate-in');
+                    $sending.hide();
+                    $sent.hide();
+
+                    function goToEmailStep() {
+                        $slack.hide().removeClass('lbs-step-animate-in');
+                        $sending.show().addClass('lbs-sending-animate-in');
+                        $.ajax({
+                            url: sendUrl,
+                            method: 'POST',
+                            data: { _token: '{{ csrf_token() }}' },
+                            dataType: 'json'
+                        }).done(function() {
+                            $sending.hide().removeClass('lbs-sending-animate-in');
+                            $sent.show().addClass('lbs-email-sent-animate');
+                            setTimeout(function() {
+                                $overlay.remove();
+                                if (action === 'list') {
+                                    window.location.href = listUrl;
+                                }
+                            }, 1200);
+                        }).fail(function() {
+                            $sending.hide().removeClass('lbs-sending-animate-in');
+                            $question.show();
+                            if (window.showSuccessToast) showSuccessToast('Could not send email. Try again or go to list.');
+                        });
+                    }
 
                     $.ajax({
-                        url: sendUrl,
+                        url: sendSlackUrl,
                         method: 'POST',
                         data: { _token: '{{ csrf_token() }}' },
                         dataType: 'json'
                     }).done(function() {
-                        $overlay.find('.lbs-modal-step-sending').hide();
-                        $overlay.find('.lbs-modal-step-sent').show().addClass('lbs-email-sent-animate');
-                        setTimeout(function() {
-                            $overlay.remove();
-                            if (action === 'list') {
-                                window.location.href = listUrl;
-                            }
-                        }, 1200);
+                        goToEmailStep();
                     }).fail(function() {
-                        $overlay.find('.lbs-modal-step-sending').hide();
-                        $overlay.find('.lbs-modal-step-question').show();
-                        if (window.showSuccessToast) showSuccessToast('Could not send email. Try again or go to list.');
+                        goToEmailStep();
                     });
                 }
 

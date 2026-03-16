@@ -187,6 +187,41 @@ body.sidebar-open #sidebarNav {
     @apply opacity-100 pointer-events-auto;
 }
 
+/* Delete compliance modal visible state */
+#deleteComplianceModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Delete priority modal visible state */
+#deletePriorityModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Delete status modal visible state */
+#deleteStatusModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Delete branch modal visible state */
+#deleteBranchModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Archive user modal visible state */
+#deleteUserModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Delete accounts client modal visible state */
+#deleteClientModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
+/* Delete client modal visible state */
+#deleteClientModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
 /* Hide scrollbar on sidebar nav */
 .scrollbar-hide {
     -ms-overflow-style: none;
@@ -874,7 +909,7 @@ html[data-theme="dark"] .select2-container--default .select2-results__option--hi
     color: #6ee7b7 !important;
 }
 
-/* ========== App success toast (showSuccessToast) – same style as login ========== */
+/* ========== App success toast – green banner, rounded, checkmark + message + close ========== */
 #appSuccessToast,
 .app-toast-success {
     position: fixed;
@@ -883,22 +918,37 @@ html[data-theme="dark"] .select2-container--default .select2-results__option--hi
     z-index: 99999;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    max-width: 22rem;
     background: #059669;
     color: #fff;
     font-size: 0.875rem;
     font-weight: 500;
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     animation: app-toast-in 0.3s ease;
 }
+html[data-theme="dark"] .app-toast-success,
+html[data-theme="dark"] #appSuccessToast {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.35), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+}
+.app-toast-success.app-toast-exit {
+    animation: app-toast-out 0.28s ease forwards;
+}
 .app-toast-icon {
-    font-size: 1.125rem;
+    flex-shrink: 0;
+    font-size: 1.25rem;
     font-weight: 700;
+    line-height: 1;
+}
+.app-toast-msg {
+    flex: 1;
+    min-width: 0;
 }
 .app-toast-close {
-    margin-left: 0.5rem;
+    flex-shrink: 0;
+    margin-left: 0.25rem;
     padding: 0 0.25rem;
     background: transparent;
     border: 0;
@@ -920,6 +970,165 @@ html[data-theme="dark"] .select2-container--default .select2-results__option--hi
         opacity: 1;
         transform: translateX(0);
     }
+}
+@keyframes app-toast-out {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* ========== Dashboard pagination (used by vendor/pagination/dashboard.blade.php) ========== */
+.dashboard-pagination {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+}
+.dashboard-pagination-inner {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    color: #475569;
+}
+[data-theme="dark"] .dashboard-pagination-inner {
+    color: #94a3b8;
+}
+.dashboard-pagination-mobile {
+    display: flex;
+    gap: 0.5rem;
+}
+@media (min-width: 640px) {
+    .dashboard-pagination-mobile {
+        display: none;
+    }
+}
+.dashboard-pagination-desktop {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+@media (min-width: 640px) {
+    .dashboard-pagination-desktop {
+        display: flex;
+    }
+}
+.dashboard-pagination-info-text {
+    margin: 0;
+    font-size: 0.8125rem;
+}
+.dashboard-pagination-info-num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #0f172a;
+}
+[data-theme="dark"] .dashboard-pagination-info-num {
+    color: #e5e7eb;
+}
+.dashboard-pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.9rem;
+    border-radius: 9999px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.dashboard-pagination-btn:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+.dashboard-pagination-btn-disabled {
+    opacity: 0.5;
+    cursor: default;
+    background: #e2e8f0;
+}
+[data-theme="dark"] .dashboard-pagination-btn {
+    border-color: #475569;
+    background: #020617;
+    color: #e5e7eb;
+}
+[data-theme="dark"] .dashboard-pagination-btn:hover {
+    background: #020617;
+    border-color: #64748b;
+}
+[data-theme="dark"] .dashboard-pagination-btn-disabled {
+    background: #111827;
+}
+.dashboard-pagination-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.dashboard-pagination-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.1rem;
+    height: 2.1rem;
+    padding: 0 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #334155;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.dashboard-pagination-nav-btn:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+.dashboard-pagination-nav-btn-active {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    box-shadow: 0 8px 16px rgba(4, 120, 87, 0.35);
+}
+.dashboard-pagination-nav-btn-disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+[data-theme="dark"] .dashboard-pagination-nav-btn {
+    color: #e5e7eb;
+}
+[data-theme="dark"] .dashboard-pagination-nav-btn:hover {
+    background: #111827;
+    border-color: #4b5563;
+}
+[data-theme="dark"] .dashboard-pagination-nav-btn-active {
+    background: #10b981;
+    border-color: #10b981;
+    color: #022c22;
+}
+.dashboard-pagination-nav-prev,
+.dashboard-pagination-nav-next {
+    padding-inline: 0.65rem;
+}
+.dashboard-pagination-icon {
+    width: 1rem;
+    height: 1rem;
+}
+.dashboard-pagination-ellipsis {
+    padding-inline: 0.3rem;
+    color: #94a3b8;
+}
+[data-theme="dark"] .dashboard-pagination-ellipsis {
+    color: #64748b;
 }
 
 /* ========== LBS status change animation ========== */
