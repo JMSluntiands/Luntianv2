@@ -90,7 +90,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
+                        <tr class="bph-data-row" data-row-index="0">
                             <td class="bph-td bph-td-action">
                                 <div class="bph-action-btns">
                                     <button type="button" class="bph-action-icon bph-action-duplicate" title="Duplicate" aria-label="Duplicate">
@@ -99,6 +99,9 @@
                                     <a href="#" class="bph-action-icon bph-action-view" title="View" aria-label="View job 011298">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
+                                    <button type="button" class="bph-action-icon bph-action-expand" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row data-row-index="0">
+                                        <svg class="bph-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
                                 </div>
                             </td>
                             <td class="bph-td bph-td-log-date" data-label="Log Date">
@@ -150,6 +153,58 @@
                                         <button type="button" role="menuitem" class="bph-initials-option" data-value="PEP">PEP</button>
                                         <button type="button" role="menuitem" class="bph-initials-option" data-value="JDR">JDR</button>
                                         <button type="button" role="menuitem" class="bph-initials-option" data-value="JS">JS</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="bph-row-detail" data-detail-index="0" hidden>
+                            <td colspan="12" class="bph-row-detail-td">
+                                <div class="bph-row-detail-inner">
+                                    <div class="bph-row-detail-grid">
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Log Date</span>
+                                            <span class="bph-row-detail-value">November 29, 2025 · 03:21 AM</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Client</span>
+                                            <span class="bph-row-detail-value">BPH01</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Urgent</span>
+                                            <span class="bph-row-detail-value">NO</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Job Type</span>
+                                            <span class="bph-row-detail-value">EA_BPH_1S · Prelim</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">NCC</span>
+                                            <span class="bph-row-detail-value">2022 Whole of Home (WOH)</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Job Number</span>
+                                            <span class="bph-row-detail-value">011298</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Client Name</span>
+                                            <span class="bph-row-detail-value">TEST</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Client Email</span>
+                                            <span class="bph-row-detail-value">admin@luntiands.com</span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Status</span>
+                                            <span class="bph-row-detail-value"><span class="bph-badge bph-badge-completed">Completed</span></span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Assigned To</span>
+                                            <span class="bph-row-detail-value"><span class="bph-initials">AJS</span></span>
+                                        </div>
+                                        <div class="bph-row-detail-item">
+                                            <span class="bph-row-detail-label">Checked By</span>
+                                            <span class="bph-row-detail-value"><span class="bph-initials">JDR</span></span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -279,6 +334,31 @@
                     return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
                 });
                 rows.forEach(function(r) { tbody.appendChild(r); });
+            });
+
+            // Expand / collapse detail rows (similar behavior to LBS list)
+            var expandButtons = table.querySelectorAll('[data-expand-row]');
+            function closeAllDetails() {
+                table.querySelectorAll('.bph-row-detail').forEach(function(row) {
+                    row.hidden = true;
+                });
+                expandButtons.forEach(function(btn) {
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            }
+            expandButtons.forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var rowIndex = btn.getAttribute('data-row-index');
+                    var detail = table.querySelector('.bph-row-detail[data-detail-index="' + rowIndex + '"]');
+                    if (!detail) return;
+                    var isOpen = !detail.hidden;
+                    closeAllDetails();
+                    if (!isOpen) {
+                        detail.hidden = false;
+                        btn.setAttribute('aria-expanded', 'true');
+                    }
+                });
             });
         })();
     </script>
