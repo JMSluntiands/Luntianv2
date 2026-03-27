@@ -21,7 +21,7 @@
                             {{-- Details table: bold labels, regular values, light grey row borders --}}
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
                                 <tr>
-                                    <td style="padding:14px 20px; border-bottom:1px solid #e2e8f0; font-size:14px; font-weight:600; color:#334155; width:140px;">LBS Ref #</td>
+                                    <td style="padding:14px 20px; border-bottom:1px solid #e2e8f0; font-size:14px; font-weight:600; color:#334155; width:140px;">{{ $refLabel ?? 'LBS Ref #' }}</td>
                                     <td style="padding:14px 20px; border-bottom:1px solid #e2e8f0; font-size:14px; font-weight:400; color:#1e293b;">{{ $lbsRef ?: '—' }}</td>
                                 </tr>
                                 <tr>

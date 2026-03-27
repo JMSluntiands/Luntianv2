@@ -15,7 +15,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add Job Request</h1>
-                <p class="text-slate-600 dark:text-slate-400">Create a new job request definition that will be available when logging LBS jobs.</p>
+                <p class="text-slate-600 dark:text-slate-400">Create a new job request definition for any branch client (LBS, BPH, Efficient Living, CSP, NH, LC Home Builder, Leading Energy, etc.).</p>
             </div>
         </div>
 
@@ -86,7 +86,7 @@
                                 <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Preview</span>
                                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[0.72rem] font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
                                     <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                                    LBS header
+                                    Job type preview
                                 </span>
                             </div>
                             <div class="space-y-2">
@@ -105,7 +105,7 @@
                                 </p>
                             </div>
                             <p class="mt-3 text-[0.75rem] leading-snug text-slate-500 dark:text-slate-400">
-                                This is how the job request will appear when assigning job types in LBS.
+                                This is how the job request will appear when assigning job types on add-job forms (e.g. LBS, BPH, Efficient Living).
                             </p>
                         </div>
                     </div>

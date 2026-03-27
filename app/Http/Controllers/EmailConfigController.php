@@ -27,6 +27,7 @@ class EmailConfigController extends Controller
     public function store(Request $request)
     {
         $rules = [
+            'is_active' => ['nullable', 'boolean'],
             'smtp_host' => ['required', 'string', 'max:255'],
             'smtp_port' => ['required', 'integer', 'min:1', 'max:65535'],
             'smtp_username' => ['nullable', 'string', 'max:255'],
@@ -46,7 +47,7 @@ class EmailConfigController extends Controller
         }
 
         $data = $validator->validated();
-        $data['is_active'] = true;
+        $data['is_active'] = $request->boolean('is_active');
 
         // Don't update password if left blank (edit case)
         if (empty($data['smtp_password'])) {

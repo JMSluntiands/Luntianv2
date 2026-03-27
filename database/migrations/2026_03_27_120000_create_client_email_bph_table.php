@@ -1,0 +1,25 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (Schema::hasTable('client_email_bph')) {
+            return;
+        }
+
+        Schema::create('client_email_bph', function (Blueprint $table) {
+            $table->id();
+            $table->string('email')->unique();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('client_email_bph');
+    }
+};

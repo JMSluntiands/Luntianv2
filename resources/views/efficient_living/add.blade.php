@@ -1,217 +1,555 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Add New Job (EFFICIENT LIVING)')
+@section('title', 'Add New Job (Efficient Living)')
 
-@section('body_class', 'page-efficient_living-add')
+@section('body_class', 'page-efficient-living-add')
 
 @section('content')
-    <div class="efficient_living-add-page">
-        <div class="efficient_living-form-header">
-            <h1 class="efficient_living-form-title">Add New Job (EFFICIENT LIVING)</h1>
-            <p class="efficient_living-form-subtitle">Fill in the form below to create a new EFFICIENT LIVING job.</p>
+    <div class="w-full max-w-full px-0">
+        {{-- Page Header --}}
+        <div class="mb-8">
+            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (Efficient Living)</h1>
+            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new Efficient Living job.</p>
         </div>
 
-        <form id="efficient_livingAddForm" action="#" method="POST" autocomplete="off">
+        <form id="elAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
             @csrf
-            <div class="efficient_living-form-card">
-                <div class="efficient_living-form-card-header">
-                    <h2 class="efficient_living-form-section-title">Client Details</h2>
-                    <span class="efficient_living-form-ref" id="efficient_livingJobReferenceContent">JOB0903-001</span>
+            @php
+                $preRef = isset($duplicateJob) ? ($duplicateJob->reference_no ?? '') : 'JOBS0823-003';
+                $selCompliance = isset($duplicateJob) ? ($duplicateJob->compliance_id ?? null) : ($defaultComplianceId ?? null);
+                $selClient = isset($duplicateJob) ? ($duplicateJob->client_account_id ?? null) : ($defaultClientAccountId ?? null);
+                $selPriority = isset($duplicateJob) ? ($duplicateJob->priority_id ?? null) : ($defaultPriorityId ?? null);
+                $selJobRequest = isset($duplicateJob) ? ($duplicateJob->job_request_id ?? null) : ($defaultJobRequestId ?? null);
+            @endphp
+
+            {{-- Client Details Card --}}
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+                <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
+                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef ?: 'JOBS0823-003' }}</span>
                 </div>
-                <div class="efficient_living-form-grid">
-                    <div class="efficient_living-form-group efficient_living-form-col12 efficient_living-form-group-urgent">
-                        <label class="efficient_living-form-urgent-label" for="urgent_job">
-                            <input type="checkbox" id="urgent_job" name="urgent_job" value="1" class="efficient_living-form-checkbox" autocomplete="off">
-                            <span class="efficient_living-form-urgent-title">Urgent Job (YES)</span>
-                        </label>
-                    </div>
-                    <div class="efficient_living-form-group efficient_living-form-col6">
-                        <label class="efficient_living-form-label" for="ncc_compliance">NCC Compliance</label>
-                        <select id="ncc_compliance" name="ncc_compliance" class="efficient_living-form-select select2-single">
-                            <option value="">Select compliance</option>
-                            <option value="2019" selected>2019</option>
-                            <option value="2022_woh">2022 Whole of Home (WOH)</option>
-                            <option value="2023_woh">2023 Whole of Home (WOH)</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="efficient_living-form-group efficient_living-form-col6">
-                        <label class="efficient_living-form-label" for="job_type_request">Job Type Request</label>
-                        <select id="job_type_request" name="job_type_request" class="efficient_living-form-select select2-single">
-                            <option value="">Select job type</option>
-                            <option value="just_a_query" selected>Just a query</option>
-                            <option value="prelim">Prelim</option>
-                            <option value="ea_efficient_living_1s">EA_EFFICIENT LIVING_1S</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="efficient_living-form-group">
-                        <label class="efficient_living-form-label" for="job_number">Job Number <span class="efficient_living-form-required">*</span></label>
-                        <input type="text" id="job_number" name="job_number" class="efficient_living-form-input" placeholder="e.g. 12345B" required autocomplete="off">
-                        <span class="efficient_living-form-hint">Enter 5 digits followed by letter B (e.g. 12345B)</span>
-                    </div>
-                    <div class="efficient_living-form-group">
-                        <label class="efficient_living-form-label" for="client_name">Client Name <span class="efficient_living-form-required">*</span></label>
-                        <input type="text" id="client_name" name="client_name" class="efficient_living-form-input" placeholder="Enter client name" required autocomplete="off">
-                    </div>
-                    <div class="efficient_living-form-group">
-                        <label class="efficient_living-form-label" for="contact_email">Contact Email <span class="efficient_living-form-required">*</span></label>
-                        <input type="email" id="contact_email" name="contact_email" class="efficient_living-form-input" placeholder="Enter contact email" required autocomplete="off">
-                    </div>
-                    <div class="efficient_living-form-group efficient_living-form-col6">
-                        <label class="efficient_living-form-label" for="please_select">Please Select</label>
-                        <select id="please_select" name="please_select" class="efficient_living-form-select select2-single">
-                            <option value="">Select option</option>
-                            <option value="option1">Option 1</option>
-                            <option value="option2">Option 2</option>
-                            <option value="option3">Option 3</option>
-                        </select>
-                    </div>
-                    <div class="efficient_living-form-group full-width">
-                        <label class="efficient_living-form-label" for="notes-body">Notes (EFFICIENT LIVING)</label>
-                        <input type="hidden" name="notes" id="efficient_living_notes" autocomplete="off">
-                        <div class="efficient_living-notes-editor">
-                            <div class="efficient_living-notes-toolbar">
-                                <button type="button" class="efficient_living-notes-btn efficient_living-notes-icon-b" data-cmd="bold" title="Bold"><span>B</span></button>
-                                <button type="button" class="efficient_living-notes-btn efficient_living-notes-icon-i" data-cmd="italic" title="Italic"><span>I</span></button>
-                                <button type="button" class="efficient_living-notes-btn efficient_living-notes-icon-u" data-cmd="underline" title="Underline"><span>U</span></button>
-                                <button type="button" class="efficient_living-notes-btn efficient_living-notes-icon-svg" data-cmd="insertOrderedList" title="Numbered list">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>
-                                </button>
-                                <button type="button" class="efficient_living-notes-btn efficient_living-notes-icon-svg" data-cmd="insertUnorderedList" title="Bullets">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
-                                </button>
-                            </div>
-                            <div id="efficient_living-notes-body" class="efficient_living-notes-body" contenteditable="true" data-placeholder="Write notes here"></div>
+                <div class="p-5">
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <div>
+                            <label for="reference_no" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Reference No.</label>
+                            <input type="text" id="reference_no" name="reference_no" value="{{ isset($duplicateJob) ? e($duplicateJob->reference_no ?? '') : '' }}" placeholder="Enter Reference Number" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
+                                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
                         </div>
-                    </div>
-                    <div class="efficient_living-form-group efficient_living-form-col6">
-                        <label class="efficient_living-form-label">Upload Plans</label>
-                        <div class="efficient_living-file-upload-wrapper">
-                            <label class="efficient_living-file-upload-zone" for="efficient_living_upload_plans" data-upload-id="efficient_living_upload_plans">
-                                <input type="file" id="efficient_living_upload_plans" name="upload_plans[]" multiple class="efficient_living-file-upload-input" tabindex="-1">
-                                <span class="efficient_living-file-upload-text">Drag files here or <span class="efficient_living-file-upload-browse">browse</span></span>
-                                <span class="efficient_living-file-status" data-for="efficient_living_upload_plans">No file chosen</span>
-                            </label>
-                            <div class="efficient_living-file-attached-list" data-for="efficient_living_upload_plans"></div>
+                        <div>
+                            <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference</label>
+                            <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Client Reference" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
+                                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
                         </div>
-                    </div>
-                    <div class="efficient_living-form-group efficient_living-form-col6">
-                        <label class="efficient_living-form-label">Upload Document</label>
-                        <div class="efficient_living-file-upload-wrapper">
-                            <label class="efficient_living-file-upload-zone" for="efficient_living_upload_document" data-upload-id="efficient_living_upload_document">
-                                <input type="file" id="efficient_living_upload_document" name="upload_document[]" multiple class="efficient_living-file-upload-input" tabindex="-1">
-                                <span class="efficient_living-file-upload-text">Drag files here or <span class="efficient_living-file-upload-browse">browse</span></span>
-                                <span class="efficient_living-file-status" data-for="efficient_living_upload_document">No file chosen</span>
-                            </label>
-                            <div class="efficient_living-file-attached-list" data-for="efficient_living_upload_document"></div>
+                        <div>
+                            <label for="compliance" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Compliance</label>
+                            <select id="compliance" name="compliance" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                <option value="">Select compliance</option>
+                                @foreach($compliances ?? [] as $c)
+                                    <option value="{{ $c->id }}" {{ $selCompliance !== null && (int) $selCompliance === (int) $c->id ? 'selected' : '' }}>{{ $c->column ?? '' }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                    </div>
-                    <div class="efficient_living-form-group">
-                        <label class="efficient_living-form-label" for="assigned_to">Assigned To</label>
-                        <select id="assigned_to" name="assigned_to" class="efficient_living-form-select select2-single">
-                            <option value="">Select user</option>
-                            <option value="gm" selected>GM</option>
-                            <option value="ajs">AJS</option>
-                            <option value="sb">SB</option>
-                            <option value="pep">PEP</option>
-                            <option value="jdr">JDR</option>
-                            <option value="js">JS</option>
-                        </select>
-                    </div>
-                    <div class="efficient_living-form-group">
-                        <label class="efficient_living-form-label" for="checked_by">Checked By</label>
-                        <select id="checked_by" name="checked_by" class="efficient_living-form-select select2-single">
-                            <option value="">Select user</option>
-                            <option value="gm" selected>GM</option>
-                            <option value="ajs">AJS</option>
-                            <option value="sb">SB</option>
-                            <option value="pep">PEP</option>
-                            <option value="jdr">JDR</option>
-                            <option value="js">JS</option>
-                        </select>
+                        <div>
+                            <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client</label>
+                            <select id="client" name="client" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                <option value="">Select client</option>
+                                @foreach($clientAccounts ?? [] as $client)
+                                    <option value="{{ $client->client_account_id }}" {{ $selClient !== null && (int) $selClient === (int) $client->client_account_id ? 'selected' : '' }}>{{ $client->client_account_name ?? '' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="efficient_living-form-actions">
-                <button type="submit" class="btn btn-add-efficient_living">Add Job (EFFICIENT LIVING)</button>
+            {{-- Job Details Card --}}
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+                <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Job Details</h2>
+                </div>
+                <div class="p-5 space-y-5">
+                    <div>
+                        <label for="job_address" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Address</label>
+                        <input type="text" id="job_address" name="job_address" value="{{ isset($duplicateJob) ? e($duplicateJob->job_address ?? '') : '' }}" placeholder="Complete Address" autocomplete="off"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
+                    </div>
+                    <div class="grid gap-5 sm:grid-cols-3">
+                        <div>
+                            <label for="priority" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
+                            <select id="priority" name="priority" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                <option value="">Select priority</option>
+                                @foreach($priorities ?? [] as $priority)
+                                    <option value="{{ $priority->id }}" {{ $selPriority !== null && (int) $selPriority === (int) $priority->id ? 'selected' : '' }}>{{ $priority->name ?? '' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type</label>
+                            <select id="job_type" name="job_type" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                <option value="">Select job type</option>
+                                @foreach($jobRequests ?? [] as $jobRequest)
+                                    @if(($jobRequest->client_code ?? '') === 'EL01')
+                                        <option value="{{ $jobRequest->id }}" {{ $selJobRequest !== null && (int) $selJobRequest === (int) $jobRequest->id ? 'selected' : '' }}>{{ $jobRequest->job_request_type ?? '' }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status</label>
+                            <select id="job_status" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                <option value="">Select status</option>
+                                <option value="allocated" selected>Allocated</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes</label>
+                        <input type="hidden" name="notes" id="notes" autocomplete="off">
+                        <div class="overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
+                            <div class="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800/80">
+                                <button type="button" class="el-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="bold" title="Bold"><span class="font-bold">B</span></button>
+                                <button type="button" class="el-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="italic" title="Italic"><span class="italic">I</span></button>
+                                <button type="button" class="el-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="underline" title="Underline"><span class="underline">U</span></button>
+                                <span class="mx-1 h-5 w-px bg-slate-300 dark:bg-slate-600"></span>
+                                <button type="button" class="el-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="insertOrderedList" title="Numbered list">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h12M9 12h12M9 19h12M3 5h.01M3 12h.01M3 19h.01"/></svg>
+                                </button>
+                                <button type="button" class="el-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="insertUnorderedList" title="Bullets">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16M2 6h.01M2 12h.01M2 18h.01"/></svg>
+                                </button>
+                            </div>
+                            <div id="el-notes-body" contenteditable="true" data-placeholder="Write notes here"
+                                class="min-h-[120px] bg-white px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none dark:bg-slate-800 dark:text-slate-100 [&:empty::before]:content-[attr(data-placeholder)] [&:empty::before]:text-slate-400 dark:[&:empty::before]:text-slate-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Attachments Card --}}
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+                <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Attachments</h2>
+                </div>
+                <div class="p-5">
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Plans</label>
+                            <label for="plans" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
+                                <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
+                                <span class="mt-0.5 text-xs text-slate-500 dark:text-slate-500">or</span>
+                                <span class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">browse</span>
+                                <input type="file" id="plans" name="plans[]" class="hidden" multiple tabindex="-1">
+                            </label>
+                            <div id="plans-file-list" class="mt-2 min-h-0 space-y-1 text-xs text-slate-600 dark:text-slate-400"></div>
+                            <button type="button" id="plans-clear" class="mt-1 hidden text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear</button>
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Document</label>
+                            <label for="docs" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
+                                <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
+                                <span class="mt-0.5 text-xs text-slate-500 dark:text-slate-500">or</span>
+                                <span class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">browse</span>
+                                <input type="file" id="docs" name="docs[]" class="hidden" multiple tabindex="-1">
+                            </label>
+                            <div id="docs-file-list" class="mt-2 min-h-0 space-y-1 text-xs text-slate-600 dark:text-slate-400"></div>
+                            <button type="button" id="docs-clear" class="mt-1 hidden text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @php
+                $selAssigned = isset($duplicateJob) ? ($duplicateJob->staff_id ?? 'GM') : 'GM';
+                $selChecked = isset($duplicateJob) ? ($duplicateJob->checker_id ?? 'GM') : 'GM';
+            @endphp
+
+            {{-- Assignment Card --}}
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+                <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Assignment</h2>
+                </div>
+                <div class="p-5">
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <div>
+                            <label for="assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Assigned To</label>
+                            <select id="assigned_to" name="assigned_to" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                <option value="">Select user</option>
+                                <option value="GM" {{ strtoupper($selAssigned ?? '') === 'GM' ? 'selected' : '' }}>GM</option>
+                                @foreach($assignmentUsers ?? [] as $user)
+                                    @if(strtoupper($user->unique_code ?? '') !== 'GM')
+                                        <option value="{{ $user->unique_code }}" {{ strtoupper($user->unique_code ?? '') === strtoupper($selAssigned ?? '') ? 'selected' : '' }}>{{ $user->unique_code }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checked By</label>
+                            <select id="checked_by" name="checked_by" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                <option value="">Select user</option>
+                                <option value="GM" {{ strtoupper($selChecked ?? '') === 'GM' ? 'selected' : '' }}>GM</option>
+                                @foreach($assignmentUsers ?? [] as $user)
+                                    @if(strtoupper($user->unique_code ?? '') !== 'GM')
+                                        <option value="{{ $user->unique_code }}" {{ strtoupper($user->unique_code ?? '') === strtoupper($selChecked ?? '') ? 'selected' : '' }}>{{ $user->unique_code }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Submit --}}
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" id="submitELBtn"
+                    class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Save Job
+                </button>
+                <a href="{{ route('efficient_living.list') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
             </div>
         </form>
     </div>
 @endsection
 
 @push('styles')
-    @endpush
+<style>
+/* Post-save modal: backdrop fade-in, dialog scale-in */
+.lbs-after-save-overlay { animation: lbsOverlayFadeIn 0.25s ease forwards; }
+.lbs-after-save-dialog {
+    animation: lbsDialogScaleIn 0.35s ease 0.1s forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
+/* Slack step & email step: animate in */
+.lbs-modal-step-slack,
+.lbs-modal-step-sending {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.lbs-modal-step-slack.lbs-step-animate-in,
+.lbs-modal-step-sending.lbs-sending-animate-in {
+    animation: lbsSendingStepIn 0.4s ease forwards;
+}
+.lbs-slack-spinner,
+.lbs-send-spinner {
+    animation: lbsSpinner 0.8s linear infinite;
+}
+.lbs-email-sent-animate {
+    animation: lbsEmailSentFadeIn 0.5s ease 0.3s forwards;
+    opacity: 0;
+}
+@keyframes lbsOverlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lbsDialogScaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+@keyframes lbsSendingStepIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lbsSpinner {
+    to { transform: rotate(360deg); }
+}
+@keyframes lbsEmailSentFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+@endpush
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(function() {
-            var notesBody = document.getElementById('efficient_living-notes-body');
-            var noteBtns = document.querySelectorAll('.efficient_living-notes-btn');
+            function getElCsrfToken() {
+                var m = document.querySelector('meta[name="csrf-token"]');
+                return (m && m.getAttribute('content')) || '{{ csrf_token() }}';
+            }
+            function elAjaxErrorMessage(xhr, fallback) {
+                var fb = fallback || 'Request failed.';
+                if (!xhr) return fb;
+                var j = xhr.responseJSON;
+                if (j) {
+                    if (typeof j.message === 'string' && j.message) return j.message;
+                    if (j.errors && typeof j.errors === 'object') {
+                        var keys = Object.keys(j.errors);
+                        if (keys.length && j.errors[keys[0]] && j.errors[keys[0]][0]) return j.errors[keys[0]][0];
+                    }
+                    if (typeof j.error === 'string' && j.error) return j.error;
+                }
+                var text = xhr.responseText || '';
+                if (text) {
+                    try {
+                        var p = JSON.parse(text);
+                        if (p.message && typeof p.message === 'string') return p.message;
+                    } catch (e2) {}
+                }
+                if (xhr.status === 419) return 'Session expired. Refresh the page and try again.';
+                if (xhr.status === 404) return 'Server could not find this job or route.';
+                if (xhr.status === 0) return 'Network error. Check your connection.';
+                return fb;
+            }
+            function notifyElError(msg) {
+                if (window.showErrorToast) window.showErrorToast(msg);
+                else if (window.showSuccessToast) window.showSuccessToast(msg);
+            }
+
+            var notesBody = document.getElementById('el-notes-body');
+            var noteBtns = document.querySelectorAll('.el-notes-btn');
+
             function updateNotesActiveState() {
                 noteBtns.forEach(function(btn) {
                     var cmd = btn.getAttribute('data-cmd');
                     var active = document.queryCommandState(cmd);
-                    btn.classList.toggle('active', active);
+                    btn.classList.toggle('bg-emerald-100', active);
+                    btn.classList.toggle('text-emerald-700', active);
+                    btn.classList.toggle('dark:bg-emerald-900/40', active);
+                    btn.classList.toggle('dark:text-emerald-300', active);
                 });
             }
+
             noteBtns.forEach(function(btn) {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
                     var cmd = this.getAttribute('data-cmd');
+                    if (!cmd || !notesBody) return;
                     notesBody.focus();
                     document.execCommand(cmd, false, null);
                     updateNotesActiveState();
                 });
             });
+
             notesBody.addEventListener('focus', updateNotesActiveState);
             notesBody.addEventListener('keyup', updateNotesActiveState);
             notesBody.addEventListener('mouseup', updateNotesActiveState);
-            document.getElementById('efficient_livingAddForm').addEventListener('submit', function() {
-                document.getElementById('efficient_living_notes').value = notesBody.innerHTML;
-            });
-            $('.select2-single').select2({ width: '100%', allowClear: false });
-            $('.efficient_living-file-upload-zone').each(function() {
-                var $zone = $(this);
-                var $input = $zone.find('.efficient_living-file-upload-input');
-                var uploadId = $zone.data('upload-id');
-                var $status = $('[data-for="' + uploadId + '"].efficient_living-file-status');
-                var $attachedList = $('.efficient_living-file-attached-list[data-for="' + uploadId + '"]');
-                $input.on('change', function() {
-                    var files = this.files;
-                    $status.text(files.length ? files.length + ' file(s) chosen' : 'No file chosen');
-                    $attachedList.find('.efficient_living-file-attached-item').remove();
-                    for (var i = 0; i < files.length; i++) {
-                        var name = $('<div>').text(files[i].name).html();
-                        $attachedList.append(
-                            '<div class="efficient_living-file-attached-item" data-index="' + i + '"><span class="efficient_living-file-attached-name">' + name + '</span><button type="button" class="efficient_living-file-attached-remove" aria-label="Remove">Remove</button></div>'
-                        );
-                    }
-                    this.blur();
-                });
-                $attachedList.on('click', '.efficient_living-file-attached-remove', function() {
-                    var $item = $(this).closest('.efficient_living-file-attached-item');
-                    var index = parseInt($item.data('index'), 10);
-                    if (!isNaN(index)) {
-                        var inputEl = $input[0];
-                        var dt = new DataTransfer();
-                        for (var i = 0; i < inputEl.files.length; i++) {
-                            if (i !== index) dt.items.add(inputEl.files[i]);
+
+            // Select2: all selects in this form become searchable dropdowns
+            $('#elAddForm select').select2({ width: '100%', allowClear: false });
+
+            @if(isset($duplicateJob) && ($duplicateJob->notes ?? '') !== '')
+                (function() {
+                    var notesHtml = {!! json_encode($duplicateJob->notes ?? '') !!};
+                    var notesEl = document.getElementById('el-notes-body');
+                    var notesHidden = document.getElementById('notes');
+                    if (notesEl) notesEl.innerHTML = notesHtml;
+                    if (notesHidden) notesHidden.value = notesHtml;
+                })();
+            @endif
+
+            var $btn = $('#submitELBtn');
+            var originalBtnHtml = $btn.html();
+
+            function renderFileList(inputId, listId, clearBtnId) {
+                var input = document.getElementById(inputId);
+                var listEl = document.getElementById(listId);
+                var clearBtn = document.getElementById(clearBtnId);
+                if (!input || !listEl) return;
+                function update() {
+                    var files = input.files || [];
+                    listEl.innerHTML = '';
+                    if (files.length === 0) {
+                        listEl.innerHTML = '<span class="text-slate-400 dark:text-slate-500">No file chosen</span>';
+                        if (clearBtn) clearBtn.classList.add('hidden');
+                    } else {
+                        for (var i = 0; i < files.length; i++) {
+                            var li = document.createElement('div');
+                            li.className = 'flex items-center gap-2 truncate rounded bg-slate-100 dark:bg-slate-700/50 px-2 py-1';
+                            li.innerHTML = '<svg class="h-3.5 w-3.5 flex-shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="truncate" title="' + (files[i].name || '').replace(/"/g, '&quot;') + '">' + (files[i].name || '') + '</span>';
+                            listEl.appendChild(li);
                         }
-                        inputEl.files = dt.files;
-                        $status.text(dt.files.length ? dt.files.length + ' file(s) chosen' : 'No file chosen');
+                        if (clearBtn) clearBtn.classList.remove('hidden');
                     }
-                    $item.remove();
-                    $attachedList.find('.efficient_living-file-attached-item').each(function(j) {
-                        $(this).data('index', j);
+                }
+                input.addEventListener('change', update);
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        input.value = '';
+                        update();
                     });
+                }
+                update();
+            }
+
+            renderFileList('plans', 'plans-file-list', 'plans-clear');
+            renderFileList('docs', 'docs-file-list', 'docs-clear');
+
+            $btn.on('click', function(e) {
+                e.preventDefault();
+
+                $('#notes').val($('#el-notes-body').html());
+
+                var formEl = document.getElementById('elAddForm');
+                var formData = new FormData(formEl);
+
+                var headerRef = $('#jobReferenceContent').text().trim();
+                if (headerRef) {
+                    formData.append('header_reference', headerRef);
+                }
+
+                $.ajax({
+                    url: '{{ route('efficient_living.store') }}',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    beforeSend: function() {
+                        $btn.prop('disabled', true).addClass('is-loading')
+                            .html('<span class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" role="status" aria-hidden="true"></span>Saving...');
+                    },
+                    success: function(resp) {
+                        if (resp.status === 'success') {
+                            if (window.showSuccessToast) showSuccessToast(resp.message || 'Job saved.');
+                            formEl.reset();
+                            $('#el-notes-body').empty();
+                            $('#elAddForm select').trigger('change');
+                            document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
+                            document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
+                            showElAfterSavePrompt(resp.job_id);
+                        } else {
+                            notifyElError(resp.message || 'Failed to save job.');
+                        }
+                    },
+                    error: function(xhr) {
+                        notifyElError(elAjaxErrorMessage(xhr, 'Unexpected error while saving.'));
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).removeClass('is-loading').html(originalBtnHtml);
+                    }
                 });
             });
-        });
-        document.getElementById('efficient_livingAddForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+
+            function showElAfterSavePrompt(jobId) {
+                var sendSlackUrl = '{{ url('dashboard/efficient-living/job') }}/' + jobId + '/send-slack';
+                var sendUrl = '{{ url('dashboard/efficient-living/job') }}/' + jobId + '/send-submission-email';
+                var listUrl = '{{ route('efficient_living.list') }}';
+                var addUrl = '{{ route('efficient_living.add') }}';
+
+                var $overlay = $(
+                    '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay">' +
+                        '<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden lbs-after-save-dialog">' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-question">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">' +
+                                    '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
+                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Efficient Living job?</p>' +
+                                '<div class="mt-6 flex gap-3">' +
+                                    '<button type="button" data-el-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to Efficient Living list</button>' +
+                                    '<button type="button" data-el-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-slack" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#4A154B]/10 dark:bg-[#4A154B]/20">' +
+                                    '<span class="lbs-slack-spinner inline-block h-7 w-7 rounded-full border-2 border-[#4A154B]/30 border-t-[#4A154B] dark:border-t-[#E01E5A]"></span>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending to Slack...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Notifying your channel.</p>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sending" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">' +
+                                    '<span class="lbs-send-spinner inline-block h-7 w-7 rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending submission email...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sent" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 lbs-email-sent-animate">' +
+                                    '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Email sent!</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Submission email has been sent.</p>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>'
+                );
+
+                $('body').append($overlay);
+
+                $overlay.on('click', function(e) {
+                    if (e.target === this) $overlay.remove();
+                });
+
+                function sendEmailThen(action) {
+                    var $question = $overlay.find('.lbs-modal-step-question');
+                    var $slack = $overlay.find('.lbs-modal-step-slack');
+                    var $sending = $overlay.find('.lbs-modal-step-sending');
+                    var $sent = $overlay.find('.lbs-modal-step-sent');
+
+                    $question.hide();
+                    $slack.show().addClass('lbs-step-animate-in');
+                    $sending.hide();
+                    $sent.hide();
+
+                    function goToEmailStep() {
+                        $slack.hide().removeClass('lbs-step-animate-in');
+                        $sending.show().addClass('lbs-sending-animate-in');
+                        $.ajax({
+                            url: sendUrl,
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': getElCsrfToken(),
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            data: { _token: getElCsrfToken() },
+                            dataType: 'json'
+                        }).done(function(resp) {
+                            if (resp && resp.status === 'success') {
+                                $sending.hide().removeClass('lbs-sending-animate-in');
+                                $sent.show().addClass('lbs-email-sent-animate');
+                                setTimeout(function() {
+                                    $overlay.remove();
+                                    if (action === 'list') {
+                                        window.location.href = listUrl;
+                                    } else if (action === 'stay') {
+                                        // Refresh the form for a truly new job entry.
+                                        window.location.href = addUrl;
+                                    }
+                                }, 1200);
+                                return;
+                            }
+
+                            $sending.hide().removeClass('lbs-sending-animate-in');
+                            $question.show();
+                            var errMsg = (resp && resp.message) ? resp.message : 'Could not send email.';
+                            notifyElError(errMsg);
+                        }).fail(function(xhr) {
+                            $sending.hide().removeClass('lbs-sending-animate-in');
+                            $question.show();
+                            notifyElError(elAjaxErrorMessage(xhr, 'Could not send email. Try again or go to list.'));
+                        });
+                    }
+
+                    $.ajax({
+                        url: sendSlackUrl,
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': getElCsrfToken(),
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        data: { _token: getElCsrfToken() },
+                        dataType: 'json'
+                    }).done(function() {
+                        goToEmailStep();
+                    }).fail(function() {
+                        goToEmailStep();
+                    });
+                }
+
+                $overlay.find('[data-el-new-job]').on('click', function() {
+                    sendEmailThen('stay');
+                });
+
+                $overlay.find('[data-el-go-list]').on('click', function() {
+                    sendEmailThen('list');
+                });
+            }
         });
     </script>
 @endpush

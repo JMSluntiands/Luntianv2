@@ -23,6 +23,20 @@ return [
         'BPH' => [
             'bph.add' => 'BPH Add New',
             'bph.list' => 'BPH List',
+            'bph.completed' => 'BPH Completed',
+            'bph.store' => 'BPH Save Job',
+            'bph.view' => 'BPH View Job',
+            'bph.update' => 'BPH Update Job',
+            'bph.job.sendSlack' => 'BPH Slack Notify',
+            'bph.job.sendSubmissionEmail' => 'BPH Submission Email',
+        ],
+        'BPH Email' => [
+            'bph_client_email.index' => 'BPH Email — List',
+            'bph_client_email.create' => 'BPH Email — Create',
+            'bph_client_email.store' => 'BPH Email — Save',
+            'bph_client_email.edit' => 'BPH Email — Edit',
+            'bph_client_email.update' => 'BPH Email — Update',
+            'bph_client_email.destroy' => 'BPH Email — Delete',
         ],
         'CSP' => [
             'csp.add' => 'CSP Add New',
@@ -57,6 +71,7 @@ return [
             'efficient_living.list' => 'Efficient Living List',
             'efficient_living.completed' => 'Efficient Living Completed',
             'efficient_living.review' => 'Efficient Living For Review',
+            'efficient_living.mailbox' => 'Efficient Living Mailbox',
             'efficient_living.trash' => 'Efficient Living Archive',
         ],
         'Leading Energy' => [

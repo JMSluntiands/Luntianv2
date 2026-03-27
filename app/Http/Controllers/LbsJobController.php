@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
+use App\Models\EmailConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -51,7 +52,14 @@ class LbsJobController extends Controller
             abort(404);
         }
 
-        // Resolve colors for this job's priority & status from lookup tables
+        return $this->renderJobDetailView($job, 'lbs.list', false);
+    }
+
+    /**
+     * LBS job detail vs Efficient Living (same `jobs` row shape; EL limits job type dropdown).
+     */
+    private function renderJobDetailView(object $job, string $sidebarActive, bool $isEfficientLiving)
+    {
         $priorityColor = !empty($job->priority)
             ? Priority::where('name', $job->priority)->value('color')
             : null;
@@ -60,7 +68,215 @@ class LbsJobController extends Controller
             ? Status::where('name', $job->job_status)->value('color')
             : null;
 
-        // Dropdown data for editing
+        $priorities = Priority::orderBy('id')->get();
+        $statuses = Status::orderBy('name')->get();
+        $compliances = Compliance::orderBy('column')->get();
+        $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+        $jobRequests = $isEfficientLiving
+            ? JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get()
+            : JobRequest::orderBy('job_request_type')->get();
+
+        $activityLogs = ActivityLog::where('job_id', (int) $job->job_id)
+            ->orderByDesc('activity_date')
+            ->limit(50)
+            ->get();
+
+        $userRoleMap = [];
+        $updatedByNames = $activityLogs->pluck('updated_by')->unique()->filter();
+        if ($updatedByNames->isNotEmpty()) {
+            $users = User::whereIn('fullname', $updatedByNames)
+                ->orWhereIn('unique_code', $updatedByNames)
+                ->get(['fullname', 'unique_code', 'role']);
+            foreach ($users as $u) {
+                $role = ucfirst((string) ($u->role ?? ''));
+                if ($u->fullname) {
+                    $userRoleMap[$u->fullname] = $role;
+                }
+                if ($u->unique_code) {
+                    $userRoleMap[$u->unique_code] = $role;
+                }
+            }
+        }
+
+        $checkerUploads = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('uploaded_at')
+            ->get();
+
+        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
+            ->orderBy('unique_code')
+            ->get(['id', 'unique_code'])
+            ->unique('unique_code')
+            ->values();
+
+        $runComments = DB::table('run_comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('run_comment_id')
+            ->limit(50)
+            ->get();
+
+        $jobComments = DB::table('comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('comment_id')
+            ->limit(50)
+            ->get();
+
+        $viewName = $isEfficientLiving ? 'efficient_living.view' : 'lbs.view';
+
+        return view($viewName, [
+            'sidebar_active'   => $sidebarActive,
+            'isEfficientLiving' => $isEfficientLiving,
+            'jobId'            => $job->job_id,
+            'job'              => $job,
+            'priorityColor'    => $priorityColor,
+            'statusColor'      => $statusColor,
+            'priorities'       => $priorities,
+            'statuses'         => $statuses,
+            'compliances'      => $compliances,
+            'clientAccounts'   => $clientAccounts,
+            'jobRequests'      => $jobRequests,
+            'activityLogs'     => $activityLogs,
+            'userRoleMap'      => $userRoleMap,
+            'assignmentUsers'  => $assignmentUsers,
+            'checkerUploads'   => $checkerUploads,
+            'runComments'      => $runComments,
+            'jobComments'      => $jobComments,
+        ]);
+    }
+
+    public function efficientLivingShow(int $id)
+    {
+        $job = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id)
+            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->first();
+
+        if ($job) {
+            return $this->renderJobDetailView($job, 'efficient_living.list', true);
+        }
+
+        $row = DB::table('job_el')->where('id', $id)->first();
+        if (!$row) {
+            abort(404);
+        }
+
+        $legacyJob = (object) [
+            'job_id' => (int) $row->id,
+            'reference' => $row->reference,
+            'log_date' => $row->created_at,
+            'client_code' => $row->client_code,
+            'job_reference_no' => $row->job_number,
+            'client_reference_no' => null,
+            'staff_id' => $row->assigned,
+            'checker_id' => $row->checked,
+            'ncc_compliance' => $row->ncc,
+            'job_request_id' => null,
+            'address_client' => $row->address,
+            'job_type' => $row->job_type,
+            'priority' => null,
+            'plan_complexity' => (int) ($row->units ?? 0),
+            'job_status' => $row->status,
+            'completion_date' => $row->date,
+            'notes' => $row->notes,
+            'upload_files' => $row->plans_files,
+            'upload_project_files' => $row->docs_files,
+            'client_account_id' => null,
+            'client_account_name' => $row->client_name,
+        ];
+
+        $priorityColor = !empty($legacyJob->priority) ? Priority::where('name', $legacyJob->priority)->value('color') : null;
+        $statusColor = !empty($legacyJob->job_status) ? Status::where('name', $legacyJob->job_status)->value('color') : null;
+
+        return view('efficient_living.view', [
+            'sidebar_active' => 'efficient_living.list',
+            'isEfficientLiving' => true,
+            'jobId' => $legacyJob->job_id,
+            'job' => $legacyJob,
+            'priorityColor' => $priorityColor,
+            'statusColor' => $statusColor,
+            'priorities' => Priority::orderBy('id')->get(),
+            'statuses' => Status::orderBy('name')->get(),
+            'compliances' => Compliance::orderBy('column')->get(),
+            'clientAccounts' => collect(),
+            'jobRequests' => JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get(),
+            'activityLogs' => collect(),
+            'userRoleMap' => [],
+            'assignmentUsers' => User::whereIn('role', ['staff', 'checker'])->orderBy('unique_code')->get(['id', 'unique_code'])->unique('unique_code')->values(),
+            'checkerUploads' => collect(),
+            'runComments' => collect(),
+            'jobComments' => collect(),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildJobViewData(int $id): array
+    {
+        $job = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id)
+            ->first();
+
+        if (!$job) {
+            abort(404);
+        }
+
+        $priorityColor = !empty($job->priority)
+            ? Priority::where('name', $job->priority)->value('color')
+            : null;
+
+        $statusColor = !empty($job->job_status)
+            ? Status::where('name', $job->job_status)->value('color')
+            : null;
+
         $priorities    = Priority::orderBy('id')->get();
         $statuses      = Status::orderBy('name')->get();
         $compliances   = Compliance::orderBy('column')->get();
@@ -112,8 +328,7 @@ class LbsJobController extends Controller
             ->limit(50)
             ->get();
 
-        return view('lbs.view', [
-            'sidebar_active'   => 'lbs.list',
+        return [
             'jobId'            => $job->job_id,
             'job'              => $job,
             'priorityColor'    => $priorityColor,
@@ -129,7 +344,7 @@ class LbsJobController extends Controller
             'checkerUploads'   => $checkerUploads,
             'runComments'      => $runComments,
             'jobComments'      => $jobComments,
-        ]);
+        ];
     }
 
     public function addRunComment(Request $request, int $id)
@@ -739,6 +954,161 @@ class LbsJobController extends Controller
         ]);
     }
 
+    public function efficientLivingList()
+    {
+        // EL Add / Save persists to `jobs` with `job_request_id` like EA_EL_* (not `job_el`).
+        $jobs = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->where('j.reference', 'like', 'JOBS%')
+            ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit(500)
+            ->get();
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statusColors = Status::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statuses = Status::orderBy('name')->get();
+
+        return view('efficient_living.list', [
+            'sidebar_active' => 'efficient_living.list',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
+            'statuses' => $statuses,
+        ]);
+    }
+
+    public function efficientLivingCompleted()
+    {
+        $jobs = $this->queryEfficientLivingJobsByStatus('Completed', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+
+        return view('lbs.completed', [
+            'sidebar_active' => 'efficient_living.completed',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
+            'isEfficientLiving' => true,
+        ]);
+    }
+
+    public function efficientLivingReview()
+    {
+        $jobs = $this->queryEfficientLivingJobsByStatus('For Review', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+
+        return view('lbs.review', [
+            'sidebar_active' => 'efficient_living.review',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
+            'isEfficientLiving' => true,
+        ]);
+    }
+
+    public function efficientLivingTrash()
+    {
+        $jobs = $this->queryEfficientLivingJobsByStatus('Archived', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+
+        return view('lbs.trash', [
+            'sidebar_active' => 'efficient_living.trash',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
+            'isEfficientLiving' => true,
+        ]);
+    }
+
+    public function efficientLivingMailbox()
+    {
+        $jobs = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->where('j.job_status', '=', 'For Email Confirmation')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.upload_files',
+                'j.upload_project_files',
+                'ca.client_account_name',
+                'cl.client_email as to_email'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit(200)
+            ->get();
+
+        return view('lbs.mailbox', [
+            'sidebar_active' => 'efficient_living.mailbox',
+            'jobs' => $jobs,
+            'isEfficientLiving' => true,
+        ]);
+    }
+
+    private function queryEfficientLivingJobsByStatus(string $status, int $limit = 200)
+    {
+        return DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', $status)
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit($limit)
+            ->get();
+    }
+
     public function trash()
     {
         $jobs = DB::table('jobs as j')
@@ -808,6 +1178,54 @@ class LbsJobController extends Controller
             'updated_by'           => session('user_name') ?? 'LBS Account',
         ]);
         return redirect()->route('lbs.trash')->with('success', 'Job restored to list.');
+    }
+
+    public function completed()
+    {
+        $jobs = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', 'Completed')
+            ->whereRaw("(j.job_request_id IS NULL OR j.job_request_id NOT LIKE 'EA\_EL\_%')")
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit(500)
+            ->get();
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statusColors = Status::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return view('lbs.completed', [
+            'sidebar_active' => 'lbs.completed',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statusColors' => $statusColors,
+        ]);
     }
 
     public function review()
@@ -932,6 +1350,14 @@ class LbsJobController extends Controller
         $job = DB::table('jobs')->where('job_id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $emailConfig = EmailConfig::where('is_active', true)->first();
+        if (!$emailConfig) {
+            return response()->json([
+                'status' => 'disabled',
+                'message' => 'Email sending is disabled.',
+            ]);
         }
 
         $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
@@ -1075,9 +1501,14 @@ class LbsJobController extends Controller
             $referenceValue = $referenceValue . '-1';
         }
 
-        // Client Name in table = unique_code of user who added the job (stored in client_code)
-        $currentUser = session('user_id') ? User::find(session('user_id')) : null;
-        $clientCodeForJob = $currentUser && !empty($currentUser->unique_code) ? $currentUser->unique_code : ($client->client_code ?? '');
+        // `sendJobSubmissionEmail()` looks up recipient via `clients.client_code`,
+        // so keep `jobs.client_code` aligned with the selected client account.
+        $clientCodeForJob = $client->client_code ?? null;
+        if ((string) $clientCodeForJob === '' && session('user_id')) {
+            $currentUser = User::find(session('user_id'));
+            $clientCodeForJob = $currentUser?->unique_code ?? null;
+        }
+        $clientCodeForJob = $clientCodeForJob ?? '';
 
         // Map priority ID -> name string (e.g. "High 1 day") if available
         $priorityText = (string) $data['priority'];
@@ -1145,9 +1576,13 @@ class LbsJobController extends Controller
                 'units'               => 0,
             ]);
 
+            $isEfficientLiving = ($jobRequest->client_code ?? '') === 'EL01';
+
             return response()->json([
                 'status'  => 'success',
-                'message' => 'LBS job created successfully.',
+                'message' => $isEfficientLiving
+                    ? 'Efficient Living job created successfully.'
+                    : 'LBS job created successfully.',
                 'job_id'  => $jobId,
             ]);
         } catch (\Throwable $e) {
@@ -1189,14 +1624,19 @@ class LbsJobController extends Controller
         $assigned = $job->staff_id ?? '';
         $checked = $job->checker_id ?? '';
 
+        $isEl = $this->isEfficientLivingJob($job);
+        $slackHeadline = $isEl ? '🆕 New Efficient Living Job Submitted' : '🆕 New LBS Job Submitted';
+        $refFieldTitle = $isEl ? 'EL Ref #' : 'LBS Ref #';
+        $slackFooter = $isEl ? 'Luntian Efficient Living Job Management' : 'Luntian LBS Job Management';
+
         try {
             $slackMessage = [
-                'text' => '🆕 New LBS Job Submitted',
+                'text' => $slackHeadline,
                 'attachments' => [
                     [
                         'color' => '#f57c00',
                         'fields' => [
-                            ['title' => 'LBS Ref #', 'value' => $reference, 'short' => true],
+                            ['title' => $refFieldTitle, 'value' => $reference, 'short' => true],
                             ['title' => 'Client Ref #', 'value' => $client_ref, 'short' => true],
                             ['title' => 'Account Client', 'value' => $client_account_name, 'short' => true],
                             ['title' => 'Status', 'value' => $status, 'short' => true],
@@ -1207,7 +1647,7 @@ class LbsJobController extends Controller
                             ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
                             ['title' => 'Checked By', 'value' => $checked, 'short' => true],
                         ],
-                        'footer' => 'Luntian LBS Job Management',
+                        'footer' => $slackFooter,
                         'ts' => time(),
                     ],
                 ],
@@ -1245,8 +1685,44 @@ class LbsJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
+        $emailConfig = EmailConfig::where('is_active', true)->first();
+        if (!$emailConfig) {
+            return response()->json([
+                'status' => 'disabled',
+                'message' => 'Email sending is disabled.',
+            ]);
+        }
+
         $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
+
+        // Fallback: some job rows (e.g. Efficient Living) may not have `jobs.client_code`
+        // aligned with `clients.client_code`, but `job_requests.client_code` is consistent.
         if (empty($toEmail)) {
+            $jobRequest = null;
+            if (!empty($job->job_request_id)) {
+                $jobRequest = DB::table('job_requests')
+                    ->where('job_request_id', $job->job_request_id)
+                    ->first();
+                if (!$jobRequest && is_numeric($job->job_request_id)) {
+                    $jobRequest = DB::table('job_requests')
+                        ->where('id', (int) $job->job_request_id)
+                        ->first();
+                }
+            }
+
+            $fallbackClientCode = $jobRequest->client_code ?? null;
+            if (!empty($fallbackClientCode)) {
+                $toEmail = DB::table('clients')->where('client_code', $fallbackClientCode)->value('client_email');
+            }
+        }
+
+        if (empty($toEmail)) {
+            \Log::warning('Job submission email: recipient not found', [
+                'job_id' => (int) $id,
+                'jobs_client_code' => $job->client_code ?? null,
+                'job_request_id' => $job->job_request_id ?? null,
+                'client_code_fallback' => $fallbackClientCode ?? null,
+            ]);
             return response()->json([
                 'status'  => 'error',
                 'message' => 'No recipient email found for this job.',
@@ -1267,7 +1743,10 @@ class LbsJobController extends Controller
         $headerTitle = $lbsRef . '_' . $jobTypeShort . '_' . $clientRef;
 
         $clientRefSubj = trim($job->client_reference_no ?? '') ?: '';
-        $emailSubject = 'LUNTIAN Job Submission: ' . trim($accountClient) . ' LUNTIAN' . $lbsRef
+        $isEl = $this->isEfficientLivingJob($job);
+        $subjectLead = $isEl ? 'LUNTIAN Efficient Living Job Submission: ' : 'LUNTIAN Job Submission: ';
+        $refLabel = $isEl ? 'EL Ref #' : 'LBS Ref #';
+        $emailSubject = $subjectLead . trim($accountClient) . ' LUNTIAN' . $lbsRef
             . ($clientRefSubj !== '' ? '-' . $clientRefSubj : '') . '-' . $nccCompliance;
 
         $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
@@ -1289,6 +1768,7 @@ class LbsJobController extends Controller
             Mail::send('emails.lbs-job-submission', [
                 'headerTitle'    => $headerTitle,
                 'lbsRef'         => $lbsRef,
+                'refLabel'       => $refLabel,
                 'clientRef'      => $clientRef,
                 'accountClient'  => $accountClient,
                 'nccCompliance'  => $nccCompliance,
@@ -1303,6 +1783,10 @@ class LbsJobController extends Controller
                 }
             });
         } catch (\Throwable $e) {
+            \Log::error('Job submission email: Mail::send failed', [
+                'job_id' => (int) $id,
+                'error'  => $e->getMessage(),
+            ]);
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Failed to send email: ' . $e->getMessage(),
@@ -1368,6 +1852,36 @@ class LbsJobController extends Controller
      */
     public function addForm(Request $request)
     {
+        return view('lbs.add', array_merge($this->buildAddJobFormData($request, 'LBS01'), [
+            'sidebar_active' => 'lbs.add',
+        ]));
+    }
+
+    /**
+     * Same form/data as LBS add, for Efficient Living (shared job pipeline).
+     */
+    public function efficientLivingAddForm(Request $request)
+    {
+        return view('efficient_living.add', array_merge($this->buildAddJobFormData($request, 'EL01'), [
+            'sidebar_active' => 'efficient_living.add',
+        ]));
+    }
+
+    /**
+     * Jobs created from Efficient Living add use EA_EL_* job_request_id values (client EL01).
+     */
+    private function isEfficientLivingJob(object $job): bool
+    {
+        $jid = (string) ($job->job_request_id ?? '');
+
+        return str_starts_with($jid, 'EA_EL_');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildAddJobFormData(Request $request, string $jobRequestClientCode): array
+    {
         $compliances = Compliance::orderBy('column')->get();
         $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos($c->column, '2022') !== false)
             ?? $compliances->first(fn ($c) => $c->column && stripos($c->column, 'WOH') !== false)
@@ -1390,8 +1904,11 @@ class LbsJobController extends Controller
         $defaultPriority = Priority::where('name', 'like', '%Top (COB)%')->first()
             ?? $priorities->first();
 
-        $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $defaultJobRequest = JobRequest::where('job_request_type', 'like', '%1S DB Base Model- 1S Design Builder Model%')->first()
+        $jobRequests = JobRequest::where('client_code', $jobRequestClientCode)
+            ->orderBy('job_request_type')
+            ->get();
+        $defaultJobRequest = $jobRequests->first(fn ($jr) => $jr->job_request_type
+            && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
             ?? $jobRequests->first();
 
         $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
@@ -1425,10 +1942,16 @@ class LbsJobController extends Controller
                 }
                 $jobRequestId = null;
                 if (!empty($job->job_request_id)) {
-                    $jr = JobRequest::where('job_request_id', $job->job_request_id)
-                        ->orWhere('job_request_type', $job->job_type)
+                    $jr = JobRequest::where('client_code', $jobRequestClientCode)
+                        ->where('job_request_id', $job->job_request_id)
                         ->first();
-                    $jobRequestId = $jr?->id ?? $job->job_request_id;
+                    $jobRequestId = $jr?->id;
+                }
+                if ($jobRequestId === null && !empty($job->job_type)) {
+                    $jr = JobRequest::where('client_code', $jobRequestClientCode)
+                        ->where('job_request_type', $job->job_type)
+                        ->first();
+                    $jobRequestId = $jr?->id;
                 }
 
                 $duplicateJob = (object) [
@@ -1446,8 +1969,7 @@ class LbsJobController extends Controller
             }
         }
 
-        return view('lbs.add', [
-            'sidebar_active'       => 'lbs.add',
+        return [
             'compliances'          => $compliances,
             'defaultComplianceId'  => $defaultCompliance?->id,
             'clientAccounts'        => $clientAccounts,
@@ -1458,7 +1980,7 @@ class LbsJobController extends Controller
             'defaultJobRequestId'   => $defaultJobRequest?->id,
             'assignmentUsers'      => $assignmentUsers,
             'duplicateJob'         => $duplicateJob,
-        ]);
+        ];
     }
 
     /**

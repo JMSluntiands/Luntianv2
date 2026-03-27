@@ -5,12 +5,17 @@
 @section('body_class', 'page-lbs-view')
 
 @section('content')
+    @php
+        $isEfficientLivingView = (bool) ($isEfficientLiving ?? false);
+        $listRouteName = $isEfficientLivingView ? 'efficient_living.list' : 'lbs.list';
+        $trashRouteName = $isEfficientLivingView ? 'efficient_living.trash' : 'lbs.trash';
+    @endphp
     <div class="min-h-0 w-full max-w-full">
         {{-- Breadcrumb --}}
         <nav class="mb-6 flex flex-wrap items-center gap-1 text-sm" aria-label="Breadcrumb">
             <a href="{{ route('dashboard') }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Home</a>
             <span class="text-slate-400 dark:text-slate-500">/</span>
-            <a href="{{ route('lbs.list') }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Job List</a>
+            <a href="{{ route($listRouteName) }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Job List</a>
             <span class="text-slate-400 dark:text-slate-500">/</span>
             <span class="font-medium text-slate-800 dark:text-white">Job {{ $job->reference ?? $job->job_id ?? $jobId ?? '' }}</span>
         </nav>
@@ -27,13 +32,13 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                @if(!$isArchived)
+                @if(!$isArchived && !$isEfficientLivingView)
                     <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" id="jobViewArchiveJobBtn" aria-label="Archive this job">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                         Archive this job
                     </button>
                 @endif
-                <a href="{{ route('lbs.list') }}" class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600">
+                <a href="{{ route($listRouteName) }}" class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back to List
                 </a>
@@ -67,9 +72,12 @@
             $statusBg = $statusColor ?? null;
             $priorityBg = $priorityColor ?? null;
             // Disable all Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation
-            $canEditDetails = !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation', 'processing'], true);
+            $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation', 'processing'], true);
             // Same flow as Edit Job Details modal: Allocated→Accepted/Processing; Accepted/Processing/Revised→For Checking; For Checking→For Review/Revised
-            $canEditStatusInline = in_array($lowerStatus, ['allocated', 'accepted', 'processing', 'revised', 'for checking'], true);
+            //
+            // Efficient Living: enable inline status edit only when current status is "Allocated"
+            $canEditStatusInline = in_array($lowerStatus, ['allocated'], true)
+                || (!$isEfficientLivingView && in_array($lowerStatus, ['allocated', 'accepted', 'processing', 'revised', 'for checking'], true));
             $inlineStatusOptions = [];
             if ($lowerStatus === 'allocated') {
                 foreach ($statuses ?? [] as $s) {
@@ -583,7 +591,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 <script>
 (function() {
     var csrfToken = '{{ csrf_token() }}';
-    var updateUrl = '{{ route('lbs.job.update', ['id' => $jobId]) }}';
+    var updateUrl = '{{ route($isEfficientLivingView ? 'efficient_living.job.update' : 'lbs.job.update', ['id' => $jobId]) }}';
     var uploadFilesUrl = '{{ route('lbs.job.uploadFiles', ['id' => $jobId]) }}';
     var deleteFileUrl = '{{ route('lbs.job.deleteFile', ['id' => $jobId]) }}';
     var archiveJobUrl = '{{ route('lbs.job.archive', ['id' => $jobId]) }}';
@@ -1312,7 +1320,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                         }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: {} }; }); }).then(function(result) {
                             var msg = (result.data && result.data.message) || (result.ok ? 'Job archived.' : 'Failed to archive.');
                             if (window.showSuccessToast) showSuccessToast(msg);
-                            var redirect = (result.data && result.data.redirect) || '{{ route('lbs.trash') }}';
+                            var redirect = (result.data && result.data.redirect) || '{{ route($trashRouteName) }}';
                             if (result.ok && redirect) { window.location.href = redirect; return; }
                             closeArchiveModal();
                         }).catch(function() {

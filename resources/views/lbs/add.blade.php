@@ -371,6 +371,7 @@
                             if (window.showSuccessToast) showSuccessToast(resp.message || 'Job saved.');
                             formEl.reset();
                             $('#lbs-notes-body').empty();
+                            $('#lbsAddForm select').trigger('change');
                             document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
                             document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
                             showLbsAfterSavePrompt(resp.job_id);
@@ -458,15 +459,22 @@
                             method: 'POST',
                             data: { _token: '{{ csrf_token() }}' },
                             dataType: 'json'
-                        }).done(function() {
+                        }).done(function(resp) {
+                            if (resp && resp.status === 'success') {
+                                $sending.hide().removeClass('lbs-sending-animate-in');
+                                $sent.show().addClass('lbs-email-sent-animate');
+                                setTimeout(function() {
+                                    $overlay.remove();
+                                    if (action === 'list') {
+                                        window.location.href = listUrl;
+                                    }
+                                }, 1200);
+                                return;
+                            }
+
                             $sending.hide().removeClass('lbs-sending-animate-in');
-                            $sent.show().addClass('lbs-email-sent-animate');
-                            setTimeout(function() {
-                                $overlay.remove();
-                                if (action === 'list') {
-                                    window.location.href = listUrl;
-                                }
-                            }, 1200);
+                            $question.show();
+                            if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Could not send email.');
                         }).fail(function() {
                             $sending.hide().removeClass('lbs-sending-animate-in');
                             $question.show();

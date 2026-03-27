@@ -26,10 +26,12 @@
                         @php
                             $selCompliance = $defaultComplianceId ?? null;
                             $selJobRequest = $defaultJobRequestId ?? null;
+                            $selectedContactEmail = old('contact_email', request('contact_email'));
+                            $selectedUrgent = old('urgent_job', request('urgent_job'));
                         @endphp
                         <div class="flex items-center gap-3">
                             <label class="inline-flex cursor-pointer items-center gap-2.5">
-                                <input type="checkbox" id="urgent_job" name="urgent_job" value="1" autocomplete="off"
+                                <input type="checkbox" id="urgent_job" name="urgent_job" value="1" autocomplete="off" {{ (string) $selectedUrgent === '1' ? 'checked' : '' }}
                                     class="h-4 w-4 shrink-0 rounded border-2 border-slate-300 bg-white text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-slate-500 dark:bg-slate-700 dark:focus:ring-offset-slate-800 dark:checked:border-emerald-500 dark:checked:bg-emerald-500">
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Urgent Job (YES)</span>
                             </label>
@@ -57,7 +59,7 @@
                         <div>
                             <label for="job_number" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Number <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input type="text" id="job_number" name="job_number" required placeholder="e.g. 12345B" autocomplete="off" maxlength="6"
+                                <input type="text" id="job_number" name="job_number" required placeholder="e.g. 12345B" autocomplete="off" maxlength="6" value="{{ old('job_number', request('job_number')) }}"
                                     class="bph-job-number-input w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                                 <span id="job_number_error_icon" class="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-red-100 p-1 text-red-600 dark:bg-red-900/40 dark:text-red-400" aria-hidden="true">
                                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -69,23 +71,24 @@
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div>
                                 <label for="client_name" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Name <span class="text-red-500">*</span></label>
-                                <input type="text" id="client_name" name="client_name" required placeholder="Enter client name" autocomplete="off"
+                                <input type="text" id="client_name" name="client_name" required placeholder="Enter client name" autocomplete="off" value="{{ old('client_name', request('client_name')) }}"
                                     class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                             </div>
                             <div>
                                 <label for="contact_email" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Email <span class="text-red-500">*</span></label>
-                                <input type="email" id="contact_email" name="contact_email" required placeholder="Enter contact email" autocomplete="off"
-                                    class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
+                                <select id="contact_email" name="contact_email" required class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off" data-placeholder="Enter contact email">
+                                    <option value=""></option>
+                                    @if(!empty($selectedContactEmail) && !collect($bphClientEmails ?? [])->pluck('email')->contains($selectedContactEmail))
+                                        <option value="{{ $selectedContactEmail }}" selected>{{ $selectedContactEmail }}</option>
+                                    @endif
+                                    @foreach($bphClientEmails ?? [] as $row)
+                                        <option value="{{ $row->email }}" {{ (string) $selectedContactEmail === (string) $row->email ? 'selected' : '' }}>{{ $row->email }}</option>
+                                    @endforeach
+                                </select>
+                                @if(($bphClientEmails ?? collect())->isEmpty())
+                                    <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">No emails in <span class="font-mono">client_email_bph</span> yet. Add addresses under <a href="{{ route('bph_client_email.index') }}" class="font-medium underline hover:no-underline">BPH Email</a>.</p>
+                                @endif
                             </div>
-                        </div>
-                        <div>
-                            <label for="please_select" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Please Select</label>
-                            <select id="please_select" name="please_select" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="">Select option</option>
-                                <option value="option1">Option 1</option>
-                                <option value="option2">Option 2</option>
-                                <option value="option3">Option 3</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -203,6 +206,47 @@
     </div>
 @endsection
 
+@push('styles')
+<style>
+.lbs-after-save-overlay { animation: lbsOverlayFadeIn 0.25s ease forwards; }
+.lbs-after-save-dialog {
+    animation: lbsDialogScaleIn 0.35s ease 0.1s forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
+.lbs-modal-step-slack,
+.lbs-modal-step-sending {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.lbs-modal-step-slack.lbs-step-animate-in,
+.lbs-modal-step-sending.lbs-sending-animate-in {
+    animation: lbsSendingStepIn 0.4s ease forwards;
+}
+.lbs-slack-spinner,
+.lbs-send-spinner {
+    animation: lbsSpinner 0.8s linear infinite;
+}
+.lbs-email-sent-animate {
+    animation: lbsEmailSentFadeIn 0.5s ease 0.3s forwards;
+    opacity: 0;
+}
+@keyframes lbsOverlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lbsDialogScaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+@keyframes lbsSendingStepIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lbsSpinner {
+    to { transform: rotate(360deg); }
+}
+@keyframes lbsEmailSentFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+@endpush
+
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -237,7 +281,23 @@
             notesBody.addEventListener('keyup', updateNotesActiveState);
             notesBody.addEventListener('mouseup', updateNotesActiveState);
 
-            $('#bphAddForm select').select2({ width: '100%', allowClear: false });
+            function initBphSelect2() {
+                $('#bphAddForm select').each(function() {
+                    var $el = $(this);
+                    if ($el.hasClass('select2-hidden-accessible')) {
+                        $el.select2('destroy');
+                    }
+                    var ph = $el.data('placeholder');
+                    var opts = { width: '100%', allowClear: false };
+                    if (ph) {
+                        opts.placeholder = ph;
+                        opts.allowClear = true;
+                        opts.minimumResultsForSearch = 0;
+                    }
+                    $el.select2(opts);
+                });
+            }
+            initBphSelect2();
 
             // Job number validation: 5 digits + letter B (e.g. 12345B)
             var jobNumberInput = document.getElementById('job_number');
@@ -315,9 +375,13 @@
 
                 var formEl = document.getElementById('bphAddForm');
                 var formData = new FormData(formEl);
+                var headerRef = ($('#bphJobReferenceContent').text() || '').trim();
+                if (headerRef) {
+                    formData.append('header_reference', headerRef);
+                }
 
                 $.ajax({
-                    url: '{{ url("dashboard/bph/store") }}',
+                    url: '{{ route("bph.store") }}',
                     method: 'POST',
                     data: formData,
                     processData: false,
@@ -334,7 +398,8 @@
                             notesBody.innerHTML = '';
                             document.getElementById('bph_upload_plans') && document.getElementById('bph_upload_plans').dispatchEvent(new Event('change'));
                             document.getElementById('bph_upload_document') && document.getElementById('bph_upload_document').dispatchEvent(new Event('change'));
-                            window.location.href = '{{ route("bph.list") }}';
+                            initBphSelect2();
+                            showBphAfterSavePrompt(resp.job_id);
                         } else {
                             if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Failed to save job.');
                         }
@@ -349,6 +414,119 @@
                     }
                 });
             });
+
+            function showBphAfterSavePrompt(jobId) {
+                var sendSlackUrl = '{{ url("dashboard/bph/job") }}/' + jobId + '/send-slack';
+                var sendUrl = '{{ url("dashboard/bph/job") }}/' + jobId + '/send-submission-email';
+                var listUrl = '{{ route("bph.list") }}';
+
+                var $overlay = $(
+                    '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay">' +
+                        '<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden lbs-after-save-dialog">' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-question">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">' +
+                                    '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
+                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another BPH job?</p>' +
+                                '<div class="mt-6 flex gap-3">' +
+                                    '<button type="button" data-bph-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to BPH list</button>' +
+                                    '<button type="button" data-bph-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-slack" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#4A154B]/10 dark:bg-[#4A154B]/20">' +
+                                    '<span class="lbs-slack-spinner inline-block h-7 w-7 rounded-full border-2 border-[#4A154B]/30 border-t-[#4A154B] dark:border-t-[#E01E5A]"></span>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending to Slack...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Notifying your channel.</p>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sending" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">' +
+                                    '<span class="lbs-send-spinner inline-block h-7 w-7 rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending submission email...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p>' +
+                            '</div>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sent" style="display:none;">' +
+                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 lbs-email-sent-animate">' +
+                                    '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>' +
+                                '</div>' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Email sent!</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Submission email has been sent.</p>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>'
+                );
+
+                $('body').append($overlay);
+
+                $overlay.on('click', function(e) {
+                    if (e.target === this) $overlay.remove();
+                });
+
+                function sendEmailThen(action) {
+                    var $question = $overlay.find('.lbs-modal-step-question');
+                    var $slack = $overlay.find('.lbs-modal-step-slack');
+                    var $sending = $overlay.find('.lbs-modal-step-sending');
+                    var $sent = $overlay.find('.lbs-modal-step-sent');
+
+                    $question.hide();
+                    $slack.show().addClass('lbs-step-animate-in');
+                    $sending.hide();
+                    $sent.hide();
+
+                    function goToEmailStep() {
+                        $slack.hide().removeClass('lbs-step-animate-in');
+                        $sending.show().addClass('lbs-sending-animate-in');
+                        $.ajax({
+                            url: sendUrl,
+                            method: 'POST',
+                            data: { _token: '{{ csrf_token() }}' },
+                            dataType: 'json'
+                        }).done(function(resp) {
+                            if (resp && resp.status === 'success') {
+                                $sending.hide().removeClass('lbs-sending-animate-in');
+                                $sent.show().addClass('lbs-email-sent-animate');
+                                setTimeout(function() {
+                                    $overlay.remove();
+                                    if (action === 'list') {
+                                        window.location.href = listUrl;
+                                    }
+                                }, 1200);
+                                return;
+                            }
+
+                            $sending.hide().removeClass('lbs-sending-animate-in');
+                            $question.show();
+                            if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Could not send email.');
+                        }).fail(function() {
+                            $sending.hide().removeClass('lbs-sending-animate-in');
+                            $question.show();
+                            if (window.showSuccessToast) showSuccessToast('Could not send email. Try again or go to list.');
+                        });
+                    }
+
+                    $.ajax({
+                        url: sendSlackUrl,
+                        method: 'POST',
+                        data: { _token: '{{ csrf_token() }}' },
+                        dataType: 'json'
+                    }).done(function() {
+                        goToEmailStep();
+                    }).fail(function() {
+                        goToEmailStep();
+                    });
+                }
+
+                $overlay.find('[data-bph-new-job]').on('click', function() {
+                    sendEmailThen('stay');
+                });
+
+                $overlay.find('[data-bph-go-list]').on('click', function() {
+                    sendEmailThen('list');
+                });
+            }
         });
     </script>
 @endpush

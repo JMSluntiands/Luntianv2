@@ -1,21 +1,28 @@
 @extends('layouts.dashboard')
 
-@section('title', 'LBS Mailbox')
+@section('title', (isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Mailbox' : 'LBS Mailbox')
 
 @section('body_class', 'page-lbs-mailbox')
 
 @section('content')
+    @php
+        $isEfficientLivingPage = (bool) ($isEfficientLiving ?? false);
+        $branchLabel = $isEfficientLivingPage ? 'Efficient Living' : 'LBS';
+        $viewRoute = $isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view';
+        $updateRoute = $isEfficientLivingPage ? 'efficient_living.job.update' : 'lbs.job.update';
+        $jobBaseUrl = $isEfficientLivingPage ? url('/dashboard/efficient-living/job') : url('/dashboard/lbs/job');
+    @endphp
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">Job Mailbox</h1>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">{{ $branchLabel }} Mailbox</h1>
                 <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View jobs waiting for email confirmation.</p>
             </div>
             <div class="shrink-0">
                 <label for="lbsMailboxSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                 <div class="relative flex min-w-[260px] items-center">
                     <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="lbsMailboxSearch" class="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by reference, recipient..." autocomplete="off" aria-label="Search mailbox">
+                    <input type="search" id="lbsMailboxSearch" class="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by reference, recipient..." autocomplete="off" aria-label="Search {{ $branchLabel }} mailbox">
                 </div>
             </div>
         </div>
@@ -51,7 +58,7 @@
                                 $projFiles = is_string($job->upload_project_files ?? null) ? json_decode($job->upload_project_files, true) : [];
                                 $hasFiles = (!empty($planFiles) && is_array($planFiles)) || (!empty($projFiles) && is_array($projFiles));
                             @endphp
-                            <tr class="lbs-data-row lbs-mailbox-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-update-url="{{ route('lbs.job.update', ['id' => $job->job_id]) }}">
+                            <tr class="lbs-data-row lbs-mailbox-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-update-url="{{ route($updateRoute, ['id' => $job->job_id]) }}">
                                 <td class="border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">
                                     <div class="flex items-center gap-1.5">
                                         <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-500 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="Revert (set status to For Checking)" aria-label="Revert" data-revert-job>
@@ -70,7 +77,7 @@
                                 </td>
                                 <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Files">
                                     @if($hasFiles)
-                                        <a href="{{ route('lbs.job.view', ['id' => $job->job_id]) }}#files" class="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Uploaded Files</a>
+                                        <a href="{{ route($viewRoute, ['id' => $job->job_id]) }}#files" class="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Uploaded Files</a>
                                     @else
                                         <span class="text-slate-400">—</span>
                                     @endif
@@ -267,7 +274,7 @@
             var emailPreviewModal = document.getElementById('emailPreviewModal');
             var emailPreviewClose = document.getElementById('emailPreviewModalClose');
             var emailPreviewCloseBtn = document.getElementById('emailPreviewModalCloseBtn');
-            var emailPreviewUrlBase = '{{ url("/dashboard/lbs/job") }}';
+            var emailPreviewUrlBase = @json($jobBaseUrl);
 
             function openEmailPreviewModal() {
                 if (emailPreviewModal) emailPreviewModal.classList.add('show');

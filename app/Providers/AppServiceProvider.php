@@ -43,6 +43,24 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('lbs_list_count', (int) ($counts->allocated_count ?? 0));
                 $view->with('lbs_review_count', (int) ($counts->review_count ?? 0));
                 $view->with('lbs_mailbox_count', (int) ($counts->mailbox_count ?? 0));
+
+                // Efficient Living: same logic as LBS badges, but only `jobs` rows for EL (EA_EL_*), matching list/review/mailbox queries
+                $elCounts = DB::table('jobs')
+                    ->whereRaw("job_request_id LIKE 'EA\_EL\_%'")
+                    ->where('reference', 'like', 'JOBS%')
+                    ->selectRaw("
+                        SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                    ")
+                    ->first();
+                $elList = (int) ($elCounts->allocated_count ?? 0);
+                $elReview = (int) ($elCounts->review_count ?? 0);
+                $elMailbox = (int) ($elCounts->mailbox_count ?? 0);
+
+                $view->with('efficient_living_list_count', $elList);
+                $view->with('efficient_living_review_count', $elReview);
+                $view->with('efficient_living_mailbox_count', $elMailbox);
             });
         } catch (\Throwable) {
             // Fail silently; sidebar will use default fallback values
