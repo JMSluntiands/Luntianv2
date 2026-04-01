@@ -2,158 +2,196 @@
 
 @section('title', 'CSP List')
 
-@section('body_class', 'page-csp-list')
+@section('body_class', 'page-lbs-list page-csp-list')
 
 @section('content')
-    <div class="csp-list-page">
-        <div class="csp-list-header">
-            <div class="csp-list-header-text">
-                <h1 class="csp-list-title">CSP List</h1>
-                <p class="csp-list-subtitle">View and manage all CSP jobs.</p>
+    <div class="block max-w-full pb-0">
+        <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">CSP List</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View and manage all CSP jobs.</p>
             </div>
-            <div class="csp-list-search-wrap">
-                <label for="cspSearch" class="csp-search-label">Search</label>
-                <div class="csp-search-input-wrap">
-                    <svg class="csp-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="cspSearch" class="csp-search-input" placeholder="Search by client, job number, email..." autocomplete="off" aria-label="Search CSP jobs">
+            <div class="shrink-0">
+                <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
+                <div class="relative flex min-w-[260px] items-center">
+                    <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search CSP jobs">
                 </div>
             </div>
         </div>
 
-        <div class="csp-table-card">
-            <div class="csp-table-wrap">
-                <table class="csp-table" id="cspTable">
+        <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
+            <div class="max-w-full overflow-x-auto">
+                <table class="lbs-table w-full min-w-[1320px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
-                        <col class="csp-col-action">
-                        <col class="csp-col-log-date">
-                        <col class="csp-col-client">
-                        <col class="csp-col-urgent">
-                        <col class="csp-col-job-type">
-                        <col class="csp-col-ncc">
-                        <col class="csp-col-job-number">
-                        <col class="csp-col-client-name">
-                        <col class="csp-col-client-email">
-                        <col class="csp-col-status">
-                        <col class="csp-col-assigned">
-                        <col class="csp-col-checked">
+                        <col style="width: 110px">
+                        <col style="width: 140px">
+                        <col style="width: 110px">
+                        <col style="width: 90px">
+                        <col style="width: 220px">
+                        <col style="width: 180px">
+                        <col style="width: 110px">
+                        <col style="width: 130px">
+                        <col style="width: 220px">
+                        <col style="width: 170px">
+                        <col style="width: 110px">
+                        <col style="width: 110px">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th class="csp-th csp-th-action" data-sort="">
-                                <span>Action</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Log Date</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Client</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Urgent</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Job Type</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>NCC</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Job Number</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Client Name</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Client Email</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Status</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Assigned To</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="csp-th" data-sort="">
-                                <span>Checked By</span>
-                                <span class="csp-sort-icon" aria-hidden="true">↕</span>
-                            </th>
+                            <th class="lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort=""><span>Action</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Log Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Urgent</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Job Type</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>NCC</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Job Number</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client Name</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client Email</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Status</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Assigned To</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Checked By</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="csp-td csp-td-action">
-                                <div class="csp-action-btns">
-                                    <button type="button" class="csp-action-icon csp-action-duplicate" title="Duplicate" aria-label="Duplicate">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                    </button>
-                                    <a href="#" class="csp-action-icon csp-action-view" title="View" aria-label="View job 011298">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    </a>
-                                </div>
-                            </td>
-                            <td class="csp-td csp-td-log-date" data-label="Log Date">
-                                <span class="csp-date-line1">November 29, 2025</span>
-                                <span class="csp-date-line2">03:21 AM</span>
-                            </td>
-                            <td class="csp-td csp-td-nowrap" data-label="Client">CSP01</td>
-                            <td class="csp-td csp-td-nowrap" data-label="Urgent">NO</td>
-                            <td class="csp-td csp-td-job-type" data-label="Job Type">
-                                <span class="csp-job-line1">EA_CSP_1S</span>
-                                <span class="csp-job-line2">Prelim</span>
-                            </td>
-                            <td class="csp-td csp-td-nowrap" data-label="NCC">2022 Whole of Home (WOH)</td>
-                            <td class="csp-td csp-td-nowrap" data-label="Job Number">011298</td>
-                            <td class="csp-td csp-td-nowrap" data-label="Client Name">TEST</td>
-                            <td class="csp-td csp-td-nowrap" data-label="Client Email">admin@luntiands.com</td>
-                            <td class="csp-td csp-td-nowrap" data-label="Status">
-                                <div class="csp-status-wrap" data-status-wrap>
-                                    <button type="button" class="csp-badge csp-badge-completed csp-status-trigger" data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="011298">Completed</button>
-                                    <div class="csp-status-menu" role="menu" hidden>
-                                        <button type="button" role="menuitem" class="csp-status-option" data-status-value="Pending">Pending</button>
-                                        <button type="button" role="menuitem" class="csp-status-option" data-status-value="Accepted">Accepted</button>
-                                        <button type="button" role="menuitem" class="csp-status-option" data-status-value="Allocated">Allocated</button>
-                                        <button type="button" role="menuitem" class="csp-status-option" data-status-value="Awaiting Further Information">Awaiting Further Information</button>
-                                        <button type="button" role="menuitem" class="csp-status-option" data-status-value="Completed">Completed</button>
+                        @php
+                            $cspListExcludedStatuses = [
+                                'completed',
+                                'for review',
+                                'for email confirmation',
+                                'archived',
+                                'archive',
+                            ];
+                            $rows = \Illuminate\Support\Facades\DB::table('job_csp')
+                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($cspListExcludedStatuses), '?')) . '))', $cspListExcludedStatuses)
+                                ->orderByDesc('created_at')
+                                ->limit(300)
+                                ->get();
+                            $statusClasses = [
+                                'Pending' => 'lbs-badge-pending',
+                                'Accepted' => 'lbs-badge-accepted',
+                                'Allocated' => 'lbs-badge-allocated',
+                                'Awaiting Further Information' => 'lbs-badge-awaiting-further-information',
+                                'Completed' => 'lbs-badge-completed',
+                                'For Review' => 'lbs-badge-for-review',
+                                'Processing' => 'lbs-badge-processing',
+                                'For Checking' => 'lbs-badge-for-checking',
+                                'Revised' => 'lbs-badge-revised',
+                                'Cancelled' => 'lbs-badge-cancelled',
+                            ];
+                        @endphp
+
+                        @foreach($rows as $index => $row)
+                            @php
+                                $rowStatusNorm = strtolower(trim((string) ($row->status ?? '')));
+                                if (in_array($rowStatusNorm, $cspListExcludedStatuses, true)) {
+                                    continue;
+                                }
+                                $logRaw = $row->created_at ?? $row->updated_at ?? now('Asia/Manila')->format('Y-m-d H:i:s');
+                                $log = \Carbon\Carbon::parse($logRaw, 'Asia/Manila');
+                                $logDate1 = $log->format('F j, Y');
+                                $logDate2 = $log->format('g:i A');
+                                $status = (string) ($row->status ?? 'Allocated');
+                                $statusClass = $statusClasses[$status] ?? 'lbs-badge-allocated';
+                                $lowerStatus = strtolower($status);
+                                $allStatusOptions = ['Pending', 'Accepted', 'Allocated', 'Awaiting Further Information', 'Completed', 'For Review', 'Processing', 'For Checking', 'Revised'];
+                                if ($lowerStatus === 'allocated') {
+                                    $statusOptions = ['Accepted', 'Processing'];
+                                } elseif (in_array($lowerStatus, ['accepted', 'processing', 'revised'], true)) {
+                                    $statusOptions = ['For Checking'];
+                                } elseif ($lowerStatus === 'for checking') {
+                                    $statusOptions = ['For Review', 'Revised'];
+                                } else {
+                                    $statusOptions = $allStatusOptions;
+                                }
+                                $client = $row->client_code ?? 'CSP01';
+                                $urgent = strtoupper((string) ($row->urgent ?? 'NO'));
+                                $jobType1 = (string) ($row->job_type ?? '—');
+                                $jobType2 = '';
+                                $ncc = (string) ($row->ncc ?? '—');
+                                $jobNumber = (string) ($row->job_number ?? '—');
+                                $clientName = (string) ($row->client_name ?? '—');
+                                $clientEmail = (string) ($row->contact_email ?? '—');
+                                $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
+                                $checker = strtoupper((string) ($row->checked ?? 'GM'));
+                            @endphp
+                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5"
+                                data-update-url="{{ route('csp.update', ['id' => $row->id]) }}">
+                                <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
+                                    <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
+                                        <a href="{{ route('csp.add', [
+                                            'duplicate' => 1,
+                                            'job_number' => $jobNumber,
+                                            'client_name' => $clientName,
+                                            'contact_email' => $clientEmail,
+                                            'urgent_job' => ($urgent === 'YES') ? 1 : 0,
+                                        ]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300 no-underline" title="Duplicate" aria-label="Duplicate">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                        </a>
+                                        <button type="button" class="lbs-action-icon lbs-action-expand inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-400 dark:text-slate-400 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row>
+                                            <svg class="lbs-expand-icon block transition-transform duration-200" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                        </button>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="csp-td csp-td-nowrap" data-label="Assigned To">
-                                <div class="csp-initials-wrap" data-initials-wrap data-role="assigned">
-                                    <button type="button" class="csp-initials csp-initials-trigger" data-initials-trigger aria-haspopup="true" aria-expanded="false">AJS</button>
-                                    <div class="csp-initials-menu" role="menu" hidden>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="AJS">AJS</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="SB">SB</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="GM">GM</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="PEP">PEP</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="JDR">JDR</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="JS">JS</button>
+                                </td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-sort="{{ $logRaw }}">
+                                    <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $logDate1 }}</span>
+                                    <span class="block text-[0.8125rem] text-slate-400">{{ $logDate2 }}</span>
+                                </td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">{{ $client }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">{{ $urgent }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">
+                                    <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $jobType1 }}</span>
+                                    <span class="block text-[0.8125rem] text-slate-400">{{ $jobType2 }}</span>
+                                </td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">{{ $ncc }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">{{ $jobNumber }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">{{ $clientName }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">{{ $clientEmail }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">
+                                    <div class="lbs-status-wrap relative inline-block" data-status-wrap>
+                                        <button type="button" class="lbs-badge lbs-status-trigger {{ $statusClass }} inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-600/40 focus:ring-offset-0 dark:focus:ring-blue-500/40" data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="{{ $jobNumber }}">{{ $status }}</button>
+                                        <div class="lbs-status-menu fixed z-[9999] flex min-w-[90px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
+                                            @foreach($statusOptions as $opt)
+                                                <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10" data-status-value="{{ $opt }}">{{ $opt }}</button>
+                                            @endforeach
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="csp-td csp-td-nowrap" data-label="Checked By">
-                                <div class="csp-initials-wrap" data-initials-wrap data-role="checker">
-                                    <button type="button" class="csp-initials csp-initials-trigger" data-initials-trigger aria-haspopup="true" aria-expanded="false">JDR</button>
-                                    <div class="csp-initials-menu" role="menu" hidden>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="AJS">AJS</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="SB">SB</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="GM">GM</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="PEP">PEP</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="JDR">JDR</button>
-                                        <button type="button" role="menuitem" class="csp-initials-option" data-value="JS">JS</button>
+                                </td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">
+                                    <div class="lbs-initials-wrap relative inline-block" data-initials-wrap data-role="staff">
+                                        <button type="button" class="lbs-initials lbs-initials-trigger inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200" data-initials-trigger aria-haspopup="true" aria-expanded="false">{{ $assigned }}</button>
+                                        <div class="lbs-initials-menu fixed z-[9999] flex min-w-[70px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
+                                            @foreach(['AJS','SB','GM','PEP','JDR','JS'] as $u)
+                                                <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10" data-value="{{ $u }}">{{ $u }}</button>
+                                            @endforeach
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200">
+                                    <div class="lbs-initials-wrap relative inline-block" data-initials-wrap data-role="checker">
+                                        <button type="button" class="lbs-initials lbs-initials-trigger inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200" data-initials-trigger aria-haspopup="true" aria-expanded="false">{{ $checker }}</button>
+                                        <div class="lbs-initials-menu fixed z-[9999] flex min-w-[70px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
+                                            @foreach(['AJS','SB','GM','PEP','JDR','JS'] as $u)
+                                                <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10" data-value="{{ $u }}">{{ $u }}</button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="lbs-row-detail border-b border-slate-200 dark:border-slate-700" hidden>
+                                <td colspan="12" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
+                                    <div class="grid gap-x-6 gap-y-4 px-5 py-5" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $client }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Urgent</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $urgent }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Job Number</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $jobNumber }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client Email</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $clientEmail }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Status</span><span class="lbs-detail-status-badge text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $status }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Assigned</span><span class="lbs-detail-staff-badge text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $assigned }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Checker</span><span class="lbs-detail-checker-badge text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $checker }}</span></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
                     </tbody>
                 </table>
             </div>
@@ -162,124 +200,12 @@
 @endsection
 
 @push('styles')
-    @endpush
+<style>
+.lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
+</style>
+@endpush
 
 @push('scripts')
-    <script>
-        (function() {
-            var searchEl = document.getElementById('cspSearch');
-            var table = document.getElementById('cspTable');
-            if (searchEl && table) {
-                var tbody = table.querySelector('tbody');
-                searchEl.addEventListener('input', function() {
-                    var q = (this.value || '').trim().toLowerCase();
-                    if (!tbody) return;
-                    var rows = tbody.querySelectorAll('tr');
-                    rows.forEach(function(tr) {
-                        var text = (tr.textContent || '').toLowerCase();
-                        tr.style.display = !q || text.indexOf(q) !== -1 ? '' : 'none';
-                    });
-                });
-            }
-            function closeAllStatusMenus() {
-                document.querySelectorAll('.csp-status-menu').forEach(function(m) { m.hidden = true; });
-                document.querySelectorAll('[data-status-trigger]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-            }
-            function closeAllInitialsMenus() {
-                document.querySelectorAll('.csp-initials-menu').forEach(function(m) { m.hidden = true; });
-                document.querySelectorAll('[data-initials-trigger]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-            }
-            document.querySelectorAll('[data-initials-wrap]').forEach(function(wrap) {
-                var trigger = wrap.querySelector('[data-initials-trigger]');
-                var menu = wrap.querySelector('.csp-initials-menu');
-                if (!trigger || !menu) return;
-                trigger.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (!menu.hidden) {
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                        return;
-                    }
-                    closeAllStatusMenus();
-                    closeAllInitialsMenus();
-                    var rect = trigger.getBoundingClientRect();
-                    menu.style.top = (rect.bottom + 4) + 'px';
-                    menu.style.left = rect.left + 'px';
-                    menu.style.minWidth = Math.max(rect.width, 70) + 'px';
-                    menu.hidden = false;
-                    trigger.setAttribute('aria-expanded', 'true');
-                });
-                menu.querySelectorAll('.csp-initials-option').forEach(function(opt) {
-                    opt.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        trigger.textContent = this.getAttribute('data-value');
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                    });
-                });
-            });
-            document.querySelectorAll('[data-status-wrap]').forEach(function(wrap) {
-                var trigger = wrap.querySelector('[data-status-trigger]');
-                var menu = wrap.querySelector('.csp-status-menu');
-                var statusClasses = ['csp-badge-pending', 'csp-badge-accepted', 'csp-badge-allocated', 'csp-badge-awaiting-further-information', 'csp-badge-completed'];
-                if (!trigger || !menu) return;
-                trigger.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (!menu.hidden) {
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                        return;
-                    }
-                    closeAllStatusMenus();
-                    closeAllInitialsMenus();
-                    var rect = trigger.getBoundingClientRect();
-                    menu.style.top = (rect.bottom + 4) + 'px';
-                    menu.style.left = rect.left + 'px';
-                    menu.style.minWidth = Math.max(rect.width, 90) + 'px';
-                    menu.hidden = false;
-                    trigger.setAttribute('aria-expanded', 'true');
-                });
-                menu.querySelectorAll('.csp-status-option').forEach(function(opt) {
-                    opt.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        var val = this.getAttribute('data-status-value');
-                        var badgeClass = 'csp-badge-' + val.toLowerCase().replace(/\s+/g, '-');
-                        statusClasses.forEach(function(c) { trigger.classList.remove(c); });
-                        trigger.classList.add(badgeClass);
-                        trigger.textContent = val;
-                        menu.hidden = true;
-                        trigger.setAttribute('aria-expanded', 'false');
-                    });
-                });
-            });
-            document.addEventListener('click', function() { closeAllStatusMenus(); closeAllInitialsMenus(); });
-            if (!table) return;
-            var thead = table.querySelector('thead');
-            thead.addEventListener('click', function(e) {
-                var th = e.target.closest('th');
-                if (!th || th.classList.contains('csp-th-action')) return;
-                var current = th.getAttribute('data-sort') || '';
-                var next = current === 'asc' ? 'desc' : 'asc';
-                thead.querySelectorAll('th').forEach(function(h) { h.setAttribute('data-sort', ''); });
-                th.setAttribute('data-sort', next);
-                var colIndex = Array.prototype.indexOf.call(thead.querySelectorAll('th'), th);
-                var tbody = table.querySelector('tbody');
-                var rows = Array.from(tbody.querySelectorAll('tr'));
-                rows.sort(function(a, b) {
-                    var aCell = a.children[colIndex];
-                    var bCell = b.children[colIndex];
-                    var aVal = (aCell && (aCell.getAttribute('data-sort') || aCell.textContent)) || '';
-                    var bVal = (bCell && (bCell.getAttribute('data-sort') || bCell.textContent)) || '';
-                    var aNum = parseFloat(aVal);
-                    var bNum = parseFloat(bVal);
-                    if (!isNaN(aNum) && !isNaN(bNum)) {
-                        return next === 'asc' ? aNum - bNum : bNum - aNum;
-                    }
-                    if (next === 'asc') return String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
-                    return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
-                });
-                rows.forEach(function(r) { tbody.appendChild(r); });
-            });
-        })();
-    </script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="{{ asset('js/lbs-list.js') }}"></script>
 @endpush

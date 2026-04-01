@@ -1,8 +1,92 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CountUp from 'react-countup';
-import Calendar from './Calendar';
+import Calendar, { type HolidaySource } from './Calendar';
 
 type CardVariant = 'total' | 'completed' | 'processing' | 'pending';
+
+/** Primary line in each card’s breakdown — ties the row to what that card measures (not the branch name). */
+const CARD_BREAKDOWN_STATUS: Record<CardVariant, string> = {
+  total: 'Total jobs',
+  completed: 'Completed',
+  processing: 'Processing',
+  pending: 'Pending',
+};
+
+type DashboardStatsPayload = {
+  total: Record<string, number>;
+  completed: Record<string, number>;
+  processing: Record<string, number>;
+  pending: Record<string, number>;
+};
+
+type HolidayItem = {
+  date: string;
+  localName: string;
+  name: string;
+  source: HolidaySource;
+};
+
+const BRANCH_ORDER = [
+  'LBS',
+  'BPH',
+  'BLUINQ',
+  'CSP',
+  'NH',
+  'LC HOME BUILDER',
+  'EFFICIENT LIVING',
+  'LEADING ENERGY',
+] as const;
+
+function parseDashboardStats(): DashboardStatsPayload | null {
+  const el = document.getElementById('dashboard-stats-json');
+  const raw = el?.textContent?.trim();
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as DashboardStatsPayload;
+  } catch {
+    return null;
+  }
+}
+
+function emptyBucket(): Record<string, number> {
+  const o: Record<string, number> = {};
+  for (const k of BRANCH_ORDER) {
+    o[k] = 0;
+  }
+  return o;
+}
+
+function normalizeStatsPayload(raw: DashboardStatsPayload | null): DashboardStatsPayload {
+  const z = emptyBucket();
+  const merge = (b: Record<string, number> | undefined) => {
+    const o = { ...z };
+    if (b) {
+      for (const k of BRANCH_ORDER) {
+        o[k] = typeof b[k] === 'number' && !Number.isNaN(b[k]) ? b[k] : 0;
+      }
+    }
+    return o;
+  };
+  return {
+    total: merge(raw?.total),
+    completed: merge(raw?.completed),
+    processing: merge(raw?.processing),
+    pending: merge(raw?.pending),
+  };
+}
+
+type CardTemplate = {
+  key: CardVariant;
+  title: string;
+  bgClass: string;
+  iconColor: string;
+  pillClass: string;
+  icon: React.ReactNode;
+};
+
+type StatCardData = CardTemplate & { value: number; items: { label: string; value: number }[] };
 
 /* Continuous line animation – segment travels along path in a loop (visible) */
 function LineGraphBg({ light = false, variant = 'total' }: { light?: boolean; variant?: CardVariant }) {
@@ -28,21 +112,10 @@ function LineGraphBg({ light = false, variant = 'total' }: { light?: boolean; va
   );
 }
 
-const STAT_CARDS = [
+const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
     title: 'Total Jobs',
-    value: 143,
-    items: [
-      { label: 'LBS', value: 45 },
-      { label: 'BPH', value: 10 },
-      { label: 'BLUINQ', value: 56 },
-      { label: 'CSP', value: 8 },
-      { label: 'NH', value: 5 },
-      { label: 'LC HOME BUILDER', value: 7 },
-      { label: 'EFFICIENT LIVING', value: 6 },
-      { label: 'LEADING ENERGY', value: 6 },
-    ],
     bgClass: 'bg-[#FFA500] dark:bg-[#FFA500]',
     iconColor: 'text-white',
     pillClass: 'bg-black/20 text-white',
@@ -58,17 +131,6 @@ const STAT_CARDS = [
   {
     key: 'completed',
     title: 'Completed Jobs',
-    value: 87,
-    items: [
-      { label: 'LBS', value: 32 },
-      { label: 'BPH', value: 8 },
-      { label: 'BLUINQ', value: 22 },
-      { label: 'CSP', value: 6 },
-      { label: 'NH', value: 4 },
-      { label: 'LC HOME BUILDER', value: 5 },
-      { label: 'EFFICIENT LIVING', value: 5 },
-      { label: 'LEADING ENERGY', value: 5 },
-    ],
     bgClass: 'bg-[#8B4513] dark:bg-[#8B4513]',
     iconColor: 'text-white',
     pillClass: 'bg-black/25 text-white',
@@ -82,17 +144,6 @@ const STAT_CARDS = [
   {
     key: 'processing',
     title: 'Processing',
-    value: 28,
-    items: [
-      { label: 'LBS', value: 10 },
-      { label: 'BPH', value: 2 },
-      { label: 'BLUINQ', value: 9 },
-      { label: 'CSP', value: 2 },
-      { label: 'NH', value: 1 },
-      { label: 'LC HOME BUILDER', value: 2 },
-      { label: 'EFFICIENT LIVING', value: 1 },
-      { label: 'LEADING ENERGY', value: 1 },
-    ],
     bgClass: 'bg-[#FFC107] dark:bg-[#FFC107]',
     iconColor: 'text-white',
     pillClass: 'bg-black/20 text-white',
@@ -106,17 +157,6 @@ const STAT_CARDS = [
   {
     key: 'pending',
     title: 'Pending',
-    value: 28,
-    items: [
-      { label: 'LBS', value: 3 },
-      { label: 'BPH', value: 0 },
-      { label: 'BLUINQ', value: 25 },
-      { label: 'CSP', value: 0 },
-      { label: 'NH', value: 0 },
-      { label: 'LC HOME BUILDER', value: 0 },
-      { label: 'EFFICIENT LIVING', value: 0 },
-      { label: 'LEADING ENERGY', value: 0 },
-    ],
     bgClass: 'bg-[#F5DEB3] dark:bg-[#F5DEB3]',
     iconColor: 'text-slate-700',
     pillClass: 'bg-slate-600/25 text-slate-800',
@@ -131,6 +171,55 @@ const STAT_CARDS = [
   },
 ];
 
+function buildStatCards(stats: DashboardStatsPayload | null): StatCardData[] {
+  const p = normalizeStatsPayload(stats);
+  return CARD_TEMPLATES.map((tpl) => {
+    const bucket = p[tpl.key];
+    const items = BRANCH_ORDER.map((label) => ({ label, value: bucket[label] ?? 0 }));
+    const value = items.reduce((sum, it) => sum + it.value, 0);
+    return { ...tpl, value, items };
+  });
+}
+
+function normalizeBranchKey(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function branchKeyMatchesStatLabel(cardLabel: string, filterRaw: string): boolean {
+  const a = normalizeBranchKey(cardLabel);
+  const b = normalizeBranchKey(filterRaw);
+  if (a === b) {
+    return true;
+  }
+  const aCompact = a.replace(/\s+/g, '');
+  const bCompact = b.replace(/\s+/g, '');
+  if (aCompact === bCompact) {
+    return true;
+  }
+  return a.includes(b) || b.includes(a);
+}
+
+/** When user has a branch, show only that row; main total = that row's count. Empty filter = all branches. */
+function applyDashboardBranchFilter<T extends { value: number; items: { label: string; value: number }[]; key: CardVariant }>(
+  cards: T[],
+  branchFilterRaw: string
+): T[] {
+  const branchFilter = branchFilterRaw.trim();
+  if (!branchFilter) {
+    return cards;
+  }
+  return cards.map((card) => {
+    const hit = card.items.find((it) => branchKeyMatchesStatLabel(it.label, branchFilter));
+    const displayLabel = hit ? hit.label : branchFilter;
+    const value = hit ? hit.value : 0;
+    return {
+      ...card,
+      value,
+      items: [{ label: displayLabel, value }],
+    };
+  });
+}
+
 /* Wrapper: show Count Up Animation (react-countup) only after page loader is hidden */
 function CountUpDisplay({ value, duration, start }: { value: number; duration: number; start: boolean }) {
   if (!start) {
@@ -141,6 +230,19 @@ function CountUpDisplay({ value, duration, start }: { value: number; duration: n
       <CountUp start={0} end={value} duration={duration} />
     </span>
   );
+}
+
+function formatHolidayDate(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00`);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(d);
+}
+
+function sortHolidayByDate(a: HolidayItem, b: HolidayItem): number {
+  return a.date.localeCompare(b.date);
 }
 
 function StatCard({
@@ -190,12 +292,23 @@ function StatCard({
         <div className="mt-2 space-y-1">
           {items.map((item, i) => (
             <div
-              key={item.label}
-              className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm transition-colors ${lightCard ? 'hover:bg-slate-400/10' : 'hover:bg-white/5'}`}
+              key={`${cardKey}-${item.label}-${i}`}
+              className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm transition-colors ${lightCard ? 'hover:bg-slate-400/10' : 'hover:bg-white/5'}`}
               style={{ animationDelay: `${0.35 + i * 0.05}s` }}
             >
-              <span className={`font-medium ${textClass}`}>{item.label}</span>
-              <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${pillClass}`}>
+              <div className="min-w-0 flex-1 space-y-1">
+                <p
+                  className={`text-[13px] font-semibold leading-snug tracking-tight ${lightCard ? 'text-slate-900' : 'text-white'}`}
+                >
+                  {CARD_BREAKDOWN_STATUS[cardKey]}
+                </p>
+                <p
+                  className={`text-[11px] font-medium leading-tight ${lightCard ? 'text-slate-600' : 'text-white/65'}`}
+                >
+                  Branch: <span className="font-semibold tabular-nums">{item.label}</span>
+                </p>
+              </div>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold ${pillClass}`}>
                 <CountUpDisplay value={item.value} duration={0.8} start={startCount} />
               </span>
             </div>
@@ -208,6 +321,21 @@ function StatCard({
 
 export default function Dashboard() {
   const [loadingDone, setLoadingDone] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [phHolidays, setPhHolidays] = useState<HolidayItem[]>([]);
+  const [auHolidays, setAuHolidays] = useState<HolidayItem[]>([]);
+  const [holidayLoading, setHolidayLoading] = useState(true);
+
+  const statCards = useMemo(() => {
+    const stats = parseDashboardStats();
+    const cards = buildStatCards(stats);
+    const el = document.getElementById('dashboard-root');
+    const filter = el?.dataset.dashboardBranchFilter ?? '';
+    return applyDashboardBranchFilter(cards, filter);
+  }, []);
 
   useEffect(() => {
     const onLoaderHidden = () => setLoadingDone(true);
@@ -220,6 +348,85 @@ export default function Dashboard() {
     }
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    const year = calendarMonth.getFullYear();
+    setHolidayLoading(true);
+
+    const loadHolidays = async () => {
+      try {
+        const [phRes, auRes] = await Promise.all([
+          fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/PH`),
+          fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/AU`),
+        ]);
+
+        if (!phRes.ok || !auRes.ok) {
+          throw new Error('Failed holiday fetch');
+        }
+
+        const [phDataRaw, auDataRaw] = await Promise.all([phRes.json(), auRes.json()]);
+
+        const phData = Array.isArray(phDataRaw) ? phDataRaw : [];
+        const auData = Array.isArray(auDataRaw) ? auDataRaw : [];
+
+        if (!ignore) {
+          setPhHolidays(
+            phData.map((h: { date: string; localName: string; name: string }) => ({
+              date: h.date,
+              localName: h.localName,
+              name: h.name,
+              source: 'PH' as const,
+            }))
+          );
+          setAuHolidays(
+            auData.map((h: { date: string; localName: string; name: string }) => ({
+              date: h.date,
+              localName: h.localName,
+              name: h.name,
+              source: 'AU' as const,
+            }))
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setPhHolidays([]);
+          setAuHolidays([]);
+        }
+      } finally {
+        if (!ignore) {
+          setHolidayLoading(false);
+        }
+      }
+    };
+
+    loadHolidays();
+    return () => {
+      ignore = true;
+    };
+  }, [calendarMonth]);
+
+  const monthKey = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}`;
+
+  const monthPhHolidays = useMemo(
+    () => phHolidays.filter((h) => h.date.startsWith(monthKey)).sort(sortHolidayByDate),
+    [phHolidays, monthKey]
+  );
+  const monthAuHolidays = useMemo(
+    () => auHolidays.filter((h) => h.date.startsWith(monthKey)).sort(sortHolidayByDate),
+    [auHolidays, monthKey]
+  );
+
+  const holidaysByDate = useMemo(() => {
+    const map: Record<string, HolidayItem[]> = {};
+    for (const h of [...phHolidays, ...auHolidays]) {
+      if (!map[h.date]) {
+        map[h.date] = [];
+      }
+      map[h.date].push(h);
+    }
+    return map;
+  }, [phHolidays, auHolidays]);
+
   return (
     <div className="dashboard-page min-h-0 w-full">
       <header className="dashboard-page__header">
@@ -230,7 +437,7 @@ export default function Dashboard() {
       </header>
 
       <section className="dashboard-cards">
-        {STAT_CARDS.map((card, index) => (
+        {statCards.map((card, index) => (
           <StatCard
             key={card.key}
             index={index}
@@ -260,7 +467,11 @@ export default function Dashboard() {
           </h2>
           <div className="p-4 transition-colors sm:p-5">
             <div className="dashboard-calendar-wrapper">
-              <Calendar />
+              <Calendar
+                viewDate={calendarMonth}
+                onMonthChange={setCalendarMonth}
+                holidaysByDate={holidaysByDate}
+              />
             </div>
           </div>
         </div>
@@ -279,13 +490,45 @@ export default function Dashboard() {
               <div className="border-b border-slate-200/80 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-600/60 dark:text-slate-400">
                 Philippine Holidays
               </div>
-              <div className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400">No holidays this month</div>
+              <div className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400">
+                {holidayLoading ? (
+                  'Loading holidays...'
+                ) : monthPhHolidays.length ? (
+                  <ul className="dashboard-holiday-list">
+                    {monthPhHolidays.map((h) => (
+                      <li key={`ph-${h.date}-${h.name}`} className="dashboard-holiday-item">
+                        <span className="dashboard-holiday-dot dashboard-holiday-dot--ph" aria-hidden />
+                        <span className="dashboard-holiday-date">{formatHolidayDate(h.date)}</span>
+                        <span className="dashboard-holiday-name">{h.localName || h.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  'No holidays this month'
+                )}
+              </div>
             </div>
             <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-gradient-to-br from-slate-50 to-slate-100/80 dark:border-slate-600/60 dark:from-slate-800/80 dark:to-slate-900/60">
               <div className="border-b border-slate-200/80 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-600/60 dark:text-slate-400">
                 Australian Holidays
               </div>
-              <div className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400">No holidays this month</div>
+              <div className="px-3 py-3 text-sm text-slate-600 dark:text-slate-400">
+                {holidayLoading ? (
+                  'Loading holidays...'
+                ) : monthAuHolidays.length ? (
+                  <ul className="dashboard-holiday-list">
+                    {monthAuHolidays.map((h) => (
+                      <li key={`au-${h.date}-${h.name}`} className="dashboard-holiday-item">
+                        <span className="dashboard-holiday-dot dashboard-holiday-dot--au" aria-hidden />
+                        <span className="dashboard-holiday-date">{formatHolidayDate(h.date)}</span>
+                        <span className="dashboard-holiday-name">{h.localName || h.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  'No holidays this month'
+                )}
+              </div>
             </div>
           </div>
         </div>

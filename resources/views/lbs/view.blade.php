@@ -7,8 +7,40 @@
 @section('content')
     @php
         $isEfficientLivingView = (bool) ($isEfficientLiving ?? false);
-        $listRouteName = $isEfficientLivingView ? 'efficient_living.list' : 'lbs.list';
-        $trashRouteName = $isEfficientLivingView ? 'efficient_living.trash' : 'lbs.trash';
+        $isBphView = (bool) ($isBphView ?? false);
+        $listRouteName = $listRouteName ?? ($isEfficientLivingView ? 'efficient_living.list' : 'lbs.list');
+        $trashRouteName = $trashRouteName ?? ($isEfficientLivingView ? 'efficient_living.trash' : 'lbs.trash');
+        $jobUpdateRouteName = $jobUpdateRouteName ?? ($isEfficientLivingView ? 'efficient_living.job.update' : 'lbs.job.update');
+        $jobUploadFilesRouteName = $jobUploadFilesRouteName ?? 'lbs.job.uploadFiles';
+        $jobDeleteFileRouteName = $jobDeleteFileRouteName ?? 'lbs.job.deleteFile';
+        $jobArchiveRouteName = $jobArchiveRouteName ?? 'lbs.job.archive';
+        $jobCheckerUploadsRouteName = $jobCheckerUploadsRouteName ?? 'lbs.job.checkerUploads';
+        $jobRunCommentRouteName = $jobRunCommentRouteName ?? 'lbs.job.runComment';
+        $jobCommentRouteName = $jobCommentRouteName ?? 'lbs.job.comment';
+        $jobFileRouteName = $jobFileRouteName ?? 'lbs.job.file';
+
+        $permJobUpdate = \App\Models\RolePermission::userMayAccessRoute($jobUpdateRouteName);
+        $permUpload = \App\Models\RolePermission::userMayAccessRoute($jobUploadFilesRouteName);
+        $permDeleteFile = \App\Models\RolePermission::userMayAccessRoute($jobDeleteFileRouteName);
+        $permDownloadFile = \App\Models\RolePermission::userMayAccessRoute($jobFileRouteName);
+        $permChecker = \App\Models\RolePermission::userMayAccessRoute($jobCheckerUploadsRouteName);
+        $permRunComment = \App\Models\RolePermission::userMayAccessRoute($jobRunCommentRouteName);
+        $permComment = \App\Models\RolePermission::userMayAccessRoute($jobCommentRouteName);
+        $permArchive = \App\Models\RolePermission::userMayAccessRoute($jobArchiveRouteName);
+        $permBphPrintCompliance = \App\Models\RolePermission::userMayAccessRoute('bph.job.printCompliance');
+        $permBphMergeFile = \App\Models\RolePermission::userMayAccessRoute('bph.job.mergeFile');
+
+        $permCardClient = \App\Models\RolePermission::userMayAccessRoute('job_view.card.client_details');
+        $permCardJob = \App\Models\RolePermission::userMayAccessRoute('job_view.card.job_details');
+        $permCardNotes = \App\Models\RolePermission::userMayAccessRoute('job_view.card.notes');
+        $permCardComplexity = $isBphView ? false : \App\Models\RolePermission::userMayAccessRoute('job_view.card.complexity');
+        $permCardPlans = \App\Models\RolePermission::userMayAccessRoute('job_view.card.plans');
+        $permCardDocuments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.documents');
+        $permCardChecker = \App\Models\RolePermission::userMayAccessRoute('job_view.card.checker_uploads');
+        $permCardRunComments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.run_comments');
+        $permCardComments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.comments');
+        $permCardActivity = \App\Models\RolePermission::userMayAccessRoute('job_view.card.activity');
+        $permCardBphAdditional = \App\Models\RolePermission::userMayAccessRoute('job_view.card.bph_additional');
     @endphp
     <div class="min-h-0 w-full max-w-full">
         {{-- Breadcrumb --}}
@@ -32,7 +64,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                @if(!$isArchived && !$isEfficientLivingView)
+                @if(!$isArchived && !$isEfficientLivingView && $permArchive)
                     <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" id="jobViewArchiveJobBtn" aria-label="Archive this job">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                         Archive this job
@@ -96,23 +128,31 @@
             } else {
                 foreach ($statuses ?? [] as $s) { $inlineStatusOptions[] = $s->name; }
             }
+
+            $canEditDetailsUi = $canEditDetails && $permJobUpdate;
+            $canEditStatusInlineUi = $canEditStatusInline && $permJobUpdate;
+
+            $showDetailsBlock = $permCardClient || $permCardJob || $permCardNotes || $permCardComplexity;
+            $showFilesBlock = $permCardPlans || $permCardDocuments || $permCardChecker;
+            $showDiscussionBlock = $permCardRunComments || $permCardComments;
         @endphp
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
             {{-- Main content column --}}
             <div class="flex flex-col gap-6 lg:col-span-3 lg:gap-8">
+                @if($showDetailsBlock)
                 {{-- Section: Details --}}
                 <div class="space-y-4">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Details</h2>
+                    @if($permCardClient || $permCardJob)
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        @if($permCardClient)
                         {{-- Client Details --}}
                         <section class="job-details-card rounded-xl border shadow-sm" id="jobClientCard">
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
                                 <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                                @if($canEditDetails)
+                                @if($canEditDetailsUi)
                                     <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Client Details" data-edit-target="client">Edit</button>
-                                @else
-                                    <span class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-400 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-500" aria-hidden="true">Edit</span>
                                 @endif
                             </div>
                             <dl class="job-details-dl">
@@ -132,28 +172,24 @@
                                     <dt class="job-details-dt">Compliance</dt>
                                     <dd class="job-details-dd">{{ $job->ncc_compliance ?? '—' }}</dd>
                                 </div>
-                                <div class="job-details-row">
-                                    <dt class="job-details-dt">Client Reference</dt>
-                                    <dd class="job-details-dd">{{ $job->client_reference_no ?? '—' }}</dd>
-                                </div>
                             </dl>
                         </section>
+                        @endif
 
+                        @if($permCardJob)
                         {{-- Job Details --}}
                         <section class="job-details-card rounded-xl border shadow-sm">
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
                                 <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">Job Details</h2>
-                                @if($canEditDetails)
+                                @if($canEditDetailsUi)
                                     <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Job Details" data-edit-target="job">Edit</button>
-                                @else
-                                    <span class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-400 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-500" aria-hidden="true">Edit</span>
                                 @endif
                             </div>
                             <dl class="job-details-dl">
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Job Status</dt>
                                     <dd>
-                                        @if($canEditStatusInline && count($inlineStatusOptions) > 0)
+                                        @if($canEditStatusInlineUi && count($inlineStatusOptions) > 0)
                                             <div class="lbs-status-wrap relative inline-block" data-status-wrap>
                                                 <button type="button" class="lbs-badge lbs-status-trigger inline-block rounded-full border-0 px-3 py-1 text-xs font-semibold text-white cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500/40" @if($statusBg) style="background-color: {{ $statusBg }};" @endif data-status-trigger aria-haspopup="true" aria-expanded="false">{{ $job->job_status ?? '—' }}</button>
                                                 <div class="lbs-status-menu fixed z-[9999] flex min-w-[120px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg" role="menu" hidden>
@@ -168,28 +204,34 @@
                                     </dd>
                                 </div>
                                 <div class="job-details-row">
-                                    <dt class="job-details-dt">Job Address</dt>
-                                    <dd class="job-details-dd">{{ $job->address_client ?? '—' }}</dd>
-                                </div>
-                                <div class="job-details-row">
-                                    <dt class="job-details-dt">Priority</dt>
-                                    <dd><span class="job-details-badge inline-block rounded-full px-3 py-1 text-xs font-semibold text-white" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $job->priority ?? '—' }}</span></dd>
-                                </div>
-                                <div class="job-details-row">
                                     <dt class="job-details-dt">Job Type</dt>
                                     <dd class="job-details-dd">{{ $job->job_type ?? '—' }}</dd>
                                 </div>
                             </dl>
                         </section>
+                        @endif
                     </div>
-                    {{-- Notes (full width below) --}}
-                    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                    @endif
+                    @if($permCardNotes || $permCardComplexity)
+                    {{-- Notes + Complexity --}}
+                    @php
+                        $notesSectionComplexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
+                        $notesSectionComplexity = max(0, min(5, $notesSectionComplexity));
+                    @endphp
+                    <style>
+                        .job-view-complexity-button .lbs-star.lbs-star-filled { color: rgb(251 191 36); }
+                        .job-view-complexity-button .lbs-star.lbs-star-empty { color: rgb(100 116 139); opacity: 0.85; }
+                        .dark .job-view-complexity-button .lbs-star.lbs-star-empty { color: rgb(148 163 184); }
+                        .job-view-complexity-button .lbs-star.lbs-star-filled .lbs-star-outline { display: none; }
+                        .job-view-complexity-button .lbs-star.lbs-star-empty .lbs-star-solid { display: none; }
+                    </style>
+                    <div class="grid grid-cols-1 gap-6 {{ ($permCardNotes && $permCardComplexity) ? 'lg:grid-cols-12 lg:gap-6' : '' }}">
+                    @if($permCardNotes)
+                    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 {{ $permCardComplexity ? 'lg:col-span-9' : 'lg:col-span-12' }}">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
                     <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Notes</h2>
-                    @if($canEditDetails)
+                    @if($canEditDetailsUi)
                         <button type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Notes" data-edit-target="notes">Edit</button>
-                    @else
-                        <span class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-400 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-500" aria-hidden="true">Edit</span>
                     @endif
                 </div>
                 <div class="px-5 py-4">
@@ -198,36 +240,64 @@
                     </div>
                 </div>
             </section>
+                    @endif
+
+                    @if($permCardComplexity)
+                    <section class="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 {{ $permCardNotes ? 'lg:col-span-3' : 'lg:col-span-12' }}" aria-label="Plan complexity">
+                        <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                            <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Complexity</h2>
+                        </div>
+                        <div class="flex flex-1 flex-col justify-center px-5 py-5">
+                            @if($canEditDetailsUi)
+                                <button type="button" class="job-view-complexity-button mx-auto inline-flex items-center gap-0.5 rounded-lg border-0 bg-transparent p-1 outline-none ring-slate-400/40 transition-colors hover:bg-slate-100 focus-visible:ring-2 dark:hover:bg-slate-700/50" data-complexity-rating="{{ $notesSectionComplexity }}" title="Click a star to set complexity (1–5)" aria-label="Plan complexity {{ $notesSectionComplexity }} of 5, click a star to change">
+                                    @for ($ci = 1; $ci <= 5; $ci++)
+                                        <span class="lbs-star {{ $ci <= $notesSectionComplexity ? 'lbs-star-filled' : 'lbs-star-empty' }} inline-flex shrink-0 rounded p-0.5" role="presentation">
+                                            <svg class="lbs-star-solid h-5 w-5 shrink-0 sm:h-6 sm:w-6" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                            <svg class="lbs-star-outline h-5 w-5 shrink-0 sm:h-6 sm:w-6" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        </span>
+                                    @endfor
+                                </button>
+                            @else
+                                <span class="lbs-stars mx-auto inline-flex items-center justify-center gap-0.5" data-rating="{{ $notesSectionComplexity }}" aria-label="{{ $notesSectionComplexity }} out of 5">@include('lbs.partials.stars', ['rating' => $notesSectionComplexity])</span>
+                            @endif
+                        </div>
+                    </section>
+                    @endif
+                    </div>
+                    @endif
 
                 </div>
+                @endif
 
+                @if($showFilesBlock)
                 {{-- Section: Files (col-4 each = 3 columns) --}}
                 <div class="space-y-4">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Files</h2>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        @if($permCardPlans)
                         {{-- Plans --}}
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50" id="jobViewPlansCard">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Plans</h2>
-                    @if($isAllocated)
+                    @if($isAllocated && $permUpload)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Plans">Add Files</button>
-                    @else
-                        <button type="button" class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-slate-300 px-3 py-2 text-sm font-medium text-slate-500 dark:bg-slate-600 dark:text-slate-400" disabled aria-disabled="true">Add Files</button>
                     @endif
                 </div>
                 @if(!empty($planFiles) && $folderName)
                     <ul class="space-y-2">
                         @foreach($planFiles as $file)
-                            @php $fileName = (string) $file; $fileUrl = route('lbs.job.file', ['id' => $jobId, 'file' => $fileName]); @endphp
+                            @php $fileName = (string) $file; $fileUrl = route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]); @endphp
                             <li class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/50">
                                 <div class="flex min-w-0 items-center gap-3">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg></span>
                                     <span class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ $fileName }}</span>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
-                                    <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
-                                    @if($isAllocated)
+                                    @if($permDownloadFile)
+                                        <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
+                                        <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                    @endif
+                                    @if($isAllocated && $permDeleteFile)
                                         <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="plans" data-job-file-name="{{ $fileName }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
                                     @endif
                                 </div>
@@ -241,35 +311,64 @@
                 </div>
                 @endif
             </section>
+                        @endif
 
+                        @if($permCardDocuments)
                         {{-- Documents --}}
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Documents</h2>
-                    @if($isAllocated)
+                    @if($isAllocated && $permUpload)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Documents">Add Files</button>
-                    @else
-                        <button type="button" class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-slate-300 px-3 py-2 text-sm font-medium text-slate-500 dark:bg-slate-600 dark:text-slate-400" disabled aria-disabled="true">Add Files</button>
                     @endif
                 </div>
-                @if(!empty($docFiles) && $folderName)
+                @php
+                    $bphComplianceInDocs = !empty($isBphView);
+                    $bphCompliancePdfUrl = $bphComplianceInDocs ? route('bph.job.printCompliance', ['id' => $jobId]) : null;
+                    $bphCompliancePdfBase = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($job->job_reference_no ?? $job->reference ?? ''));
+                    $bphCompliancePdfName = $bphComplianceInDocs
+                        ? ('BPH-Compliance-' . ($bphCompliancePdfBase !== '' ? $bphCompliancePdfBase : 'summary') . '.pdf')
+                        : '';
+                    $hasBphComplianceRow = $bphComplianceInDocs && $bphCompliancePdfUrl && $permBphPrintCompliance;
+                    $hasDocumentsList = $hasBphComplianceRow || (!empty($docFiles) && $folderName);
+                @endphp
+                @if($hasDocumentsList)
                     <ul class="space-y-2">
-                        @foreach($docFiles as $file)
-                            @php $fileName = (string) $file; $fileUrl = route('lbs.job.file', ['id' => $jobId, 'file' => $fileName]); @endphp
-                            <li class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/50">
+                        @if($hasBphComplianceRow)
+                            <li class="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-800/60 dark:bg-emerald-950/25">
                                 <div class="flex min-w-0 items-center gap-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg></span>
-                                    <span class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ $fileName }}</span>
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-200 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg></span>
+                                    <div class="min-w-0 flex-1">
+                                        <span class="block truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ $bphCompliancePdfName }}</span>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">Compliance summary (generated PDF)</span>
+                                    </div>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
-                                    <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
-                                    @if($isAllocated)
-                                        <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="documents" data-job-file-name="{{ $fileName }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
-                                    @endif
+                                    <a href="{{ $bphCompliancePdfUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download PDF" aria-label="Download PDF" download="{{ $bphCompliancePdfName }}"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
+                                    <a href="{{ $bphCompliancePdfUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Open PDF" aria-label="Open PDF"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                                 </div>
                             </li>
-                        @endforeach
+                        @endif
+                        @if(!empty($docFiles) && $folderName)
+                            @foreach($docFiles as $file)
+                                @php $fileName = (string) $file; $fileUrl = route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]); @endphp
+                                <li class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/50">
+                                    <div class="flex min-w-0 items-center gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zm-2 10v4h2v-4h-2zm0-4v2h2v-2h-2z"/></svg></span>
+                                        <span class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ $fileName }}</span>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        @if($permDownloadFile)
+                                            <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
+                                            <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                        @endif
+                                        @if($isAllocated && $permDeleteFile)
+                                            <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="documents" data-job-file-name="{{ $fileName }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
+                                        @endif
+                                    </div>
+                                </li>
+                            @endforeach
+                        @endif
                     </ul>
                 @else
                     <div class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 py-10 dark:border-slate-600">
@@ -278,12 +377,16 @@
                 </div>
                 @endif
             </section>
+                        @endif
 
+                        @if($permCardChecker)
                         {{-- Checker Upload Files --}}
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Checker Upload Files</h2>
-                    <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Checker Upload Files">Add Files</button>
+                    @if($permChecker)
+                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Checker Upload Files">Add Files</button>
+                    @endif
                 </div>
                 @if(($checkerUploads ?? collect())->isEmpty())
                     <div class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 py-10 dark:border-slate-600">
@@ -298,15 +401,17 @@
                                 <div class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Upload {{ $uploadNumber }}</div>
                                 <div class="space-y-2">
                                     @foreach($files as $fileName)
-                                        @php $fileName = (string) $fileName; $fileUrl = isset($folderName) && $folderName ? route('lbs.job.file', ['id' => $jobId, 'file' => $fileName]) : '#'; @endphp
+                                        @php $fileName = (string) $fileName; $fileUrl = isset($folderName) && $folderName ? route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]) : '#'; @endphp
                                         <div class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800/50">
                                             <div class="flex min-w-0 items-center gap-2">
                                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4z"/></svg></span>
                                                 <span class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ $fileName }}</span>
                                             </div>
                                             <div class="flex flex-wrap items-center gap-1.5">
-                                                <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
-                                                <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                                @if($permDownloadFile)
+                                                    <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
+                                                    <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                                @endif
                                             </div>
                                         </div>
                                     @endforeach
@@ -322,14 +427,18 @@
                     </ul>
                 @endif
             </section>
+                        @endif
 
                     </div>
                 </div>
+                @endif
 
+                @if($showDiscussionBlock)
                 {{-- Section: Discussion (col-6 each) --}}
                 <div class="space-y-4">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Discussion</h2>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        @if($permCardRunComments)
                         {{-- Run Comments --}}
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <h2 class="mb-4 text-lg font-semibold text-slate-800 dark:text-white">Run Comments</h2>
@@ -358,6 +467,7 @@
                         </li>
                     @endforelse
                 </ul>
+                @if($permRunComment)
                 <div class="job-view-comment-editor rounded-xl border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-600 dark:bg-slate-800/30">
                     <div class="mb-2 flex flex-wrap gap-1">
                         <button type="button" class="job-view-comment-btn rounded p-1.5 text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600" data-cmd="bold" title="Bold"><span class="font-bold">B</span></button>
@@ -369,8 +479,11 @@
                     <div class="job-view-comment-body min-h-[80px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus-within:ring-2 focus-within:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" id="runCommentBody" contenteditable="true" data-placeholder="Write a run comment..." role="textbox"></div>
                     <div class="mt-2 flex justify-end"><button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" id="runCommentSendBtn">Send</button></div>
                 </div>
+                @endif
             </section>
+                        @endif
 
+                        @if($permCardComments)
                         {{-- Comments --}}
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <h2 class="mb-4 text-lg font-semibold text-slate-800 dark:text-white">Comments</h2>
@@ -399,6 +512,7 @@
                         </li>
                     @endforelse
                 </ul>
+                @if($permComment)
                 <div class="job-view-comment-editor rounded-xl border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-600 dark:bg-slate-800/30">
                     <div class="mb-2 flex flex-wrap gap-1">
                         <button type="button" class="job-view-comment-btn rounded p-1.5 text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600" data-cmd="bold" title="Bold"><span class="font-bold">B</span></button>
@@ -410,11 +524,15 @@
                     <div class="job-view-comment-body min-h-[80px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus-within:ring-2 focus-within:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" id="jobCommentBody" contenteditable="true" data-placeholder="Write a comment..." role="textbox"></div>
                     <div class="mt-2 flex justify-end"><button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" id="jobCommentSendBtn">Send</button></div>
                 </div>
+                @endif
             </section>
+                        @endif
 
                     </div>
                 </div>
+                @endif
 
+                @if($permCardActivity)
                 {{-- Section: Activity --}}
                 <div class="space-y-4">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Activity</h2>
@@ -465,6 +583,101 @@
                         </ul>
                     </section>
                 </div>
+                @endif
+
+                @if(!empty($isBphView) && $permCardBphAdditional)
+                    @php
+                        $br = $bphJobRow ?? null;
+                        $bphHasSpec = $br && (
+                            filled((string) ($br->address ?? ''))
+                            || filled((string) ($br->climate_zone ?? ''))
+                            || filled((string) ($br->compliance_summary_description ?? ''))
+                            || filled((string) ($br->spec_client_no ?? ''))
+                            || filled((string) ($br->spec_lbs_no ?? ''))
+                            || filled((string) ($br->spec_plans ?? ''))
+                            || filled((string) ($br->spec_insulation ?? ''))
+                            || filled((string) ($br->spec_glazing ?? ''))
+                            || filled((string) ($br->spec_sealing ?? ''))
+                            || filled((string) ($br->spec_services ?? ''))
+                            || filled((string) ($br->spec_additional ?? ''))
+                            || filled((string) ($br->spec_print_merge_file ?? ''))
+                        );
+                        $bphMergeLabel = ($br && !empty($br->spec_print_merge_file ?? null)) ? (string) $br->spec_print_merge_file : null;
+                        $bphMergeUrl = $bphMergeLabel ? route('bph.job.mergeFile', ['id' => $jobId]) : null;
+                    @endphp
+                <div class="space-y-4">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Additional</h2>
+                    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50" id="bphAdditionalInfoSection" aria-label="Additional information">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                            <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Additional Information</h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                                @if($permBphPrintCompliance)
+                                <a href="{{ route('bph.job.printCompliance', ['id' => $jobId]) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+                                    Print
+                                </a>
+                                @endif
+                                @if($permJobUpdate)
+                                <button type="button" id="bphAdditionalInfoHeaderAdd" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600">
+                                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
+                                        <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    </span>
+                                    {{ $bphHasSpec ? 'Edit' : 'Add' }}
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="px-5 py-4">
+                            @if(!$bphHasSpec)
+                                <div class="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/40 py-12 dark:border-slate-600 dark:bg-slate-800/30">
+                                    <p class="m-0 text-center text-sm text-slate-500 dark:text-slate-400">No additional information has been added yet.</p>
+                                    @if($permJobUpdate)
+                                    <button type="button" id="bphAdditionalInfoEmptyAdd" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/20" aria-hidden="true">
+                                            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        </span>
+                                        Add Additional Information
+                                    </button>
+                                    @endif
+                                </div>
+                            @else
+                                <div class="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                                    @if(filled((string) ($br->address ?? '')))
+                                        <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Address</span><p class="mt-0.5 whitespace-pre-wrap">{{ $br->address }}</p></div>
+                                    @endif
+                                    @if(filled((string) ($br->climate_zone ?? '')))
+                                        <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Climate zone</span><p class="mt-0.5">{{ $br->climate_zone }}</p></div>
+                                    @endif
+                                    @if(filled((string) ($br->compliance_summary_description ?? '')))
+                                        <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Compliance summary</span><p class="mt-0.5 whitespace-pre-wrap">{{ $br->compliance_summary_description }}</p></div>
+                                    @endif
+                                    <div class="grid gap-3 sm:grid-cols-2">
+                                        @if(filled((string) ($br->spec_client_no ?? '')))
+                                            <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Client No</span><p class="mt-0.5">{{ $br->spec_client_no }}</p></div>
+                                        @endif
+                                        @if(filled((string) ($br->spec_lbs_no ?? '')))
+                                            <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">LBS No</span><p class="mt-0.5">{{ $br->spec_lbs_no }}</p></div>
+                                        @endif
+                                    </div>
+                                    @foreach(['spec_plans' => 'Plans', 'spec_insulation' => 'Insulation', 'spec_glazing' => 'Glazing', 'spec_sealing' => 'Sealing', 'spec_services' => 'Services', 'spec_additional' => 'Additional'] as $col => $label)
+                                        @if(filled((string) ($br->{$col} ?? '')))
+                                            <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ $label }}</span><p class="mt-0.5 whitespace-pre-wrap">{{ $br->{$col} }}</p></div>
+                                        @endif
+                                    @endforeach
+                                    @if($bphMergeUrl && $bphMergeLabel && $permBphMergeFile)
+                                        <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Print merge file</span><p class="mt-0.5"><a href="{{ $bphMergeUrl }}" class="font-medium text-emerald-600 underline hover:no-underline dark:text-emerald-400" target="_blank" rel="noopener">{{ $bphMergeLabel }}</a></p></div>
+                                    @elseif($bphMergeUrl && $bphMergeLabel && !$permBphMergeFile)
+                                        <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Print merge file</span><p class="mt-0.5 text-slate-600 dark:text-slate-300">{{ $bphMergeLabel }}</p></div>
+                                    @endif
+                                    @if(filled((string) ($br->date ?? '')))
+                                        <div><span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Last saved (date)</span><p class="mt-0.5 font-mono text-xs">{{ $br->date }}</p></div>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    </section>
+                </div>
+                @endif
             </div>
 
         </div>
@@ -516,6 +729,35 @@
                 </div>
             </div>
         </div>
+
+        @if(!empty($isBphView) && $permCardBphAdditional)
+        <div class="job-view-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200" id="bphAdditionalInfoModalOverlay" aria-hidden="true">
+            <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800" role="dialog" aria-modal="true" aria-labelledby="bphAdditionalInfoModalTitle">
+                <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                    <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="bphAdditionalInfoModalTitle">Add Additional Information</h2>
+                    <button type="button" class="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-700 dark:hover:text-white" id="bphAdditionalInfoModalClose" aria-label="Close">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form id="bphAdditionalInfoForm" class="flex min-h-0 flex-1 flex-col" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="bph_additional_info_save" value="1">
+                    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                        @include('bph.partials.additional-job-fields', [
+                            'idPrefix' => 'bph_modal_',
+                            'values' => $bphJobRow ?? null,
+                            'mergeFileLabel' => $bphMergeLabel ?? null,
+                            'mergeFileDownloadUrl' => $bphMergeUrl ?? null,
+                        ])
+                    </div>
+                    <div class="flex shrink-0 justify-end gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                        <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" id="bphAdditionalInfoModalCancel">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" id="bphAdditionalInfoModalSave">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @endif
     </div>
 @endsection
 
@@ -572,6 +814,29 @@ html[data-theme="dark"] .job-details-dd {
     padding: 0.35rem 0.75rem;
 }
 .job-view-modal-overlay.is-open { opacity: 1; pointer-events: auto; }
+@keyframes jobViewSaveSpin { to { transform: rotate(360deg); } }
+.job-view-save-spinner {
+    box-sizing: border-box;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 9999px;
+    animation: jobViewSaveSpin 0.65s linear infinite;
+    flex-shrink: 0;
+}
+.job-view-modal-btn-loading {
+    cursor: wait !important;
+    pointer-events: none;
+    opacity: 0.92;
+}
+@keyframes jobViewModalSavingPulse {
+    from { opacity: 1; }
+    to { opacity: 0.86; }
+}
+.job-view-modal-saving {
+    animation: jobViewModalSavingPulse 1s ease-in-out infinite alternate;
+}
 .lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
 /* Rich text toolbar button active state */
 .job-view-comment-btn.active {
@@ -591,18 +856,18 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 <script>
 (function() {
     var csrfToken = '{{ csrf_token() }}';
-    var updateUrl = '{{ route($isEfficientLivingView ? 'efficient_living.job.update' : 'lbs.job.update', ['id' => $jobId]) }}';
-    var uploadFilesUrl = '{{ route('lbs.job.uploadFiles', ['id' => $jobId]) }}';
-    var deleteFileUrl = '{{ route('lbs.job.deleteFile', ['id' => $jobId]) }}';
-    var archiveJobUrl = '{{ route('lbs.job.archive', ['id' => $jobId]) }}';
-    var checkerUploadUrl = '{{ route('lbs.job.checkerUploads', ['id' => $jobId]) }}';
-    var runCommentUrl = '{{ route('lbs.job.runComment', ['id' => $jobId]) }}';
-    var jobCommentUrl = '{{ route('lbs.job.comment', ['id' => $jobId]) }}';
+    var updateUrl = '{{ route($jobUpdateRouteName, ['id' => $jobId]) }}';
+    var uploadFilesUrl = '{{ route($jobUploadFilesRouteName, ['id' => $jobId]) }}';
+    var deleteFileUrl = '{{ route($jobDeleteFileRouteName, ['id' => $jobId]) }}';
+    var archiveJobUrl = '{{ route($jobArchiveRouteName, ['id' => $jobId]) }}';
+    var checkerUploadUrl = '{{ route($jobCheckerUploadsRouteName, ['id' => $jobId]) }}';
+    var runCommentUrl = '{{ route($jobRunCommentRouteName, ['id' => $jobId]) }}';
+    var jobCommentUrl = '{{ route($jobCommentRouteName, ['id' => $jobId]) }}';
     var jobViewFilesData = {
         planFiles: @json($planFiles ?? []),
         docFiles: @json($docFiles ?? [])
     };
-    var jobViewFileUrlTemplate = @json(route('lbs.job.file', ['id' => $jobId, 'file' => '__FILE__']));
+    var jobViewFileUrlTemplate = @json(route($jobFileRouteName, ['id' => $jobId, 'file' => '__FILE__']));
     function getJobViewActivityAvatarHtml(log) {
         var card = document.getElementById('jobActivityCard');
         var currentUser = card ? (card.getAttribute('data-current-user') || '') : '';
@@ -1354,6 +1619,9 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 
     // Save handler for Edit modal
     var saveBtn = document.getElementById('jobViewEditSaveBtn');
+    var editModalPanel = document.getElementById('jobViewEditModal');
+    var editCancelBtn = document.querySelector('[data-job-view-close-edit]');
+    var savingBtnHtml = '<span class="inline-flex items-center justify-center gap-2"><span class="job-view-save-spinner" aria-hidden="true"></span> Saving…</span>';
     if (saveBtn) {
         var saveBtnOriginalHtml = saveBtn.innerHTML;
         saveBtn.addEventListener('click', function () {
@@ -1371,8 +1639,6 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                 payload.client_name = clientName;
             } else if (!formJob.hidden) {
                 payload.job_status = $('#edit-job-status').val();
-                payload.job_address = document.getElementById('edit-job-address')?.value || '';
-                payload.priority = $('#edit-priority').val();
                 payload.job_type = document.getElementById('edit-job-type')?.value || '';
             } else if (!formNotes.hidden) {
                 var notesBody = document.getElementById('jobViewEditNotesBody');
@@ -1381,10 +1647,13 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                 return;
             }
 
-            // loading state + simple animation
+            // loading state + spinner (before request)
             saveBtn.disabled = true;
+            if (editCancelBtn) editCancelBtn.disabled = true;
+            if (editModalPanel) editModalPanel.classList.add('job-view-modal-saving');
+            if (editOverlay) editOverlay.setAttribute('aria-busy', 'true');
             saveBtn.classList.add('job-view-modal-btn-loading');
-            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+            saveBtn.innerHTML = savingBtnHtml;
 
             $.ajax({
                 url: updateUrl,
@@ -1442,12 +1711,96 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                 },
                 complete: function () {
                     saveBtn.disabled = false;
+                    if (editCancelBtn) editCancelBtn.disabled = false;
+                    if (editModalPanel) editModalPanel.classList.remove('job-view-modal-saving');
+                    if (editOverlay) editOverlay.removeAttribute('aria-busy');
                     saveBtn.classList.remove('job-view-modal-btn-loading');
                     saveBtn.innerHTML = saveBtnOriginalHtml;
                 }
             });
         });
     }
+
+    @if(!empty($isBphView) && $permCardBphAdditional)
+    (function initBphAdditionalInfo() {
+        var overlay = document.getElementById('bphAdditionalInfoModalOverlay');
+        var form = document.getElementById('bphAdditionalInfoForm');
+        var saveBtn = document.getElementById('bphAdditionalInfoModalSave');
+        var cancelBtn = document.getElementById('bphAdditionalInfoModalCancel');
+        var closeBtn = document.getElementById('bphAdditionalInfoModalClose');
+        var bphModalInner = overlay && overlay.querySelector('.max-w-2xl');
+        var saveBtnOriginalHtml = saveBtn ? saveBtn.innerHTML : '';
+        var bphSavingBtnHtml = '<span class="inline-flex items-center justify-center gap-2"><span class="job-view-save-spinner" aria-hidden="true"></span> Saving…</span>';
+        function openModal() {
+            if (overlay) {
+                overlay.classList.add('is-open');
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+        }
+        function closeModal() {
+            if (overlay) {
+                overlay.classList.remove('is-open');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+        }
+        ['bphAdditionalInfoHeaderAdd', 'bphAdditionalInfoEmptyAdd'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', openModal);
+        });
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) closeModal();
+            });
+        }
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (!saveBtn) return;
+                function resetBphSavingUi() {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('job-view-modal-btn-loading');
+                    saveBtn.innerHTML = saveBtnOriginalHtml;
+                    if (cancelBtn) cancelBtn.disabled = false;
+                    if (closeBtn) closeBtn.disabled = false;
+                    if (form) form.classList.remove('pointer-events-none', 'opacity-60');
+                    if (bphModalInner) bphModalInner.classList.remove('job-view-modal-saving');
+                    if (overlay) overlay.removeAttribute('aria-busy');
+                }
+                saveBtn.disabled = true;
+                if (cancelBtn) cancelBtn.disabled = true;
+                if (closeBtn) closeBtn.disabled = true;
+                if (form) form.classList.add('pointer-events-none', 'opacity-60');
+                if (bphModalInner) bphModalInner.classList.add('job-view-modal-saving');
+                if (overlay) overlay.setAttribute('aria-busy', 'true');
+                saveBtn.classList.add('job-view-modal-btn-loading');
+                saveBtn.innerHTML = bphSavingBtnHtml;
+                var fd = new FormData(form);
+                fd.append('_method', 'PUT');
+                fetch(updateUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body: fd
+                }).then(function (r) {
+                    return r.json().then(function (data) { return { ok: r.ok, data: data }; }).catch(function () { return { ok: false, data: { message: 'Failed to save.' } }; });
+                }).then(function (result) {
+                    var msg = (result.data && result.data.message) || (result.ok ? 'Saved.' : 'Failed to save.');
+                    if (window.showSuccessToast) showSuccessToast(msg);
+                    if (result.ok) {
+                        closeModal();
+                        window.location.reload();
+                        return;
+                    }
+                    resetBphSavingUi();
+                }).catch(function () {
+                    if (window.showSuccessToast) showSuccessToast('Failed to save.');
+                    resetBphSavingUi();
+                });
+            });
+        }
+    })();
+    @endif
 })();
 </script>
     <script>

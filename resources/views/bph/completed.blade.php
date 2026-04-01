@@ -56,30 +56,30 @@
 
                     <tbody>
                         @php
-                            $rows = [
-                                [
-                                    'id' => 1,
-                                    'log_date' => '2025-11-29 03:21:00',
-                                    'client' => 'BPH01',
-                                    'urgent' => 'NO',
-                                    'job_type_1' => 'EA_BPH_1S',
-                                    'job_type_2' => 'Prelim',
-                                    'ncc' => '2022 Whole of Home (WOH)',
-                                    'job_number' => '011298',
-                                    'client_name' => 'TEST',
-                                    'client_email' => 'admin@luntiands.com',
-                                    'status' => 'Completed',
-                                    'assigned' => 'AJS',
-                                    'checker' => 'JDR',
-                                ],
-                            ];
+                            $rows = \Illuminate\Support\Facades\DB::table('job_bph')
+                                ->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
+                                ->orderByDesc('created_at')
+                                ->limit(300)
+                                ->get();
                         @endphp
 
                         @foreach($rows as $index => $row)
                             @php
-                                $log = \Carbon\Carbon::parse($row['log_date'], 'Asia/Manila');
+                                $logRaw = $row->created_at ?? $row->updated_at ?? now('Asia/Manila')->format('Y-m-d H:i:s');
+                                $log = \Carbon\Carbon::parse($logRaw, 'Asia/Manila');
                                 $logDate1 = $log->format('F j, Y');
                                 $logDate2 = $log->format('g:i A');
+                                $client = $row->client_code ?? 'BPH01';
+                                $urgent = strtoupper((string) ($row->urgent ?? 'NO'));
+                                $jobType1 = (string) ($row->job_type ?? '—');
+                                $jobType2 = '';
+                                $ncc = (string) ($row->ncc ?? '—');
+                                $jobNumber = (string) ($row->job_number ?? '—');
+                                $clientName = (string) ($row->client_name ?? '—');
+                                $clientEmail = (string) ($row->contact_email ?? '—');
+                                $status = (string) ($row->status ?? 'Completed');
+                                $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
+                                $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
 
                             <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
@@ -87,14 +87,14 @@
                                     <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
                                         <a href="{{ route('bph.add', [
                                             'duplicate' => 1,
-                                            'job_number' => $row['job_number'] ?? '',
-                                            'client_name' => $row['client_name'] ?? '',
-                                            'contact_email' => $row['client_email'] ?? '',
-                                            'urgent_job' => (strtoupper((string) ($row['urgent'] ?? 'NO')) === 'YES') ? 1 : 0,
+                                            'job_number' => $jobNumber,
+                                            'client_name' => $clientName,
+                                            'contact_email' => $clientEmail,
+                                            'urgent_job' => ($urgent === 'YES') ? 1 : 0,
                                         ]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate" aria-label="Duplicate">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
-                                        <a href="{{ route('bph.view', $row['id']) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View">
+                                        <a href="{{ route('bph.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
                                         <button type="button" class="lbs-action-icon lbs-action-expand inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-400 dark:text-slate-400 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row>
@@ -102,40 +102,40 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="lbs-td lbs-td-log-date border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Log Date" data-sort="{{ $row['log_date'] }}">
+                                <td class="lbs-td lbs-td-log-date border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Log Date" data-sort="{{ $logRaw }}">
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $logDate1 }}</span>
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $logDate2 }}</span>
                                 </td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client">{{ $row['client'] }}</td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Urgent">{{ $row['urgent'] }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client">{{ $client }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Urgent">{{ $urgent }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Type">
-                                    <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $row['job_type_1'] }}</span>
-                                    <span class="block text-[0.8125rem] text-slate-400">{{ $row['job_type_2'] }}</span>
+                                    <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $jobType1 }}</span>
+                                    <span class="block text-[0.8125rem] text-slate-400">{{ $jobType2 }}</span>
                                 </td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="NCC">{{ $row['ncc'] }}</td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Number">{{ $row['job_number'] }}</td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client Name">{{ $row['client_name'] }}</td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client Email">{{ $row['client_email'] }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="NCC">{{ $ncc }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Number">{{ $jobNumber }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client Name">{{ $clientName }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client Email">{{ $clientEmail }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Status">
-                                    <span class="lbs-badge lbs-badge-completed inline-block rounded-md px-2 py-1 text-xs font-semibold" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">{{ $row['status'] }}</span>
+                                    <span class="lbs-badge lbs-badge-completed inline-block rounded-md px-2 py-1 text-xs font-semibold" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">{{ $status }}</span>
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Assigned To">
-                                    <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $row['assigned'] }}</span>
+                                    <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $assigned }}</span>
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Checked By">
-                                    <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $row['checker'] }}</span>
+                                    <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $checker }}</span>
                                 </td>
                             </tr>
                             <tr class="lbs-row-detail border-b border-slate-200 dark:border-slate-700" id="lbs-detail-{{ $index }}" hidden>
                                 <td colspan="12" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
                                     <div class="grid gap-x-6 gap-y-4 px-5 py-5" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Log Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $logDate1 }} {{ $logDate2 }}</span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $row['client'] }}</span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Urgent</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $row['urgent'] }}</span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Job Type</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $row['job_type_1'] }} · {{ $row['job_type_2'] }}</span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">NCC</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $row['ncc'] }}</span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client Email</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $row['client_email'] }}</span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Status</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $row['status'] }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $client }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Urgent</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $urgent }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Job Type</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $jobType1 }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">NCC</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $ncc }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client Email</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $clientEmail }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Status</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $status }}</span></div>
                                     </div>
                                 </td>
                             </tr>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type React from 'react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -6,13 +7,38 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-export default function Calendar() {
-  const [date, setDate] = useState(() => {
+export type HolidaySource = 'PH' | 'AU';
+
+type CalendarHoliday = {
+  source: HolidaySource;
+  localName: string;
+  name: string;
+};
+
+type CalendarProps = {
+  viewDate?: Date;
+  holidaysByDate?: Record<string, CalendarHoliday[]>;
+  onMonthChange?: (date: Date) => void;
+};
+
+function toDateKey(year: number, month: number, day: number): string {
+  const mm = String(month + 1).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
+
+export default function Calendar({
+  viewDate,
+  holidaysByDate = {},
+  onMonthChange,
+}: CalendarProps) {
+  const [internalDate, setInternalDate] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [selected, setSelected] = useState<Date | null>(() => new Date());
 
+  const date = viewDate ? new Date(viewDate.getFullYear(), viewDate.getMonth(), 1) : internalDate;
   const year = date.getFullYear();
   const month = date.getMonth();
   const monthName = MONTHS[month];
@@ -20,15 +46,22 @@ export default function Calendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
+  const updateMonth = (nextDate: Date) => {
+    if (!viewDate) {
+      setInternalDate(nextDate);
+    }
+    onMonthChange?.(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+  };
+
   const prevMonth = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDate(new Date(year, month - 1, 1));
+    updateMonth(new Date(year, month - 1, 1));
   };
   const nextMonth = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDate(new Date(year, month + 1, 1));
+    updateMonth(new Date(year, month + 1, 1));
   };
 
   const cells: (number | null)[] = [];
@@ -60,14 +93,33 @@ export default function Calendar() {
   const handleCellClick = (cell: number | null, index: number) => {
     if (cell === null) return;
     if (index < firstDay) {
-      setDate(new Date(year, month - 1, 1));
+      updateMonth(new Date(year, month - 1, 1));
       setSelected(new Date(year, month - 1, cell));
     } else if (index >= firstDay + daysInMonth) {
-      setDate(new Date(year, month + 1, 1));
+      updateMonth(new Date(year, month + 1, 1));
       setSelected(new Date(year, month + 1, cell));
     } else {
       setSelected(new Date(year, month, cell));
     }
+  };
+
+  const getHolidayInfo = (cell: number | null, index: number) => {
+    if (cell === null) {
+      return null;
+    }
+    const d = index < firstDay
+      ? new Date(year, month - 1, cell)
+      : index >= firstDay + daysInMonth
+        ? new Date(year, month + 1, cell)
+        : new Date(year, month, cell);
+    const key = toDateKey(d.getFullYear(), d.getMonth(), d.getDate());
+    const holidays = holidaysByDate[key] ?? [];
+    if (!holidays.length) {
+      return null;
+    }
+    const hasPH = holidays.some((h) => h.source === 'PH');
+    const hasAU = holidays.some((h) => h.source === 'AU');
+    return { hasPH, hasAU, holidays };
   };
 
   return (
@@ -92,10 +144,19 @@ export default function Calendar() {
             <button
               key={index}
               type="button"
-              className={`dashboard-calendar-cell ${!isCurrentMonth(cell, index) ? 'other-month' : ''} ${isSelected(cell, index) ? 'selected' : ''}`}
+              className={`dashboard-calendar-cell ${!isCurrentMonth(cell, index) ? 'other-month' : ''} ${isSelected(cell, index) ? 'selected' : ''} ${getHolidayInfo(cell, index) ? 'holiday' : ''}`}
               onClick={() => handleCellClick(cell, index)}
+              title={(getHolidayInfo(cell, index)?.holidays ?? [])
+                .map((h) => `${h.source}: ${h.localName || h.name}`)
+                .join(' | ')}
             >
-              {cell}
+              <span>{cell}</span>
+              {getHolidayInfo(cell, index) && (
+                <span className="dashboard-calendar-markers" aria-hidden>
+                  {getHolidayInfo(cell, index)?.hasPH && <span className="dashboard-calendar-marker dashboard-calendar-marker--ph" />}
+                  {getHolidayInfo(cell, index)?.hasAU && <span className="dashboard-calendar-marker dashboard-calendar-marker--au" />}
+                </span>
+              )}
             </button>
           ))}
         </div>

@@ -207,6 +207,11 @@ body.sidebar-open #sidebarNav {
     @apply opacity-100 pointer-events-auto;
 }
 
+/* Delete announcement modal visible state */
+#deleteAnnouncementModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
 /* Archive user modal visible state */
 #deleteUserModal.show {
     @apply opacity-100 pointer-events-auto;
@@ -251,6 +256,56 @@ body.sidebar-open #sidebarNav {
     animation: announcement-marquee 25s linear infinite;
 }
 
+/* Header announcement ticker (news style) */
+.header-announcement {
+    min-width: 0;
+}
+.announcement-ticker {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 0.45rem;
+    border: 1px solid rgba(30, 64, 175, 0.35);
+    background: linear-gradient(90deg, rgba(30, 64, 175, 0.95), rgba(37, 99, 235, 0.9));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .announcement-ticker {
+    border-color: rgba(59, 130, 246, 0.45);
+    background: linear-gradient(90deg, rgba(30, 58, 138, 0.95), rgba(37, 99, 235, 0.9));
+}
+.announcement-ticker__track {
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: right;
+}
+.announcement-ticker__content {
+    --ticker-duration: 18000ms;
+    display: inline-flex;
+    align-items: center;
+    min-width: max-content;
+    padding: 0.25rem 1rem;
+    animation: announcement-ticker-scroll var(--ticker-duration) linear infinite;
+    will-change: transform;
+}
+.announcement-ticker__text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+}
+.announcement-ticker:hover .announcement-ticker__content {
+    animation-play-state: paused;
+}
+@keyframes announcement-ticker-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
 /* Dashboard calendar – match sidebar dark mode (slate-900, emerald) */
 .dashboard-calendar-wrapper .dashboard-calendar {
     @apply w-full max-w-full;
@@ -277,13 +332,31 @@ body.sidebar-open #sidebarNav {
     @apply grid grid-cols-7 gap-1;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-cell {
-    @apply flex h-9 w-full items-center justify-center rounded-lg text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700;
+    @apply relative flex h-9 w-full items-center justify-center rounded-lg text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-cell.other-month {
     @apply text-slate-400 dark:text-slate-500;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-cell.selected {
     @apply bg-emerald-500 font-semibold text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-600;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday {
+    @apply border border-slate-200/80 dark:border-slate-600/70;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.selected.holiday {
+    @apply border-emerald-300/80;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-markers {
+    @apply pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 items-center gap-1;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-marker {
+    @apply h-1.5 w-1.5 rounded-full;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-marker--ph {
+    background: #2563eb;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-marker--au {
+    background: #f59e0b;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-grid--animate {
     @apply opacity-100 transition-opacity duration-200;
@@ -446,6 +519,25 @@ body.sidebar-open #sidebarNav {
     transition: background 0.15s ease;
 }
 .dashboard-card__row-label { font-weight: 500; }
+.dashboard-card__row-status {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+.dashboard-card__row-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+}
+.dashboard-card__row-meta {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
 .dashboard-card__row-value {
     padding: 0.25rem 0.5rem;
     font-weight: 600;
@@ -511,6 +603,7 @@ body.sidebar-open #sidebarNav {
 }
 .dashboard-card--total .dashboard-card__label,
 .dashboard-card--total .dashboard-card__row-label { color: rgba(255,255,255,0.9); }
+.dashboard-card--total .dashboard-card__row-meta { color: rgba(255,255,255,0.72); }
 .dashboard-card--total .dashboard-card__icon { color: #fff; }
 .dashboard-card--total .dashboard-card__row-value {
     background: rgba(0,0,0,0.2);
@@ -525,6 +618,7 @@ body.sidebar-open #sidebarNav {
 }
 .dashboard-card--completed .dashboard-card__label,
 .dashboard-card--completed .dashboard-card__row-label { color: rgba(255,255,255,0.9); }
+.dashboard-card--completed .dashboard-card__row-meta { color: rgba(255,255,255,0.72); }
 .dashboard-card--completed .dashboard-card__icon { color: #fff; }
 .dashboard-card--completed .dashboard-card__row-value {
     background: rgba(0,0,0,0.25);
@@ -539,6 +633,7 @@ body.sidebar-open #sidebarNav {
 }
 .dashboard-card--processing .dashboard-card__label,
 .dashboard-card--processing .dashboard-card__row-label { color: rgba(255,255,255,0.95); }
+.dashboard-card--processing .dashboard-card__row-meta { color: rgba(255,255,255,0.75); }
 .dashboard-card--processing .dashboard-card__icon { color: #fff; }
 .dashboard-card--processing .dashboard-card__row-value {
     background: rgba(0,0,0,0.2);
@@ -553,6 +648,7 @@ body.sidebar-open #sidebarNav {
 }
 .dashboard-card--pending .dashboard-card__label,
 .dashboard-card--pending .dashboard-card__row-label { color: #334155; }
+.dashboard-card--pending .dashboard-card__row-meta { color: #64748b; }
 .dashboard-card--pending .dashboard-card__icon { color: #475569; }
 .dashboard-card--pending .dashboard-card__row-value {
     background: rgba(71, 85, 105, 0.2);
@@ -666,6 +762,47 @@ body.sidebar-open #sidebarNav {
     color: #475569;
 }
 [data-theme="dark"] .dashboard-holiday-box__text {
+    color: #94a3b8;
+}
+.dashboard-holiday-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+.dashboard-holiday-item {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.45rem;
+}
+.dashboard-holiday-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+}
+.dashboard-holiday-dot--ph {
+    background: #2563eb;
+}
+.dashboard-holiday-dot--au {
+    background: #f59e0b;
+}
+.dashboard-holiday-date {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+}
+[data-theme="dark"] .dashboard-holiday-date {
+    color: #cbd5e1;
+}
+.dashboard-holiday-name {
+    min-width: 0;
+    font-size: 0.8125rem;
+    color: #475569;
+}
+[data-theme="dark"] .dashboard-holiday-name {
     color: #94a3b8;
 }
 

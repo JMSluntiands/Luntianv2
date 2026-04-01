@@ -1,7 +1,25 @@
 <header class="header z-30 flex h-14 min-h-14 min-w-0 flex-shrink-0 items-center justify-end gap-2 overflow-visible border-b border-slate-200 bg-white px-4 dark:border-slate-700 dark:bg-slate-900">
-    @hasSection('header_center')
+    @php
+        $activeAnnouncement = \App\Models\Announcement::query()
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', now())
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhereDate('end_date', '>=', now());
+            })
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->first();
+    @endphp
+    @if($activeAnnouncement)
         <div class="header-announcement flex flex-1 min-w-0 items-center">
-            @yield('header_center')
+            <div
+                id="announcement-root"
+                class="flex-1 min-w-0 flex items-center overflow-hidden"
+                data-announcement-text="{{ $activeAnnouncement->message }}"
+            >
+                @yield('header_center')
+            </div>
         </div>
     @endif
     <div class="header-actions relative z-10 flex flex-shrink-0 items-center gap-1 sm:gap-2">

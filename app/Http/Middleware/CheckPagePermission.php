@@ -22,22 +22,11 @@ class CheckPagePermission
             return $next($request);
         }
 
-        if (strtolower($role) === 'admin') {
+        if (strtolower($role) === 'admin' && RolePermission::normalizeBranch((string) session('user_branch')) === '') {
             return $next($request);
         }
 
-        $allowedRoutes = config('permissions.routes', []);
-        $allRouteNames = [];
-        foreach ($allowedRoutes as $group) {
-            foreach (array_keys($group) as $name) {
-                $allRouteNames[$name] = true;
-            }
-        }
-        if (!isset($allRouteNames[$routeName])) {
-            return $next($request);
-        }
-
-        if (!RolePermission::hasAccess($role, $routeName)) {
+        if (!RolePermission::userMayAccessRoute($routeName)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You do not have permission to access this page.'], 403);
             }

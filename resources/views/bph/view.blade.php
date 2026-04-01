@@ -37,25 +37,56 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Urgent</label>
-                    <select name="urgent" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                    <select name="urgent" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
                         <option value="NO" {{ old('urgent', $job->urgent) === 'NO' ? 'selected' : '' }}>NO</option>
                         <option value="YES" {{ old('urgent', $job->urgent) === 'YES' ? 'selected' : '' }}>YES</option>
                     </select>
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
-                    <input type="text" name="status" value="{{ old('status', $job->status) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                    @php
+                        $selStatus = (string) old('status', $job->status);
+                        $statusOptions = ['Pending', 'Accepted', 'Allocated', 'Awaiting Further Information', 'Completed', 'For Review', 'Revised', 'For Checking', 'Processing'];
+                    @endphp
+                    <select name="status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" data-placeholder="Select status">
+                        @if($selStatus !== '' && !collect($statusOptions)->contains($selStatus))
+                            <option value="{{ $selStatus }}" selected>{{ $selStatus }}</option>
+                        @endif
+                        @foreach($statusOptions as $opt)
+                            <option value="{{ $opt }}" {{ $selStatus === $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type</label>
-                    <input type="text" name="job_type" value="{{ old('job_type', $job->job_type) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                    @php
+                        $selJobType = (string) old('job_type', $job->job_type);
+                    @endphp
+                    <select name="job_type" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" data-placeholder="Select job type">
+                        @if($selJobType !== '' && !collect($jobRequests ?? [])->pluck('job_request_type')->contains($selJobType))
+                            <option value="{{ $selJobType }}" selected>{{ $selJobType }}</option>
+                        @endif
+                        @foreach(($jobRequests ?? collect()) as $jr)
+                            <option value="{{ $jr->job_request_type }}" {{ $selJobType === (string) $jr->job_request_type ? 'selected' : '' }}>{{ $jr->job_request_type }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">NCC</label>
-                    <input type="text" name="ncc" value="{{ old('ncc', $job->ncc) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                    @php
+                        $selNcc = (string) old('ncc', $job->ncc);
+                    @endphp
+                    <select name="ncc" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" data-placeholder="Select NCC">
+                        @if($selNcc !== '' && !collect($compliances ?? [])->pluck('column')->contains($selNcc))
+                            <option value="{{ $selNcc }}" selected>{{ $selNcc }}</option>
+                        @endif
+                        @foreach(($compliances ?? collect()) as $c)
+                            <option value="{{ $c->column }}" {{ $selNcc === (string) $c->column ? 'selected' : '' }}>{{ $c->column }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
@@ -73,16 +104,46 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Email</label>
-                    <input type="email" name="contact_email" value="{{ old('contact_email', $job->contact_email) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                    @php
+                        $selContactEmail = (string) old('contact_email', $job->contact_email);
+                    @endphp
+                    <select name="contact_email" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" data-placeholder="Select contact email">
+                        @if($selContactEmail !== '' && !collect($bphClientEmails ?? [])->pluck('email')->contains($selContactEmail))
+                            <option value="{{ $selContactEmail }}" selected>{{ $selContactEmail }}</option>
+                        @endif
+                        @foreach(($bphClientEmails ?? collect()) as $row)
+                            <option value="{{ $row->email }}" {{ $selContactEmail === (string) $row->email ? 'selected' : '' }}>{{ $row->email }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Assigned</label>
-                        <input type="text" name="assigned" value="{{ old('assigned', $job->assigned) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                        @php
+                            $selAssigned = strtoupper((string) old('assigned', $job->assigned));
+                        @endphp
+                        <select name="assigned" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                            @foreach(($assignmentUsers ?? collect()) as $code)
+                                <option value="{{ $code }}" {{ $selAssigned === (string) $code ? 'selected' : '' }}>{{ $code }}</option>
+                            @endforeach
+                            @if(!empty($selAssigned) && !collect($assignmentUsers ?? [])->contains($selAssigned))
+                                <option value="{{ $selAssigned }}" selected>{{ $selAssigned }}</option>
+                            @endif
+                        </select>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checked</label>
-                        <input type="text" name="checked" value="{{ old('checked', $job->checked) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                        @php
+                            $selChecked = strtoupper((string) old('checked', $job->checked));
+                        @endphp
+                        <select name="checked" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                            @foreach(($assignmentUsers ?? collect()) as $code)
+                                <option value="{{ $code }}" {{ $selChecked === (string) $code ? 'selected' : '' }}>{{ $code }}</option>
+                            @endforeach
+                            @if(!empty($selChecked) && !collect($assignmentUsers ?? [])->contains($selChecked))
+                                <option value="{{ $selChecked }}" selected>{{ $selChecked }}</option>
+                            @endif
+                        </select>
                     </div>
                 </div>
             </div>
@@ -99,3 +160,25 @@
         </form>
     </div>
 @endsection
+
+@push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        (function () {
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2-single').each(function () {
+                    var $el = $(this);
+                    var ph = $el.data('placeholder');
+                    var opts = { width: '100%', allowClear: false };
+                    if (ph) {
+                        opts.placeholder = ph;
+                        opts.allowClear = true;
+                        opts.minimumResultsForSearch = 0;
+                    }
+                    $el.select2(opts);
+                });
+            }
+        })();
+    </script>
+@endpush

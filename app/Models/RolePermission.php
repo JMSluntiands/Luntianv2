@@ -10,19 +10,233 @@ class RolePermission extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['role', 'route_name'];
+    protected $fillable = ['role', 'branch', 'route_name'];
 
-    public static function hasAccess(string $role, string $routeName): bool
+    /**
+     * Stored as '' for “all branches”; otherwise must match users.branch (branch name).
+     */
+    public static function normalizeBranch(?string $branch): string
     {
-        $allowed = static::where('role', $role)->pluck('route_name')->toArray();
-        if (empty($allowed)) {
-            return true;
+        if ($branch === null) {
+            return '';
         }
-        return in_array($routeName, $allowed, true);
+
+        return trim((string) $branch);
     }
 
-    public static function allowedRoutesForRole(string $role): array
+    /**
+     * Match session / users.role to the same string used when saving the permission matrix
+     * (config permissions.roles uses "Staff", DB often stores "staff").
+     */
+    public static function canonicalRole(string $role): string
     {
-        return static::where('role', $role)->pluck('route_name')->toArray();
+        $role = trim($role);
+        if ($role === '') {
+            return $role;
+        }
+        foreach (config('permissions.roles', []) as $configured) {
+            if (strcasecmp((string) $configured, $role) === 0) {
+                return (string) $configured;
+            }
+        }
+
+        return $role;
+    }
+
+    /**
+     * Branch-specific rows (same role + user's branch) override the global row set (branch '').
+     * If the user has no branch, only global (branch '') applies.
+     */
+    public static function hasAccess(string $role, string $routeName, ?string $userBranch = null): bool
+    {
+        $role = static::canonicalRole($role);
+        $userBranch = static::normalizeBranch($userBranch ?? (string) (session('user_branch') ?? ''));
+
+        if ($userBranch !== '') {
+            $branchLower = mb_strtolower($userBranch);
+            $branchCount = static::where('role', $role)
+                ->whereRaw('LOWER(branch) = ?', [$branchLower])
+                ->count();
+            if ($branchCount > 0) {
+                $allowed = static::where('role', $role)
+                    ->whereRaw('LOWER(branch) = ?', [$branchLower])
+                    ->pluck('route_name')
+                    ->toArray();
+
+                return in_array($routeName, $allowed, true);
+            }
+        }
+
+        $global = static::where('role', $role)->where('branch', '')->pluck('route_name')->toArray();
+        if (!empty($global)) {
+            return in_array($routeName, $global, true);
+        }
+
+        return true;
+    }
+
+    /**
+     * Same rules as CheckPagePermission: admin / empty role / routes not in config pass;
+     * otherwise role_permissions must include the route.
+     */
+    public static function userMayAccessRoute(?string $routeName): bool
+    {
+        if ($routeName === null || $routeName === 'unauthorized') {
+            return true;
+        }
+
+        $role = (string) (session('user_role') ?? '');
+        if ($role === '') {
+            return true;
+        }
+
+        // Global admin (no branch): full access. Branch-assigned accounts use the matrix like other roles.
+        if (strtolower($role) === 'admin' && static::normalizeBranch((string) (session('user_branch') ?? '')) === '') {
+            return true;
+        }
+
+        $allowedRoutes = config('permissions.routes', []);
+        $allRouteNames = [];
+        foreach ($allowedRoutes as $group) {
+            foreach (array_keys($group) as $name) {
+                $allRouteNames[$name] = true;
+            }
+        }
+        if (!isset($allRouteNames[$routeName])) {
+            return true;
+        }
+
+        return static::hasAccess($role, $routeName, session('user_branch'));
+    }
+
+    public static function allowedRoutesForRole(string $role, ?string $userBranch = null): array
+    {
+        $role = static::canonicalRole($role);
+        $userBranch = static::normalizeBranch($userBranch ?? (string) (session('user_branch') ?? ''));
+
+        if ($userBranch !== '') {
+            $branchLower = mb_strtolower($userBranch);
+            $branchRoutes = static::where('role', $role)
+                ->whereRaw('LOWER(branch) = ?', [$branchLower])
+                ->pluck('route_name')
+                ->toArray();
+            if (!empty($branchRoutes)) {
+                return array_values(array_unique($branchRoutes));
+            }
+        }
+
+        return static::where('role', $role)->where('branch', '')->pluck('route_name')->toArray();
+    }
+
+    /**
+     * Labels used by dashboard stat cards (must match resources/js/components/Dashboard.tsx).
+     *
+     * @return list<string>
+     */
+    public static function dashboardStatCardLabels(): array
+    {
+        return ['LBS', 'BPH', 'BLUINQ', 'CSP', 'NH', 'LC HOME BUILDER', 'EFFICIENT LIVING', 'LEADING ENERGY'];
+    }
+
+    /**
+     * Map users.branch / role_permissions.branch strings to a dashboard stat row label.
+     */
+    public static function mapBranchStringToDashboardStatLabel(string $branch): ?string
+    {
+        $b = mb_strtolower(preg_replace('/\s+/u', ' ', trim($branch)));
+        if ($b === '') {
+            return null;
+        }
+
+        $aliases = [
+            'lbs' => 'LBS',
+            'bph' => 'BPH',
+            'bluinq' => 'BLUINQ',
+            'csp' => 'CSP',
+            'nh' => 'NH',
+            'lc home builder' => 'LC HOME BUILDER',
+            'lc_home_builder' => 'LC HOME BUILDER',
+            'efficient living' => 'EFFICIENT LIVING',
+            'efficient_living' => 'EFFICIENT LIVING',
+            'leading energy' => 'LEADING ENERGY',
+            'leading_energy' => 'LEADING ENERGY',
+        ];
+
+        if (isset($aliases[$b])) {
+            return $aliases[$b];
+        }
+
+        foreach (static::dashboardStatCardLabels() as $label) {
+            if (mb_strtolower($label) === $b) {
+                return $label;
+            }
+        }
+
+        foreach ($aliases as $needle => $label) {
+            if ($needle !== '' && (str_contains($b, $needle) || str_contains($needle, $b))) {
+                return $label;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Branch filter for dashboard job cards: one stat row when the user is scoped to a single branch.
+     * Uses session user_branch when set; otherwise, if the user may access exactly one job vertical, infer it.
+     * Global admins (admin + no branch assignment) get '' = show all rows.
+     */
+    public static function dashboardStatCardsBranchFilter(): string
+    {
+        $role = strtolower((string) session('user_role', ''));
+        $ub = static::normalizeBranch((string) session('user_branch', ''));
+
+        if ($role === 'admin' && $ub === '') {
+            return '';
+        }
+
+        if ($ub !== '') {
+            return static::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
+        }
+
+        $anyMay = static function (array $routes): bool {
+            foreach ($routes as $r) {
+                if (static::userMayAccessRoute($r)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        $allowed = [];
+        if ($anyMay(['lbs.add', 'lbs.list', 'lbs.completed', 'lbs.review', 'lbs.mailbox', 'lbs.trash'])) {
+            $allowed['LBS'] = true;
+        }
+        if ($anyMay(['bph.add', 'bph.list', 'bph.completed', 'bph.review', 'bph.mailbox', 'bph.trash'])) {
+            $allowed['BPH'] = true;
+        }
+        if ($anyMay(['efficient_living.add', 'efficient_living.list', 'efficient_living.completed', 'efficient_living.review', 'efficient_living.mailbox', 'efficient_living.trash'])) {
+            $allowed['EFFICIENT LIVING'] = true;
+        }
+        if ($anyMay(['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash'])) {
+            $allowed['BLUINQ'] = true;
+        }
+        if ($anyMay(['csp.add', 'csp.list', 'csp.completed', 'csp.review', 'csp.trash'])) {
+            $allowed['CSP'] = true;
+        }
+        if ($anyMay(['nh.add', 'nh.list', 'nh.completed', 'nh.review', 'nh.trash'])) {
+            $allowed['NH'] = true;
+        }
+        if ($anyMay(['lc_home_builder.add', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.trash'])) {
+            $allowed['LC HOME BUILDER'] = true;
+        }
+        if ($anyMay(['leading_energy.add', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.trash'])) {
+            $allowed['LEADING ENERGY'] = true;
+        }
+
+        $keys = array_keys($allowed);
+
+        return count($keys) === 1 ? $keys[0] : '';
     }
 }

@@ -1,39 +1,68 @@
 @php
     $sidebar_active = 'dashboard';
+    $dashboardStats = $dashboardStats ?? \App\Services\DashboardJobStatsService::fetch();
+    $dashboardBranchFilter = \App\Models\RolePermission::dashboardStatCardsBranchFilter();
+    $labelOrder = \App\Models\RolePermission::dashboardStatCardLabels();
+    $dashOrderBucket = static function (array $bucket) use ($labelOrder): array {
+        $out = [];
+        foreach ($labelOrder as $k) {
+            $out[$k] = (int) ($bucket[$k] ?? 0);
+        }
+
+        return $out;
+    };
+    $dashPick = static function (array $labelToCount) use ($dashboardBranchFilter): array {
+        if ($dashboardBranchFilter === '') {
+            return $labelToCount;
+        }
+        foreach ($labelToCount as $label => $num) {
+            if (strcasecmp((string) $label, $dashboardBranchFilter) === 0) {
+                return [$label => $num];
+            }
+        }
+
+        return [$dashboardBranchFilter => 0];
+    };
+    $dTotal = $dashPick($dashOrderBucket($dashboardStats['total'] ?? []));
+    $dCompleted = $dashPick($dashOrderBucket($dashboardStats['completed'] ?? []));
+    $dProcessing = $dashPick($dashOrderBucket($dashboardStats['processing'] ?? []));
+    $dPending = $dashPick($dashOrderBucket($dashboardStats['pending'] ?? []));
 @endphp
 @extends('layouts.dashboard')
 
 @section('title', 'Dashboard')
 
-@section('header_center')
-    <div id="announcement-root" class="flex-1 min-w-0 flex items-center overflow-hidden"></div>
-@endsection
-
 @section('content')
-    <div id="dashboard-root" class="w-full min-w-0">
+    <script type="application/json" id="dashboard-stats-json">@json($dashboardStats)</script>
+    <div
+        id="dashboard-root"
+        class="w-full min-w-0"
+        data-dashboard-branch-filter="{{ $dashboardBranchFilter }}"
+    >
         {{-- Fallback: visible if React has not mounted yet or JS fails --}}
         <div class="dashboard-page" data-dashboard-fallback>
             <header class="dashboard-page__header">
                 <h1 class="dashboard-page__title">Dashboard</h1>
-                <p class="dashboard-page__subtitle">Welcome back! Here's an overview of your jobs and calendar.</p>
+                <p class="dashboard-page__subtitle">Welcome back! Here&apos;s an overview of your jobs and calendar.</p>
             </header>
             <section class="dashboard-cards">
                 <div class="dashboard-card dashboard-card--total">
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Total Jobs</span>
-                        <p class="dashboard-card__value">143</p>
+                        <p class="dashboard-card__value">{{ array_sum($dTotal) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M22 13a18.15 18.15 0 0 1-20 0"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LBS</span><span class="dashboard-card__row-value">45</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BPH</span><span class="dashboard-card__row-value">10</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BLUINQ</span><span class="dashboard-card__row-value">56</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">CSP</span><span class="dashboard-card__row-value">8</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">NH</span><span class="dashboard-card__row-value">5</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LC HOME BUILDER</span><span class="dashboard-card__row-value">7</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">EFFICIENT LIVING</span><span class="dashboard-card__row-value">6</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LEADING ENERGY</span><span class="dashboard-card__row-value">6</span></div>
+                            @foreach ($dTotal as $rowLabel => $rowValue)
+                                <div class="dashboard-card__row">
+                                    <span class="dashboard-card__row-label-group">
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Total jobs</span>
+                                        <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
+                                    </span>
+                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -41,18 +70,19 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Completed Jobs</span>
-                        <p class="dashboard-card__value">87</p>
+                        <p class="dashboard-card__value">{{ array_sum($dCompleted) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LBS</span><span class="dashboard-card__row-value">32</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BPH</span><span class="dashboard-card__row-value">8</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BLUINQ</span><span class="dashboard-card__row-value">22</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">CSP</span><span class="dashboard-card__row-value">6</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">NH</span><span class="dashboard-card__row-value">4</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LC HOME BUILDER</span><span class="dashboard-card__row-value">5</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">EFFICIENT LIVING</span><span class="dashboard-card__row-value">5</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LEADING ENERGY</span><span class="dashboard-card__row-value">5</span></div>
+                            @foreach ($dCompleted as $rowLabel => $rowValue)
+                                <div class="dashboard-card__row">
+                                    <span class="dashboard-card__row-label-group">
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Completed</span>
+                                        <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
+                                    </span>
+                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -60,18 +90,19 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Processing</span>
-                        <p class="dashboard-card__value">28</p>
+                        <p class="dashboard-card__value">{{ array_sum($dProcessing) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LBS</span><span class="dashboard-card__row-value">10</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BPH</span><span class="dashboard-card__row-value">2</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BLUINQ</span><span class="dashboard-card__row-value">9</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">CSP</span><span class="dashboard-card__row-value">2</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">NH</span><span class="dashboard-card__row-value">1</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LC HOME BUILDER</span><span class="dashboard-card__row-value">2</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">EFFICIENT LIVING</span><span class="dashboard-card__row-value">1</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LEADING ENERGY</span><span class="dashboard-card__row-value">1</span></div>
+                            @foreach ($dProcessing as $rowLabel => $rowValue)
+                                <div class="dashboard-card__row">
+                                    <span class="dashboard-card__row-label-group">
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Processing</span>
+                                        <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
+                                    </span>
+                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -79,18 +110,19 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Pending</span>
-                        <p class="dashboard-card__value">28</p>
+                        <p class="dashboard-card__value">{{ array_sum($dPending) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LBS</span><span class="dashboard-card__row-value">3</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BPH</span><span class="dashboard-card__row-value">0</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">BLUINQ</span><span class="dashboard-card__row-value">25</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">CSP</span><span class="dashboard-card__row-value">0</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">NH</span><span class="dashboard-card__row-value">0</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LC HOME BUILDER</span><span class="dashboard-card__row-value">0</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">EFFICIENT LIVING</span><span class="dashboard-card__row-value">0</span></div>
-                            <div class="dashboard-card__row"><span class="dashboard-card__row-label">LEADING ENERGY</span><span class="dashboard-card__row-value">0</span></div>
+                            @foreach ($dPending as $rowLabel => $rowValue)
+                                <div class="dashboard-card__row">
+                                    <span class="dashboard-card__row-label-group">
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Pending</span>
+                                        <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
+                                    </span>
+                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>

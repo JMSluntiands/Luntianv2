@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\DashboardJobStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -35,12 +36,16 @@ class AuthController extends Controller
             ]);
         }
 
+        $branch = $user->branch ?? null;
+        $branch = ($branch !== null && trim((string) $branch) !== '') ? trim((string) $branch) : '';
+
         session([
             'user_id' => $user->id,
             'user_name' => $user->fullname,
             'user_email' => $user->email,
             'user_username' => $user->username,
             'user_role' => $user->role,
+            'user_branch' => $branch,
             'user_profile_image' => $user->profile_image,
         ]);
 
@@ -59,12 +64,14 @@ class AuthController extends Controller
         if (!session()->has('user_id')) {
             return redirect()->route('login')->with('error', 'Please log in first.');
         }
-        return view('dashboard');
+        return view('dashboard', [
+            'dashboardStats' => DashboardJobStatsService::fetch(),
+        ]);
     }
 
     public function logout(Request $request)
     {
-        session()->forget(['user_id', 'user_name', 'user_email', 'user_username', 'user_role', 'user_profile_image']);
+        session()->forget(['user_id', 'user_name', 'user_email', 'user_username', 'user_role', 'user_branch', 'user_profile_image']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect('/');
