@@ -9,6 +9,8 @@ use App\Models\JobRequest;
 use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
+use App\Models\RolePermission;
+use App\Services\JobCountsScope;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -39,8 +41,11 @@ class BphJobController extends Controller
     {
         $jobs = collect();
         if (Schema::hasTable('job_bph')) {
-            $rows = DB::table('job_bph')
-                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')])
+            $q = DB::table('job_bph')
+                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
+            JobCountsScope::applyJobBphAssignment($q);
+            JobCountsScope::applyJobBphBranchVerticalScope($q);
+            $rows = $q
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
                 ->limit(300)
@@ -744,6 +749,29 @@ class BphJobController extends Controller
             'status'           => ['nullable', 'string', 'max:50'],
             'bph_additional_info_save' => ['nullable'],
         ]);
+
+        if (! RolePermission::userMayAccessRoute('job_view.edit.assigned')) {
+            unset($data['staff_id'], $data['assigned'], $data['checker_id'], $data['checked']);
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.button.edit.job_details')) {
+            unset(
+                $data['job_status'],
+                $data['status'],
+                $data['job_address'],
+                $data['priority'],
+                $data['job_type'],
+                $data['compliance'],
+                $data['ncc'],
+                $data['job_reference_no'],
+                $data['job_number'],
+                $data['client_name'],
+                $data['contact_email'],
+                $data['urgent']
+            );
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.button.edit.notes')) {
+            unset($data['notes']);
+        }
 
         $allowedUsers = User::whereIn('role', ['staff', 'checker'])
             ->pluck('unique_code')

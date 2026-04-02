@@ -58,11 +58,11 @@
                         @php
                             $rows = collect();
                             if (\Illuminate\Support\Facades\Schema::hasTable('job_leading_energy')) {
-                                $rows = \Illuminate\Support\Facades\DB::table('job_leading_energy')
-                                    ->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
-                                    ->orderByDesc('created_at')
-                                    ->limit(300)
-                                    ->get();
+                                $jobQ = \Illuminate\Support\Facades\DB::table('job_leading_energy')
+                                    ->whereRaw('LOWER(TRIM(status)) = ?', ['completed']);
+                                \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                                \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LEADING ENERGY');
+                                $rows = $jobQ->orderByDesc('created_at')->limit(300)->get();
                             }
                         @endphp
 

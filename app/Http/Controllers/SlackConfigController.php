@@ -29,7 +29,6 @@ class SlackConfigController extends Controller
     {
         $rules = [
             'webhook_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_url'), 'url')],
-            'is_active'   => ['nullable', 'boolean'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -42,7 +41,6 @@ class SlackConfigController extends Controller
         }
 
         $data = $validator->validated();
-        $data['is_active'] = $request->boolean('is_active');
         $data['name'] = 'LBS Notifications';
 
         $config = SlackConfig::first();
@@ -58,5 +56,32 @@ class SlackConfigController extends Controller
         return redirect()
             ->route('settings.slack_config')
             ->with('success', $message);
+    }
+
+    /**
+     * Toggle slack notifications on/off from sidebar quick controls.
+     */
+    public function toggleActive(Request $request)
+    {
+        $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $config = SlackConfig::first();
+        if (! $config) {
+            return redirect()
+                ->route('settings.slack_config')
+                ->withErrors(['slack_config' => 'Please save Slack Configuration first before turning it on or off.']);
+        }
+
+        $config->update([
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', $request->boolean('is_active')
+                ? 'Slack notifications turned on.'
+                : 'Slack notifications turned off.');
     }
 }

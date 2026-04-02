@@ -41,6 +41,21 @@
         $permCardComments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.comments');
         $permCardActivity = \App\Models\RolePermission::userMayAccessRoute('job_view.card.activity');
         $permCardBphAdditional = \App\Models\RolePermission::userMayAccessRoute('job_view.card.bph_additional');
+        $permBtnArchiveJob = \App\Models\RolePermission::userMayAccessRoute('job_view.button.archive_job');
+        $permBtnEditClient = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.client_details');
+        $permBtnEditJob = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.job_details');
+        $permBtnEditAssignment = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.assignment');
+        $permBtnEditNotes = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.notes');
+        $permBtnEditComplexity = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.complexity');
+        $permBtnAddFiles = \App\Models\RolePermission::userMayAccessRoute('job_view.button.files.add');
+        $permBtnDeleteFiles = \App\Models\RolePermission::userMayAccessRoute('job_view.button.files.delete');
+        $permBtnSendRunComment = \App\Models\RolePermission::userMayAccessRoute('job_view.button.comments.run.send');
+        $permBtnSendComment = \App\Models\RolePermission::userMayAccessRoute('job_view.button.comments.job.send');
+
+        $jobViewModuleKey = $isBphView ? 'bph' : ($isEfficientLivingView ? 'efficient_living' : 'lbs');
+        $permModuleCheckerCard = \App\Models\RolePermission::userMayAccessRoute('job_view.' . $jobViewModuleKey . '.card.checker_uploads');
+        $permModuleCheckerAdd = \App\Models\RolePermission::userMayAccessRoute('job_view.' . $jobViewModuleKey . '.button.checker_uploads.add');
+        $permCardChecker = $permCardChecker && $permModuleCheckerCard;
     @endphp
     <div class="min-h-0 w-full max-w-full">
         {{-- Breadcrumb --}}
@@ -64,7 +79,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                @if(!$isArchived && !$isEfficientLivingView && $permArchive)
+                @if(!$isArchived && !$isEfficientLivingView && $permArchive && $permBtnArchiveJob)
                     <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" id="jobViewArchiveJobBtn" aria-label="Archive this job">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                         Archive this job
@@ -135,6 +150,11 @@
             $showDetailsBlock = $permCardClient || $permCardJob || $permCardNotes || $permCardComplexity;
             $showFilesBlock = $permCardPlans || $permCardDocuments || $permCardChecker;
             $showDiscussionBlock = $permCardRunComments || $permCardComments;
+
+            $permEditAssignment = \App\Models\RolePermission::userMayAccessRoute('job_view.edit.assigned');
+            $showAssignmentCard = $permCardJob;
+            $detailTopCardCount = ($permCardClient ? 1 : 0) + ($permCardJob ? 1 : 0) + ($showAssignmentCard ? 1 : 0);
+            $detailTopColClass = $detailTopCardCount >= 3 ? 'lg:col-span-4' : ($detailTopCardCount === 2 ? 'lg:col-span-6' : 'lg:col-span-12');
         @endphp
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
@@ -145,13 +165,13 @@
                 <div class="space-y-4">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Details</h2>
                     @if($permCardClient || $permCardJob)
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-6">
                         @if($permCardClient)
                         {{-- Client Details --}}
-                        <section class="job-details-card rounded-xl border shadow-sm" id="jobClientCard">
+                        <section class="job-details-card rounded-xl border shadow-sm {{ $detailTopColClass }}" id="jobClientCard">
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
                                 <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                                @if($canEditDetailsUi)
+                                @if($canEditDetailsUi && $permBtnEditClient)
                                     <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Client Details" data-edit-target="client">Edit</button>
                                 @endif
                             </div>
@@ -178,10 +198,10 @@
 
                         @if($permCardJob)
                         {{-- Job Details --}}
-                        <section class="job-details-card rounded-xl border shadow-sm">
+                        <section class="job-details-card rounded-xl border shadow-sm {{ $detailTopColClass }}">
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
                                 <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">Job Details</h2>
-                                @if($canEditDetailsUi)
+                                @if($canEditDetailsUi && $permBtnEditJob)
                                     <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Job Details" data-edit-target="job">Edit</button>
                                 @endif
                             </div>
@@ -210,6 +230,45 @@
                             </dl>
                         </section>
                         @endif
+
+                        @if($showAssignmentCard)
+                        @php
+                            $assignedCode = trim((string) ($job->staff_id ?? ''));
+                            $assignedLabel = $assignedCode !== '' ? strtoupper($assignedCode) : '—';
+                            $checkerCode = trim((string) ($job->checker_id ?? ''));
+                            $checkerLabel = $checkerCode !== '' ? strtoupper($checkerCode) : '—';
+                        @endphp
+                        <section class="job-details-card rounded-xl border shadow-sm {{ $detailTopColClass }}" id="jobAssignmentCard">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
+                                <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">Assignment</h2>
+                                @if($canEditDetailsUi && $permEditAssignment && $permBtnEditAssignment)
+                                    <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Assignment" data-edit-target="assignment">Edit</button>
+                                @endif
+                            </div>
+                            <dl class="job-details-dl">
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">Staff</dt>
+                                    <dd class="job-details-dd">
+                                        @if($assignedLabel !== '—')
+                                            <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $assignedLabel }}</span>
+                                        @else
+                                            —
+                                        @endif
+                                    </dd>
+                                </div>
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">Checker</dt>
+                                    <dd class="job-details-dd">
+                                        @if($checkerLabel !== '—')
+                                            <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $checkerLabel }}</span>
+                                        @else
+                                            —
+                                        @endif
+                                    </dd>
+                                </div>
+                            </dl>
+                        </section>
+                        @endif
                     </div>
                     @endif
                     @if($permCardNotes || $permCardComplexity)
@@ -230,7 +289,7 @@
                     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 {{ $permCardComplexity ? 'lg:col-span-9' : 'lg:col-span-12' }}">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
                     <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Notes</h2>
-                    @if($canEditDetailsUi)
+                    @if($canEditDetailsUi && $permBtnEditNotes)
                         <button type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" aria-label="Edit" data-job-view-edit data-edit-title="Notes" data-edit-target="notes">Edit</button>
                     @endif
                 </div>
@@ -248,7 +307,7 @@
                             <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Complexity</h2>
                         </div>
                         <div class="flex flex-1 flex-col justify-center px-5 py-5">
-                            @if($canEditDetailsUi)
+                            @if($canEditDetailsUi && $permBtnEditComplexity)
                                 <button type="button" class="job-view-complexity-button mx-auto inline-flex items-center gap-0.5 rounded-lg border-0 bg-transparent p-1 outline-none ring-slate-400/40 transition-colors hover:bg-slate-100 focus-visible:ring-2 dark:hover:bg-slate-700/50" data-complexity-rating="{{ $notesSectionComplexity }}" title="Click a star to set complexity (1–5)" aria-label="Plan complexity {{ $notesSectionComplexity }} of 5, click a star to change">
                                     @for ($ci = 1; $ci <= 5; $ci++)
                                         <span class="lbs-star {{ $ci <= $notesSectionComplexity ? 'lbs-star-filled' : 'lbs-star-empty' }} inline-flex shrink-0 rounded p-0.5" role="presentation">
@@ -279,7 +338,7 @@
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50" id="jobViewPlansCard">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Plans</h2>
-                    @if($isAllocated && $permUpload)
+                    @if($isAllocated && $permUpload && $permBtnAddFiles)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Plans">Add Files</button>
                     @endif
                 </div>
@@ -297,7 +356,7 @@
                                         <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
                                         <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                                     @endif
-                                    @if($isAllocated && $permDeleteFile)
+                                    @if($isAllocated && $permDeleteFile && $permBtnDeleteFiles)
                                         <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="plans" data-job-file-name="{{ $fileName }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
                                     @endif
                                 </div>
@@ -318,7 +377,7 @@
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Documents</h2>
-                    @if($isAllocated && $permUpload)
+                    @if($isAllocated && $permUpload && $permBtnAddFiles)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Documents">Add Files</button>
                     @endif
                 </div>
@@ -362,7 +421,7 @@
                                             <a href="{{ $fileUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
                                             <a href="{{ $fileUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                                         @endif
-                                        @if($isAllocated && $permDeleteFile)
+                                        @if($isAllocated && $permDeleteFile && $permBtnDeleteFiles)
                                             <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="documents" data-job-file-name="{{ $fileName }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
                                         @endif
                                     </div>
@@ -384,7 +443,7 @@
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Checker Upload Files</h2>
-                    @if($permChecker)
+                    @if($permChecker && $permBtnAddFiles && $permModuleCheckerAdd)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Checker Upload Files">Add Files</button>
                     @endif
                 </div>
@@ -467,7 +526,7 @@
                         </li>
                     @endforelse
                 </ul>
-                @if($permRunComment)
+                @if($permRunComment && $permBtnSendRunComment)
                 <div class="job-view-comment-editor rounded-xl border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-600 dark:bg-slate-800/30">
                     <div class="mb-2 flex flex-wrap gap-1">
                         <button type="button" class="job-view-comment-btn rounded p-1.5 text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600" data-cmd="bold" title="Bold"><span class="font-bold">B</span></button>
@@ -512,7 +571,7 @@
                         </li>
                     @endforelse
                 </ul>
-                @if($permComment)
+                @if($permComment && $permBtnSendComment)
                 <div class="job-view-comment-editor rounded-xl border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-600 dark:bg-slate-800/30">
                     <div class="mb-2 flex flex-wrap gap-1">
                         <button type="button" class="job-view-comment-btn rounded p-1.5 text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600" data-cmd="bold" title="Bold"><span class="font-bold">B</span></button>
@@ -886,6 +945,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
     var addOverlay = document.getElementById('jobViewAddFilesModalOverlay');
     var formClient = document.getElementById('jobViewEditFormClient');
     var formJob = document.getElementById('jobViewEditFormJob');
+    var formAssignment = document.getElementById('jobViewEditFormAssignment');
     var formNotes = document.getElementById('jobViewEditFormNotes');
     function openEditModal(title, target) {
         if (editOverlay) {
@@ -893,8 +953,9 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             if (titleEl) titleEl.textContent = 'Edit ' + (title || '');
             if (formClient) formClient.hidden = true;
             if (formJob) formJob.hidden = true;
+            if (formAssignment) formAssignment.hidden = true;
             if (formNotes) formNotes.hidden = true;
-            var show = target === 'client' ? formClient : (target === 'job' ? formJob : (target === 'notes' ? formNotes : null));
+            var show = target === 'client' ? formClient : (target === 'job' ? formJob : (target === 'assignment' ? formAssignment : (target === 'notes' ? formNotes : null)));
             if (show) show.hidden = false;
             editOverlay.classList.add('is-open');
             editOverlay.setAttribute('aria-hidden', 'false');
@@ -1640,6 +1701,11 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             } else if (!formJob.hidden) {
                 payload.job_status = $('#edit-job-status').val();
                 payload.job_type = document.getElementById('edit-job-type')?.value || '';
+            } else if (formAssignment && !formAssignment.hidden) {
+                var av = $('#edit-job-assigned').val();
+                payload.staff_id = av !== undefined && av !== null ? av : '';
+                var cv = $('#edit-job-checker').val();
+                payload.checker_id = cv !== undefined && cv !== null ? cv : '';
             } else if (!formNotes.hidden) {
                 var notesBody = document.getElementById('jobViewEditNotesBody');
                 payload.notes = notesBody ? notesBody.innerHTML : '';
@@ -1692,8 +1758,10 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 
                     // small loading animation on affected cards, then reload
                     var clientCard = document.getElementById('jobClientCard');
+                    var assignmentCard = document.getElementById('jobAssignmentCard');
                     var activityCard = document.getElementById('jobActivityCard');
                     if (clientCard) clientCard.classList.add('job-view-card-reloading');
+                    if (assignmentCard) assignmentCard.classList.add('job-view-card-reloading');
                     if (activityCard) activityCard.classList.add('job-view-card-reloading');
 
                     closeEditModal();

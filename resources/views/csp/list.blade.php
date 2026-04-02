@@ -62,11 +62,11 @@
                                 'archived',
                                 'archive',
                             ];
-                            $rows = \Illuminate\Support\Facades\DB::table('job_csp')
-                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($cspListExcludedStatuses), '?')) . '))', $cspListExcludedStatuses)
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $jobQ = \Illuminate\Support\Facades\DB::table('job_csp')
+                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($cspListExcludedStatuses), '?')) . '))', $cspListExcludedStatuses);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'CSP');
+                            $rows = $jobQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',
@@ -119,6 +119,11 @@
                                 data-update-url="{{ route('csp.update', ['id' => $row->id]) }}">
                                 <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
+                                        @if(\App\Models\RolePermission::userMayAccessRoute('csp.view'))
+                                        <a href="{{ route('csp.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-emerald-500/15 hover:text-emerald-500 dark:text-slate-400 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-400 no-underline" title="View job" aria-label="View job">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </a>
+                                        @endif
                                         <a href="{{ route('csp.add', [
                                             'duplicate' => 1,
                                             'job_number' => $jobNumber,

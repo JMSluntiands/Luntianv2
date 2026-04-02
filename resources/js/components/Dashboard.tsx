@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import CountUp from 'react-countup';
 import Calendar, { type HolidaySource } from './Calendar';
 
@@ -25,6 +25,49 @@ type HolidayItem = {
   name: string;
   source: HolidaySource;
 };
+
+/** Laravel may run in a subdirectory; root-relative `/dashboard/...` would 404. */
+function holidaysApiUrl(year: number): string {
+  const el = document.getElementById('dashboard-root');
+  const base = el?.dataset.holidaysApiBase?.trim().replace(/\/$/, '');
+  if (base) {
+    return `${base}/${year}`;
+  }
+  return `/dashboard/holidays/${year}`;
+}
+
+function parseInitialHolidaysFromDom(year: number): { ph: HolidayItem[]; au: HolidayItem[] } | null {
+  const el = document.getElementById('dashboard-holidays-initial');
+  const raw = el?.textContent?.trim();
+  if (!raw) {
+    return null;
+  }
+  const dataYear = parseInt(el.getAttribute('data-year') ?? '', 10);
+  if (!Number.isFinite(dataYear) || dataYear !== year) {
+    return null;
+  }
+  try {
+    const body = JSON.parse(raw) as { ph?: unknown; au?: unknown };
+    const phRows = Array.isArray(body.ph) ? body.ph : [];
+    const auRows = Array.isArray(body.au) ? body.au : [];
+    return {
+      ph: phRows.map((h: { date: string; localName?: string; name?: string }) => ({
+        date: h.date,
+        localName: h.localName ?? '',
+        name: h.name ?? '',
+        source: 'PH' as const,
+      })),
+      au: auRows.map((h: { date: string; localName?: string; name?: string }) => ({
+        date: h.date,
+        localName: h.localName ?? '',
+        name: h.name ?? '',
+        source: 'AU' as const,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
 
 const BRANCH_ORDER = [
   'LBS',
@@ -227,7 +270,7 @@ function CountUpDisplay({ value, duration, start }: { value: number; duration: n
   }
   return (
     <span className="count-up-animation tabular-nums" aria-live="polite">
-      <CountUp start={0} end={value} duration={duration} />
+      <CountUp start={0} end={value} duration={duration} preserveValue={false} />
     </span>
   );
 }
@@ -243,6 +286,30 @@ function formatHolidayDate(isoDate: string): string {
 
 function sortHolidayByDate(a: HolidayItem, b: HolidayItem): number {
   return a.date.localeCompare(b.date);
+}
+
+function holidayOverlapForDate(
+  isoDate: string,
+  holidaysByDate: Record<string, HolidayItem[]>
+): { both: boolean; hasPh: boolean; hasAu: boolean } {
+  const list = holidaysByDate[isoDate] ?? [];
+  const hasPh = list.some((x) => x.source === 'PH');
+  const hasAu = list.some((x) => x.source === 'AU');
+  return { both: hasPh && hasAu, hasPh, hasAu };
+}
+
+function holidayListRowClass(
+  isoDate: string,
+  holidaysByDate: Record<string, HolidayItem[]>,
+  section: 'ph' | 'au'
+): string {
+  const { both } = holidayOverlapForDate(isoDate, holidaysByDate);
+  if (both) {
+    return 'dashboard-holiday-item dashboard-holiday-row dashboard-holiday-row--both';
+  }
+  return section === 'ph'
+    ? 'dashboard-holiday-item dashboard-holiday-row dashboard-holiday-row--ph'
+    : 'dashboard-holiday-item dashboard-holiday-row dashboard-holiday-row--au';
 }
 
 function StatCard({
@@ -321,10 +388,18 @@ function StatCard({
 
 export default function Dashboard() {
   const [loadingDone, setLoadingDone] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => {
+  /** Plain { year, month } avoids controlled Date edge cases with React state updates. */
+  const [viewYearMonth, setViewYearMonth] = useState(() => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
   });
+  const calendarViewDate = useMemo(
+    () => new Date(viewYearMonth.year, viewYearMonth.month, 1),
+    [viewYearMonth.year, viewYearMonth.month]
+  );
+  const onCalendarMonthChange = useCallback((d: Date) => {
+    setViewYearMonth({ year: d.getFullYear(), month: d.getMonth() });
+  }, []);
   const [phHolidays, setPhHolidays] = useState<HolidayItem[]>([]);
   const [auHolidays, setAuHolidays] = useState<HolidayItem[]>([]);
   const [holidayLoading, setHolidayLoading] = useState(true);
@@ -338,57 +413,88 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const onLoaderHidden = () => setLoadingDone(true);
+    let done = false;
+    const finish = () => {
+      if (done) {
+        return;
+      }
+      done = true;
+      setLoadingDone(true);
+    };
     const loader = document.getElementById('pageLoader');
     if (!loader || loader.classList.contains('hide')) {
-      setLoadingDone(true);
+      finish();
     } else {
-      document.addEventListener('pageLoaderHidden', onLoaderHidden);
-      return () => document.removeEventListener('pageLoaderHidden', onLoaderHidden);
+      document.addEventListener('pageLoaderHidden', finish);
     }
+    const fallbackMs = 2000;
+    const t = window.setTimeout(finish, fallbackMs);
+    return () => {
+      document.removeEventListener('pageLoaderHidden', finish);
+      window.clearTimeout(t);
+    };
   }, []);
 
   useEffect(() => {
     let ignore = false;
-    const year = calendarMonth.getFullYear();
+    const year = viewYearMonth.year;
     setHolidayLoading(true);
+
+    const applyRows = (phData: unknown[], auData: unknown[]) => {
+      if (ignore) {
+        return;
+      }
+      setPhHolidays(
+        phData.map((h: { date: string; localName?: string; name?: string }) => ({
+          date: h.date,
+          localName: h.localName ?? '',
+          name: h.name ?? '',
+          source: 'PH' as const,
+        }))
+      );
+      setAuHolidays(
+        auData.map((h: { date: string; localName?: string; name?: string }) => ({
+          date: h.date,
+          localName: h.localName ?? '',
+          name: h.name ?? '',
+          source: 'AU' as const,
+        }))
+      );
+    };
+
+    const initial = parseInitialHolidaysFromDom(year);
+    const hadServerSeed =
+      initial !== null && (initial.ph.length > 0 || initial.au.length > 0);
+    if (initial) {
+      applyRows(initial.ph, initial.au);
+    } else {
+      setPhHolidays([]);
+      setAuHolidays([]);
+    }
 
     const loadHolidays = async () => {
       try {
-        const [phRes, auRes] = await Promise.all([
-          fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/PH`),
-          fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/AU`),
-        ]);
+        const res = await fetch(holidaysApiUrl(year), {
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          credentials: 'same-origin',
+        });
 
-        if (!phRes.ok || !auRes.ok) {
+        const ct = res.headers.get('content-type') ?? '';
+        if (!res.ok || !ct.includes('application/json')) {
           throw new Error('Failed holiday fetch');
         }
 
-        const [phDataRaw, auDataRaw] = await Promise.all([phRes.json(), auRes.json()]);
-
-        const phData = Array.isArray(phDataRaw) ? phDataRaw : [];
-        const auData = Array.isArray(auDataRaw) ? auDataRaw : [];
-
+        const body = (await res.json()) as { ph?: unknown; au?: unknown };
+        const phData = Array.isArray(body.ph) ? body.ph : [];
+        const auData = Array.isArray(body.au) ? body.au : [];
         if (!ignore) {
-          setPhHolidays(
-            phData.map((h: { date: string; localName: string; name: string }) => ({
-              date: h.date,
-              localName: h.localName,
-              name: h.name,
-              source: 'PH' as const,
-            }))
-          );
-          setAuHolidays(
-            auData.map((h: { date: string; localName: string; name: string }) => ({
-              date: h.date,
-              localName: h.localName,
-              name: h.name,
-              source: 'AU' as const,
-            }))
-          );
+          applyRows(phData, auData);
         }
       } catch {
-        if (!ignore) {
+        if (!ignore && !hadServerSeed) {
           setPhHolidays([]);
           setAuHolidays([]);
         }
@@ -399,13 +505,13 @@ export default function Dashboard() {
       }
     };
 
-    loadHolidays();
+    void loadHolidays();
     return () => {
       ignore = true;
     };
-  }, [calendarMonth]);
+  }, [viewYearMonth.year]);
 
-  const monthKey = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}`;
+  const monthKey = `${viewYearMonth.year}-${String(viewYearMonth.month + 1).padStart(2, '0')}`;
 
   const monthPhHolidays = useMemo(
     () => phHolidays.filter((h) => h.date.startsWith(monthKey)).sort(sortHolidayByDate),
@@ -456,7 +562,7 @@ export default function Dashboard() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-        <div className="animate-dashboard-panel dashboard-panel-animate-delay-0 min-w-0 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90 lg:col-span-2">
+        <div className="animate-dashboard-panel dashboard-panel-animate-delay-0 min-w-0 overflow-visible rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90 lg:col-span-2">
           <h2 className="flex items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/80 px-4 py-3 font-semibold text-slate-800 dark:border-slate-700/60 dark:bg-slate-800/50 dark:text-slate-100 sm:px-5 sm:py-4">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,10 +574,27 @@ export default function Dashboard() {
           <div className="p-4 transition-colors sm:p-5">
             <div className="dashboard-calendar-wrapper">
               <Calendar
-                viewDate={calendarMonth}
-                onMonthChange={setCalendarMonth}
+                viewDate={calendarViewDate}
+                onMonthChange={onCalendarMonthChange}
                 holidaysByDate={holidaysByDate}
               />
+              <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500" aria-hidden />
+                  Philippines (PH)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" aria-hidden />
+                  Australia (AU)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-7 shrink-0 rounded-sm bg-gradient-to-r from-blue-500 to-amber-500"
+                    aria-hidden
+                  />
+                  Both countries
+                </span>
+              </p>
             </div>
           </div>
         </div>
@@ -495,13 +618,25 @@ export default function Dashboard() {
                   'Loading holidays...'
                 ) : monthPhHolidays.length ? (
                   <ul className="dashboard-holiday-list">
-                    {monthPhHolidays.map((h) => (
-                      <li key={`ph-${h.date}-${h.name}`} className="dashboard-holiday-item">
-                        <span className="dashboard-holiday-dot dashboard-holiday-dot--ph" aria-hidden />
-                        <span className="dashboard-holiday-date">{formatHolidayDate(h.date)}</span>
-                        <span className="dashboard-holiday-name">{h.localName || h.name}</span>
-                      </li>
-                    ))}
+                    {monthPhHolidays.map((h) => {
+                      const { both } = holidayOverlapForDate(h.date, holidaysByDate);
+                      return (
+                        <li key={`ph-${h.date}-${h.name}`} className={holidayListRowClass(h.date, holidaysByDate, 'ph')}>
+                          <span className="flex shrink-0 items-center gap-0.5" aria-hidden>
+                            {both ? (
+                              <>
+                                <span className="dashboard-holiday-dot dashboard-holiday-dot--ph" />
+                                <span className="dashboard-holiday-dot dashboard-holiday-dot--au" />
+                              </>
+                            ) : (
+                              <span className="dashboard-holiday-dot dashboard-holiday-dot--ph" />
+                            )}
+                          </span>
+                          <span className="dashboard-holiday-date">{formatHolidayDate(h.date)}</span>
+                          <span className="dashboard-holiday-name">{h.localName || h.name}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   'No holidays this month'
@@ -517,13 +652,25 @@ export default function Dashboard() {
                   'Loading holidays...'
                 ) : monthAuHolidays.length ? (
                   <ul className="dashboard-holiday-list">
-                    {monthAuHolidays.map((h) => (
-                      <li key={`au-${h.date}-${h.name}`} className="dashboard-holiday-item">
-                        <span className="dashboard-holiday-dot dashboard-holiday-dot--au" aria-hidden />
-                        <span className="dashboard-holiday-date">{formatHolidayDate(h.date)}</span>
-                        <span className="dashboard-holiday-name">{h.localName || h.name}</span>
-                      </li>
-                    ))}
+                    {monthAuHolidays.map((h) => {
+                      const { both } = holidayOverlapForDate(h.date, holidaysByDate);
+                      return (
+                        <li key={`au-${h.date}-${h.name}`} className={holidayListRowClass(h.date, holidaysByDate, 'au')}>
+                          <span className="flex shrink-0 items-center gap-0.5" aria-hidden>
+                            {both ? (
+                              <>
+                                <span className="dashboard-holiday-dot dashboard-holiday-dot--ph" />
+                                <span className="dashboard-holiday-dot dashboard-holiday-dot--au" />
+                              </>
+                            ) : (
+                              <span className="dashboard-holiday-dot dashboard-holiday-dot--au" />
+                            )}
+                          </span>
+                          <span className="dashboard-holiday-date">{formatHolidayDate(h.date)}</span>
+                          <span className="dashboard-holiday-name">{h.localName || h.name}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   'No holidays this month'

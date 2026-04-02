@@ -56,11 +56,11 @@
 
                     <tbody>
                         @php
-                            $rows = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
+                                ->whereRaw('LOWER(TRIM(status)) = ?', ['completed']);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
+                            \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
+                            $rows = $bphQ->orderByDesc('created_at')->limit(300)->get();
                         @endphp
 
                         @foreach($rows as $index => $row)

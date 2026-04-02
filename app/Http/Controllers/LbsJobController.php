@@ -9,7 +9,9 @@ use App\Models\ActivityLog;
 use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
+use App\Models\RolePermission;
 use App\Models\EmailConfig;
+use App\Services\JobCountsScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -466,6 +468,25 @@ class LbsJobController extends Controller
             'plan_complexity'   => ['nullable', 'integer', 'between:1,5'],
         ]);
 
+        if (! RolePermission::userMayAccessRoute('job_view.button.edit.job_details')) {
+            unset(
+                $data['job_status'],
+                $data['job_address'],
+                $data['priority'],
+                $data['job_type'],
+                $data['client_reference'],
+                $data['job_reference_no'],
+                $data['compliance'],
+                $data['client_id']
+            );
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.button.edit.notes')) {
+            unset($data['notes']);
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.button.edit.complexity')) {
+            unset($data['plan_complexity']);
+        }
+
         $update = [];
         $changes = [];
         $oldClient = null;
@@ -590,7 +611,7 @@ class LbsJobController extends Controller
                 }
             }
         }
-        if (array_key_exists('staff_id', $data)) {
+        if (array_key_exists('staff_id', $data) && RolePermission::userMayAccessRoute('job_view.edit.assigned')) {
             $new = $data['staff_id'] ? trim($data['staff_id']) : null;
             $old = $job->staff_id ? trim($job->staff_id) : null;
             if ((string) $new !== (string) $old) {
@@ -602,7 +623,7 @@ class LbsJobController extends Controller
                 ];
             }
         }
-        if (array_key_exists('checker_id', $data)) {
+        if (array_key_exists('checker_id', $data) && RolePermission::userMayAccessRoute('job_view.edit.assigned')) {
             $new = $data['checker_id'] ? trim($data['checker_id']) : null;
             $old = $job->checker_id ? trim($job->checker_id) : null;
             if ((string) $new !== (string) $old) {
@@ -903,34 +924,38 @@ class LbsJobController extends Controller
 
     public function index()
     {
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            // Only show new LBS jobs created via this app (reference starting with "JOBS")
-            ->where('j.reference', 'like', 'JOBS%')
-            // Exclude jobs that should only appear in dedicated views, and Completed
-            ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.client_reference_no',
-                'j.staff_id',
-                'j.checker_id',
-                'j.ncc_compliance',
-                'j.job_request_id',
-                'j.address_client',
-                'j.job_type',
-                'j.priority',
-                'j.plan_complexity',
-                'j.job_status',
-                'j.completion_date',
-                'ca.client_account_name'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(200)
-            ->get();
+        if (JobCountsScope::branchBlocksLbsStandardList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
 
         // Map priority/status name -> color (hex) for badges
         $priorityColors = Priority::query()
@@ -956,32 +981,37 @@ class LbsJobController extends Controller
 
     public function efficientLivingList()
     {
-        // EL Add / Save persists to `jobs` with `job_request_id` like EA_EL_* (not `job_el`).
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
-            ->where('j.reference', 'like', 'JOBS%')
-            ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.staff_id',
-                'j.checker_id',
-                'j.ncc_compliance',
-                'j.job_request_id',
-                'j.job_type',
-                'j.priority',
-                'j.plan_complexity',
-                'j.job_status',
-                'j.completion_date',
-                'ca.client_account_name'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(500)
-            ->get();
+        if (JobCountsScope::branchBlocksEfficientLivingList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+                ->where('j.reference', 'like', 'JOBS%')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
 
         $priorityColors = Priority::query()
             ->whereNotNull('name')
@@ -1051,25 +1081,31 @@ class LbsJobController extends Controller
 
     public function efficientLivingMailbox()
     {
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
-            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
-            ->where('j.job_status', '=', 'For Email Confirmation')
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.upload_files',
-                'j.upload_project_files',
-                'ca.client_account_name',
-                'cl.client_email as to_email'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(200)
-            ->get();
+        if (JobCountsScope::branchBlocksEfficientLivingList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+                ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+                ->where('j.job_status', '=', 'For Email Confirmation');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.upload_files',
+                    'j.upload_project_files',
+                    'ca.client_account_name',
+                    'cl.client_email as to_email'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
 
         return view('lbs.mailbox', [
             'sidebar_active' => 'efficient_living.mailbox',
@@ -1080,11 +1116,17 @@ class LbsJobController extends Controller
 
     private function queryEfficientLivingJobsByStatus(string $status, int $limit = 200)
     {
-        return DB::table('jobs as j')
+        if (JobCountsScope::branchBlocksEfficientLivingList()) {
+            return collect();
+        }
+        $q = DB::table('jobs as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
             ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
             ->where('j.reference', 'like', 'JOBS%')
-            ->where('j.job_status', '=', $status)
+            ->where('j.job_status', '=', $status);
+        JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+
+        return $q
             ->select(
                 'j.job_id',
                 'j.reference',
@@ -1111,32 +1153,38 @@ class LbsJobController extends Controller
 
     public function trash()
     {
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->where('j.reference', 'like', 'JOBS%')
-            ->where('j.job_status', '=', 'Archived')
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.client_reference_no',
-                'j.staff_id',
-                'j.checker_id',
-                'j.ncc_compliance',
-                'j.job_request_id',
-                'j.address_client',
-                'j.job_type',
-                'j.priority',
-                'j.plan_complexity',
-                'j.job_status',
-                'j.completion_date',
-                'ca.client_account_name'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(500)
-            ->get();
+        if (JobCountsScope::branchBlocksLbsStandardList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'Archived');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
 
         $priorityColors = Priority::query()
             ->whereNotNull('name')
@@ -1182,33 +1230,39 @@ class LbsJobController extends Controller
 
     public function completed()
     {
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->where('j.reference', 'like', 'JOBS%')
-            ->where('j.job_status', '=', 'Completed')
-            ->whereRaw("(j.job_request_id IS NULL OR j.job_request_id NOT LIKE 'EA\_EL\_%')")
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.client_reference_no',
-                'j.staff_id',
-                'j.checker_id',
-                'j.ncc_compliance',
-                'j.job_request_id',
-                'j.address_client',
-                'j.job_type',
-                'j.priority',
-                'j.plan_complexity',
-                'j.job_status',
-                'j.completion_date',
-                'ca.client_account_name'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(500)
-            ->get();
+        if (JobCountsScope::branchBlocksLbsStandardList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'Completed')
+                ->whereRaw("(j.job_request_id IS NULL OR j.job_request_id NOT LIKE 'EA\_EL\_%')");
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
 
         $priorityColors = Priority::query()
             ->whereNotNull('name')
@@ -1230,32 +1284,38 @@ class LbsJobController extends Controller
 
     public function review()
     {
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->where('j.reference', 'like', 'JOBS%')
-            ->where('j.job_status', '=', 'For Review')
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.client_reference_no',
-                'j.staff_id',
-                'j.checker_id',
-                'j.ncc_compliance',
-                'j.job_request_id',
-                'j.address_client',
-                'j.job_type',
-                'j.priority',
-                'j.plan_complexity',
-                'j.job_status',
-                'j.completion_date',
-                'ca.client_account_name'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(200)
-            ->get();
+        if (JobCountsScope::branchBlocksLbsStandardList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'For Review');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
 
         $priorityColors = Priority::query()
             ->whereNotNull('name')
@@ -1277,25 +1337,31 @@ class LbsJobController extends Controller
 
     public function mailbox()
     {
-        $jobs = DB::table('jobs as j')
-            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
-            ->where('j.reference', 'like', 'JOBS%')
-            ->where('j.job_status', '=', 'For Email Confirmation')
-            ->select(
-                'j.job_id',
-                'j.reference',
-                'j.log_date',
-                'j.client_code',
-                'j.job_reference_no',
-                'j.upload_files',
-                'j.upload_project_files',
-                'ca.client_account_name',
-                'cl.client_email as to_email'
-            )
-            ->orderByDesc('j.log_date')
-            ->limit(200)
-            ->get();
+        if (JobCountsScope::branchBlocksLbsStandardList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'For Email Confirmation');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.upload_files',
+                    'j.upload_project_files',
+                    'ca.client_account_name',
+                    'cl.client_email as to_email'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
 
         $priorityColors = Priority::query()
             ->whereNotNull('name')

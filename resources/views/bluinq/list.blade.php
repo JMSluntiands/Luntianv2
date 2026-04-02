@@ -63,12 +63,12 @@
                                 'archived',
                                 'archive',
                             ];
-                            $rows = \Illuminate\Support\Facades\DB::table('job_bph')
+                            $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
                                 ->where('client_code', $bluinqClientCode)
-                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($bphListExcludedStatuses), '?')) . '))', $bphListExcludedStatuses)
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($bphListExcludedStatuses), '?')) . '))', $bphListExcludedStatuses);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
+                            \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
+                            $rows = $bphQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',
@@ -129,7 +129,7 @@
                                         ]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300 no-underline" title="Duplicate" aria-label="Duplicate">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
-                                        <a href="{{ route('bph.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View">
+                                        <a href="{{ route('bluinq.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
                                         <button type="button" class="lbs-action-icon lbs-action-expand inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-400 dark:text-slate-400 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row>

@@ -1,4 +1,7 @@
-<header class="header z-30 flex h-14 min-h-14 min-w-0 flex-shrink-0 items-center justify-end gap-2 overflow-visible border-b border-slate-200 bg-white px-4 dark:border-slate-700 dark:bg-slate-900">
+<header class="header z-30 flex h-14 min-h-14 min-w-0 flex-shrink-0 items-center gap-2 overflow-visible border-b border-slate-200 bg-white px-3 dark:border-slate-700 dark:bg-slate-900 sm:px-4">
+    <button type="button" id="sidebarToggle" class="icon-btn -ml-1 flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" aria-expanded="false" aria-controls="sidebarNav" aria-label="Open menu">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
     @php
         $activeAnnouncement = \App\Models\Announcement::query()
             ->where('status', 'active')
@@ -12,15 +15,17 @@
             ->first();
     @endphp
     @if($activeAnnouncement)
-        <div class="header-announcement flex flex-1 min-w-0 items-center">
+        <div class="header-announcement flex min-w-0 flex-1 items-center">
             <div
                 id="announcement-root"
-                class="flex-1 min-w-0 flex items-center overflow-hidden"
+                class="flex min-w-0 flex-1 items-center overflow-hidden"
                 data-announcement-text="{{ $activeAnnouncement->message }}"
             >
                 @yield('header_center')
             </div>
         </div>
+    @else
+        <div class="min-w-0 flex-1 lg:min-w-0" aria-hidden="true"></div>
     @endif
     <div class="header-actions relative z-10 flex flex-shrink-0 items-center gap-1 sm:gap-2">
         @yield('header_extra')

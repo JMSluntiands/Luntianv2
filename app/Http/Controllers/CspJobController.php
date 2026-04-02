@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\EmailConfig;
 use App\Models\User;
+use App\Services\JobCountsScope;
 
 class CspJobController extends Controller
 {
@@ -130,14 +131,43 @@ class CspJobController extends Controller
     }
 
     /**
+     * CSP job detail page (same list/Gate scoping as CSP lists).
+     */
+    public function show(int $id)
+    {
+        $job = DB::table('job_csp')
+            ->where('id', $id)
+            ->where('client_code', self::CSP_CLIENT_CODE)
+            ->first();
+        if (! $job) {
+            abort(404);
+        }
+
+        $scoped = DB::table('job_csp')->where('id', $id);
+        JobCountsScope::applyJobBphAssignment($scoped);
+        JobCountsScope::applyBranchExclusiveStatLabel($scoped, 'CSP');
+        if (! $scoped->exists()) {
+            abort(403);
+        }
+
+        return view('csp.show', [
+            'sidebar_active' => 'csp.view',
+            'job' => $job,
+        ]);
+    }
+
+    /**
      * Lightweight mailbox list for CSP jobs with status "For Email Confirmation".
      */
     public function mailbox()
     {
         $jobs = collect();
         if (Schema::hasTable('job_csp')) {
-            $rows = DB::table('job_csp')
-                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')])
+            $q = DB::table('job_csp')
+                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
+            JobCountsScope::applyJobBphAssignment($q);
+            JobCountsScope::applyBranchExclusiveStatLabel($q, 'CSP');
+            $rows = $q
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
                 ->limit(300)

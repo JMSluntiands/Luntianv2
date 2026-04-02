@@ -54,12 +54,17 @@
     $showBphNav = $anyMay(['bph.add', 'bph.list', 'bph.completed', 'bph.review', 'bph.mailbox', 'bph.trash']);
     $showEfficientLivingNav = $anyMay(['efficient_living.add', 'efficient_living.list', 'efficient_living.completed', 'efficient_living.review', 'efficient_living.mailbox', 'efficient_living.trash']);
     $showBluinqNav = $anyMay(['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash']);
-    $showCspNav = $anyMay(['csp.add', 'csp.list', 'csp.completed', 'csp.review', 'csp.mailbox', 'csp.trash']);
+    $showCspNav = $anyMay(['csp.add', 'csp.store', 'csp.view', 'csp.list', 'csp.completed', 'csp.review', 'csp.mailbox', 'csp.trash', 'csp.update', 'csp.job.emailPreview', 'csp.job.sendMailboxEmail', 'csp.job.printCompliance']);
     $showNhNav = $anyMay(['nh.add', 'nh.list', 'nh.completed', 'nh.review', 'nh.mailbox', 'nh.trash']);
-    $showLcHomeBuilderNav = $anyMay(['lc_home_builder.add', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.trash']);
-    $showLeadingEnergyNav = $anyMay(['leading_energy.add', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash']);
+    $showLcHomeBuilderNav = $anyMay([
+        'lc_home_builder.add', 'lc_home_builder.store', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.mailbox', 'lc_home_builder.trash',
+        'lc_home_builder.update', 'lc_home_builder.job.sendSlack', 'lc_home_builder.job.sendSubmissionEmail', 'lc_home_builder.job.emailPreview', 'lc_home_builder.job.sendMailboxEmail',
+    ]);
+    $showLeadingEnergyNav = $anyMay([
+        'leading_energy.add', 'leading_energy.store', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash',
+        'leading_energy.update', 'leading_energy.job.sendSlack', 'leading_energy.job.sendSubmissionEmail', 'leading_energy.job.emailPreview', 'leading_energy.job.sendMailboxEmail',
+    ]);
     $showJobManagement = $showLbsNav || $showBphNav || $showEfficientLivingNav || $showBluinqNav || $showCspNav || $showNhNav || $showLcHomeBuilderNav || $showLeadingEnergyNav;
-    $isGlobalAdmin = strtolower((string) ($userRole ?? '')) === 'admin' && \App\Models\RolePermission::normalizeBranch((string) session('user_branch')) === '';
     $showJobMasterNav = $anyMay(['compliance.index', 'priority.index', 'status.index', 'job_request.index', 'client.index']);
     $showBranchNav = $anyMay(['branch.index', 'branch.archive']);
     $showAccountsNav = $anyMay(['users.index', 'accounts.clients.index', 'users.archive']);
@@ -69,11 +74,14 @@
     $showReportsNav = $may('reports');
     $showSettingsColumn = $may('settings.email_config')
         || $may('settings.slack_config')
-        || $isGlobalAdmin
+        || $may('settings.notifications')
+        || $may('settings.permission')
         || $showJobMasterNav
         || $showBranchNav
         || $showAccountsNav
         || $showBphEmailNav;
+    $showNotificationControls = $may('settings.notifications');
+    $settingsOpen = in_array($active, ['settings.email_config', 'settings.slack_config', 'settings.notifications']);
 @endphp
 <aside id="sidebarNav" role="navigation" aria-label="Main navigation" class="sidebar fixed left-0 top-0 z-50 flex h-screen w-60 flex-col overflow-hidden border-r border-slate-200 bg-white py-0 shadow-sm transition-[transform,box-shadow] duration-250 ease-out dark:border-slate-700/50 dark:bg-slate-900 dark:shadow-slate-950/30 -translate-x-full lg:translate-x-0">
     <div class="sidebar-brand flex h-14 w-full flex-shrink-0 items-center justify-center border-b border-slate-200 bg-slate-50/50 px-4 dark:border-slate-700 dark:bg-slate-800/50">
@@ -511,7 +519,7 @@
                             <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderReviewCount }}</span>
                         </a>
                         @endif
-                        @if($may('lc_home_builder.review'))
+                        @if($may('lc_home_builder.mailbox'))
                         <a href="{{ route('lc_home_builder.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
                             <span class="nav-subitem-label">Mailbox</span>
                             <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderMailboxCount }}</span>
@@ -556,7 +564,7 @@
                         @if($may('leading_energy.review'))
                         <a href="{{ route('leading_energy.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">For Review</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyReviewCount }}</span></a>
                         @endif
-                        @if($may('leading_energy.review'))
+                        @if($may('leading_energy.mailbox'))
                         <a href="{{ route('leading_energy.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">Mailbox</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyMailboxCount }}</span></a>
                         @endif
                         @if($may('leading_energy.trash'))
@@ -590,7 +598,7 @@
             Slack Configuration
         </a>
         @endif
-        @if($isGlobalAdmin)
+        @if($may('settings.permission'))
         <a href="{{ route('settings.permission') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ ($active ?? '') === 'settings.permission' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-[15px] dark:pl-[15px]' : '' }}">
             <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             Permission
@@ -708,8 +716,9 @@
             </div>
         </div>
         @endif
-        <div class="group nav-dropdown" data-dropdown>
-            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="false" aria-controls="nav-sub-job-notifications">
+        @if($showNotificationControls)
+        <div class="group nav-dropdown {{ $settingsOpen ? 'open' : '' }}" data-dropdown>
+            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $settingsOpen ? 'true' : 'false' }}" aria-controls="nav-sub-job-notifications">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
                     <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     Settings
@@ -718,10 +727,15 @@
             </button>
             <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-job-notifications" role="region" aria-label="Job Notifications submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
-                    <a href="#" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">List</a>
+                    @if($may('settings.notifications'))
+                    <a href="{{ route('settings.notifications') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'settings.notifications' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                        Notification Controls
+                    </a>
+                    @endif
                 </div>
             </div>
         </div>
+        @endif
         @endunless
     </nav>
 </aside>

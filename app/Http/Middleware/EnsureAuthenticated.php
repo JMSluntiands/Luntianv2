@@ -10,9 +10,14 @@ class EnsureAuthenticated
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!session()->has('user_id')) {
+        if (! session()->has('user_id')) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
             return redirect()->route('login')->with('error', 'Please log in first.');
         }
+
         return $next($request);
     }
 }

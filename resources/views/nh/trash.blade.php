@@ -29,12 +29,11 @@
                         @php
                             $rows = collect();
                             if (\Illuminate\Support\Facades\Schema::hasTable('job_nh')) {
-                                $rows = \Illuminate\Support\Facades\DB::table('job_nh')
-                                    ->whereRaw('LOWER(TRIM(status)) = ?', ['archived'])
-                                    ->orderByDesc('updated_at')
-                                    ->orderByDesc('id')
-                                    ->limit(300)
-                                    ->get();
+                                $jobQ = \Illuminate\Support\Facades\DB::table('job_nh')
+                                    ->whereRaw('LOWER(TRIM(status)) = ?', ['archived']);
+                                \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                                \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'NH');
+                                $rows = $jobQ->orderByDesc('updated_at')->orderByDesc('id')->limit(300)->get();
                             }
                         @endphp
                         @forelse($rows as $row)

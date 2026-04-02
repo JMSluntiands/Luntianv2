@@ -6,7 +6,10 @@ use App\Models\ClientEmailBph;
 use App\Models\Compliance;
 use App\Models\EmailConfig;
 use App\Models\JobRequest;
+use App\Models\Priority;
+use App\Models\Status;
 use App\Models\User;
+use App\Services\JobCountsScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -57,6 +60,141 @@ class BluinqJobController extends Controller
         return view('bluinq.list', ['sidebar_active' => 'bluinq.list']);
     }
 
+    /**
+     * Job detail page for BLUINQ rows (job_bph, client BLUINQ01). Uses same template as BPH but Bluinq nav and routes.
+     */
+    public function show(int $id)
+    {
+        $job = DB::table('job_bph')
+            ->where('id', $id)
+            ->where('client_code', self::BLUINQ_CLIENT_CODE)
+            ->first();
+        if (!$job) {
+            abort(404);
+        }
+
+        $viewJob = (object) [
+            'job_id' => (int) $job->id,
+            'reference' => $job->reference,
+            'log_date' => $job->created_at,
+            'client_code' => $job->client_code,
+            'job_reference_no' => $job->job_number,
+            'client_reference_no' => null,
+            'staff_id' => $job->assigned,
+            'checker_id' => $job->checked,
+            'ncc_compliance' => $job->ncc,
+            'job_request_id' => null,
+            'address_client' => $job->address,
+            'job_type' => $job->job_type,
+            'priority' => (($job->urgent ?? 'NO') === 'YES') ? 'Urgent' : null,
+            'plan_complexity' => (int) ($job->units ?? 0),
+            'job_status' => $job->status,
+            'completion_date' => $job->date,
+            'notes' => $job->notes,
+            'upload_files' => $job->plans_files,
+            'upload_project_files' => $job->docs_files,
+            'client_account_id' => null,
+            'client_account_name' => $job->client_name,
+        ];
+
+        $priorityColor = !empty($viewJob->priority)
+            ? Priority::where('name', $viewJob->priority)->value('color')
+            : null;
+        $statusColor = !empty($viewJob->job_status)
+            ? Status::where('name', $viewJob->job_status)->value('color')
+            : null;
+
+        $compliances = Compliance::orderBy('column')->get(['column']);
+        $jobRequests = JobRequest::orderBy('job_request_type')->get(['job_request_type']);
+        $bphClientEmails = ClientEmailBph::orderBy('email')->get(['email']);
+        $priorities = Priority::orderBy('id')->get();
+        $statuses = Status::orderBy('name')->get();
+        $clientAccounts = collect();
+
+        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
+            ->orderBy('unique_code')
+            ->get(['unique_code'])
+            ->pluck('unique_code')
+            ->filter()
+            ->map(fn ($v) => strtoupper((string) $v))
+            ->unique()
+            ->values();
+        if (!$assignmentUsers->contains('GM')) {
+            $assignmentUsers->prepend('GM');
+        }
+
+        $activityLogs = DB::table('bph_activity_logs')
+            ->where('job_id', (int) $viewJob->job_id)
+            ->orderByDesc('activity_date')
+            ->limit(50)
+            ->get();
+
+        $userRoleMap = [];
+        $updatedByNames = $activityLogs->pluck('updated_by')->unique()->filter();
+        if ($updatedByNames->isNotEmpty()) {
+            $users = User::whereIn('fullname', $updatedByNames)
+                ->orWhereIn('unique_code', $updatedByNames)
+                ->get(['fullname', 'unique_code', 'role']);
+            foreach ($users as $u) {
+                $role = ucfirst((string) ($u->role ?? ''));
+                if ($u->fullname) {
+                    $userRoleMap[$u->fullname] = $role;
+                }
+                if ($u->unique_code) {
+                    $userRoleMap[$u->unique_code] = $role;
+                }
+            }
+        }
+
+        $checkerUploads = DB::table('bph_staff_uploaded_files')
+            ->where('job_id', (int) $viewJob->job_id)
+            ->orderByDesc('uploaded_at')
+            ->get();
+        $runComments = DB::table('bph_run_comments')
+            ->where('job_id', (int) $viewJob->job_id)
+            ->orderByDesc('run_comment_id')
+            ->limit(50)
+            ->get();
+        $jobComments = DB::table('bph_comments')
+            ->where('job_id', (int) $viewJob->job_id)
+            ->orderByDesc('comment_id')
+            ->limit(50)
+            ->get();
+
+        return view('lbs.view', [
+            'sidebar_active' => 'bluinq.list',
+            'isEfficientLiving' => false,
+            'isBphView' => true,
+            'bphJobRow' => $job,
+            'listRouteName' => 'bluinq.list',
+            'trashRouteName' => 'bluinq.trash',
+            'jobUpdateRouteName' => 'bluinq.update',
+            'jobUploadFilesRouteName' => 'bph.job.uploadFiles',
+            'jobDeleteFileRouteName' => 'bph.job.deleteFile',
+            'jobArchiveRouteName' => 'bph.job.archive',
+            'jobCheckerUploadsRouteName' => 'bph.job.checkerUploads',
+            'jobRunCommentRouteName' => 'bph.job.runComment',
+            'jobCommentRouteName' => 'bph.job.comment',
+            'jobFileRouteName' => 'bph.job.file',
+            'jobId' => $viewJob->job_id,
+            'job' => $viewJob,
+            'priorityColor' => $priorityColor,
+            'statusColor' => $statusColor,
+            'priorities' => $priorities,
+            'statuses' => $statuses,
+            'clientAccounts' => $clientAccounts,
+            'activityLogs' => $activityLogs,
+            'userRoleMap' => $userRoleMap,
+            'checkerUploads' => $checkerUploads,
+            'runComments' => $runComments,
+            'jobComments' => $jobComments,
+            'compliances' => $compliances,
+            'jobRequests' => $jobRequests,
+            'bphClientEmails' => $bphClientEmails,
+            'assignmentUsers' => $assignmentUsers,
+        ]);
+    }
+
     public function completed()
     {
         return view('bluinq.completed', ['sidebar_active' => 'bluinq.completed']);
@@ -74,9 +212,12 @@ class BluinqJobController extends Controller
     {
         $jobs = collect();
         if (Schema::hasTable('job_bph')) {
-            $rows = DB::table('job_bph')
+            $q = DB::table('job_bph')
                 ->where('client_code', self::BLUINQ_CLIENT_CODE)
-                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')])
+                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
+            JobCountsScope::applyJobBphAssignment($q);
+            JobCountsScope::applyJobBphBranchVerticalScope($q);
+            $rows = $q
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
                 ->limit(300)

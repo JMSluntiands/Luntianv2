@@ -46,11 +46,11 @@
                     </thead>
                     <tbody>
                         @php
-                            $rows = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('LOWER(status) = ?', ['for review'])
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
+                                ->whereRaw('LOWER(status) = ?', ['for review']);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
+                            \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
+                            $rows = $bphQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',

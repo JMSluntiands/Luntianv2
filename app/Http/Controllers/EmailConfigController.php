@@ -27,7 +27,6 @@ class EmailConfigController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'is_active' => ['nullable', 'boolean'],
             'smtp_host' => ['required', 'string', 'max:255'],
             'smtp_port' => ['required', 'integer', 'min:1', 'max:65535'],
             'smtp_username' => ['nullable', 'string', 'max:255'],
@@ -47,7 +46,6 @@ class EmailConfigController extends Controller
         }
 
         $data = $validator->validated();
-        $data['is_active'] = $request->boolean('is_active');
 
         // Don't update password if left blank (edit case)
         if (empty($data['smtp_password'])) {
@@ -67,5 +65,32 @@ class EmailConfigController extends Controller
         return redirect()
             ->route('settings.email_config')
             ->with('success', $message);
+    }
+
+    /**
+     * Toggle email sending on/off from sidebar quick controls.
+     */
+    public function toggleActive(Request $request)
+    {
+        $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $config = EmailConfig::first();
+        if (! $config) {
+            return redirect()
+                ->route('settings.email_config')
+                ->withErrors(['email_config' => 'Please save Email Configuration first before turning it on or off.']);
+        }
+
+        $config->update([
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', $request->boolean('is_active')
+                ? 'Email sending turned on.'
+                : 'Email sending turned off.');
     }
 }

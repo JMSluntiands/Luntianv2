@@ -22,10 +22,6 @@ class CheckPagePermission
             return $next($request);
         }
 
-        if (strtolower($role) === 'admin' && RolePermission::normalizeBranch((string) session('user_branch')) === '') {
-            return $next($request);
-        }
-
         if (!RolePermission::userMayAccessRoute($routeName)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You do not have permission to access this page.'], 403);

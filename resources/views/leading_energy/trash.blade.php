@@ -29,11 +29,11 @@
                         @php
                             $rows = collect();
                             if (\Illuminate\Support\Facades\Schema::hasTable('job_leading_energy')) {
-                                $rows = \Illuminate\Support\Facades\DB::table('job_leading_energy')
-                                    ->whereRaw('LOWER(status) = ?', ['archived'])
-                                    ->orderByDesc('updated_at')
-                                    ->limit(300)
-                                    ->get();
+                                $jobQ = \Illuminate\Support\Facades\DB::table('job_leading_energy')
+                                    ->whereRaw('LOWER(status) = ?', ['archived']);
+                                \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                                \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LEADING ENERGY');
+                                $rows = $jobQ->orderByDesc('updated_at')->limit(300)->get();
                             }
                         @endphp
                         @forelse($rows as $row)

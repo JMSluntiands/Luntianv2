@@ -122,14 +122,40 @@ export default function Calendar({
     return { hasPH, hasAU, holidays };
   };
 
+  const holidayClassForCell = (cell: number | null, index: number): string => {
+    const info = getHolidayInfo(cell, index);
+    if (!info) {
+      return '';
+    }
+    if (info.hasPH && info.hasAU) {
+      return 'holiday holiday--both';
+    }
+    if (info.hasPH) {
+      return 'holiday holiday--ph';
+    }
+    return 'holiday holiday--au';
+  };
+
   return (
     <div className="dashboard-calendar">
       <div className="dashboard-calendar-header">
-        <button type="button" onClick={prevMonth} className="dashboard-calendar-nav" aria-label="Previous month">
+        <button
+          type="button"
+          onClick={prevMonth}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="dashboard-calendar-nav"
+          aria-label="Previous month"
+        >
           ‹
         </button>
         <span className="dashboard-calendar-title">{monthName} {year}</span>
-        <button type="button" onClick={nextMonth} className="dashboard-calendar-nav" aria-label="Next month">
+        <button
+          type="button"
+          onClick={nextMonth}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="dashboard-calendar-nav"
+          aria-label="Next month"
+        >
           ›
         </button>
       </div>
@@ -144,7 +170,7 @@ export default function Calendar({
             <button
               key={index}
               type="button"
-              className={`dashboard-calendar-cell ${!isCurrentMonth(cell, index) ? 'other-month' : ''} ${isSelected(cell, index) ? 'selected' : ''} ${getHolidayInfo(cell, index) ? 'holiday' : ''}`}
+              className={`dashboard-calendar-cell ${!isCurrentMonth(cell, index) ? 'other-month' : ''} ${isSelected(cell, index) ? 'selected' : ''} ${holidayClassForCell(cell, index)}`}
               onClick={() => handleCellClick(cell, index)}
               title={(getHolidayInfo(cell, index)?.holidays ?? [])
                 .map((h) => `${h.source}: ${h.localName || h.name}`)

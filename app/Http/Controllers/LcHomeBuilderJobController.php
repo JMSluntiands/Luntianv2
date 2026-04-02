@@ -6,6 +6,7 @@ use App\Models\ClientEmailBph;
 use App\Models\Compliance;
 use App\Models\JobRequest;
 use App\Models\User;
+use App\Services\JobCountsScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -237,8 +238,11 @@ class LcHomeBuilderJobController extends Controller
     {
         $jobs = collect();
         if (Schema::hasTable('job_lc_home_builder')) {
-            $rows = DB::table('job_lc_home_builder')
-                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')])
+            $q = DB::table('job_lc_home_builder')
+                ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
+            JobCountsScope::applyJobBphAssignment($q);
+            JobCountsScope::applyBranchExclusiveStatLabel($q, 'LC HOME BUILDER');
+            $rows = $q
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
                 ->limit(300)

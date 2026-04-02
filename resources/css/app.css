@@ -311,10 +311,10 @@ body.sidebar-open #sidebarNav {
     @apply w-full max-w-full;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-header {
-    @apply flex items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-600;
+    @apply relative z-20 flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-600;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-nav {
-    @apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white;
+    @apply relative z-30 flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-base text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white sm:h-9 sm:w-9 sm:text-sm;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-title {
     @apply text-sm font-semibold text-slate-800 dark:text-slate-100;
@@ -340,17 +340,53 @@ body.sidebar-open #sidebarNav {
 .dashboard-calendar-wrapper .dashboard-calendar-cell.selected {
     @apply bg-emerald-500 font-semibold text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-600;
 }
-.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday {
-    @apply border border-slate-200/80 dark:border-slate-600/70;
+/* Holiday fills: PH = blue, AU = amber, both = split gradient */
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--ph:not(.selected) {
+    @apply bg-blue-500/20 font-medium text-blue-900 ring-1 ring-blue-400/50 dark:bg-blue-600/25 dark:text-blue-100 dark:ring-blue-400/40;
 }
-.dashboard-calendar-wrapper .dashboard-calendar-cell.selected.holiday {
-    @apply border-emerald-300/80;
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--ph:not(.selected):hover {
+    @apply bg-blue-500/30 dark:bg-blue-600/35;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--au:not(.selected) {
+    @apply bg-amber-500/20 font-medium text-amber-900 ring-1 ring-amber-400/50 dark:bg-amber-500/20 dark:text-amber-100 dark:ring-amber-400/45;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--au:not(.selected):hover {
+    @apply bg-amber-500/30 dark:bg-amber-500/30;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--both:not(.selected) {
+    @apply font-medium text-slate-800 ring-1 ring-violet-400/45 dark:text-slate-100 dark:ring-violet-400/40;
+    background: linear-gradient(135deg, rgb(59 130 246 / 0.22) 0%, rgb(245 158 11 / 0.22) 100%);
+}
+[data-theme="dark"] .dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--both:not(.selected) {
+    background: linear-gradient(135deg, rgb(37 99 235 / 0.28) 0%, rgb(217 119 6 / 0.25) 100%);
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.holiday--both:not(.selected):hover {
+    background: linear-gradient(135deg, rgb(59 130 246 / 0.32) 0%, rgb(245 158 11 / 0.3) 100%);
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.other-month.holiday--ph:not(.selected) {
+    @apply bg-blue-500/12 text-blue-700/80 dark:bg-blue-600/15 dark:text-blue-200/70;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.other-month.holiday--au:not(.selected) {
+    @apply bg-amber-500/12 text-amber-800/80 dark:bg-amber-500/12 dark:text-amber-100/70;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.other-month.holiday--both:not(.selected) {
+    opacity: 0.85;
+}
+/* Selected day: keep emerald fill; show holiday via ring */
+.dashboard-calendar-wrapper .dashboard-calendar-cell.selected.holiday--ph {
+    @apply ring-2 ring-blue-300 ring-offset-2 ring-offset-white dark:ring-blue-400 dark:ring-offset-slate-800;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.selected.holiday--au {
+    @apply ring-2 ring-amber-300 ring-offset-2 ring-offset-white dark:ring-amber-400 dark:ring-offset-slate-800;
+}
+.dashboard-calendar-wrapper .dashboard-calendar-cell.selected.holiday--both {
+    @apply ring-2 ring-violet-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-800;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-markers {
     @apply pointer-events-none absolute bottom-1 left-1/2 flex -translate-x-1/2 items-center gap-1;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-marker {
-    @apply h-1.5 w-1.5 rounded-full;
+    @apply h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5;
 }
 .dashboard-calendar-wrapper .dashboard-calendar-marker--ph {
     background: #2563eb;
@@ -383,18 +419,38 @@ body.sidebar-open #sidebarNav {
         transform: scale(1);
     }
 }
+/* `both` = apply keyframe “from” during delay (avoids stuck opacity:0 vs separate opacity rules). */
 .animate-dashboard-card {
-    animation: dashboard-fade-in-up 0.5s ease-out forwards;
+    animation: dashboard-fade-in-up 0.5s ease-out both;
 }
 .animate-dashboard-panel {
-    animation: dashboard-scale-in 0.4s ease-out forwards;
+    animation: dashboard-scale-in 0.4s ease-out both;
 }
-.dashboard-card-animate-delay-0 { animation-delay: 0.05s; opacity: 0; }
-.dashboard-card-animate-delay-1 { animation-delay: 0.12s; opacity: 0; }
-.dashboard-card-animate-delay-2 { animation-delay: 0.19s; opacity: 0; }
-.dashboard-card-animate-delay-3 { animation-delay: 0.26s; opacity: 0; }
-.dashboard-panel-animate-delay-0 { animation-delay: 0.15s; opacity: 0; }
-.dashboard-panel-animate-delay-1 { animation-delay: 0.25s; opacity: 0; }
+.dashboard-card-animate-delay-0 { animation-delay: 0.05s; }
+.dashboard-card-animate-delay-1 { animation-delay: 0.12s; }
+.dashboard-card-animate-delay-2 { animation-delay: 0.19s; }
+.dashboard-card-animate-delay-3 { animation-delay: 0.26s; }
+.dashboard-panel-animate-delay-0 { animation-delay: 0.15s; }
+.dashboard-panel-animate-delay-1 { animation-delay: 0.25s; }
+
+/* Without this, “reduce motion” can leave panels/cards at opacity:0 (animation never fills). */
+@media (prefers-reduced-motion: reduce) {
+    .animate-dashboard-card,
+    .animate-dashboard-panel {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .dashboard-card-animate-delay-0,
+    .dashboard-card-animate-delay-1,
+    .dashboard-card-animate-delay-2,
+    .dashboard-card-animate-delay-3,
+    .dashboard-panel-animate-delay-0,
+    .dashboard-panel-animate-delay-1 {
+        animation-delay: 0s !important;
+        opacity: 1 !important;
+    }
+}
 
 /* ========== Dashboard page (fallback / shared) ========== */
 .dashboard-page {
@@ -760,9 +816,15 @@ body.sidebar-open #sidebarNav {
     padding: 0.75rem;
     font-size: 0.875rem;
     color: #475569;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
 }
 [data-theme="dark"] .dashboard-holiday-box__text {
     color: #94a3b8;
+}
+.dashboard-holiday-fallback-line {
+    line-height: 1.45;
 }
 .dashboard-holiday-list {
     margin: 0;
@@ -777,6 +839,56 @@ body.sidebar-open #sidebarNav {
     grid-template-columns: auto auto 1fr;
     align-items: center;
     gap: 0.45rem;
+}
+/* Holiday list rows — match calendar PH (blue), AU (amber), both (gradient) */
+.dashboard-holiday-item.dashboard-holiday-row {
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.5rem;
+}
+.dashboard-holiday-item.dashboard-holiday-row--ph {
+    @apply bg-blue-500/20 ring-1 ring-blue-400/50;
+}
+.dashboard-holiday-item.dashboard-holiday-row--ph .dashboard-holiday-date {
+    @apply text-blue-900 dark:text-blue-100;
+}
+.dashboard-holiday-item.dashboard-holiday-row--ph .dashboard-holiday-name {
+    @apply text-blue-800 dark:text-blue-200/95;
+}
+.dashboard-holiday-item.dashboard-holiday-row--au {
+    @apply bg-amber-500/20 ring-1 ring-amber-400/50 dark:bg-amber-500/15;
+}
+.dashboard-holiday-item.dashboard-holiday-row--au .dashboard-holiday-date {
+    @apply text-amber-950 dark:text-amber-100;
+}
+.dashboard-holiday-item.dashboard-holiday-row--au .dashboard-holiday-name {
+    @apply text-amber-900 dark:text-amber-200/95;
+}
+.dashboard-holiday-item.dashboard-holiday-row--both {
+    @apply font-medium text-slate-800 ring-1 ring-violet-400/45 dark:text-slate-100 dark:ring-violet-400/40;
+    background: linear-gradient(135deg, rgb(59 130 246 / 0.22) 0%, rgb(245 158 11 / 0.22) 100%);
+}
+[data-theme="dark"] .dashboard-holiday-item.dashboard-holiday-row--both {
+    background: linear-gradient(135deg, rgb(37 99 235 / 0.28) 0%, rgb(217 119 6 / 0.25) 100%);
+}
+.dashboard-holiday-item.dashboard-holiday-row--both .dashboard-holiday-date {
+    @apply text-slate-900 dark:text-slate-100;
+}
+.dashboard-holiday-item.dashboard-holiday-row--both .dashboard-holiday-name {
+    @apply text-slate-800 dark:text-slate-200/95;
+}
+/* Blade / no-JS fallback — same tints as list rows */
+.dashboard-holiday-fallback-line.dashboard-holiday-row--ph {
+    @apply rounded-lg px-3 py-2 ring-1 ring-blue-400/50 bg-blue-500/20 text-blue-900 dark:bg-blue-600/25 dark:text-blue-100 dark:ring-blue-400/40;
+}
+.dashboard-holiday-fallback-line.dashboard-holiday-row--au {
+    @apply rounded-lg px-3 py-2 ring-1 ring-amber-400/50 bg-amber-500/20 text-amber-950 dark:bg-amber-500/15 dark:text-amber-100 dark:ring-amber-400/45;
+}
+.dashboard-holiday-fallback-line.dashboard-holiday-row--both {
+    @apply rounded-lg px-3 py-2 font-medium text-slate-800 ring-1 ring-violet-400/45 dark:text-slate-100 dark:ring-violet-400/40;
+    background: linear-gradient(135deg, rgb(59 130 246 / 0.22) 0%, rgb(245 158 11 / 0.22) 100%);
+}
+[data-theme="dark"] .dashboard-holiday-fallback-line.dashboard-holiday-row--both {
+    background: linear-gradient(135deg, rgb(37 99 235 / 0.28) 0%, rgb(217 119 6 / 0.25) 100%);
 }
 .dashboard-holiday-dot {
     width: 0.5rem;

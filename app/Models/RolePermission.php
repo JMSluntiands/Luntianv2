@@ -72,7 +72,7 @@ class RolePermission extends Model
             return in_array($routeName, $global, true);
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -87,11 +87,6 @@ class RolePermission extends Model
 
         $role = (string) (session('user_role') ?? '');
         if ($role === '') {
-            return true;
-        }
-
-        // Global admin (no branch): full access. Branch-assigned accounts use the matrix like other roles.
-        if (strtolower($role) === 'admin' && static::normalizeBranch((string) (session('user_branch') ?? '')) === '') {
             return true;
         }
 
@@ -222,16 +217,28 @@ class RolePermission extends Model
         if ($anyMay(['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash'])) {
             $allowed['BLUINQ'] = true;
         }
-        if ($anyMay(['csp.add', 'csp.list', 'csp.completed', 'csp.review', 'csp.trash'])) {
+        if ($anyMay([
+            'csp.add', 'csp.store', 'csp.view', 'csp.list', 'csp.completed', 'csp.review', 'csp.mailbox', 'csp.trash',
+            'csp.update', 'csp.job.emailPreview', 'csp.job.sendMailboxEmail', 'csp.job.printCompliance',
+        ])) {
             $allowed['CSP'] = true;
         }
-        if ($anyMay(['nh.add', 'nh.list', 'nh.completed', 'nh.review', 'nh.trash'])) {
+        if ($anyMay([
+            'nh.add', 'nh.store', 'nh.list', 'nh.completed', 'nh.review', 'nh.mailbox', 'nh.trash', 'nh.update',
+            'nh.job.sendSlack', 'nh.job.sendSubmissionEmail', 'nh.job.emailPreview', 'nh.job.sendMailboxEmail', 'nh.job.printCompliance',
+        ])) {
             $allowed['NH'] = true;
         }
-        if ($anyMay(['lc_home_builder.add', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.trash'])) {
+        if ($anyMay([
+            'lc_home_builder.add', 'lc_home_builder.store', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.mailbox', 'lc_home_builder.trash',
+            'lc_home_builder.update', 'lc_home_builder.job.sendSlack', 'lc_home_builder.job.sendSubmissionEmail', 'lc_home_builder.job.emailPreview', 'lc_home_builder.job.sendMailboxEmail',
+        ])) {
             $allowed['LC HOME BUILDER'] = true;
         }
-        if ($anyMay(['leading_energy.add', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.trash'])) {
+        if ($anyMay([
+            'leading_energy.add', 'leading_energy.store', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash',
+            'leading_energy.update', 'leading_energy.job.sendSlack', 'leading_energy.job.sendSubmissionEmail', 'leading_energy.job.emailPreview', 'leading_energy.job.sendMailboxEmail',
+        ])) {
             $allowed['LEADING ENERGY'] = true;
         }
 

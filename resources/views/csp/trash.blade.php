@@ -27,11 +27,11 @@
                     </thead>
                     <tbody>
                         @php
-                            $rows = \Illuminate\Support\Facades\DB::table('job_csp')
-                                ->whereRaw('LOWER(status) = ?', ['archived'])
-                                ->orderByDesc('updated_at')
-                                ->limit(300)
-                                ->get();
+                            $jobQ = \Illuminate\Support\Facades\DB::table('job_csp')
+                                ->whereRaw('LOWER(status) = ?', ['archived']);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'CSP');
+                            $rows = $jobQ->orderByDesc('updated_at')->limit(300)->get();
                         @endphp
                         @forelse($rows as $row)
                             @php $log = \Carbon\Carbon::parse($row->updated_at ?? $row->created_at ?? now(), 'Asia/Manila'); @endphp

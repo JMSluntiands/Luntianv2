@@ -189,35 +189,6 @@
                 </div>
             </div>
 
-            {{-- Toggle card --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
-                <div class="flex items-center gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20">
-                        <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M22 6l-10 7L2 6"/>
-                        </svg>
-                    </span>
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Notifications</h2>
-                </div>
-
-                <div class="p-5">
-                    <label class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:bg-slate-800">
-                        <span class="flex items-center gap-3">
-                            <input type="hidden" name="is_active" value="0">
-                            <span class="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent bg-slate-200 transition-colors duration-200 ease-in-out focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2 dark:bg-slate-600 dark:focus-within:ring-offset-slate-900 has-[:checked]:bg-emerald-500">
-                                <input type="checkbox" name="is_active" value="1" {{ old('is_active', $config?->is_active ?? true) ? 'checked' : '' }} class="sr-only peer">
-                                <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0.5 peer-checked:translate-x-5 dark:bg-slate-100"></span>
-                            </span>
-                            <div>
-                                <span class="block text-sm font-medium text-slate-800 dark:text-slate-100">Enable email sending</span>
-                                <span class="block text-xs text-slate-500 dark:text-slate-400">When on, job submission and updates will send emails.</span>
-                            </div>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
             {{-- Actions --}}
             <div class="flex flex-wrap items-center gap-3">
                 <button

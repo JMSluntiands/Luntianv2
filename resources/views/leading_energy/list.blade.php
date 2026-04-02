@@ -56,11 +56,11 @@
                     <tbody>
                         @php
                             $excluded = ['completed', 'for review', 'for email confirmation', 'archived', 'archive'];
-                            $rows = \Illuminate\Support\Facades\DB::table('job_leading_energy')
-                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($excluded), '?')) . '))', $excluded)
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $jobQ = \Illuminate\Support\Facades\DB::table('job_leading_energy')
+                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($excluded), '?')) . '))', $excluded);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LEADING ENERGY');
+                            $rows = $jobQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',

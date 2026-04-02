@@ -46,11 +46,11 @@
                     </thead>
                     <tbody>
                         @php
-                            $rows = \Illuminate\Support\Facades\DB::table('job_csp')
-                                ->whereRaw('LOWER(status) = ?', ['for review'])
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $jobQ = \Illuminate\Support\Facades\DB::table('job_csp')
+                                ->whereRaw('LOWER(status) = ?', ['for review']);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'CSP');
+                            $rows = $jobQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',
@@ -83,10 +83,15 @@
                             @endphp
                             <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-update-url="{{ route('csp.update', ['id' => $row->id]) }}">
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400">
-                                        <!-- No direct view page yet; keep simple -->
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    </span>
+                                    @if(\App\Models\RolePermission::userMayAccessRoute('csp.view'))
+                                        <a href="{{ route('csp.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-emerald-500/15 hover:text-emerald-500 dark:text-slate-400 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-400" title="View job" aria-label="View job">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </a>
+                                    @else
+                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 opacity-50" aria-hidden="true">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="block font-medium">{{ $log->format('F j, Y') }}</span>

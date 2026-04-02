@@ -358,44 +358,31 @@ $(function() {
 
     function showNhAfterSavePrompt(jobId) {
         var sendSlackUrl = '{{ url("dashboard/nh/job") }}/' + jobId + '/send-slack';
-        var sendUrl = '{{ url("dashboard/nh/job") }}/' + jobId + '/send-submission-email';
         var listUrl = '{{ route("nh.list") }}';
-        var $overlay = $('<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay"><div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden lbs-after-save-dialog"><div class="p-6 text-center lbs-modal-step lbs-modal-step-question"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40"><svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3><p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another NH job?</p><div class="mt-6 flex gap-3"><button type="button" data-nh-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to NH list</button><button type="button" data-nh-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button></div></div><div class="p-6 text-center lbs-modal-step lbs-modal-step-slack" style="display:none;"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#4A154B]/10 dark:bg-[#4A154B]/20"><span class="lbs-slack-spinner inline-block h-7 w-7 rounded-full border-2 border-[#4A154B]/30 border-t-[#4A154B] dark:border-t-[#E01E5A]"></span></div><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending to Slack...</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Notifying your channel.</p></div><div class="p-6 text-center lbs-modal-step lbs-modal-step-sending" style="display:none;"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700"><span class="lbs-send-spinner inline-block h-7 w-7 rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span></div><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending submission email...</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p></div><div class="p-6 text-center lbs-modal-step lbs-modal-step-sent" style="display:none;"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 lbs-email-sent-animate"><svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Email sent!</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Submission email has been sent.</p></div></div></div>');
+        var $overlay = $('<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay"><div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden lbs-after-save-dialog"><div class="p-6 text-center lbs-modal-step lbs-modal-step-question"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40"><svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3><p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another NH job?</p><div class="mt-6 flex gap-3"><button type="button" data-nh-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to NH list</button><button type="button" data-nh-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button></div></div><div class="p-6 text-center lbs-modal-step lbs-modal-step-updating" style="display:none;"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Updating status...</h3><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p></div></div></div>');
         $('body').append($overlay);
         $overlay.on('click', function(e) { if (e.target === this) $overlay.remove(); });
 
-        function sendEmailThen(action) {
+        function proceedAfterSlack(action) {
             var $question = $overlay.find('.lbs-modal-step-question');
-            var $slack = $overlay.find('.lbs-modal-step-slack');
-            var $sending = $overlay.find('.lbs-modal-step-sending');
-            var $sent = $overlay.find('.lbs-modal-step-sent');
-            $question.hide(); $slack.show().addClass('lbs-step-animate-in'); $sending.hide(); $sent.hide();
-            function goToEmailStep() {
-                $slack.hide().removeClass('lbs-step-animate-in');
-                $sending.show().addClass('lbs-sending-animate-in');
-                $.ajax({ url: sendUrl, method: 'POST', data: { _token: '{{ csrf_token() }}' }, dataType: 'json' })
-                    .done(function(resp) {
-                        if (resp && resp.status === 'success') {
-                            $sending.hide().removeClass('lbs-sending-animate-in');
-                            $sent.show().addClass('lbs-email-sent-animate');
-                            setTimeout(function() { $overlay.remove(); if (action === 'list') window.location.href = listUrl; }, 1200);
-                        } else {
-                            $sending.hide().removeClass('lbs-sending-animate-in');
-                            $question.show();
-                            if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Could not send email.');
-                        }
-                    })
-                    .fail(function() {
-                        $sending.hide().removeClass('lbs-sending-animate-in');
-                        $question.show();
-                        if (window.showSuccessToast) showSuccessToast('Could not send email. Try again or go to list.');
-                    });
-            }
-            $.ajax({ url: sendSlackUrl, method: 'POST', data: { _token: '{{ csrf_token() }}' }, dataType: 'json' }).always(goToEmailStep);
+            var $updating = $overlay.find('.lbs-modal-step-updating');
+            var $goListBtn = $overlay.find('[data-nh-go-list]');
+            var $newJobBtn = $overlay.find('[data-nh-new-job]');
+            $question.hide(); $updating.show();
+            $goListBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
+            $newJobBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
+            $.ajax({ url: sendSlackUrl, method: 'POST', data: { _token: '{{ csrf_token() }}' }, dataType: 'json' }).always(function() {
+                $overlay.remove();
+                if (action === 'list') {
+                    window.location.href = listUrl;
+                } else if (action === 'stay') {
+                    window.location.reload();
+                }
+            });
         }
 
-        $overlay.find('[data-nh-new-job]').on('click', function() { sendEmailThen('stay'); });
-        $overlay.find('[data-nh-go-list]').on('click', function() { sendEmailThen('list'); });
+        $overlay.find('[data-nh-new-job]').on('click', function() { proceedAfterSlack('stay'); });
+        $overlay.find('[data-nh-go-list]').on('click', function() { proceedAfterSlack('list'); });
     }
 });
 </script>

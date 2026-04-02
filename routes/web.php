@@ -1,29 +1,31 @@
 <?php
 
 use App\Http\Controllers\AccountClientsController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CheckerController;
-use App\Http\Controllers\ClientAccountController;
-use App\Http\Controllers\ComplianceController;
-use App\Http\Controllers\EmailConfigController;
-use App\Http\Controllers\SlackConfigController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\JobRequestController;
-use App\Http\Controllers\PriorityController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\UserAccountController;
-use App\Http\Controllers\StatusController;
-use App\Http\Controllers\LbsJobController;
-use App\Http\Controllers\BphJobController;
-use App\Http\Controllers\BluinqJobController;
-use App\Http\Controllers\CspJobController;
-use App\Http\Controllers\NhJobController;
-use App\Http\Controllers\LcHomeBuilderJobController;
-use App\Http\Controllers\LeadingEnergyJobController;
-use App\Http\Controllers\ClientEmailBphController;
-use App\Http\Controllers\BranchController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BluinqJobController;
+use App\Http\Controllers\BphJobController;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CheckerController;
+use App\Http\Controllers\ClientAccountController;
+use App\Http\Controllers\ClientEmailBphController;
+use App\Http\Controllers\ComplianceController;
+use App\Http\Controllers\CspJobController;
+use App\Http\Controllers\DashboardHolidayController;
+use App\Http\Controllers\EmailConfigController;
+use App\Http\Controllers\JobRequestController;
+use App\Http\Controllers\LbsJobController;
+use App\Http\Controllers\LcHomeBuilderJobController;
+use App\Http\Controllers\LeadingEnergyJobController;
+use App\Http\Controllers\NhJobController;
+use App\Http\Controllers\NotificationSettingsController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PriorityController;
+use App\Http\Controllers\SlackConfigController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StatusController;
+use App\Http\Controllers\UserAccountController;
 use App\Models\ClientEmailBph;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +33,7 @@ Route::get('/', function () {
     if (session()->has('user_id')) {
         return redirect()->route('dashboard');
     }
+
     return view('app');
 });
 
@@ -46,6 +49,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     })->name('unauthorized');
 
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/holidays/{year}', DashboardHolidayController::class)->name('dashboard.holidays');
     Route::get('/dashboard/lbs/add', [LbsJobController::class, 'addForm'])->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
     Route::post('/dashboard/lbs/job/{id}/send-slack', [LbsJobController::class, 'sendJobSlackNotification'])->name('lbs.job.sendSlack');
@@ -99,6 +103,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
 
     Route::get('/dashboard/csp/add', function () {
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
+
         return view('csp.add', [
             'sidebar_active' => 'csp.add',
             'bphClientEmails' => $bphClientEmails,
@@ -106,6 +111,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     })->name('csp.add');
 
     Route::post('/dashboard/csp/store', [CspJobController::class, 'store'])->name('csp.store');
+    Route::get('/dashboard/csp/job/{id}', [CspJobController::class, 'show'])->name('csp.view');
     Route::put('/dashboard/csp/job/{id}', [CspJobController::class, 'update'])->name('csp.update');
     Route::get('/dashboard/csp/job/{id}/email-preview', [CspJobController::class, 'emailPreview'])->name('csp.job.emailPreview');
     Route::post('/dashboard/csp/job/{id}/send-mailbox-email', [CspJobController::class, 'sendMailboxEmail'])->name('csp.job.sendMailboxEmail');
@@ -131,6 +137,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/bluinq/job/{id}/send-submission-email', [BluinqJobController::class, 'sendSubmissionEmail'])->name('bluinq.job.sendSubmissionEmail');
     Route::get('/dashboard/bluinq/job/{id}/email-preview', [BluinqJobController::class, 'emailPreview'])->name('bluinq.job.emailPreview');
     Route::post('/dashboard/bluinq/job/{id}/send-mailbox-email', [BluinqJobController::class, 'sendMailboxEmail'])->name('bluinq.job.sendMailboxEmail');
+    Route::get('/dashboard/bluinq/job/{id}', [BluinqJobController::class, 'show'])->name('bluinq.view');
     Route::put('/dashboard/bluinq/job/{id}', [BluinqJobController::class, 'update'])->name('bluinq.update');
     Route::get('/dashboard/bluinq/mailbox', [BluinqJobController::class, 'mailbox'])->name('bluinq.mailbox');
     Route::get('/dashboard/bluinq/list', [BluinqJobController::class, 'list'])->name('bluinq.list');
@@ -199,8 +206,11 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
 
     Route::get('/dashboard/settings/email-config', [EmailConfigController::class, 'index'])->name('settings.email_config');
     Route::post('/dashboard/settings/email-config', [EmailConfigController::class, 'store'])->name('settings.email_config.store');
+    Route::post('/dashboard/settings/email-config/toggle', [EmailConfigController::class, 'toggleActive'])->name('settings.email_config.toggle');
     Route::get('/dashboard/settings/slack-config', [SlackConfigController::class, 'index'])->name('settings.slack_config');
     Route::post('/dashboard/settings/slack-config', [SlackConfigController::class, 'store'])->name('settings.slack_config.store');
+    Route::post('/dashboard/settings/slack-config/toggle', [SlackConfigController::class, 'toggleActive'])->name('settings.slack_config.toggle');
+    Route::get('/dashboard/settings/notifications', [NotificationSettingsController::class, 'index'])->name('settings.notifications');
     Route::get('/dashboard/settings/permission', [PermissionController::class, 'index'])->name('settings.permission');
     Route::post('/dashboard/settings/permission', [PermissionController::class, 'store'])->name('settings.permission.store');
 

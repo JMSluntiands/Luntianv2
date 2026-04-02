@@ -388,6 +388,10 @@
                                     '<button type="button" data-csp-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
                                 '</div>' +
                             '</div>' +
+                            '<div class="p-6 text-center" data-csp-updating style="display:none;">' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Updating status...</h3>' +
+                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p>' +
+                            '</div>' +
                         '</div>' +
                     '</div>'
                 );
@@ -398,13 +402,33 @@
                     if (e.target === this) $overlay.remove();
                 });
 
+                function proceedAfterUpdate(action) {
+                    var $content = $overlay.find('.p-6.text-center').first();
+                    var $updating = $overlay.find('[data-csp-updating]');
+                    var $goListBtn = $overlay.find('[data-csp-go-list]');
+                    var $newJobBtn = $overlay.find('[data-csp-new-job]');
+
+                    $content.hide();
+                    $updating.show();
+                    $goListBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
+                    $newJobBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
+
+                    setTimeout(function() {
+                        $overlay.remove();
+                        if (action === 'list') {
+                            window.location.href = listUrl;
+                        } else if (action === 'stay') {
+                            window.location.reload();
+                        }
+                    }, 250);
+                }
+
                 $overlay.find('[data-csp-new-job]').on('click', function() {
-                    $overlay.remove();
-                    // Stay on the same page with cleared form (already reset on success)
+                    proceedAfterUpdate('stay');
                 });
 
                 $overlay.find('[data-csp-go-list]').on('click', function() {
-                    window.location.href = listUrl;
+                    proceedAfterUpdate('list');
                 });
             }
         });

@@ -33,11 +33,44 @@
 @section('title', 'Dashboard')
 
 @section('content')
+    @php
+        $dashboardPublicHolidaysYear = $dashboardPublicHolidaysYear ?? (int) now()->format('Y');
+        $dashboardPublicHolidays = $dashboardPublicHolidays ?? \App\Services\PublicHolidayService::forYear($dashboardPublicHolidaysYear);
+        $bladeHolidayMonth = now()->format('Y-m');
+        $bladePhMonth = [];
+        foreach ($dashboardPublicHolidays['ph'] ?? [] as $_h) {
+            if (is_array($_h) && str_starts_with((string) ($_h['date'] ?? ''), $bladeHolidayMonth)) {
+                $bladePhMonth[] = $_h;
+            }
+        }
+        usort($bladePhMonth, static fn ($a, $b) => strcmp((string) ($a['date'] ?? ''), (string) ($b['date'] ?? '')));
+        $bladeAuMonth = [];
+        foreach ($dashboardPublicHolidays['au'] ?? [] as $_h) {
+            if (is_array($_h) && str_starts_with((string) ($_h['date'] ?? ''), $bladeHolidayMonth)) {
+                $bladeAuMonth[] = $_h;
+            }
+        }
+        usort($bladeAuMonth, static fn ($a, $b) => strcmp((string) ($a['date'] ?? ''), (string) ($b['date'] ?? '')));
+        $holidayDateHasPh = [];
+        foreach ($dashboardPublicHolidays['ph'] ?? [] as $_h) {
+            if (is_array($_h) && ! empty($_h['date'])) {
+                $holidayDateHasPh[substr((string) $_h['date'], 0, 10)] = true;
+            }
+        }
+        $holidayDateHasAu = [];
+        foreach ($dashboardPublicHolidays['au'] ?? [] as $_h) {
+            if (is_array($_h) && ! empty($_h['date'])) {
+                $holidayDateHasAu[substr((string) $_h['date'], 0, 10)] = true;
+            }
+        }
+    @endphp
     <script type="application/json" id="dashboard-stats-json">@json($dashboardStats)</script>
+    <script type="application/json" id="dashboard-holidays-initial" data-year="{{ $dashboardPublicHolidaysYear }}">@json($dashboardPublicHolidays)</script>
     <div
         id="dashboard-root"
         class="w-full min-w-0"
         data-dashboard-branch-filter="{{ $dashboardBranchFilter }}"
+        data-holidays-api-base="{{ url('/dashboard/holidays') }}"
     >
         {{-- Fallback: visible if React has not mounted yet or JS fails --}}
         <div class="dashboard-page" data-dashboard-fallback>
@@ -134,7 +167,9 @@
                         Calendar
                     </h2>
                     <div class="dashboard-panel__body">
-                        <div id="calendar-root" class="dashboard-calendar-wrapper" role="application" aria-label="Month calendar"></div>
+                        <div id="calendar-root" class="dashboard-calendar-wrapper" role="application" aria-label="Month calendar">
+                            @include('layouts.partials.dashboard-calendar-fallback', ['holidayPayload' => $dashboardPublicHolidays])
+                        </div>
                     </div>
                 </div>
                 <div class="dashboard-panel">
@@ -146,11 +181,39 @@
                         <div class="dashboard-holidays">
                             <div class="dashboard-holiday-box">
                                 <div class="dashboard-holiday-box__title">Philippine Holidays</div>
-                                <div class="dashboard-holiday-box__text">No holidays this month</div>
+                                <div class="dashboard-holiday-box__text">
+                                    @forelse ($bladePhMonth as $_row)
+                                        @php
+                                            $_dk = substr((string) ($_row['date'] ?? ''), 0, 10);
+                                            $_bothRow = ($holidayDateHasPh[$_dk] ?? false) && ($holidayDateHasAu[$_dk] ?? false);
+                                            $_rv = $_bothRow ? 'both' : 'ph';
+                                        @endphp
+                                        <div class="dashboard-holiday-fallback-line dashboard-holiday-row--{{ $_rv }}">
+                                            <strong class="tabular-nums">{{ \Illuminate\Support\Carbon::parse($_row['date'])->format('M j (D)') }}</strong>
+                                            — {{ $_row['localName'] ?? $_row['name'] ?? 'Holiday' }}
+                                        </div>
+                                    @empty
+                                        No holidays this month
+                                    @endforelse
+                                </div>
                             </div>
                             <div class="dashboard-holiday-box">
                                 <div class="dashboard-holiday-box__title">Australian Holidays</div>
-                                <div class="dashboard-holiday-box__text">No holidays this month</div>
+                                <div class="dashboard-holiday-box__text">
+                                    @forelse ($bladeAuMonth as $_row)
+                                        @php
+                                            $_dk = substr((string) ($_row['date'] ?? ''), 0, 10);
+                                            $_bothRow = ($holidayDateHasPh[$_dk] ?? false) && ($holidayDateHasAu[$_dk] ?? false);
+                                            $_rv = $_bothRow ? 'both' : 'au';
+                                        @endphp
+                                        <div class="dashboard-holiday-fallback-line dashboard-holiday-row--{{ $_rv }}">
+                                            <strong class="tabular-nums">{{ \Illuminate\Support\Carbon::parse($_row['date'])->format('M j (D)') }}</strong>
+                                            — {{ $_row['localName'] ?? $_row['name'] ?? 'Holiday' }}
+                                        </div>
+                                    @empty
+                                        No holidays this month
+                                    @endforelse
+                                </div>
                             </div>
                         </div>
                     </div>

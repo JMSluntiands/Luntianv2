@@ -46,11 +46,11 @@
                     </thead>
                     <tbody>
                         @php
-                            $rows = \Illuminate\Support\Facades\DB::table('job_lc_home_builder')
-                                ->whereRaw('LOWER(status) = ?', ['for review'])
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $jobQ = \Illuminate\Support\Facades\DB::table('job_lc_home_builder')
+                                ->whereRaw('LOWER(status) = ?', ['for review']);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
+                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LC HOME BUILDER');
+                            $rows = $jobQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',

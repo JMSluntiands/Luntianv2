@@ -417,7 +417,6 @@
 
             function showLcAfterSavePrompt(jobId) {
                 var sendSlackUrl = '{{ url("dashboard/lc-home-builder/job") }}/' + jobId + '/send-slack';
-                var sendUrl = '{{ url("dashboard/lc-home-builder/job") }}/' + jobId + '/send-submission-email';
                 var listUrl = '{{ route("lc_home_builder.list") }}';
 
                 var $overlay = $(
@@ -434,26 +433,9 @@
                                     '<button type="button" data-lc-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-slack" style="display:none;">' +
-                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#4A154B]/10 dark:bg-[#4A154B]/20">' +
-                                    '<span class="lbs-slack-spinner inline-block h-7 w-7 rounded-full border-2 border-[#4A154B]/30 border-t-[#4A154B] dark:border-t-[#E01E5A]"></span>' +
-                                '</div>' +
-                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending to Slack...</h3>' +
-                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Notifying your channel.</p>' +
-                            '</div>' +
-                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sending" style="display:none;">' +
-                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">' +
-                                    '<span class="lbs-send-spinner inline-block h-7 w-7 rounded-full border-2 border-slate-300 border-t-emerald-500 dark:border-slate-600 dark:border-t-emerald-400"></span>' +
-                                '</div>' +
-                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Sending submission email...</h3>' +
+                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-updating" style="display:none;">' +
+                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Updating status...</h3>' +
                                 '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p>' +
-                            '</div>' +
-                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-sent" style="display:none;">' +
-                                '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 lbs-email-sent-animate">' +
-                                    '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>' +
-                                '</div>' +
-                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Email sent!</h3>' +
-                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Submission email has been sent.</p>' +
                             '</div>' +
                         '</div>' +
                     '</div>'
@@ -465,66 +447,38 @@
                     if (e.target === this) $overlay.remove();
                 });
 
-                function sendEmailThen(action) {
+                function proceedAfterSlack(action) {
                     var $question = $overlay.find('.lbs-modal-step-question');
-                    var $slack = $overlay.find('.lbs-modal-step-slack');
-                    var $sending = $overlay.find('.lbs-modal-step-sending');
-                    var $sent = $overlay.find('.lbs-modal-step-sent');
+                    var $updating = $overlay.find('.lbs-modal-step-updating');
+                    var $goListBtn = $overlay.find('[data-lc-go-list]');
+                    var $newJobBtn = $overlay.find('[data-lc-new-job]');
 
                     $question.hide();
-                    $slack.show().addClass('lbs-step-animate-in');
-                    $sending.hide();
-                    $sent.hide();
-
-                    function goToEmailStep() {
-                        $slack.hide().removeClass('lbs-step-animate-in');
-                        $sending.show().addClass('lbs-sending-animate-in');
-                        $.ajax({
-                            url: sendUrl,
-                            method: 'POST',
-                            data: { _token: '{{ csrf_token() }}' },
-                            dataType: 'json'
-                        }).done(function(resp) {
-                            if (resp && resp.status === 'success') {
-                                $sending.hide().removeClass('lbs-sending-animate-in');
-                                $sent.show().addClass('lbs-email-sent-animate');
-                                setTimeout(function() {
-                                    $overlay.remove();
-                                    if (action === 'list') {
-                                        window.location.href = listUrl;
-                                    }
-                                }, 1200);
-                                return;
-                            }
-
-                            $sending.hide().removeClass('lbs-sending-animate-in');
-                            $question.show();
-                            if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Could not send email.');
-                        }).fail(function() {
-                            $sending.hide().removeClass('lbs-sending-animate-in');
-                            $question.show();
-                            if (window.showSuccessToast) showSuccessToast('Could not send email. Try again or go to list.');
-                        });
-                    }
+                    $updating.show();
+                    $goListBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
+                    $newJobBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
 
                     $.ajax({
                         url: sendSlackUrl,
                         method: 'POST',
                         data: { _token: '{{ csrf_token() }}' },
                         dataType: 'json'
-                    }).done(function() {
-                        goToEmailStep();
-                    }).fail(function() {
-                        goToEmailStep();
+                    }).always(function() {
+                        $overlay.remove();
+                        if (action === 'list') {
+                            window.location.href = listUrl;
+                        } else if (action === 'stay') {
+                            window.location.reload();
+                        }
                     });
                 }
 
                 $overlay.find('[data-lc-new-job]').on('click', function() {
-                    sendEmailThen('stay');
+                    proceedAfterSlack('stay');
                 });
 
                 $overlay.find('[data-lc-go-list]').on('click', function() {
-                    sendEmailThen('list');
+                    proceedAfterSlack('list');
                 });
             }
         });

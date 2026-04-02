@@ -64,8 +64,30 @@ class DashboardJobStatsService
         return $out;
     }
 
+    /**
+     * Branch accounts: only aggregate stats for the product line tied to users.branch (see RolePermission::mapBranchStringToDashboardStatLabel).
+     */
+    private static function branchStatLabelExclusive(): ?string
+    {
+        $r = strtolower(trim((string) session('user_role', '')));
+        if ($r !== 'branch' || ! session()->has('user_id')) {
+            return null;
+        }
+        $ub = RolePermission::normalizeBranch((string) session('user_branch', ''));
+        if ($ub === '') {
+            return null;
+        }
+
+        return RolePermission::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
+    }
+
     private static function countJobsBranchBucket(string $branchLabel, string $bucket): int
     {
+        $only = self::branchStatLabelExclusive();
+        if ($only !== null && strcasecmp((string) $branchLabel, (string) $only) !== 0) {
+            return 0;
+        }
+
         return match ($branchLabel) {
             'LBS' => self::countJobsTable($bucket, false),
             'EFFICIENT LIVING' => self::countJobsTable($bucket, true),
@@ -98,6 +120,8 @@ class DashboardJobStatsService
 
         $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])
             ->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
+
+        JobCountsScope::applyJobsTableAssignment($q);
 
         switch ($bucket) {
             case 'total':
@@ -137,6 +161,8 @@ class DashboardJobStatsService
 
         $q->whereBetween('created_at', [$start, $end])
             ->whereRaw("LOWER(TRIM(status)) != ?", ['archived']);
+
+        JobCountsScope::applyJobBphAssignment($q);
 
         switch ($bucket) {
             case 'total':

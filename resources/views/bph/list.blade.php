@@ -62,11 +62,11 @@
                                 'archived',
                                 'archive',
                             ];
-                            $rows = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($bphListExcludedStatuses), '?')) . '))', $bphListExcludedStatuses)
-                                ->orderByDesc('created_at')
-                                ->limit(300)
-                                ->get();
+                            $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
+                                ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($bphListExcludedStatuses), '?')) . '))', $bphListExcludedStatuses);
+                            \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
+                            \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
+                            $rows = $bphQ->orderByDesc('created_at')->limit(300)->get();
                             $statusClasses = [
                                 'Pending' => 'lbs-badge-pending',
                                 'Accepted' => 'lbs-badge-accepted',
