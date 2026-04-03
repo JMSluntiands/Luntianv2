@@ -605,8 +605,18 @@ class LbsJobController extends Controller
             if ($newId !== (int) $job->client_account_id) {
                 $newClient = ClientAccount::find($newId);
                 if ($newClient) {
+                    $jobRequestRow = JobRequest::where('job_request_id', $job->job_request_id)->first();
+                    $jrCode = trim((string) ($jobRequestRow->client_code ?? ''));
+                    $rawAccountCode = trim((string) ($newClient->client_code ?? ''));
+                    $resolvedCode = $this->resolveJobsClientCodeForClientsTable($rawAccountCode, $jrCode);
+                    if ($resolvedCode === '') {
+                        return response()->json([
+                            'status'  => 'error',
+                            'message' => 'Cannot change client: no client_code in the clients table matches this account or the job’s job type.',
+                        ], 422);
+                    }
                     $update['client_account_id'] = $newId;
-                    $update['client_code'] = $newClient->client_code ?? $job->client_code;
+                    $update['client_code'] = $resolvedCode;
 
                     $oldName = $oldClient?->client_account_name ?? $job->client_code;
                     $newName = $newClient->client_account_name ?? $newClient->client_code ?? ('ID ' . $newId);
@@ -1593,14 +1603,22 @@ class LbsJobController extends Controller
             $referenceValue = $referenceValue . '-1';
         }
 
-        // `sendJobSubmissionEmail()` looks up recipient via `clients.client_code`,
-        // so keep `jobs.client_code` aligned with the selected client account.
+        // `jobs.client_code` references `clients.client_code`. `client_accounts` may store codes
+        // that are not in `clients` (e.g. internal labels); fall back to the job type’s code.
         $clientCodeForJob = $client->client_code ?? null;
         if ((string) $clientCodeForJob === '' && session('user_id')) {
             $currentUser = User::find(session('user_id'));
             $clientCodeForJob = $currentUser?->unique_code ?? null;
         }
-        $clientCodeForJob = $clientCodeForJob ?? '';
+        $clientCodeForJob = trim((string) ($clientCodeForJob ?? ''));
+        $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
+        $clientCodeForJob = $this->resolveJobsClientCodeForClientsTable($clientCodeForJob, $jobRequestClientCode);
+        if ($clientCodeForJob === '') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No valid client code for this job: the account code is not in the clients table, and the job type code is missing or not registered there either. Add matching rows to clients or fix client_accounts / job_requests.',
+            ], 422);
+        }
 
         // Map priority ID -> name string (e.g. "High 1 day") if available
         $priorityText = (string) $data['priority'];
@@ -2160,6 +2178,24 @@ class LbsJobController extends Controller
         }
 
         return config('app.url') . '/storage/logo-light.png';
+    }
+
+    /**
+     * Resolve a valid `clients.client_code` for `jobs.client_code` (FK).
+     */
+    private function resolveJobsClientCodeForClientsTable(string $fromAccount, string $fromJobRequest): string
+    {
+        $fromAccount = trim($fromAccount);
+        $fromJobRequest = trim($fromJobRequest);
+
+        if ($fromAccount !== '' && DB::table('clients')->where('client_code', $fromAccount)->exists()) {
+            return $fromAccount;
+        }
+        if ($fromJobRequest !== '' && DB::table('clients')->where('client_code', $fromJobRequest)->exists()) {
+            return $fromJobRequest;
+        }
+
+        return '';
     }
 }
 
