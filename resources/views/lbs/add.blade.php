@@ -374,7 +374,7 @@
                             $('#lbsAddForm select').trigger('change');
                             document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
                             document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
-                            showLbsAfterSavePrompt(resp.job_id);
+                            showLbsAfterSavePrompt(resp.job_id, resp.submission_email_enabled);
                         } else {
                             if (window.showSuccessToast) showSuccessToast(resp.message || 'Failed to save job.');
                         }
@@ -390,7 +390,8 @@
                 });
             });
 
-            function showLbsAfterSavePrompt(jobId) {
+            function showLbsAfterSavePrompt(jobId, submissionEmailEnabled) {
+                var submissionEmailOn = submissionEmailEnabled !== false;
                 var sendSlackUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-slack';
                 var sendUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-submission-email';
                 var listUrl = '{{ route('lbs.list') }}';
@@ -451,7 +452,19 @@
                     $sending.hide();
                     $sent.hide();
 
+                    function finishAfterSlackNoEmail() {
+                        $slack.hide().removeClass('lbs-step-animate-in');
+                        $overlay.remove();
+                        if (action === 'list') {
+                            window.location.href = listUrl;
+                        }
+                    }
+
                     function goToEmailStep() {
+                        if (!submissionEmailOn) {
+                            finishAfterSlackNoEmail();
+                            return;
+                        }
                         $slack.hide().removeClass('lbs-step-animate-in');
                         $sending.show().addClass('lbs-sending-animate-in');
                         $.ajax({
@@ -469,6 +482,15 @@
                                         window.location.href = listUrl;
                                     }
                                 }, 1200);
+                                return;
+                            }
+
+                            if (resp && resp.status === 'disabled') {
+                                $sending.hide().removeClass('lbs-sending-animate-in');
+                                $overlay.remove();
+                                if (action === 'list') {
+                                    window.location.href = listUrl;
+                                }
                                 return;
                             }
 

@@ -1694,6 +1694,7 @@ class LbsJobController extends Controller
                     ? 'Efficient Living job created successfully.'
                     : 'LBS job created successfully.',
                 'job_id'  => $jobId,
+                'submission_email_enabled' => EmailConfig::where('is_active', true)->exists(),
             ]);
         } catch (\Throwable $e) {
             return response()->json([
