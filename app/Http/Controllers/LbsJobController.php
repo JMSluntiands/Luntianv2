@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\RolePermission;
 use App\Models\EmailConfig;
 use App\Services\JobCountsScope;
+use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -466,11 +467,11 @@ class LbsJobController extends Controller
             'staff_id'          => ['nullable', 'string', 'max:50'],
             'checker_id'        => ['nullable', 'string', 'max:50'],
             'plan_complexity'   => ['nullable', 'integer', 'between:1,5'],
+            'units'             => ['nullable', 'integer', 'min:0', 'max:9999'],
         ]);
 
         if (! RolePermission::userMayAccessRoute('job_view.button.edit.job_details')) {
             unset(
-                $data['job_status'],
                 $data['job_address'],
                 $data['priority'],
                 $data['job_type'],
@@ -487,6 +488,13 @@ class LbsJobController extends Controller
             unset($data['plan_complexity']);
         }
 
+        if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
+            $candidateStatus = trim((string) $data['job_status']);
+            if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidateStatus, 'units')) {
+                return $fecErr;
+            }
+        }
+
         $update = [];
         $changes = [];
         $oldClient = null;
@@ -495,7 +503,7 @@ class LbsJobController extends Controller
         }
 
         if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
-            $new = ucfirst($data['job_status']);
+            $new = trim((string) $data['job_status']);
             if ($new !== $job->job_status) {
                 $update['job_status'] = $new;
                 $changes[] = [
@@ -643,6 +651,18 @@ class LbsJobController extends Controller
                 $changes[] = [
                     'field' => 'Complexity',
                     'old'   => $old ?: 0,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('units', $data) && $data['units'] !== null) {
+            $new = (int) $data['units'];
+            $old = (int) ($job->units ?? 0);
+            if ($new !== $old) {
+                $update['units'] = $new;
+                $changes[] = [
+                    'field' => 'Units',
+                    'old'   => $old,
                     'new'   => $new,
                 ];
             }
@@ -948,6 +968,7 @@ class LbsJobController extends Controller
                     'j.job_type',
                     'j.priority',
                     'j.plan_complexity',
+                    'j.units',
                     'j.job_status',
                     'j.completion_date',
                     'ca.client_account_name'
@@ -1004,6 +1025,7 @@ class LbsJobController extends Controller
                     'j.job_type',
                     'j.priority',
                     'j.plan_complexity',
+                    'j.units',
                     'j.job_status',
                     'j.completion_date',
                     'ca.client_account_name'
@@ -1099,6 +1121,7 @@ class LbsJobController extends Controller
                     'j.job_reference_no',
                     'j.upload_files',
                     'j.upload_project_files',
+                    'j.units',
                     'ca.client_account_name',
                     'cl.client_email as to_email'
                 )
@@ -1142,6 +1165,7 @@ class LbsJobController extends Controller
                 'j.job_type',
                 'j.priority',
                 'j.plan_complexity',
+                'j.units',
                 'j.job_status',
                 'j.completion_date',
                 'ca.client_account_name'
@@ -1308,6 +1332,7 @@ class LbsJobController extends Controller
                     'j.job_type',
                     'j.priority',
                     'j.plan_complexity',
+                    'j.units',
                     'j.job_status',
                     'j.completion_date',
                     'ca.client_account_name'
@@ -1355,6 +1380,7 @@ class LbsJobController extends Controller
                     'j.job_reference_no',
                     'j.upload_files',
                     'j.upload_project_files',
+                    'j.units',
                     'ca.client_account_name',
                     'cl.client_email as to_email'
                 )

@@ -81,7 +81,7 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-update-url="{{ route('csp.update', ['id' => $row->id]) }}">
+                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('csp.update', ['id' => $row->id]) }}">
                                 <td class="px-4 py-3 text-center">
                                     @if(\App\Models\RolePermission::userMayAccessRoute('csp.view'))
                                         <a href="{{ route('csp.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-emerald-500/15 hover:text-emerald-500 dark:text-slate-400 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-400" title="View job" aria-label="View job">

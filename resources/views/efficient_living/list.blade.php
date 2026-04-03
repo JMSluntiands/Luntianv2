@@ -159,7 +159,7 @@
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
-                            <tr class="efficient_living-data-row lbs-data-row" data-job-id="{{ $job->job_id }}" data-update-url="{{ route('efficient_living.job.update', ['id' => $job->job_id]) }}">
+                            <tr class="efficient_living-data-row lbs-data-row" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ route('efficient_living.job.update', ['id' => $job->job_id]) }}">
                                 {{-- Action column: same pattern as LBS list — no .lbs-td hover cell styling; icons use lbs-action-icon --}}
                                 <td class="efficient_living-td efficient_living-td-action overflow-visible text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center justify-center gap-1.5">

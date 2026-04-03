@@ -7,6 +7,7 @@ use App\Models\Compliance;
 use App\Models\JobRequest;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -209,7 +210,15 @@ class LcHomeBuilderJobController extends Controller
             'job_status' => ['nullable', 'string', 'max:50'],
             'staff_id' => ['nullable', 'string', 'max:50'],
             'checker_id' => ['nullable', 'string', 'max:50'],
+            'units' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ]);
+
+        if (array_key_exists('job_status', $data) && trim((string) ($data['job_status'] ?? '')) !== '') {
+            $candidate = trim((string) $data['job_status']);
+            if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidate)) {
+                return $fecErr;
+            }
+        }
 
         $update = [];
         if (array_key_exists('job_status', $data) && trim((string) $data['job_status']) !== '') {
@@ -220,6 +229,9 @@ class LcHomeBuilderJobController extends Controller
         }
         if (array_key_exists('checker_id', $data) && trim((string) $data['checker_id']) !== '') {
             $update['checked'] = strtoupper((string) $data['checker_id']);
+        }
+        if (array_key_exists('units', $data) && $data['units'] !== null && Schema::hasColumn('job_lc_home_builder', 'units')) {
+            $update['units'] = (int) $data['units'];
         }
         if ($update === []) {
             return response()->json(['status' => 'success', 'message' => 'No changes to update.']);

@@ -210,7 +210,7 @@
                                     <dt class="job-details-dt">Job Status</dt>
                                     <dd>
                                         @if($canEditStatusInlineUi && count($inlineStatusOptions) > 0)
-                                            <div class="lbs-status-wrap relative inline-block" data-status-wrap>
+                                            <div class="lbs-status-wrap relative inline-block" data-status-wrap data-job-units="{{ (int) ($job->units ?? 0) }}">
                                                 <button type="button" class="lbs-badge lbs-status-trigger inline-block rounded-full border-0 px-3 py-1 text-xs font-semibold text-white cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500/40" @if($statusBg) style="background-color: {{ $statusBg }};" @endif data-status-trigger aria-haspopup="true" aria-expanded="false">{{ $job->job_status ?? '—' }}</button>
                                                 <div class="lbs-status-menu fixed z-[9999] flex min-w-[120px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg" role="menu" hidden>
                                                     @foreach($inlineStatusOptions as $opt)
@@ -911,6 +911,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="{{ asset('js/lbs-list.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 (function() {
@@ -1436,31 +1437,52 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                 e.stopPropagation();
                 var val = this.getAttribute('data-status-value');
                 if (!val) return;
-                var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
-                ['lbs-badge-pending', 'lbs-badge-accepted', 'lbs-badge-allocated', 'lbs-badge-awaiting-further-information', 'lbs-badge-completed', 'lbs-badge-for-email-confirmation', 'lbs-badge-processing', 'lbs-badge-for-checking', 'lbs-badge-for-review', 'lbs-badge-revised'].forEach(function(c) { trigger.classList.remove(c); });
-                trigger.classList.add(badgeClass, 'lbs-status-updating');
-                trigger.textContent = val;
                 menu.hidden = true;
                 trigger.setAttribute('aria-expanded', 'false');
-                var formData = new URLSearchParams();
-                formData.append('_token', csrfToken);
-                formData.append('job_status', val);
-                fetch(updateUrl, {
-                    method: 'PUT',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData.toString()
-                }).then(function(r) {
-                    return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: {} }; });
-                }).then(function(result) {
-                    trigger.classList.remove('lbs-status-updating');
-                    if (result.ok) trigger.classList.add('lbs-status-success');
-                    var msg = (result.data && result.data.message) || (result.ok ? 'Status updated successfully.' : 'Something went wrong.');
-                    if (window.showSuccessToast) showSuccessToast(msg);
-                    if (result.ok) setTimeout(function() { trigger.classList.remove('lbs-status-success'); window.location.reload(); }, 2500);
-                }).catch(function() {
-                    trigger.classList.remove('lbs-status-updating');
-                    if (window.showSuccessToast) showSuccessToast('Failed to update status.');
-                });
+                var prevText = trigger.textContent;
+                var prevClass = trigger.className;
+                var currentUnits = 0;
+                var wu = wrap.getAttribute('data-job-units');
+                if (wu != null && wu !== '') currentUnits = parseInt(wu, 10) || 0;
+                if (!window.LuntianFecUnitsModal || !window.LuntianFecUnitsModal.promptIfNeeded) {
+                    if (window.showSuccessToast) showSuccessToast('Reload the page and try again.');
+                    return;
+                }
+                window.LuntianFecUnitsModal.promptIfNeeded({ currentUnits: currentUnits, statusValue: val }).then(function(fecResult) {
+                    var unitsToSend = fecResult && fecResult.unitsToSend != null ? fecResult.unitsToSend : null;
+                    var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
+                    ['lbs-badge-pending', 'lbs-badge-accepted', 'lbs-badge-allocated', 'lbs-badge-awaiting-further-information', 'lbs-badge-completed', 'lbs-badge-for-email-confirmation', 'lbs-badge-processing', 'lbs-badge-for-checking', 'lbs-badge-for-review', 'lbs-badge-revised'].forEach(function(c) { trigger.classList.remove(c); });
+                    trigger.classList.add(badgeClass, 'lbs-status-updating');
+                    trigger.textContent = val;
+                    var formData = new URLSearchParams();
+                    formData.append('_token', csrfToken);
+                    formData.append('job_status', val);
+                    if (unitsToSend !== null) formData.append('units', String(unitsToSend));
+                    fetch(updateUrl, {
+                        method: 'PUT',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData.toString()
+                    }).then(function(r) {
+                        return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: {} }; });
+                    }).then(function(result) {
+                        trigger.classList.remove('lbs-status-updating');
+                        if (result.ok) {
+                            trigger.classList.add('lbs-status-success');
+                            if (unitsToSend !== null) wrap.setAttribute('data-job-units', String(unitsToSend));
+                        } else {
+                            trigger.className = prevClass;
+                            trigger.textContent = prevText;
+                        }
+                        var msg = (result.data && result.data.message) || (result.ok ? 'Status updated successfully.' : 'Something went wrong.');
+                        if (window.showSuccessToast) showSuccessToast(msg);
+                        if (result.ok) setTimeout(function() { trigger.classList.remove('lbs-status-success'); window.location.reload(); }, 2500);
+                    }).catch(function() {
+                        trigger.classList.remove('lbs-status-updating');
+                        trigger.className = prevClass;
+                        trigger.textContent = prevText;
+                        if (window.showSuccessToast) showSuccessToast('Failed to update status.');
+                    });
+                }).catch(function() { /* modal cancelled */ });
             });
         });
     });

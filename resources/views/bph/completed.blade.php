@@ -57,6 +57,7 @@
                     <tbody>
                         @php
                             $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
+                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01'])
                                 ->whereRaw('LOWER(TRIM(status)) = ?', ['completed']);
                             \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
                             \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);

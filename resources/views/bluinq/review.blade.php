@@ -83,7 +83,7 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-update-url="{{ route('bluinq.update', ['id' => $row->id]) }}">
+                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('bluinq.update', ['id' => $row->id]) }}">
                                 <td class="px-4 py-3 text-center"><a href="{{ route('bluinq.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-green-500/15 hover:text-green-400" title="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a></td>
                                 <td class="px-4 py-3"><span class="block font-medium">{{ $log->format('F j, Y') }}</span><span class="block text-[0.8125rem] text-slate-400">{{ $log->format('g:i A') }}</span></td>
                                 <td class="px-4 py-3">{{ $client }}</td><td class="px-4 py-3">{{ $urgent }}</td><td class="px-4 py-3">{{ $jobType }}</td>

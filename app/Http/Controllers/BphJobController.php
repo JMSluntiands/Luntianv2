@@ -11,6 +11,7 @@ use App\Models\Status;
 use App\Models\User;
 use App\Models\RolePermission;
 use App\Services\JobCountsScope;
+use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ class BphJobController extends Controller
         $jobs = collect();
         if (Schema::hasTable('job_bph')) {
             $q = DB::table('job_bph')
+                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01'])
                 ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
             JobCountsScope::applyJobBphAssignment($q);
             JobCountsScope::applyJobBphBranchVerticalScope($q);
@@ -747,16 +749,29 @@ class BphJobController extends Controller
             'assigned'         => ['nullable', 'string', 'max:50'],
             'checked'          => ['nullable', 'string', 'max:50'],
             'status'           => ['nullable', 'string', 'max:50'],
+            'units'            => ['nullable', 'integer', 'min:0', 'max:9999'],
             'bph_additional_info_save' => ['nullable'],
         ]);
+
+        if (array_key_exists('job_status', $data) || array_key_exists('status', $data)) {
+            $newStatus = (string) ($data['job_status'] ?? $data['status'] ?? $job->status ?? '');
+            if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $newStatus)) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return $fecErr;
+                }
+
+                return redirect()
+                    ->back()
+                    ->withErrors(['units' => 'Maglagay muna ng units (minimum 1) bago ilipat sa For Email Confirmation.'])
+                    ->withInput();
+            }
+        }
 
         if (! RolePermission::userMayAccessRoute('job_view.edit.assigned')) {
             unset($data['staff_id'], $data['assigned'], $data['checker_id'], $data['checked']);
         }
         if (! RolePermission::userMayAccessRoute('job_view.button.edit.job_details')) {
             unset(
-                $data['job_status'],
-                $data['status'],
                 $data['job_address'],
                 $data['priority'],
                 $data['job_type'],
@@ -836,6 +851,9 @@ class BphJobController extends Controller
             } elseif ($priority !== '') {
                 $update['urgent'] = str_contains($priority, 'urgent') ? 'YES' : 'NO';
             }
+        }
+        if (array_key_exists('units', $data) && $data['units'] !== null) {
+            $update['units'] = (int) $data['units'];
         }
 
         $logDescription = 'Updated BPH job details.';

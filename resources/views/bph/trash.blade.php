@@ -28,7 +28,8 @@
                     <tbody>
                         @php
                             $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('LOWER(status) = ?', ['archived']);
+                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01'])
+                                ->whereRaw('LOWER(TRIM(status)) = ?', ['archived']);
                             \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
                             \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
                             $rows = $bphQ->orderByDesc('updated_at')->limit(300)->get();

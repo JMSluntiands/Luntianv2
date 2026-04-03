@@ -63,6 +63,7 @@
                                 'archive',
                             ];
                             $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
+                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01'])
                                 ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($bphListExcludedStatuses), '?')) . '))', $bphListExcludedStatuses);
                             \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
                             \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
@@ -115,7 +116,7 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-update-url="{{ route('bph.update', ['id' => $row->id]) }}">
+                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('bph.update', ['id' => $row->id]) }}">
                                 <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
                                         <a href="{{ route('bph.add', [

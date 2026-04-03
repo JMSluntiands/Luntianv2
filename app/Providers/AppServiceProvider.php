@@ -73,9 +73,9 @@ class AppServiceProvider extends ServiceProvider
                 JobCountsScope::applyJobBphBranchVerticalScope($bphBase);
                 $bphCounts = $bphBase
                     ->selectRaw("
-                        SUM(CASE WHEN status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                        SUM(CASE WHEN status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
                     ")
                     ->first();
 
@@ -89,9 +89,9 @@ class AppServiceProvider extends ServiceProvider
                 JobCountsScope::applyJobBphBranchVerticalScope($bluinqBase);
                 $bluinqCounts = $bluinqBase
                     ->selectRaw("
-                        SUM(CASE WHEN status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                        SUM(CASE WHEN status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
                     ")
                     ->first();
 
@@ -163,11 +163,12 @@ class AppServiceProvider extends ServiceProvider
                 if (\Illuminate\Support\Facades\Schema::hasTable('job_leading_energy')) {
                     $leBase = DB::table('job_leading_energy');
                     JobCountsScope::applyJobBphAssignment($leBase);
+                    JobCountsScope::applyBranchExclusiveStatLabel($leBase, 'LEADING ENERGY');
                     $leadingEnergyCounts = $leBase
                         ->selectRaw("
-                            SUM(CASE WHEN status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                            SUM(CASE WHEN status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                            SUM(CASE WHEN status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                            SUM(CASE WHEN status IS NULL OR LOWER(TRIM(COALESCE(status, ''))) NOT IN ('completed', 'for review', 'for email confirmation', 'archived', 'archive') THEN 1 ELSE 0 END) AS allocated_count,
+                            SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
+                            SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
                         ")
                         ->first();
                     $view->with('leading_energy_list_count', JobCountsScope::sidebarCountForBranchVertical('LEADING ENERGY', (int) ($leadingEnergyCounts->allocated_count ?? 0)));

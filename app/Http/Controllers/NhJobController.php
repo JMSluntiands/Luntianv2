@@ -8,6 +8,7 @@ use App\Models\EmailConfig;
 use App\Models\JobRequest;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -478,7 +479,15 @@ class NhJobController extends Controller
             'staff_id'      => ['nullable', 'string', 'max:50'],
             'checker_id'    => ['nullable', 'string', 'max:50'],
             'contact_email' => ['nullable', 'email', 'max:255'],
+            'units'         => ['nullable', 'integer', 'min:0', 'max:9999'],
         ]);
+
+        if (array_key_exists('job_status', $data)) {
+            $candidate = trim((string) ($data['job_status'] ?? ''));
+            if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidate)) {
+                return $fecErr;
+            }
+        }
 
         $update = [];
         if (array_key_exists('job_status', $data)) {
@@ -492,6 +501,9 @@ class NhJobController extends Controller
         }
         if (array_key_exists('contact_email', $data)) {
             $update['contact_email'] = $data['contact_email'];
+        }
+        if (array_key_exists('units', $data) && $data['units'] !== null) {
+            $update['units'] = (int) $data['units'];
         }
 
         if ($update === []) {

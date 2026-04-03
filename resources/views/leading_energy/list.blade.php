@@ -103,7 +103,7 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-update-url="{{ route('leading_energy.update', ['id' => $row->id]) }}">
+                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('leading_energy.update', ['id' => $row->id]) }}">
                                 <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
                                         <a href="{{ route('leading_energy.add', ['duplicate' => 1, 'job_number' => $jobNumber, 'client_name' => $clientName, 'contact_email' => $clientEmail, 'urgent_job' => ($urgent === 'YES') ? 1 : 0]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-blue-900/25 hover:text-blue-300 no-underline" title="Duplicate">
