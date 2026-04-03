@@ -1454,11 +1454,19 @@ class LbsJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
+        $completedDate = now('Asia/Manila')->toDateString();
+
         $emailConfig = EmailConfig::where('is_active', true)->first();
         if (!$emailConfig) {
+            DB::table('jobs')->where('job_id', $id)->update([
+                'job_status' => 'Completed',
+                'completion_date' => $completedDate,
+            ]);
+
             return response()->json([
-                'status' => 'disabled',
-                'message' => 'Email sending is disabled.',
+                'status' => 'success',
+                'message' => 'Email sending is disabled. Status updated to Completed.',
+                'email_skipped' => true,
             ]);
         }
 
@@ -1556,7 +1564,10 @@ class LbsJobController extends Controller
             ], 500);
         }
 
-        DB::table('jobs')->where('job_id', $id)->update(['job_status' => 'Completed']);
+        DB::table('jobs')->where('job_id', $id)->update([
+            'job_status' => 'Completed',
+            'completion_date' => $completedDate,
+        ]);
 
         return response()->json([
             'status'  => 'success',

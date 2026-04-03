@@ -232,6 +232,7 @@ class LeadingEnergyJobController extends Controller
 
         DB::table('job_leading_energy')->where('id', $id)->update([
             'status' => 'Completed',
+            'date' => now('Asia/Manila')->toDateString(),
             'updated_at' => now('Asia/Manila'),
         ]);
 

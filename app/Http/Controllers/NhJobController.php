@@ -311,11 +311,20 @@ class NhJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
+        $completedDate = now('Asia/Manila')->toDateString();
+
         $emailConfig = EmailConfig::where('is_active', true)->first();
         if (!$emailConfig) {
+            DB::table('job_nh')->where('id', $id)->update([
+                'status' => 'Completed',
+                'date' => $completedDate,
+                'updated_at' => now('Asia/Manila'),
+            ]);
+
             return response()->json([
-                'status' => 'disabled',
-                'message' => 'Email sending is disabled.',
+                'status' => 'success',
+                'message' => 'Email sending is disabled. Status updated to Completed.',
+                'email_skipped' => true,
             ]);
         }
 
@@ -396,6 +405,7 @@ class NhJobController extends Controller
 
         DB::table('job_nh')->where('id', $id)->update([
             'status' => 'Completed',
+            'date' => $completedDate,
             'updated_at' => now('Asia/Manila'),
         ]);
 

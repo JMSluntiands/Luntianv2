@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ReportsController extends Controller
@@ -20,7 +21,7 @@ class ReportsController extends Controller
                 j.completion_date AS completion_date,
                 CONVERT(COALESCE(j.staff_id, j.checker_id) USING utf8mb4) COLLATE {$utf8u} AS user_code,
                 CONVERT(COALESCE(j.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(j.units, 0) AS units,
+                COALESCE(NULLIF(j.units, 0), j.plan_complexity, 0) AS units,
                 CONVERT(COALESCE(ca.client_account_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
                 CASE
                     WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_EL\\_%' THEN CONVERT('EFFICIENT LIVING' USING utf8mb4) COLLATE {$utf8u}
@@ -109,6 +110,12 @@ class ReportsController extends Controller
         $dateFrom = trim((string) $request->query('date_from', ''));
         $dateTo = trim((string) $request->query('date_to', ''));
 
+        if ($dateFrom === '' && $dateTo === '') {
+            $today = Carbon::today()->toDateString();
+            $dateFrom = $today;
+            $dateTo = $today;
+        }
+
         $union = self::unionAllJobsSql($utf8u);
 
         $where = 'u.completion_date IS NOT NULL';
@@ -170,7 +177,7 @@ class ReportsController extends Controller
         ";
         $summaryRows = collect(DB::select($sqlSummary, $filterParams))->map(function ($r) {
             return (object) [
-                'job_system' => (string) ($r->job_system ?? ''),
+                'job_system' => trim((string) ($r->job_system ?? '')),
                 'job_count' => (int) ($r->job_count ?? 0),
                 'units_sum' => (int) ($r->units_sum ?? 0),
             ];

@@ -143,42 +143,7 @@
     </div>
 
     {{-- Send email progress modal --}}
-    <div class="send-email-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-all duration-300 [&.show]:opacity-100 [&.show]:pointer-events-auto" id="sendEmailModal" role="dialog" aria-labelledby="sendEmailModalTitle" aria-modal="true">
-        <div class="send-email-modal-dialog w-full max-w-sm overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-                <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="sendEmailModalTitle">Sending Email</h2>
-            </div>
-            <div class="space-y-3 px-5 py-4">
-                <div class="send-email-step flex items-center gap-3 transition-all duration-300" id="sendStep1">
-                    <span class="send-email-step-icon send-email-step-spinner h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 border-t-blue-600" aria-hidden="true"></span>
-                    <span class="send-email-step-text text-sm text-slate-700 dark:text-slate-300">Sending email...</span>
-                </div>
-                <div class="send-email-step flex items-center gap-3 text-slate-500 transition-all duration-300" id="sendStep2">
-                    <span class="send-email-step-icon text-lg" aria-hidden="true">○</span>
-                    <span class="text-sm">Updating status to Completed...</span>
-                </div>
-                <div class="send-email-done flex items-center gap-3 text-green-600 dark:text-green-400" id="sendStepDone" hidden>
-                    <span class="text-lg font-bold">✓</span>
-                    <span class="text-sm font-medium">Done!</span>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
-
-@push('styles')
-<style>
-.send-email-modal-backdrop .send-email-modal-dialog { transform: scale(0.95); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
-.send-email-modal-backdrop.show .send-email-modal-dialog { transform: scale(1); opacity: 1; }
-.send-email-step-spinner { animation: send-email-spin 0.8s linear infinite; }
-@keyframes send-email-spin { to { transform: rotate(360deg); } }
-.send-email-step.done .send-email-step-icon { animation: send-email-check-pop 0.35s ease; }
-@keyframes send-email-check-pop { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
-.send-email-step:not(.active):not(.done) { opacity: 0.5; }
-.send-email-done { animation: send-email-done-in 0.35s ease; }
-@keyframes send-email-done-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-</style>
-@endpush
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -321,37 +286,14 @@
             if (emailPreviewCloseBtn) emailPreviewCloseBtn.addEventListener('click', closeEmailPreviewModal);
             if (emailPreviewModal) emailPreviewModal.addEventListener('click', function(e) { if (e.target === emailPreviewModal) closeEmailPreviewModal(); });
 
-            var sendEmailModal = document.getElementById('sendEmailModal');
-            var sendStep1 = document.getElementById('sendStep1');
-            var sendStep2 = document.getElementById('sendStep2');
-            var sendStepDone = document.getElementById('sendStepDone');
-
-            function resetSendModal() {
-                if (sendStep1) {
-                    sendStep1.classList.remove('done', 'active');
-                    sendStep1.querySelector('.send-email-step-icon').className = 'send-email-step-icon send-email-step-spinner';
-                    sendStep1.querySelector('.send-email-step-text').textContent = 'Sending email...';
-                }
-                if (sendStep2) {
-                    sendStep2.classList.remove('done', 'active');
-                    sendStep2.querySelector('.send-email-step-icon').className = 'send-email-step-icon send-email-step-pending';
-                    sendStep2.querySelector('.send-email-step-icon').textContent = '○';
-                }
-                if (sendStepDone) sendStepDone.hidden = true;
-            }
-
             document.querySelectorAll('[data-send-job]').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     var jobId = this.getAttribute('data-send-job');
                     if (!jobId) return;
                     if (this.disabled) return;
-                    var row = this.closest('tr.csp-mailbox-row');
                     var sendUrl = emailPreviewUrlBase + '/' + jobId + '/send-mailbox-email';
                     this.disabled = true;
                     var self = this;
-                    resetSendModal();
-                    sendStep1.classList.add('active');
-                    if (sendEmailModal) sendEmailModal.classList.add('show');
 
                     var formData = new FormData();
                     formData.append('_token', csrfToken);
@@ -363,36 +305,17 @@
                     .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
                     .then(function(result) {
                         if (result.ok && result.data && result.data.status === 'success') {
-                            sendStep1.classList.remove('active');
-                            sendStep1.classList.add('done');
-                            sendStep1.querySelector('.send-email-step-icon').className = 'send-email-step-icon send-email-step-check';
-                            sendStep1.querySelector('.send-email-step-icon').textContent = '✓';
-                            sendStep1.querySelector('.send-email-step-text').textContent = 'Email sent.';
-                            sendStep2.classList.add('active', 'done');
-                            sendStep2.querySelector('.send-email-step-icon').className = 'send-email-step-icon send-email-step-check';
-                            sendStep2.querySelector('.send-email-step-icon').textContent = '✓';
-                            setTimeout(function() {
-                                sendStepDone.hidden = false;
-                                if (typeof window.showSuccessToast === 'function') {
-                                    window.showSuccessToast(result.data.message || 'Email sent. Status updated to Completed.');
-                                }
-                                setTimeout(function() {
-                                    sendEmailModal.classList.remove('show');
-                                    resetSendModal();
-                                    window.location.reload();
-                                }, 600);
-                            }, 700);
+                            if (typeof window.showSuccessToast === 'function') {
+                                window.showSuccessToast(result.data.message || 'Status updated to Completed.');
+                            }
+                            window.setTimeout(function() { window.location.reload(); }, 350);
                         } else {
-                            sendEmailModal.classList.remove('show');
-                            resetSendModal();
-                            alert(result.data && result.data.message ? result.data.message : 'Failed to send email.');
+                            alert(result.data && result.data.message ? result.data.message : 'Could not complete send.');
                             self.disabled = false;
                         }
                     })
                     .catch(function() {
-                        sendEmailModal.classList.remove('show');
-                        resetSendModal();
-                        alert('Failed to send email.');
+                        alert('Could not complete send.');
                         self.disabled = false;
                     });
                 });

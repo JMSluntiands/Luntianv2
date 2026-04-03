@@ -308,6 +308,7 @@ class LcHomeBuilderJobController extends Controller
 
         DB::table('job_lc_home_builder')->where('id', $id)->update([
             'status' => 'Completed',
+            'date' => now('Asia/Manila')->toDateString(),
             'updated_at' => now('Asia/Manila'),
         ]);
 

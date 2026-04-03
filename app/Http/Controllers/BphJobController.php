@@ -107,11 +107,26 @@ class BphJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
+        $completedDate = now('Asia/Manila')->toDateString();
+
         $emailConfig = EmailConfig::where('is_active', true)->first();
         if (!$emailConfig) {
+            DB::table('job_bph')->where('id', $id)->update([
+                'status' => 'Completed',
+                'date' => $completedDate,
+                'updated_at' => now('Asia/Manila'),
+            ]);
+            $this->createBphActivityLog(
+                (int) $id,
+                'Email',
+                'Email sending disabled; job marked Completed from mailbox.',
+                session('user_name') ?? 'LUNTIAN'
+            );
+
             return response()->json([
-                'status' => 'disabled',
-                'message' => 'Email sending is disabled.',
+                'status' => 'success',
+                'message' => 'Email sending is disabled. Status updated to Completed.',
+                'email_skipped' => true,
             ]);
         }
 
@@ -211,6 +226,7 @@ class BphJobController extends Controller
 
         DB::table('job_bph')->where('id', $id)->update([
             'status' => 'Completed',
+            'date' => $completedDate,
             'updated_at' => now('Asia/Manila'),
         ]);
         $this->createBphActivityLog(
