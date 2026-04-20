@@ -193,6 +193,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/leading-energy/job/{id}/send-slack', [LeadingEnergyJobController::class, 'sendSlackNotification'])->name('leading_energy.job.sendSlack');
     Route::post('/dashboard/leading-energy/job/{id}/send-submission-email', [LeadingEnergyJobController::class, 'sendSubmissionEmail'])->name('leading_energy.job.sendSubmissionEmail');
     Route::get('/dashboard/leading-energy/list', [LeadingEnergyJobController::class, 'list'])->name('leading_energy.list');
+    Route::get('/dashboard/leading-energy/job/{id}', [LeadingEnergyJobController::class, 'show'])->name('leading_energy.view');
     Route::put('/dashboard/leading-energy/job/{id}', [LeadingEnergyJobController::class, 'update'])->name('leading_energy.update');
     Route::get('/dashboard/leading-energy/mailbox', [LeadingEnergyJobController::class, 'mailbox'])->name('leading_energy.mailbox');
     Route::get('/dashboard/leading-energy/job/{id}/email-preview', [LeadingEnergyJobController::class, 'emailPreview'])->name('leading_energy.job.emailPreview');

@@ -162,8 +162,9 @@
             <div class="job-view-edit-form job-view-edit-form-assignment space-y-4" id="jobViewEditFormAssignment" hidden>
                 @php
                     $jobUpdateRouteForAssigned = $jobUpdateRouteName ?? (($isEfficientLiving ?? false) ? 'efficient_living.job.update' : 'lbs.job.update');
+                    $jvModal = 'job_view.' . ($jobViewModuleKey ?? 'lbs');
                     $permEditAssignedInModal = \App\Models\RolePermission::userMayAccessRoute($jobUpdateRouteForAssigned)
-                        && \App\Models\RolePermission::userMayAccessRoute('job_view.edit.assigned');
+                        && \App\Models\RolePermission::userMayAccessRoute($jvModal . '.edit_assigned');
                     $selAssignedRaw = trim((string) ($job->staff_id ?? ''));
                     $selAssignedU = strtoupper($selAssignedRaw);
                     $selCheckerRaw = trim((string) ($job->checker_id ?? ''));

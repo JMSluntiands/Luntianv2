@@ -165,6 +165,7 @@ class BluinqJobController extends Controller
             'sidebar_active' => 'bluinq.list',
             'isEfficientLiving' => false,
             'isBphView' => true,
+            'jobViewCardModuleKey' => 'bluinq',
             'bphJobRow' => $job,
             'listRouteName' => 'bluinq.list',
             'trashRouteName' => 'bluinq.trash',

@@ -30,32 +30,36 @@
         $permBphPrintCompliance = \App\Models\RolePermission::userMayAccessRoute('bph.job.printCompliance');
         $permBphMergeFile = \App\Models\RolePermission::userMayAccessRoute('bph.job.mergeFile');
 
-        $permCardClient = \App\Models\RolePermission::userMayAccessRoute('job_view.card.client_details');
-        $permCardJob = \App\Models\RolePermission::userMayAccessRoute('job_view.card.job_details');
-        $permCardNotes = \App\Models\RolePermission::userMayAccessRoute('job_view.card.notes');
-        $permCardComplexity = $isBphView ? false : \App\Models\RolePermission::userMayAccessRoute('job_view.card.complexity');
-        $permCardPlans = \App\Models\RolePermission::userMayAccessRoute('job_view.card.plans');
-        $permCardDocuments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.documents');
-        $permCardChecker = \App\Models\RolePermission::userMayAccessRoute('job_view.card.checker_uploads');
-        $permCardRunComments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.run_comments');
-        $permCardComments = \App\Models\RolePermission::userMayAccessRoute('job_view.card.comments');
-        $permCardActivity = \App\Models\RolePermission::userMayAccessRoute('job_view.card.activity');
-        $permCardBphAdditional = \App\Models\RolePermission::userMayAccessRoute('job_view.card.bph_additional');
-        $permBtnArchiveJob = \App\Models\RolePermission::userMayAccessRoute('job_view.button.archive_job');
-        $permBtnEditClient = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.client_details');
-        $permBtnEditJob = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.job_details');
-        $permBtnEditAssignment = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.assignment');
-        $permBtnEditNotes = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.notes');
-        $permBtnEditComplexity = \App\Models\RolePermission::userMayAccessRoute('job_view.button.edit.complexity');
-        $permBtnAddFiles = \App\Models\RolePermission::userMayAccessRoute('job_view.button.files.add');
-        $permBtnDeleteFiles = \App\Models\RolePermission::userMayAccessRoute('job_view.button.files.delete');
-        $permBtnSendRunComment = \App\Models\RolePermission::userMayAccessRoute('job_view.button.comments.run.send');
-        $permBtnSendComment = \App\Models\RolePermission::userMayAccessRoute('job_view.button.comments.job.send');
+        $jobViewModuleKey = $jobViewModuleKey ?? ($isBphView ? 'bph' : ($isEfficientLivingView ? 'efficient_living' : 'lbs'));
+        $jobViewCardModuleKey = $jobViewCardModuleKey ?? $jobViewModuleKey;
+        $jv = 'job_view.' . $jobViewModuleKey;
+        $jvCard = 'job_view.' . $jobViewCardModuleKey;
 
-        $jobViewModuleKey = $isBphView ? 'bph' : ($isEfficientLivingView ? 'efficient_living' : 'lbs');
-        $permModuleCheckerCard = \App\Models\RolePermission::userMayAccessRoute('job_view.' . $jobViewModuleKey . '.card.checker_uploads');
-        $permModuleCheckerAdd = \App\Models\RolePermission::userMayAccessRoute('job_view.' . $jobViewModuleKey . '.button.checker_uploads.add');
-        $permCardChecker = $permCardChecker && $permModuleCheckerCard;
+        $permCardClient = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.client_details');
+        $permCardJob = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.job_details');
+        $permCardNotes = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.notes');
+        $permCardComplexity = $isBphView ? false : \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.complexity');
+        $permCardPlans = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.plans');
+        $permCardDocuments = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.documents');
+        $permCardChecker = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.checker_uploads');
+        $permCardRunComments = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.run_comments');
+        $permCardComments = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.comments');
+        $permCardActivity = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.activity');
+        $permCardBphAdditional = $isBphView
+            ? \App\Models\RolePermission::userMayAccessRoute('job_view.bph.card.bph_additional')
+            : false;
+        $permBtnArchiveJob = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.archive_job');
+        $permBtnEditClient = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.edit.client_details');
+        $permBtnEditJob = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.edit.job_details');
+        $permBtnEditAssignment = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.edit.assignment');
+        $permBtnEditNotes = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.edit.notes');
+        $permBtnEditComplexity = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.edit.complexity');
+        $permBtnAddFiles = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.files.add');
+        $permBtnDeleteFiles = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.files.delete');
+        $permBtnSendRunComment = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.comments.run.send');
+        $permBtnSendComment = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.comments.job.send');
+
+        $permModuleCheckerAdd = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.checker_uploads.add');
     @endphp
     <div class="min-h-0 w-full max-w-full">
         {{-- Breadcrumb --}}
@@ -151,7 +155,7 @@
             $showFilesBlock = $permCardPlans || $permCardDocuments || $permCardChecker;
             $showDiscussionBlock = $permCardRunComments || $permCardComments;
 
-            $permEditAssignment = \App\Models\RolePermission::userMayAccessRoute('job_view.edit.assigned');
+            $permEditAssignment = \App\Models\RolePermission::userMayAccessRoute('job_view.' . $jobViewModuleKey . '.edit_assigned');
             $showAssignmentCard = $permCardJob;
             $detailTopCardCount = ($permCardClient ? 1 : 0) + ($permCardJob ? 1 : 0) + ($showAssignmentCard ? 1 : 0);
             $detailTopColClass = $detailTopCardCount >= 3 ? 'lg:col-span-4' : ($detailTopCardCount === 2 ? 'lg:col-span-6' : 'lg:col-span-12');

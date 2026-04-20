@@ -160,6 +160,22 @@ class LeadingEnergyJobController extends Controller
         return view('leading_energy.list', ['sidebar_active' => 'leading_energy.list']);
     }
 
+    public function show(int $id)
+    {
+        $scoped = DB::table('job_leading_energy')->where('id', $id);
+        JobCountsScope::applyJobBphAssignment($scoped);
+        JobCountsScope::applyBranchExclusiveStatLabel($scoped, 'LEADING ENERGY');
+        $job = $scoped->first();
+        if (! $job) {
+            abort(404);
+        }
+
+        return view('leading_energy.show', [
+            'sidebar_active' => 'leading_energy.list',
+            'job' => $job,
+        ]);
+    }
+
     public function completed()
     {
         return view('leading_energy.completed', ['sidebar_active' => 'leading_energy.completed']);

@@ -783,10 +783,10 @@ class BphJobController extends Controller
             }
         }
 
-        if (! RolePermission::userMayAccessRoute('job_view.edit.assigned')) {
+        if (! RolePermission::userMayAccessRoute('job_view.bph.edit_assigned')) {
             unset($data['staff_id'], $data['assigned'], $data['checker_id'], $data['checked']);
         }
-        if (! RolePermission::userMayAccessRoute('job_view.button.edit.job_details')) {
+        if (! RolePermission::userMayAccessRoute('job_view.bph.button.edit.job_details')) {
             unset(
                 $data['job_address'],
                 $data['priority'],
@@ -800,7 +800,7 @@ class BphJobController extends Controller
                 $data['urgent']
             );
         }
-        if (! RolePermission::userMayAccessRoute('job_view.button.edit.notes')) {
+        if (! RolePermission::userMayAccessRoute('job_view.bph.button.edit.notes')) {
             unset($data['notes']);
         }
 

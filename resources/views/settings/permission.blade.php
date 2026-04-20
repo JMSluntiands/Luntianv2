@@ -5,11 +5,6 @@
 @section('body_class', 'page-settings-permission')
 
 @section('content')
-    @php
-        $scopeLabel = $selectedBranch === ''
-            ? 'All branches (default)'
-            : $selectedBranch;
-    @endphp
     <div class="w-full">
         {{-- Header --}}
         <div class="mb-6 flex flex-wrap items-start gap-4">
@@ -20,7 +15,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Permission</h1>
-                <p class="text-slate-600 dark:text-slate-400">Choose which pages each <span class="font-medium text-slate-700 dark:text-slate-300">role</span> can access. Use <span class="font-medium text-slate-700 dark:text-slate-300">Branch office</span> to set rules only for users assigned to that branch (their <span class="font-medium text-slate-700 dark:text-slate-300">user branch</span> must match). <span class="font-medium text-slate-700 dark:text-slate-300">All branches</span> applies when no branch-specific list exists for that user. Modules are grouped like the sidebar — scroll to <span class="font-medium text-slate-700 dark:text-slate-300">Job management</span>. Role names match user accounts <span class="font-medium text-slate-700 dark:text-slate-300">case-insensitively</span>. If a role has <span class="font-medium text-slate-700 dark:text-slate-300">no saved boxes at all</span> for the scope that applies, that user can still access every listed page until you save at least one permission.</p>
+                <p class="text-slate-600 dark:text-slate-400">Pumili ng <span class="font-medium text-slate-700 dark:text-slate-300">user</span> — bawat bloke (LBS, Job page, BPH, …) ay may sariling checkbox; <span class="font-medium text-slate-700 dark:text-slate-300">walang duplicate</span> — isang route, isang checkbox. Ang <span class="font-medium text-slate-700 dark:text-slate-300">Job page</span> ang bahagi ng mga shared card/button sa job detail (LBS / BPH / Efficient Living). I-<span class="font-medium text-slate-700 dark:text-slate-300">Save</span> para isulat ang buong listahan. Kung wala pang naka-save na permission ang user, bumabalik muna sa lumang <span class="font-medium text-slate-700 dark:text-slate-300">role</span> matrix.</p>
             </div>
         </div>
 
@@ -34,125 +29,126 @@
             </div>
         @endif
 
-        <form id="permissionForm" action="{{ route('settings.permission.store') }}" method="POST" class="space-y-6">
-            @csrf
-            <input type="hidden" name="permission_role" value="{{ $selectedRole }}">
-            <input type="hidden" name="permission_branch" value="{{ $selectedBranch }}">
+        @if(!empty($noUsers))
+            <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100" role="status">
+                <p class="m-0 text-sm">There are no user accounts yet. Create users first, then assign permissions per user.</p>
+            </div>
+        @endif
 
-            {{-- Role + branch scope --}}
+        <form id="permissionForm" action="{{ route('settings.permission.store') }}" method="POST" class="space-y-6 pb-28">
+            @csrf
+
             <div class="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
                 <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
                     <div class="space-y-1">
-                        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">Editing scope</p>
+                        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">User</p>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            <span class="font-medium text-slate-600 dark:text-slate-300">Your user branch:</span>
+                            <span class="font-medium text-slate-600 dark:text-slate-300">Your branch:</span>
                             {{ !empty($editorBranchName) ? $editorBranchName : '—' }}
                         </p>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Current matrix: <span class="font-medium text-slate-600 dark:text-slate-300">{{ $selectedRole }}</span>
-                            · <span class="font-medium text-slate-600 dark:text-slate-300">{{ $scopeLabel }}</span>
-                        </p>
-                    </div>
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-                        <div class="w-full min-w-[12rem] sm:w-56">
-                            <label for="roleSelect" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Role</label>
-                            <select id="roleSelect" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-emerald-500/30">
-                                @foreach($roles as $role)
-                                    <option value="{{ $role }}" {{ $role === $selectedRole ? 'selected' : '' }}>{{ $role }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="w-full min-w-[12rem] sm:w-64">
-                            <label for="branchSelect" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Branch office</label>
-                            <select id="branchSelect" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-emerald-500/30">
-                                <option value="" {{ $selectedBranch === '' ? 'selected' : '' }}>All branches (default)</option>
-                                @foreach(($branches ?? []) as $bn)
-                                    <option value="{{ $bn }}" {{ $bn === $selectedBranch ? 'selected' : '' }}>{{ $bn }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Single panel for selected role + branch --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
-                <div class="flex items-center gap-3 rounded-t-2xl border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25">
-                        <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ $selectedRole }} — {{ $scopeLabel }}</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            @if(empty($allowedForSelection))
-                                No restrictions saved for this scope (users fall through to defaults described above).
+                            @if(!empty($selectedUser))
+                                <span class="font-medium text-slate-600 dark:text-slate-300">Editing:</span>
+                                {{ trim(($selectedUser->fullname ?? '') . ' (' . ($selectedUser->username ?? '') . ')') }}
+                                · <span class="font-medium text-slate-600 dark:text-slate-300">{{ $selectedUser->role ?? '' }}</span>
+                                @if(trim((string) ($selectedUser->branch ?? '')) !== '')
+                                    · <span class="font-medium text-slate-600 dark:text-slate-300">{{ $selectedUser->branch }}</span>
+                                @endif
                             @else
-                                {{ count($allowedForSelection) }} route(s) allowed for this scope.
+                                —
                             @endif
                         </p>
                     </div>
-                </div>
-                <div class="p-5">
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        @foreach(($permissionBlocks ?? []) as $block)
-                            @if(!empty($block['group_heading']))
-                                <div class="col-span-full {{ $loop->first ? 'mt-0' : 'mt-8 border-t border-slate-200 pt-6 dark:border-slate-600' }}">
-                                    <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ $block['group_heading'] }}</p>
-                                </div>
-                            @endif
-                            @php
-                                $sectionName = $block['section'];
-                                $routes = $block['routes'];
-                            @endphp
-                            <div class="permission-section-card rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-600 dark:bg-slate-800/40">
-                                <div class="mb-3 flex items-center justify-between gap-2">
-                                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ $sectionName }}</h3>
-                                    <label class="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">
-                                        <input type="checkbox" class="permission-check-all h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700" aria-label="Check all {{ $sectionName }}">
-                                        <span>Check all</span>
-                                    </label>
-                                </div>
-                                <ul class="space-y-2">
-                                    @foreach($routes as $routeName => $label)
-                                        @php
-                                            $checked = in_array($routeName, $allowedForSelection ?? [], true);
-                                        @endphp
-                                        <li>
-                                            <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-white dark:hover:bg-slate-800/50">
-                                                <input type="hidden" name="permissions[{{ $routeName }}]" value="0">
-                                                <input type="checkbox"
-                                                    name="permissions[{{ $routeName }}]"
-                                                    value="1"
-                                                    {{ $checked ? 'checked' : '' }}
-                                                    class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700">
-                                                <span class="text-sm text-slate-700 dark:text-slate-300">{{ $label }}</span>
-                                            </label>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endforeach
+                    <div class="w-full min-w-[12rem] lg:max-w-md">
+                        <label for="userSelect" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Select user</label>
+                        <select name="permission_user_id" id="userSelect" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:ring-emerald-500/30">
+                            @foreach(($users ?? []) as $u)
+                                <option value="{{ $u->id }}" {{ (int) $u->id === (int) ($selectedUserId ?? 0) ? 'selected' : '' }}>
+                                    {{ trim(($u->fullname ?? '') !== '' ? $u->fullname : $u->username) }} ({{ $u->username }}) — {{ $u->role }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
             </div>
 
-            {{-- Save bar --}}
-            <div class="flex flex-wrap items-center gap-3">
-                <button type="submit" id="permissionSubmitBtn"
-                    class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Save permissions
-                </button>
-                <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
+            @foreach(($permissionSections ?? []) as $section)
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
+                    <div class="flex items-center gap-3 rounded-t-2xl border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25">
+                            <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2l1 1h10a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="m-0 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Job management</p>
+                            <h2 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{{ $section['label'] ?? '' }}</h2>
+                            @php
+                                $cnt = 0;
+                                foreach (($section['columns'] ?? []) as $pc) {
+                                    $cnt += count($pc['routes'] ?? []);
+                                }
+                            @endphp
+                            <p class="m-0 text-xs text-slate-500 dark:text-slate-400">{{ $cnt }} route(s)</p>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                            @foreach(($section['columns'] ?? []) as $col)
+                                <div class="permission-section-card rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-600 dark:bg-slate-800/40">
+                                    <div class="mb-3 flex items-center justify-between gap-2">
+                                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $col['heading'] ?? '' }}</h3>
+                                        @if(!empty($col['routes']))
+                                            <label class="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">
+                                                <input type="checkbox" class="permission-check-all h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700" aria-label="Check all {{ $col['heading'] ?? '' }}">
+                                                <span>Check all</span>
+                                            </label>
+                                        @endif
+                                    </div>
+                                    @if(empty($col['routes']))
+                                        <p class="m-0 text-sm text-slate-500 dark:text-slate-400">—</p>
+                                    @else
+                                        <ul class="space-y-2">
+                                            @foreach($col['routes'] as $routeName => $label)
+                                                @php
+                                                    $checked = in_array($routeName, $allowedForSelection ?? [], true);
+                                                @endphp
+                                                <li>
+                                                    <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-white dark:hover:bg-slate-800/50">
+                                                        <input type="hidden" name="permissions[{{ $routeName }}]" value="0">
+                                                        <input type="checkbox"
+                                                            name="permissions[{{ $routeName }}]"
+                                                            value="1"
+                                                            {{ $checked ? 'checked' : '' }}
+                                                            class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700">
+                                                        <span class="text-sm text-slate-700 dark:text-slate-300">{{ $label }}</span>
+                                                    </label>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+
+            <div class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95">
+                <div class="mx-auto flex w-full max-w-7xl justify-end gap-3">
+                    <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
+                    <button type="submit" id="permissionSubmitBtn" @if(!empty($noUsers)) disabled @endif
+                        class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-900">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Save permissions
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 
-    {{-- Toast after save: use query param so it works after redirect --}}
     @if(request()->has('saved'))
     <script>
     (function() {
@@ -188,15 +184,10 @@
             var btn = document.getElementById('permissionSubmitBtn');
             if (!form || !btn) return;
 
-            function scopeUrl(role, branch) {
+            function scopeUrl(user) {
                 var base = @json(route('settings.permission'));
                 var u = new URL(base, window.location.origin);
-                u.searchParams.set('role', role);
-                if (branch) {
-                    u.searchParams.set('branch', branch);
-                } else {
-                    u.searchParams.delete('branch');
-                }
+                u.searchParams.set('user', user);
                 return u.pathname + u.search;
             }
 
@@ -206,22 +197,17 @@
             });
 
             if (typeof $ !== 'undefined' && $.fn.select2) {
-                $('#roleSelect').select2({ width: '100%', allowClear: false });
-                $('#branchSelect').select2({ width: '100%', allowClear: false });
-                $('#roleSelect, #branchSelect').on('change', function() {
-                    var r = $('#roleSelect').val();
-                    var b = $('#branchSelect').val() || '';
-                    window.location.href = scopeUrl(r, b);
+                $('#userSelect').select2({ width: '100%', allowClear: false });
+                $('#userSelect').on('change', function() {
+                    window.location.href = scopeUrl($('#userSelect').val());
                 });
             } else {
-                var roleSelect = document.getElementById('roleSelect');
-                var branchSelect = document.getElementById('branchSelect');
-                function reloadScope() {
-                    if (!roleSelect || !branchSelect) return;
-                    window.location.href = scopeUrl(roleSelect.value, branchSelect.value || '');
+                var userSelect = document.getElementById('userSelect');
+                if (userSelect) {
+                    userSelect.addEventListener('change', function() {
+                        window.location.href = scopeUrl(userSelect.value);
+                    });
                 }
-                if (roleSelect) roleSelect.addEventListener('change', reloadScope);
-                if (branchSelect) branchSelect.addEventListener('change', reloadScope);
             }
 
             function updateCheckAllState(card) {
@@ -245,6 +231,7 @@
                     card.querySelectorAll('input[name^="permissions"][type="checkbox"]').forEach(function(cb) {
                         cb.checked = checkAll.checked;
                     });
+                    updateCheckAllState(card);
                 });
             });
 

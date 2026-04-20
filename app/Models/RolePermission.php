@@ -90,6 +90,16 @@ class RolePermission extends Model
             return true;
         }
 
+        $roleNorm = strtolower(trim($role));
+        if ($roleNorm === 'admin') {
+            $userId = (int) session('user_id', 0);
+            if ($userId > 0 && UserPermission::hasAnyRowForUser($userId)) {
+                return UserPermission::hasAccess($userId, $routeName, session('user_branch'));
+            }
+
+            return true;
+        }
+
         $allowedRoutes = config('permissions.routes', []);
         $allRouteNames = [];
         foreach ($allowedRoutes as $group) {
@@ -101,11 +111,35 @@ class RolePermission extends Model
             return true;
         }
 
+        $userId = (int) session('user_id', 0);
+        if ($userId > 0 && UserPermission::hasAnyRowForUser($userId)) {
+            return UserPermission::hasAccess($userId, $routeName, session('user_branch'));
+        }
+
         return static::hasAccess($role, $routeName, session('user_branch'));
     }
 
     public static function allowedRoutesForRole(string $role, ?string $userBranch = null): array
     {
+        if (strtolower(trim($role)) === 'admin') {
+            $names = [];
+            foreach (config('permissions.routes', []) as $group) {
+                if (!is_array($group)) {
+                    continue;
+                }
+                foreach (array_keys($group) as $name) {
+                    $names[] = $name;
+                }
+            }
+
+            return array_values(array_unique($names));
+        }
+
+        $userId = (int) session('user_id', 0);
+        if ($userId > 0 && UserPermission::hasAnyRowForUser($userId)) {
+            return UserPermission::allowedRoutesForUser($userId, $userBranch);
+        }
+
         $role = static::canonicalRole($role);
         $userBranch = static::normalizeBranch($userBranch ?? (string) (session('user_branch') ?? ''));
 

@@ -109,9 +109,9 @@
                                         <a href="{{ route('leading_energy.add', ['duplicate' => 1, 'job_number' => $jobNumber, 'client_name' => $clientName, 'contact_email' => $clientEmail, 'urgent_job' => ($urgent === 'YES') ? 1 : 0]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-blue-900/25 hover:text-blue-300 no-underline" title="Duplicate">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
-                                        <button type="button" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-green-500/15 hover:text-green-400" title="View unavailable" disabled>
+                                        <a href="{{ route('leading_energy.view', ['id' => $row->id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-green-500/15 hover:text-green-400" title="View">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </button>
+                                        </a>
                                     </div>
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-sort="{{ $logRaw }}"><span class="block font-medium">{{ $log->format('F j, Y') }}</span><span class="block text-[0.8125rem] text-slate-400">{{ $log->format('g:i A') }}</span></td>

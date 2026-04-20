@@ -9,6 +9,8 @@
         $job = $job ?? null;
         $canPrint = \App\Models\RolePermission::userMayAccessRoute('csp.job.printCompliance');
         $canUpdate = \App\Models\RolePermission::userMayAccessRoute('csp.update');
+        $canViewCardDetails = \App\Models\RolePermission::userMayAccessRoute('job_view.csp.card.job_details');
+        $canViewCardNotes = \App\Models\RolePermission::userMayAccessRoute('job_view.csp.card.notes');
     @endphp
     <div class="mx-auto max-w-4xl pb-10">
         <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -34,8 +36,10 @@
             </div>
         </div>
 
+        @if($canViewCardDetails || $canViewCardNotes)
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <dl class="grid gap-0 sm:grid-cols-2">
+                @if($canViewCardDetails)
                 <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:border-r">
                     <dt class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</dt>
                     <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $job->status ?? '—' }}</dd>
@@ -68,12 +72,20 @@
                     <dt class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Checked by</dt>
                     <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ strtoupper((string) ($job->checked ?? '—')) }}</dd>
                 </div>
+                @endif
+                @if($canViewCardNotes)
                 <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:col-span-2">
                     <dt class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Notes</dt>
                     <dd class="mt-1 whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">{{ $job->notes ?? '—' }}</dd>
                 </div>
+                @endif
             </dl>
         </div>
+        @else
+        <div class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            You do not have permission to view CSP job detail cards.
+        </div>
+        @endif
 
         @if($canUpdate)
             <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
