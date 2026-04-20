@@ -134,7 +134,9 @@
                 </div>
             @endforeach
 
-            <div class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95">
+            <div
+                class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95"
+                style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.18);">
                 <div class="mx-auto flex w-full max-w-7xl justify-end gap-3">
                     <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
                     <button type="submit" id="permissionSubmitBtn" @if(!empty($noUsers)) disabled @endif
