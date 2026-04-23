@@ -164,7 +164,7 @@ class RolePermission extends Model
      */
     public static function dashboardStatCardLabels(): array
     {
-        return ['LBS', 'BPH', 'BLUINQ', 'CSP', 'NH', 'LC HOME BUILDER', 'EFFICIENT LIVING', 'LEADING ENERGY'];
+        return ['LBS', 'BPH', 'BLUINQ', 'A&M', 'FYRS ENERGY WISE', 'CSP', 'NH', 'LC HOME BUILDER', 'EFFICIENT LIVING', 'LEADING ENERGY'];
     }
 
     /**
@@ -181,6 +181,10 @@ class RolePermission extends Model
             'lbs' => 'LBS',
             'bph' => 'BPH',
             'bluinq' => 'BLUINQ',
+            'amt' => 'A&M',
+            'a&m' => 'A&M',
+            'fyrs' => 'FYRS ENERGY WISE',
+            'fyrs energy wise' => 'FYRS ENERGY WISE',
             'csp' => 'CSP',
             'nh' => 'NH',
             'lc home builder' => 'LC HOME BUILDER',
@@ -250,6 +254,12 @@ class RolePermission extends Model
         }
         if ($anyMay(['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash'])) {
             $allowed['BLUINQ'] = true;
+        }
+        if ($anyMay(['amt.add', 'amt.rfq', 'amt.purchase', 'amt.list', 'amt.completed', 'amt.review', 'amt.mailbox', 'amt.trash'])) {
+            $allowed['A&M'] = true;
+        }
+        if ($anyMay(['fyrs.add', 'fyrs.list', 'fyrs.completed', 'fyrs.review', 'fyrs.mailbox', 'fyrs.trash'])) {
+            $allowed['FYRS ENERGY WISE'] = true;
         }
         if ($anyMay([
             'csp.add', 'csp.store', 'csp.view', 'csp.list', 'csp.completed', 'csp.review', 'csp.mailbox', 'csp.trash',

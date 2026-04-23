@@ -73,6 +73,8 @@ const BRANCH_ORDER = [
   'LBS',
   'BPH',
   'BLUINQ',
+  'A&M',
+  'FYRS ENERGY WISE',
   'CSP',
   'NH',
   'LC HOME BUILDER',

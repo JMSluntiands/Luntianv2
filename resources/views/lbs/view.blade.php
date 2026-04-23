@@ -18,6 +18,9 @@
         $jobRunCommentRouteName = $jobRunCommentRouteName ?? 'lbs.job.runComment';
         $jobCommentRouteName = $jobCommentRouteName ?? 'lbs.job.comment';
         $jobFileRouteName = $jobFileRouteName ?? 'lbs.job.file';
+        $jobPrintComplianceRouteName = $jobPrintComplianceRouteName ?? 'bph.job.printCompliance';
+        $jobMergeFileRouteName = $jobMergeFileRouteName ?? 'bph.job.mergeFile';
+        $jobCompliancePdfFilenamePrefix = $jobCompliancePdfFilenamePrefix ?? 'BPH';
 
         $permJobUpdate = \App\Models\RolePermission::userMayAccessRoute($jobUpdateRouteName);
         $permUpload = \App\Models\RolePermission::userMayAccessRoute($jobUploadFilesRouteName);
@@ -27,8 +30,8 @@
         $permRunComment = \App\Models\RolePermission::userMayAccessRoute($jobRunCommentRouteName);
         $permComment = \App\Models\RolePermission::userMayAccessRoute($jobCommentRouteName);
         $permArchive = \App\Models\RolePermission::userMayAccessRoute($jobArchiveRouteName);
-        $permBphPrintCompliance = \App\Models\RolePermission::userMayAccessRoute('bph.job.printCompliance');
-        $permBphMergeFile = \App\Models\RolePermission::userMayAccessRoute('bph.job.mergeFile');
+        $permBphPrintCompliance = \App\Models\RolePermission::userMayAccessRoute($jobPrintComplianceRouteName);
+        $permBphMergeFile = \App\Models\RolePermission::userMayAccessRoute($jobMergeFileRouteName);
 
         $jobViewModuleKey = $jobViewModuleKey ?? ($isBphView ? 'bph' : ($isEfficientLivingView ? 'efficient_living' : 'lbs'));
         $jobViewCardModuleKey = $jobViewCardModuleKey ?? $jobViewModuleKey;
@@ -46,7 +49,7 @@
         $permCardComments = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.comments');
         $permCardActivity = \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.activity');
         $permCardBphAdditional = $isBphView
-            ? \App\Models\RolePermission::userMayAccessRoute('job_view.bph.card.bph_additional')
+            ? \App\Models\RolePermission::userMayAccessRoute($jvCard . '.card.bph_additional')
             : false;
         $permBtnArchiveJob = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.archive_job');
         $permBtnEditClient = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.edit.client_details');
@@ -387,10 +390,10 @@
                 </div>
                 @php
                     $bphComplianceInDocs = !empty($isBphView);
-                    $bphCompliancePdfUrl = $bphComplianceInDocs ? route('bph.job.printCompliance', ['id' => $jobId]) : null;
+                    $bphCompliancePdfUrl = $bphComplianceInDocs ? route($jobPrintComplianceRouteName, ['id' => $jobId]) : null;
                     $bphCompliancePdfBase = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($job->job_reference_no ?? $job->reference ?? ''));
                     $bphCompliancePdfName = $bphComplianceInDocs
-                        ? ('BPH-Compliance-' . ($bphCompliancePdfBase !== '' ? $bphCompliancePdfBase : 'summary') . '.pdf')
+                        ? ($jobCompliancePdfFilenamePrefix . '-Compliance-' . ($bphCompliancePdfBase !== '' ? $bphCompliancePdfBase : 'summary') . '.pdf')
                         : '';
                     $hasBphComplianceRow = $bphComplianceInDocs && $bphCompliancePdfUrl && $permBphPrintCompliance;
                     $hasDocumentsList = $hasBphComplianceRow || (!empty($docFiles) && $folderName);
@@ -666,7 +669,7 @@
                             || filled((string) ($br->spec_print_merge_file ?? ''))
                         );
                         $bphMergeLabel = ($br && !empty($br->spec_print_merge_file ?? null)) ? (string) $br->spec_print_merge_file : null;
-                        $bphMergeUrl = $bphMergeLabel ? route('bph.job.mergeFile', ['id' => $jobId]) : null;
+                        $bphMergeUrl = $bphMergeLabel ? route($jobMergeFileRouteName, ['id' => $jobId]) : null;
                     @endphp
                 <div class="space-y-4">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Additional</h2>
@@ -675,7 +678,7 @@
                             <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Additional Information</h2>
                             <div class="flex flex-wrap items-center gap-2">
                                 @if($permBphPrintCompliance)
-                                <a href="{{ route('bph.job.printCompliance', ['id' => $jobId]) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                                <a href="{{ route($jobPrintComplianceRouteName, ['id' => $jobId]) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
                                     Print
                                 </a>

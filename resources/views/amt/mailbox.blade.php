@@ -1,0 +1,351 @@
+@extends('layouts.dashboard')
+
+@section('title', 'A&M Mailbox')
+
+@section('body_class', 'page-lbs-mailbox')
+
+@section('content')
+    @php
+        $branchLabel = 'A&M';
+        $updateRoute = 'amt.update';
+        $jobBaseUrl = url('/dashboard/amt/job');
+    @endphp
+    <div class="block max-w-full pb-0">
+        <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">{{ $branchLabel }} Mailbox</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View jobs waiting for email confirmation.</p>
+            </div>
+            <div class="shrink-0">
+                <label for="amtMailboxSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
+                <div class="relative flex min-w-[260px] items-center">
+                    <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="search" id="amtMailboxSearch" class="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by reference, recipient..." autocomplete="off" aria-label="Search {{ $branchLabel }} mailbox">
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
+            <div class="max-w-full overflow-x-auto">
+                <table class="w-full min-w-[800px] table-fixed border-collapse text-sm" id="amtMailboxTable">
+                    <colgroup>
+                        <col style="width: 140px">
+                        <col style="width: 160px">
+                        <col style="width: 120px">
+                        <col style="width: 200px">
+                        <col style="width: 100px">
+                        <col style="width: 120px">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th class="cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"><span>Action</span></th>
+                            <th class="cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Log Date</span></th>
+                            <th class="cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Job Reference</span></th>
+                            <th class="cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>To</span></th>
+                            <th class="cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"><span>Email Format</span></th>
+                            <th class="cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Print (PDF)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($jobs as $index => $job)
+                            @php
+                                $log = $job->log_date ? \Carbon\Carbon::parse($job->log_date, 'Asia/Manila') : null;
+                                $logFormatted = $log ? $log->format('Y-m-d H:i:s') : '—';
+                                $toEmail = $job->to_email ?? '—';
+                            @endphp
+                            <tr class="lbs-data-row amt-mailbox-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-update-url="{{ route($updateRoute, ['id' => $job->job_id]) }}">
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-500 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="Revert (set status to For Checking)" aria-label="Revert" data-revert-job>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                        <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-green-500/15 hover:text-green-500 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="Send email" aria-label="Send" data-send-job="{{ $job->job_id }}">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Log Date" data-sort="{{ $job->log_date }}">{{ $logFormatted }}</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Reference">{{ $job->job_reference_no ?? $job->reference ?? '—' }}</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="To">{{ $toEmail }}</td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700" data-label="Email Format">
+                                    <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" data-preview-job="{{ $job->job_id }}" title="Preview email" aria-label="Preview email">Preview</button>
+                                </td>
+                                <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Print (PDF)">
+                                    <a href="{{ route('bph.job.printCompliance', ['id' => $job->job_id]) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Open compliance PDF</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="6">No jobs currently For Email Confirmation.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200 [&.show]:opacity-100 [&.show]:pointer-events-auto" id="revertMailboxModal" role="dialog" aria-labelledby="revertMailboxModalTitle" aria-modal="true">
+        <div class="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="revertMailboxModalTitle">Revert to For Checking</h2>
+            </div>
+            <div class="px-5 py-4">
+                <div id="revertModalConfirm">
+                    <p class="text-slate-600 dark:text-slate-300">Set this job status to <strong>For Checking</strong>? The job will be removed from the mailbox.</p>
+                </div>
+                <div id="revertModalCountdown" hidden>
+                    <p class="text-slate-600 dark:text-slate-300">Reverting in</p>
+                    <div class="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400" id="revertCountdownNumber">3</div>
+                    <p class="mt-1 text-sm text-slate-500">Click Cancel to abort</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" id="revertMailboxModalCancel">Cancel</button>
+                <button type="button" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600" id="revertMailboxModalConfirm"><span class="btn-text">Revert</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200 [&.show]:opacity-100 [&.show]:pointer-events-auto" id="emailPreviewModal" role="dialog" aria-labelledby="emailPreviewModalTitle" aria-modal="true">
+        <div class="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white" id="emailPreviewModalTitle">Email Preview</h2>
+                <button type="button" class="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-600 dark:hover:text-slate-200" id="emailPreviewModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto px-5 py-4">
+                <div class="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                    <div class="mb-4">
+                        <img src="{{ asset('storage/logo-light.png') }}" alt="LUNTIAN" class="h-8" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <span class="text-lg font-bold text-slate-800 dark:text-white" style="display:none;">LUNTIAN</span>
+                    </div>
+                    <p class="text-slate-500 dark:text-slate-400">Residential Building Design Solutions</p>
+                    <p class="text-slate-500 dark:text-slate-400">• ENERGY • BUILDING DESIGN • VR • AR</p>
+                    <p>Hi there!</p>
+                    <p><span id="emailPreviewRef">—</span></p>
+                    <p>status has been updated to</p>
+                    <p class="font-semibold" id="emailPreviewStatus">—</p>
+                    <p>Assessor: <span id="emailPreviewAssessor">—</span></p>
+                    <p>Assessor Email: <a href="#" id="emailPreviewAssessorEmailLink" class="text-blue-600 underline dark:text-blue-400">—</a></p>
+                    <div class="mt-4">
+                        <p class="font-semibold text-slate-700 dark:text-slate-200">Submission Notes:</p>
+                        <div id="emailPreviewNotes" class="mt-1">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" id="emailPreviewModalCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+@endsection
+
+@push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="{{ asset('js/lbs-list.js') }}"></script>
+    <script>
+        (function() {
+            var table = document.getElementById('amtMailboxTable');
+            var searchInput = document.getElementById('amtMailboxSearch');
+            var csrfToken = document.querySelector('meta[name="csrf-token"]');
+            csrfToken = csrfToken ? csrfToken.getAttribute('content') : '';
+
+            if (table && searchInput) {
+                searchInput.addEventListener('input', function() {
+                    var q = (this.value || '').toLowerCase().trim();
+                    var rows = table.querySelectorAll('tbody tr.amt-mailbox-row');
+                    rows.forEach(function(tr) {
+                        var text = (tr.textContent || '').toLowerCase();
+                        tr.style.display = q === '' || text.indexOf(q) !== -1 ? '' : 'none';
+                    });
+                });
+            }
+
+            var revertModal = document.getElementById('revertMailboxModal');
+            var revertCancelBtn = document.getElementById('revertMailboxModalCancel');
+            var revertConfirmBtn = document.getElementById('revertMailboxModalConfirm');
+            var revertConfirmBlock = document.getElementById('revertModalConfirm');
+            var revertCountdownBlock = document.getElementById('revertModalCountdown');
+            var revertCountdownNumber = document.getElementById('revertCountdownNumber');
+            var pendingRevert = null;
+            var revertCountdownTimer = null;
+
+            function resetRevertModal() {
+                if (revertCountdownTimer) { clearInterval(revertCountdownTimer); revertCountdownTimer = null; }
+                revertConfirmBlock.hidden = false;
+                revertCountdownBlock.hidden = true;
+                revertConfirmBtn.disabled = false;
+                revertConfirmBtn.querySelector('.btn-text').textContent = 'Revert';
+            }
+            function closeRevertModal() {
+                revertModal.classList.remove('show');
+                pendingRevert = null;
+                resetRevertModal();
+            }
+            function doRevertRequest(row, url, btn) {
+                var formData = new FormData();
+                formData.append('_token', csrfToken);
+                formData.append('_method', 'PUT');
+                formData.append('job_status', 'For Checking');
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                })
+                .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                .then(function(result) {
+                    if (result.ok && result.data && result.data.status !== 'error') {
+                        if (row) row.remove();
+                        closeRevertModal();
+                    } else {
+                        alert(result.data && result.data.message ? result.data.message : 'Failed to revert status.');
+                        if (btn) btn.disabled = false;
+                        resetRevertModal();
+                    }
+                })
+                .catch(function() {
+                    alert('Failed to revert status.');
+                    if (btn) btn.disabled = false;
+                    resetRevertModal();
+                });
+            }
+
+            document.querySelectorAll('[data-revert-job]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var row = this.closest('tr.amt-mailbox-row');
+                    var url = row ? row.getAttribute('data-update-url') : null;
+                    if (!url) return;
+                    if (this.disabled) return;
+                    pendingRevert = { row: row, url: url, btn: this };
+                    resetRevertModal();
+                    revertModal.classList.add('show');
+                });
+            });
+
+            if (revertCancelBtn) revertCancelBtn.addEventListener('click', closeRevertModal);
+            if (revertModal) revertModal.addEventListener('click', function(e) { if (e.target === revertModal) closeRevertModal(); });
+            var emailPreviewModal = document.getElementById('emailPreviewModal');
+            var emailPreviewClose = document.getElementById('emailPreviewModalClose');
+            var emailPreviewCloseBtn = document.getElementById('emailPreviewModalCloseBtn');
+            var emailPreviewUrlBase = @json($jobBaseUrl);
+
+            function openEmailPreviewModal() {
+                if (emailPreviewModal) emailPreviewModal.classList.add('show');
+            }
+            function closeEmailPreviewModal() {
+                if (emailPreviewModal) emailPreviewModal.classList.remove('show');
+            }
+
+            document.querySelectorAll('[data-preview-job]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var jobId = this.getAttribute('data-preview-job');
+                    if (!jobId) return;
+                    var url = emailPreviewUrlBase + '/' + jobId + '/email-preview';
+                    document.getElementById('emailPreviewRef').textContent = '…';
+                    document.getElementById('emailPreviewStatus').textContent = '…';
+                    document.getElementById('emailPreviewAssessor').textContent = '…';
+                    var linkEl = document.getElementById('emailPreviewAssessorEmailLink');
+                    linkEl.href = '#';
+                    linkEl.textContent = '…';
+                    document.getElementById('emailPreviewNotes').innerHTML = '…';
+                    openEmailPreviewModal();
+                    fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data.status !== 'success') return;
+                            document.getElementById('emailPreviewRef').textContent = data.job_reference_no || '—';
+                            document.getElementById('emailPreviewStatus').textContent = data.job_status || '—';
+                            document.getElementById('emailPreviewAssessor').textContent = data.assessor || '—';
+                            linkEl.textContent = data.assessor_email || '—';
+                            linkEl.href = data.assessor_email ? ('mailto:' + data.assessor_email) : '#';
+                            var notesEl = document.getElementById('emailPreviewNotes');
+                            if (data.notes) {
+                                notesEl.innerHTML = data.notes;
+                                notesEl.style.display = '';
+                            } else {
+                                notesEl.textContent = '—';
+                                notesEl.style.display = '';
+                            }
+                        })
+                        .catch(function() {
+                            document.getElementById('emailPreviewRef').textContent = '—';
+                            document.getElementById('emailPreviewStatus').textContent = '—';
+                            document.getElementById('emailPreviewAssessor').textContent = '—';
+                            linkEl.textContent = '—';
+                            document.getElementById('emailPreviewNotes').textContent = 'Error loading preview.';
+                        });
+                });
+            });
+            if (emailPreviewClose) emailPreviewClose.addEventListener('click', closeEmailPreviewModal);
+            if (emailPreviewCloseBtn) emailPreviewCloseBtn.addEventListener('click', closeEmailPreviewModal);
+            if (emailPreviewModal) emailPreviewModal.addEventListener('click', function(e) { if (e.target === emailPreviewModal) closeEmailPreviewModal(); });
+
+            document.querySelectorAll('[data-send-job]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var jobId = this.getAttribute('data-send-job');
+                    if (!jobId) return;
+                    if (this.disabled) return;
+                    var sendUrl = emailPreviewUrlBase + '/' + jobId + '/send-mailbox-email';
+                    this.disabled = true;
+                    var self = this;
+
+                    var formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    fetch(sendUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                    })
+                    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                    .then(function(result) {
+                        if (result.ok && result.data && result.data.status === 'success') {
+                            if (typeof window.showSuccessToast === 'function') {
+                                window.showSuccessToast(result.data.message || 'Status updated to Completed.');
+                            }
+                            window.setTimeout(function() { window.location.reload(); }, 350);
+                        } else {
+                            alert(result.data && result.data.message ? result.data.message : 'Could not complete send.');
+                            self.disabled = false;
+                        }
+                    })
+                    .catch(function() {
+                        alert('Could not complete send.');
+                        self.disabled = false;
+                    });
+                });
+            });
+
+            if (revertConfirmBtn) revertConfirmBtn.addEventListener('click', function() {
+                if (!pendingRevert || revertCountdownTimer) return;
+                revertConfirmBlock.hidden = true;
+                revertCountdownBlock.hidden = false;
+                revertConfirmBtn.disabled = true;
+                revertConfirmBtn.querySelector('.btn-text').textContent = 'Reverting...';
+                var count = 3;
+                var row = pendingRevert.row;
+                var url = pendingRevert.url;
+                var btn = pendingRevert.btn;
+                revertCountdownNumber.textContent = count;
+                revertCountdownNumber.style.animation = 'none';
+                revertCountdownNumber.offsetHeight;
+                revertCountdownNumber.style.animation = '';
+                revertCountdownTimer = setInterval(function() {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(revertCountdownTimer);
+                        revertCountdownTimer = null;
+                        if (btn) btn.disabled = true;
+                        doRevertRequest(row, url, null);
+                        return;
+                    }
+                    revertCountdownNumber.textContent = count;
+                    revertCountdownNumber.style.animation = 'none';
+                    revertCountdownNumber.offsetHeight;
+                    revertCountdownNumber.style.animation = '';
+                }, 1000);
+            });
+        })();
+    </script>
+@endpush

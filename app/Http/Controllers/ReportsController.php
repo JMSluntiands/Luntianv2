@@ -48,6 +48,28 @@ class ReportsController extends Controller
             UNION ALL
 
             SELECT
+                a.date AS completion_date,
+                CONVERT(COALESCE(a.assigned, a.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                CONVERT(COALESCE(a.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                COALESCE(a.units, 0) AS units,
+                CONVERT(COALESCE(a.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u} AS job_system
+            FROM job_amt a
+
+            UNION ALL
+
+            SELECT
+                f.date AS completion_date,
+                CONVERT(COALESCE(f.assigned, f.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                CONVERT(COALESCE(f.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                COALESCE(f.units, 0) AS units,
+                CONVERT(COALESCE(f.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                CONVERT('FYRS ENERGY WISE' USING utf8mb4) COLLATE {$utf8u} AS job_system
+            FROM job_fyrs f
+
+            UNION ALL
+
+            SELECT
                 c.date AS completion_date,
                 CONVERT(COALESCE(c.assigned, c.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
                 CONVERT(COALESCE(c.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
@@ -200,6 +222,18 @@ class ReportsController extends Controller
                     SELECT CONVERT(b.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
                     FROM job_bph b
                     WHERE b.client_name IS NOT NULL
+
+                    UNION
+
+                    SELECT CONVERT(a.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
+                    FROM job_amt a
+                    WHERE a.client_name IS NOT NULL
+
+                    UNION
+
+                    SELECT CONVERT(f.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
+                    FROM job_fyrs f
+                    WHERE f.client_name IS NOT NULL
 
                     UNION
 

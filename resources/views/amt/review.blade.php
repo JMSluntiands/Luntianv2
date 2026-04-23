@@ -1,21 +1,21 @@
 @extends('layouts.dashboard')
 
-@section('title', 'BPH For Review')
+@section('title', 'A&M For Review')
 
-@section('body_class', 'page-lbs-list page-bph-list page-bph-review')
+@section('body_class', 'page-lbs-list page-amt-list page-amt-review')
 
 @section('content')
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">BPH For Review</h1>
-                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View BPH jobs that are for review.</p>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">A&amp;M For Review</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View A&amp;M jobs that are for review.</p>
             </div>
             <div class="shrink-0">
                 <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                 <div class="relative flex min-w-[260px] items-center">
                     <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search BPH review jobs">
+                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search A&amp;M review jobs">
                 </div>
             </div>
         </div>
@@ -46,8 +46,8 @@
                     </thead>
                     <tbody>
                         @php
-                            $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01'])
+                            $amtClientCode = 'AMT01';
+                            $bphQ = \Illuminate\Support\Facades\DB::table('job_amt')
                                 ->whereRaw('LOWER(TRIM(status)) = ?', ['for review']);
                             \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
                             \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
@@ -69,7 +69,7 @@
                             @php
                                 $logRaw = $row->created_at ?? $row->updated_at ?? now('Asia/Manila')->format('Y-m-d H:i:s');
                                 $log = \Carbon\Carbon::parse($logRaw, 'Asia/Manila');
-                                $client = $row->client_code ?? 'BPH01';
+                                $client = $row->client_code ?? $amtClientCode;
                                 $urgent = strtoupper((string) ($row->urgent ?? 'NO'));
                                 $jobType = (string) ($row->job_type ?? '—');
                                 $ncc = (string) ($row->ncc ?? '—');
@@ -82,8 +82,8 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('bph.update', ['id' => $row->id]) }}">
-                                <td class="px-4 py-3 text-center"><a href="{{ route('bph.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-green-500/15 hover:text-green-400" title="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a></td>
+                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('amt.update', ['id' => $row->id]) }}">
+                                <td class="px-4 py-3 text-center"><a href="{{ route('amt.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-green-500/15 hover:text-green-400" title="View"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a></td>
                                 <td class="px-4 py-3"><span class="block font-medium">{{ $log->format('F j, Y') }}</span><span class="block text-[0.8125rem] text-slate-400">{{ $log->format('g:i A') }}</span></td>
                                 <td class="px-4 py-3">{{ $client }}</td><td class="px-4 py-3">{{ $urgent }}</td><td class="px-4 py-3">{{ $jobType }}</td>
                                 <td class="px-4 py-3">{{ $ncc }}</td><td class="px-4 py-3">{{ $jobNumber }}</td><td class="px-4 py-3">{{ $clientName }}</td><td class="px-4 py-3">{{ $clientEmail }}</td>
@@ -107,8 +107,13 @@
     </div>
 @endsection
 
+@push('styles')
+<style>
+.lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
+</style>
+@endpush
+
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="{{ asset('js/lbs-list.js') }}"></script>
 @endpush
-

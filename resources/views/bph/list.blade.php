@@ -63,7 +63,7 @@
                                 'archive',
                             ];
                             $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01'])
+                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01'])
                                 ->whereRaw('(status IS NULL OR LOWER(TRIM(status)) NOT IN (' . implode(',', array_fill(0, count($bphListExcludedStatuses), '?')) . '))', $bphListExcludedStatuses);
                             \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
                             \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);

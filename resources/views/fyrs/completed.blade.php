@@ -1,21 +1,21 @@
 @extends('layouts.dashboard')
 
-@section('title', 'BPH Completed')
+@section('title', 'Fyrs Energy Wise Completed')
 
-@section('body_class', 'page-lbs-list page-bph-list page-bph-completed')
+@section('body_class', 'page-lbs-list page-fyrs-list page-fyrs-completed')
 
 @section('content')
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">BPH Completed</h1>
-                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View completed BPH jobs.</p>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">Fyrs Energy Wise Completed</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View completed Fyrs Energy Wise jobs.</p>
             </div>
             <div class="shrink-0">
                 <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                 <div class="relative flex min-w-[260px] items-center">
                     <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search BPH completed jobs">
+                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search Fyrs Energy Wise completed jobs">
                 </div>
             </div>
         </div>
@@ -56,8 +56,8 @@
 
                     <tbody>
                         @php
-                            $bphQ = \Illuminate\Support\Facades\DB::table('job_bph')
-                                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01'])
+                            $fyrsClientCode = 'FYRS01';
+                            $bphQ = \Illuminate\Support\Facades\DB::table('job_fyrs')
                                 ->whereRaw('LOWER(TRIM(status)) = ?', ['completed']);
                             \App\Services\JobCountsScope::applyJobBphAssignment($bphQ);
                             \App\Services\JobCountsScope::applyJobBphBranchVerticalScope($bphQ);
@@ -70,7 +70,7 @@
                                 $log = \Carbon\Carbon::parse($logRaw, 'Asia/Manila');
                                 $logDate1 = $log->format('F j, Y');
                                 $logDate2 = $log->format('g:i A');
-                                $client = $row->client_code ?? 'BPH01';
+                                $client = $row->client_code ?? $fyrsClientCode;
                                 $urgent = strtoupper((string) ($row->urgent ?? 'NO'));
                                 $jobType1 = (string) ($row->job_type ?? '—');
                                 $jobType2 = '';
@@ -86,7 +86,7 @@
                             <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
                                 <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
-                                        <a href="{{ route('bph.add', [
+                                        <a href="{{ route('fyrs.add', [
                                             'duplicate' => 1,
                                             'job_number' => $jobNumber,
                                             'client_name' => $clientName,
@@ -95,7 +95,7 @@
                                         ]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate" aria-label="Duplicate">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
-                                        <a href="{{ route('bph.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View">
+                                        <a href="{{ route('fyrs.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
                                         <button type="button" class="lbs-action-icon lbs-action-expand inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-400 dark:text-slate-400 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="View full row details below" aria-label="Show full row details" aria-expanded="false" data-expand-row>
@@ -150,7 +150,6 @@
 
 @push('styles')
 <style>
-/* LBS menus hidden fallback */
 .lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
 </style>
 @endpush
@@ -159,4 +158,3 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="{{ asset('js/lbs-list.js') }}"></script>
 @endpush
-

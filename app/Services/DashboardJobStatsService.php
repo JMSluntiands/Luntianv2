@@ -93,6 +93,8 @@ class DashboardJobStatsService
             'EFFICIENT LIVING' => self::countJobsTable($bucket, true),
             'BPH' => self::countJobBph($bucket, 'bph'),
             'BLUINQ' => self::countJobBph($bucket, 'bluinq'),
+            'A&M' => self::countJobBph($bucket, 'amt'),
+            'FYRS ENERGY WISE' => self::countJobBph($bucket, 'fyrs'),
             default => 0,
         };
     }
@@ -145,18 +147,29 @@ class DashboardJobStatsService
     /** Every bucket: created_at today (Manila window); then status filter for sub-cards. */
     private static function countJobBph(string $bucket, string $which): int
     {
-        if (! Schema::hasTable('job_bph')) {
+        $table = 'job_bph';
+        if ($which === 'amt' && Schema::hasTable('job_amt')) {
+            $table = 'job_amt';
+        } elseif ($which === 'fyrs' && Schema::hasTable('job_fyrs')) {
+            $table = 'job_fyrs';
+        }
+
+        if (! Schema::hasTable($table)) {
             return 0;
         }
 
         [$start, $end] = self::dayBoundsManila();
 
-        $q = DB::table('job_bph');
+        $q = DB::table($table);
 
         if ($which === 'bluinq') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
-        } else {
-            $q->whereRaw("LOWER(TRIM(COALESCE(client_code, ''))) != ?", ['bluinq01']);
+        } elseif ($which === 'amt' && $table === 'job_bph') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
+        } elseif ($which === 'fyrs' && $table === 'job_bph') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
+        } elseif ($which === 'bph') {
+            $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
         }
 
         $q->whereBetween('created_at', [$start, $end])

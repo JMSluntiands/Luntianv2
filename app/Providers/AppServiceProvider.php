@@ -68,7 +68,7 @@ class AppServiceProvider extends ServiceProvider
 
                 // BPH sidebar badges from `job_bph`
                 $bphBase = DB::table('job_bph')
-                    ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01']);
+                    ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
                 JobCountsScope::applyJobBphAssignment($bphBase);
                 JobCountsScope::applyJobBphBranchVerticalScope($bphBase);
                 $bphCounts = $bphBase
@@ -98,6 +98,44 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('bluinq_list_count', JobCountsScope::sidebarCountForBranchVertical('BLUINQ', (int) ($bluinqCounts->allocated_count ?? 0)));
                 $view->with('bluinq_review_count', JobCountsScope::sidebarCountForBranchVertical('BLUINQ', (int) ($bluinqCounts->review_count ?? 0)));
                 $view->with('bluinq_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('BLUINQ', (int) ($bluinqCounts->mailbox_count ?? 0)));
+
+                $amtTable = \Illuminate\Support\Facades\Schema::hasTable('job_amt') ? 'job_amt' : 'job_bph';
+                $amtBase = DB::table($amtTable);
+                if ($amtTable === 'job_bph') {
+                    $amtBase->where('client_code', 'AMT01');
+                }
+                JobCountsScope::applyJobBphAssignment($amtBase);
+                JobCountsScope::applyJobBphBranchVerticalScope($amtBase);
+                $amtCounts = $amtBase
+                    ->selectRaw("
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                    ")
+                    ->first();
+
+                $view->with('amt_list_count', JobCountsScope::sidebarCountForBranchVertical('A&M', (int) ($amtCounts->allocated_count ?? 0)));
+                $view->with('amt_review_count', JobCountsScope::sidebarCountForBranchVertical('A&M', (int) ($amtCounts->review_count ?? 0)));
+                $view->with('amt_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('A&M', (int) ($amtCounts->mailbox_count ?? 0)));
+
+                $fyrsTable = \Illuminate\Support\Facades\Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
+                $fyrsBase = DB::table($fyrsTable);
+                if ($fyrsTable === 'job_bph') {
+                    $fyrsBase->where('client_code', 'FYRS01');
+                }
+                JobCountsScope::applyJobBphAssignment($fyrsBase);
+                JobCountsScope::applyJobBphBranchVerticalScope($fyrsBase);
+                $fyrsCounts = $fyrsBase
+                    ->selectRaw("
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                    ")
+                    ->first();
+
+                $view->with('fyrs_list_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGY WISE', (int) ($fyrsCounts->allocated_count ?? 0)));
+                $view->with('fyrs_review_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGY WISE', (int) ($fyrsCounts->review_count ?? 0)));
+                $view->with('fyrs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGY WISE', (int) ($fyrsCounts->mailbox_count ?? 0)));
 
                 // CSP sidebar badges from job_csp
                 if (\Illuminate\Support\Facades\Schema::hasTable('job_csp')) {

@@ -23,6 +23,74 @@ class BphJobController extends Controller
 {
     private const BPH_CLIENT_CODE = 'BPH01';
 
+    private static ?string $pipelineJobTable = null;
+
+    private static ?string $pipelineStorageBase = null;
+
+    /**
+     * Run BPH pipeline handlers (files, update, compliance, etc.) against another job table and storage root.
+     *
+     * @template T
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public static function runWithPipelineContext(string $jobTable, string $storageBase, callable $callback): mixed
+    {
+        $prevT = self::$pipelineJobTable;
+        $prevS = self::$pipelineStorageBase;
+        self::$pipelineJobTable = $jobTable;
+        self::$pipelineStorageBase = rtrim($storageBase, '/');
+        try {
+            return $callback();
+        } finally {
+            self::$pipelineJobTable = $prevT;
+            self::$pipelineStorageBase = $prevS;
+        }
+    }
+
+    private function pipelineJobTable(): string
+    {
+        $t = self::$pipelineJobTable;
+
+        return ($t !== null && $t !== '') ? $t : 'job_bph';
+    }
+
+    private function pipelineStorageBase(): string
+    {
+        $s = self::$pipelineStorageBase;
+
+        return ($s !== null && $s !== '') ? $s : 'bph-documents';
+    }
+
+    private function pipelineListRouteName(): string
+    {
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'amt.list',
+            'job_fyrs' => 'fyrs.list',
+            default => 'bph.list',
+        };
+    }
+
+    private function pipelineViewRouteName(): string
+    {
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'amt.view',
+            'job_fyrs' => 'fyrs.view',
+            default => 'bph.view',
+        };
+    }
+
+    /**
+     * Permission route prefix for shared update / file handlers (A&amp;M reuses BPH keys).
+     */
+    private function pipelineJobViewPermissionModule(): string
+    {
+        return match ($this->pipelineJobTable()) {
+            'job_fyrs' => 'fyrs',
+            default => 'bph',
+        };
+    }
+
     public function list()
     {
         return view('bph.list', ['sidebar_active' => 'bph.list']);
@@ -42,8 +110,8 @@ class BphJobController extends Controller
     {
         $jobs = collect();
         if (Schema::hasTable('job_bph')) {
-            $q = DB::table('job_bph')
-                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01'])
+            $q = DB::table($this->pipelineJobTable())
+                ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01'])
                 ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
             JobCountsScope::applyJobBphAssignment($q);
             JobCountsScope::applyJobBphBranchVerticalScope($q);
@@ -76,7 +144,7 @@ class BphJobController extends Controller
      */
     public function emailPreview(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -102,7 +170,7 @@ class BphJobController extends Controller
      */
     public function sendMailboxEmail(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -111,7 +179,7 @@ class BphJobController extends Controller
 
         $emailConfig = EmailConfig::where('is_active', true)->first();
         if (!$emailConfig) {
-            DB::table('job_bph')->where('id', $id)->update([
+            DB::table($this->pipelineJobTable())->where('id', $id)->update([
                 'status' => 'Completed',
                 'date' => $completedDate,
                 'updated_at' => now('Asia/Manila'),
@@ -173,7 +241,7 @@ class BphJobController extends Controller
         ];
 
         $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
-        $basePath = 'bph-documents/' . $folderName . '/';
+        $basePath = $this->pipelineStorageBase().'/' . $folderName . '/';
 
         $attachments = [];
         $latestCheckerUpload = DB::table('bph_staff_uploaded_files')
@@ -224,7 +292,7 @@ class BphJobController extends Controller
             ], 500);
         }
 
-        DB::table('job_bph')->where('id', $id)->update([
+        DB::table($this->pipelineJobTable())->where('id', $id)->update([
             'status' => 'Completed',
             'date' => $completedDate,
             'updated_at' => now('Asia/Manila'),
@@ -322,7 +390,7 @@ class BphJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $path = 'bph-documents/' . $folderSeg . '/' . $safeName;
+            $path = $this->pipelineStorageBase().'/' . $folderSeg . '/' . $safeName;
             Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
             $planNames[] = $safeName;
         }
@@ -334,7 +402,7 @@ class BphJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $path = 'bph-documents/' . $folderSeg . '/' . $safeName;
+            $path = $this->pipelineStorageBase().'/' . $folderSeg . '/' . $safeName;
             Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
             $docNames[] = $safeName;
         }
@@ -342,7 +410,7 @@ class BphJobController extends Controller
         try {
             // Some legacy environments do not have AUTO_INCREMENT on job_bph.id,
             // so compute the next id manually to avoid SQLSTATE[HY000] 1364.
-            $nextId = (int) DB::table('job_bph')->max('id') + 1;
+            $nextId = (int) DB::table($this->pipelineJobTable())->max('id') + 1;
 
             $row = [
                 'id'                  => $nextId,
@@ -376,10 +444,10 @@ class BphJobController extends Controller
                 'spec_additional'     => null,
                 'units'               => 0,
             ];
-            if (Schema::hasColumn('job_bph', 'spec_print_merge_file')) {
+            if (Schema::hasColumn($this->pipelineJobTable(), 'spec_print_merge_file')) {
                 $row['spec_print_merge_file'] = null;
             }
-            DB::table('job_bph')->insert($row);
+            DB::table($this->pipelineJobTable())->insert($row);
             $id = $nextId;
         } catch (\Throwable $e) {
             return response()->json([
@@ -397,7 +465,7 @@ class BphJobController extends Controller
 
     public function sendSlackNotification(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -470,7 +538,7 @@ class BphJobController extends Controller
 
     public function sendSubmissionEmail(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -505,7 +573,7 @@ class BphJobController extends Controller
             . trim($accountClient) . ' LUNTIAN' . $bphRef . '-' . $jobNum . '-' . $nccCompliance;
 
         $folderSeg = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $job->reference ?? '') ?: 'bph_upload';
-        $basePath = 'bph-documents/' . $folderSeg . '/';
+        $basePath = $this->pipelineStorageBase().'/' . $folderSeg . '/';
         $planNames = json_decode($job->plans_files ?? '[]', true) ?: [];
         $docNames = json_decode($job->docs_files ?? '[]', true) ?: [];
         if (!is_array($planNames)) {
@@ -566,7 +634,7 @@ class BphJobController extends Controller
      */
     public function printComplianceSummary(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             abort(404);
         }
@@ -604,13 +672,18 @@ class BphJobController extends Controller
     {
         $id = (int) ($job->id ?? 0);
         $safeNum = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($job->job_number ?? '')) ?: 'job-' . $id;
+        $prefix = match ($this->pipelineJobTable()) {
+            'job_amt' => 'A&M-Compliance-',
+            'job_fyrs' => 'Fyrs-Compliance-',
+            default => 'BPH-Compliance-',
+        };
 
-        return 'BPH-Compliance-' . $safeNum . '.pdf';
+        return $prefix . $safeNum . '.pdf';
     }
 
     public function show(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             abort(404);
         }
@@ -741,9 +814,9 @@ class BphJobController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
-            return redirect()->route('bph.list');
+            return redirect()->route($this->pipelineListRouteName());
         }
 
         $data = $request->validate([
@@ -783,10 +856,11 @@ class BphJobController extends Controller
             }
         }
 
-        if (! RolePermission::userMayAccessRoute('job_view.bph.edit_assigned')) {
+        $permMod = $this->pipelineJobViewPermissionModule();
+        if (! RolePermission::userMayAccessRoute('job_view.'.$permMod.'.edit_assigned')) {
             unset($data['staff_id'], $data['assigned'], $data['checker_id'], $data['checked']);
         }
-        if (! RolePermission::userMayAccessRoute('job_view.bph.button.edit.job_details')) {
+        if (! RolePermission::userMayAccessRoute('job_view.'.$permMod.'.button.edit.job_details')) {
             unset(
                 $data['job_address'],
                 $data['priority'],
@@ -800,7 +874,7 @@ class BphJobController extends Controller
                 $data['urgent']
             );
         }
-        if (! RolePermission::userMayAccessRoute('job_view.bph.button.edit.notes')) {
+        if (! RolePermission::userMayAccessRoute('job_view.'.$permMod.'.button.edit.notes')) {
             unset($data['notes']);
         }
 
@@ -903,10 +977,10 @@ class BphJobController extends Controller
             $update['spec_additional'] = $extra['spec_additional'] ?? null;
 
             $folderSeg = $this->bphDocumentFolderSegment($job);
-            if ($request->hasFile('spec_print_merge_file') && Schema::hasColumn('job_bph', 'spec_print_merge_file')) {
+            if ($request->hasFile('spec_print_merge_file') && Schema::hasColumn($this->pipelineJobTable(), 'spec_print_merge_file')) {
                 $prev = (string) ($job->spec_print_merge_file ?? '');
                 if ($prev !== '') {
-                    $oldPath = 'bph-documents/' . $folderSeg . '/merge/' . $prev;
+                    $oldPath = $this->pipelineStorageBase().'/' . $folderSeg . '/merge/' . $prev;
                     if (Storage::disk('local')->exists($oldPath)) {
                         Storage::disk('local')->delete($oldPath);
                     }
@@ -921,7 +995,7 @@ class BphJobController extends Controller
 
         $update['updated_at'] = now('Asia/Manila');
 
-        DB::table('job_bph')->where('id', $id)->update($update);
+        DB::table($this->pipelineJobTable())->where('id', $id)->update($update);
 
         $log = $this->createBphActivityLog(
             (int) $id,
@@ -943,12 +1017,12 @@ class BphJobController extends Controller
             ]);
         }
 
-        return redirect()->route('bph.view', $id)->with('success', 'BPH job updated successfully.');
+        return redirect()->route($this->pipelineViewRouteName(), $id)->with('success', 'BPH job updated successfully.');
     }
 
     public function addRunComment(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -981,7 +1055,7 @@ class BphJobController extends Controller
 
     public function addJobComment(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -1014,7 +1088,7 @@ class BphJobController extends Controller
 
     public function uploadFiles(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -1047,11 +1121,11 @@ class BphJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            Storage::disk('local')->putFileAs('bph-documents/' . $folderName, $file, $safeName);
+            Storage::disk('local')->putFileAs($this->pipelineStorageBase().'/' . $folderName, $file, $safeName);
             $saved[] = $safeName;
         }
         $saved = array_values(array_unique($saved));
-        DB::table('job_bph')->where('id', $id)->update([$column => json_encode($saved), 'updated_at' => now('Asia/Manila')]);
+        DB::table($this->pipelineJobTable())->where('id', $id)->update([$column => json_encode($saved), 'updated_at' => now('Asia/Manila')]);
         $type = $section === 'plans' ? 'Plans uploaded' : 'Documents uploaded';
         $log = $this->createBphActivityLog(
             (int) $id,
@@ -1074,7 +1148,7 @@ class BphJobController extends Controller
 
     public function deleteFile(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -1088,9 +1162,9 @@ class BphJobController extends Controller
         if (!is_array($list)) $list = [];
         $fileName = (string) $request->input('file_name');
         $list = array_values(array_filter($list, fn ($n) => (string) $n !== $fileName));
-        DB::table('job_bph')->where('id', $id)->update([$column => json_encode($list), 'updated_at' => now('Asia/Manila')]);
+        DB::table($this->pipelineJobTable())->where('id', $id)->update([$column => json_encode($list), 'updated_at' => now('Asia/Manila')]);
         $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
-        Storage::disk('local')->delete('bph-documents/' . $folderName . '/' . $fileName);
+        Storage::disk('local')->delete($this->pipelineStorageBase().'/' . $folderName . '/' . $fileName);
         $log = $this->createBphActivityLog(
             (int) $id,
             'File deleted',
@@ -1112,10 +1186,10 @@ class BphJobController extends Controller
 
     public function downloadFile(int $id, string $file)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) abort(404);
         $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
-        $path = 'bph-documents/' . $folderName . '/' . $file;
+        $path = $this->pipelineStorageBase().'/' . $folderName . '/' . $file;
         if (!Storage::disk('local')->exists($path)) {
             abort(404);
         }
@@ -1124,7 +1198,7 @@ class BphJobController extends Controller
 
     public function downloadMergeFile(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             abort(404);
         }
@@ -1133,7 +1207,7 @@ class BphJobController extends Controller
             abort(404);
         }
         $folderSeg = $this->bphDocumentFolderSegment($job);
-        $path = 'bph-documents/' . $folderSeg . '/merge/' . $name;
+        $path = $this->pipelineStorageBase().'/' . $folderSeg . '/merge/' . $name;
         if (!Storage::disk('local')->exists($path)) {
             abort(404);
         }
@@ -1142,7 +1216,7 @@ class BphJobController extends Controller
 
     public function uploadCheckerFiles(Request $request, int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
@@ -1157,7 +1231,7 @@ class BphJobController extends Controller
             if (!$file || !$file->isValid()) continue;
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            Storage::disk('local')->putFileAs('bph-documents/' . $folderName, $file, $safeName);
+            Storage::disk('local')->putFileAs($this->pipelineStorageBase().'/' . $folderName, $file, $safeName);
             $fileNames[] = $safeName;
         }
         if (empty($fileNames)) {
@@ -1184,11 +1258,11 @@ class BphJobController extends Controller
 
     public function archiveJob(int $id)
     {
-        $job = DB::table('job_bph')->where('id', $id)->first();
+        $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
-        DB::table('job_bph')->where('id', $id)->update([
+        DB::table($this->pipelineJobTable())->where('id', $id)->update([
             'status' => 'Archived',
             'updated_at' => now('Asia/Manila'),
         ]);
@@ -1201,7 +1275,7 @@ class BphJobController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Job archived successfully.',
-            'redirect' => route('bph.list'),
+            'redirect' => route($this->pipelineListRouteName()),
         ]);
     }
 
@@ -1223,7 +1297,7 @@ class BphJobController extends Controller
         if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'], true)) {
             return null;
         }
-        $path = Storage::disk('local')->path('bph-documents/'.$this->bphDocumentFolderSegment($job).'/merge/'.$name);
+        $path = Storage::disk('local')->path($this->pipelineStorageBase().'/'.$this->bphDocumentFolderSegment($job).'/merge/'.$name);
         if (! is_readable($path)) {
             return null;
         }
@@ -1252,10 +1326,10 @@ class BphJobController extends Controller
         if (!$file || !$file->isValid()) {
             return null;
         }
-        Storage::disk('local')->makeDirectory('bph-documents/' . $folderSeg . '/merge');
+        Storage::disk('local')->makeDirectory($this->pipelineStorageBase().'/' . $folderSeg . '/merge');
         $original = $file->getClientOriginalName() ?: $file->hashName();
         $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-        Storage::disk('local')->putFileAs('bph-documents/' . $folderSeg . '/merge', $file, $safeName);
+        Storage::disk('local')->putFileAs($this->pipelineStorageBase().'/' . $folderSeg . '/merge', $file, $safeName);
 
         return $safeName;
     }

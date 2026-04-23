@@ -87,9 +87,13 @@ class JobCountsScope
         $label = strtoupper(trim((string) $mapped));
 
         if ($label === 'BPH') {
-            $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) != ?', ['bluinq01']);
+            $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
         } elseif ($label === 'BLUINQ') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
+        } elseif ($label === 'A&M') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
+        } elseif ($label === 'FYRS ENERGY WISE') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
         } else {
             $q->whereRaw('1 = 0');
         }
