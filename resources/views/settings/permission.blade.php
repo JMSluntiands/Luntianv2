@@ -5,7 +5,7 @@
 @section('body_class', 'page-settings-permission')
 
 @section('content')
-    <div class="w-full">
+    <div class="w-full" id="permissionPageRoot">
         {{-- Header --}}
         <div class="mb-6 flex flex-wrap items-start gap-4">
             <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-500/20 shadow-lg dark:bg-amber-500/30">
@@ -135,8 +135,9 @@
             @endforeach
 
             <div
+                id="permissionFloatingActions"
                 class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95"
-                style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.18);">
+                style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; background: rgba(15, 23, 42, 0.96); border-top: 1px solid rgba(148, 163, 184, 0.35); box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.22);">
                 <div class="mx-auto flex w-full max-w-7xl justify-end gap-3">
                     <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
                     <button type="submit" id="permissionSubmitBtn" @if(!empty($noUsers)) disabled @endif
@@ -244,6 +245,23 @@
             });
 
             updateAllCheckAllStates();
+
+            function positionFloatingActions() {
+                var root = document.getElementById('permissionPageRoot');
+                var floating = document.getElementById('permissionFloatingActions');
+                if (!root || !floating) return;
+
+                var rect = root.getBoundingClientRect();
+                var left = Math.max(0, Math.round(rect.left));
+                var width = Math.max(280, Math.round(rect.width));
+                floating.style.left = left + 'px';
+                floating.style.width = width + 'px';
+                floating.style.right = 'auto';
+            }
+
+            positionFloatingActions();
+            window.addEventListener('resize', positionFloatingActions);
+            window.addEventListener('orientationchange', positionFloatingActions);
         })();
     </script>
 @endpush
