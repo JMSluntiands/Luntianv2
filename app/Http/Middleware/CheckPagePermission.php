@@ -27,6 +27,22 @@ class CheckPagePermission
         }
 
         if (!RolePermission::userMayAccessRoute($routeName)) {
+            $checkerUploadAlternates = [
+                'lbs.job.checkerUploads' => [
+                    'job_view.lbs.button.checker_uploads.add',
+                    'job_view.efficient_living.button.checker_uploads.add',
+                ],
+                'bph.job.checkerUploads' => [
+                    'job_view.bph.button.checker_uploads.add',
+                ],
+            ];
+            if (isset($checkerUploadAlternates[$routeName])) {
+                foreach ($checkerUploadAlternates[$routeName] as $altRoute) {
+                    if (RolePermission::userMayAccessRoute($altRoute)) {
+                        return $next($request);
+                    }
+                }
+            }
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'You do not have permission to access this page.'], 403);
             }
