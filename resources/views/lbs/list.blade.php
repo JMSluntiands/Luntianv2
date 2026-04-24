@@ -381,6 +381,74 @@
                 </table>
             </div>
         </div>
+
+        <div class="mt-7">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Forms Submitted Jobs</h2>
+                <span class="inline-flex items-center rounded-md bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-300">Source: forms.luntian.com.au</span>
+            </div>
+            <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
+                <div class="max-w-full overflow-x-auto">
+                    <table class="w-full min-w-[980px] table-fixed border-collapse text-sm">
+                        <colgroup>
+                            <col style="width: 120px">
+                            <col style="width: 180px">
+                            <col style="width: 260px">
+                            <col style="width: 160px">
+                            <col style="width: 260px">
+                            <col style="width: 140px">
+                            <col style="width: 120px">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Action</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Log Date</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Reference</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Status</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Source</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($formsJobs ?? [] as $formJob)
+                                @php
+                                    $formLog = $formJob->log_date ? \Carbon\Carbon::parse($formJob->log_date, 'Asia/Manila') : null;
+                                @endphp
+                                <tr class="border-b border-slate-200 text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
+                                    <td class="px-4 py-3">
+                                        <a href="{{ route('lbs.job.view', ['id' => $formJob->job_id]) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </a>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="block font-medium">{{ $formLog ? $formLog->format('F j, Y') : '—' }}</span>
+                                        @if($formLog)<span class="block text-[0.8125rem] text-slate-400">{{ $formLog->format('g:i A') }}</span>@endif
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="block font-medium">{{ $formJob->client_account_name ?? $formJob->client_code ?? '—' }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">{{ $formJob->job_reference_no ?: '—' }}</td>
+                                    <td class="px-4 py-3">{{ $formJob->job_type ?: '—' }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-block rounded-md bg-slate-600/30 px-2 py-1 text-xs font-semibold">{{ $formJob->job_status ?: 'Allocated' }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-block rounded-md bg-cyan-500/15 px-2 py-1 text-xs font-semibold text-cyan-300">FORMS</span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
+                                        No jobs submitted from forms yet.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 

@@ -958,11 +958,16 @@ class LbsJobController extends Controller
     {
         if (JobCountsScope::branchBlocksLbsStandardList()) {
             $jobs = collect();
+            $formsJobs = collect();
         } else {
             $q = DB::table('jobs as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOBS%')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
+                ->where(function ($query) {
+                    $query->whereNull('j.updated_by')
+                        ->orWhere('j.updated_by', '!=', 'FORMS');
+                });
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -988,6 +993,26 @@ class LbsJobController extends Controller
                 ->orderByDesc('j.log_date')
                 ->limit(200)
                 ->get();
+
+            $formsQuery = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.updated_by', '=', 'FORMS')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
+            $formsJobs = $formsQuery
+                ->select(
+                    'j.job_id',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.job_type',
+                    'j.job_status',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
         }
 
         // Map priority/status name -> color (hex) for badges
@@ -1006,6 +1031,7 @@ class LbsJobController extends Controller
         return view('lbs.list', [
             'sidebar_active' => 'lbs.list',
             'jobs' => $jobs,
+            'formsJobs' => $formsJobs,
             'priorityColors' => $priorityColors,
             'statusColors' => $statusColors,
             'statuses' => $statuses,
@@ -1691,7 +1717,7 @@ class LbsJobController extends Controller
                 'upload_files'        => json_encode($planNames),
                 'upload_project_files'=> json_encode($docNames),
                 // last_update has default CURRENT_TIMESTAMP
-                'updated_by'          => null,
+                'updated_by'          => $request->route()?->getName() === 'lbs.public.store' ? 'FORMS' : null,
                 'job_status'          => ucfirst($data['job_status']),
                 'dwelling'            => '',
                 'client_account_id'   => $client->client_account_id,
