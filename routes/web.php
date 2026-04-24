@@ -74,6 +74,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/lbs/job/{id}/send-submission-email', [LbsJobController::class, 'sendJobSubmissionEmail'])->name('lbs.job.sendSubmissionEmail');
     Route::get('/dashboard/lbs/list', [LbsJobController::class, 'index'])->name('lbs.list');
     Route::get('/dashboard/lbs/job/{id}', [LbsJobController::class, 'show'])->name('lbs.job.view');
+    Route::post('/dashboard/lbs/job/{id}/accept-form', [LbsJobController::class, 'acceptFormJob'])->name('lbs.job.acceptForm');
     Route::put('/dashboard/lbs/job/{id}', [LbsJobController::class, 'update'])->name('lbs.job.update');
     Route::post('/dashboard/lbs/job/{id}/files', [LbsJobController::class, 'uploadFiles'])->name('lbs.job.uploadFiles');
     Route::post('/dashboard/lbs/job/{id}/file/delete', [LbsJobController::class, 'deleteFile'])->name('lbs.job.deleteFile');

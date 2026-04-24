@@ -766,6 +766,32 @@ class LbsJobController extends Controller
         }
     }
 
+    public function acceptFormJob(int $id)
+    {
+        $job = DB::table('jobs')
+            ->where('job_id', $id)
+            ->where('updated_by', 'FORMS')
+            ->first();
+
+        if (!$job) {
+            return redirect()->route('lbs.list')->with('error', 'Forms job not found or already accepted.');
+        }
+
+        DB::table('jobs')
+            ->where('job_id', $id)
+            ->update(['updated_by' => null]);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Forms job accepted',
+            'activity_description' => 'Job accepted from Forms Submitted Jobs into main LBS list.',
+            'updated_by'           => session('user_name') ?? 'LBS Account',
+        ]);
+
+        return redirect()->route('lbs.list')->with('success', 'Forms job accepted and moved to main list.');
+    }
+
     public function uploadFiles(Request $request, int $id)
     {
         $job = DB::table('jobs')->where('job_id', $id)->first();

@@ -5,7 +5,7 @@
 @section('body_class', 'page-lbs-list')
 
 @section('content')
-    <div class="block max-w-full pb-0">
+    <div class="flex max-w-full flex-col pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
                 <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">LBS List</h1>
@@ -20,7 +20,7 @@
             </div>
         </div>
 
-        <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
+        <div class="order-2 mt-7 max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
                 <table class="lbs-table w-full min-w-[1320px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
@@ -382,7 +382,7 @@
             </div>
         </div>
 
-        <div class="mt-7">
+        <div class="order-1 mt-0">
             <div class="mb-3 flex items-center justify-between gap-2">
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Forms Submitted Jobs</h2>
                 <span class="inline-flex items-center rounded-md bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-300">Source: forms.luntian.com.au</span>
@@ -453,9 +453,10 @@
                                 <tr class="border-b border-slate-200 text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
                                     <td class="px-4 py-3">
                                         <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
-                                            <a href="{{ route('lbs.add', ['duplicate' => $formJob->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                            </a>
+                                            <form method="POST" action="{{ route('lbs.job.acceptForm', ['id' => $formJob->job_id]) }}">
+                                                @csrf
+                                                <button type="submit" class="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-500">Accept</button>
+                                            </form>
                                             <a href="{{ route('lbs.job.view', ['id' => $formJob->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                             </a>
