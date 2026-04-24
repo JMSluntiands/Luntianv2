@@ -1003,11 +1003,22 @@ class LbsJobController extends Controller
             $formsJobs = $formsQuery
                 ->select(
                     'j.job_id',
+                    'j.reference',
                     'j.log_date',
                     'j.client_code',
                     'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
                     'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
                     'j.job_status',
+                    'j.completion_date',
                     'ca.client_account_name'
                 )
                 ->orderByDesc('j.log_date')

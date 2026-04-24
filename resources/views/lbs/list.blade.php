@@ -389,14 +389,20 @@
             </div>
             <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
                 <div class="max-w-full overflow-x-auto">
-                    <table class="w-full min-w-[980px] table-fixed border-collapse text-sm">
+                    <table class="lbs-table w-full min-w-[1320px] table-fixed border-collapse text-sm">
                         <colgroup>
-                            <col style="width: 120px">
-                            <col style="width: 180px">
+                            <col style="width: 110px">
+                            <col style="width: 140px">
                             <col style="width: 260px">
-                            <col style="width: 160px">
+                            <col style="width: 90px">
+                            <col style="width: 105px">
                             <col style="width: 260px">
                             <col style="width: 140px">
+                            <col style="width: 70px">
+                            <col style="width: 70px">
+                            <col style="width: 200px">
+                            <col style="width: 155px">
+                            <col style="width: 115px">
                             <col style="width: 120px">
                         </colgroup>
                         <thead>
@@ -404,9 +410,15 @@
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Action</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Log Date</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client Name</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Reference</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Staff</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Checker</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Status</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Due Date</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Completion Date</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Source</th>
                             </tr>
                         </thead>
@@ -414,12 +426,40 @@
                             @forelse($formsJobs ?? [] as $formJob)
                                 @php
                                     $formLog = $formJob->log_date ? \Carbon\Carbon::parse($formJob->log_date, 'Asia/Manila') : null;
+                                    $priorityText = $formJob->priority ?? '';
+                                    $priorityBg = $priorityColors[$priorityText] ?? null;
+                                    $status = $formJob->job_status ?? 'Allocated';
+                                    $statusBg = $statusColors[$status] ?? null;
+                                    $due = null;
+                                    if ($formLog) {
+                                        $start = $formLog->copy();
+                                        $startOfDay = $start->copy()->setTime(8, 0, 0);
+                                        $cutoff = $start->copy()->setTime(15, 0, 0);
+                                        if ($start->lt($startOfDay)) {
+                                            $start = $startOfDay;
+                                        }
+                                        $isTop = str_contains(strtolower($priorityText), 'top');
+                                        if (!$isTop && $start->gt($cutoff)) {
+                                            $start = $start->copy()->addDay()->setTime(8, 0, 0);
+                                        }
+                                        if ($isTop) {
+                                            $due = $start->copy()->addHours(6);
+                                        } elseif (preg_match('/(\d+)\s*day/', strtolower($priorityText), $m)) {
+                                            $due = $start->copy()->addDays((int) ($m[1] ?? 0));
+                                        }
+                                    }
+                                    $completion = $formJob->completion_date ? \Carbon\Carbon::parse($formJob->completion_date, 'Asia/Manila') : null;
                                 @endphp
                                 <tr class="border-b border-slate-200 text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
                                     <td class="px-4 py-3">
-                                        <a href="{{ route('lbs.job.view', ['id' => $formJob->job_id]) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </a>
+                                        <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
+                                            <a href="{{ route('lbs.add', ['duplicate' => $formJob->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                            </a>
+                                            <a href="{{ route('lbs.job.view', ['id' => $formJob->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </a>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="block font-medium">{{ $formLog ? $formLog->format('F j, Y') : '—' }}</span>
@@ -427,11 +467,29 @@
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="block font-medium">{{ $formJob->client_account_name ?? $formJob->client_code ?? '—' }}</span>
+                                        <span class="block text-[0.8125rem] text-slate-400">{{ $formJob->ncc_compliance ?? '' }}</span>
                                     </td>
+                                    <td class="px-4 py-3">{{ $formJob->client_code ?? 'LBS' }}</td>
                                     <td class="px-4 py-3">{{ $formJob->job_reference_no ?: '—' }}</td>
-                                    <td class="px-4 py-3">{{ $formJob->job_type ?: '—' }}</td>
                                     <td class="px-4 py-3">
-                                        <span class="inline-block rounded-md bg-slate-600/30 px-2 py-1 text-xs font-semibold">{{ $formJob->job_status ?: 'Allocated' }}</span>
+                                        <span class="block font-medium">{{ $formJob->job_type ?: '—' }}</span>
+                                        <span class="block text-[0.8125rem] text-slate-400">{{ $formJob->job_request_id ?? '' }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span>
+                                    </td>
+                                    <td class="px-4 py-3"><span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $formJob->staff_id ? strtoupper($formJob->staff_id) : '--' }}</span></td>
+                                    <td class="px-4 py-3"><span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $formJob->checker_id ? strtoupper($formJob->checker_id) : '--' }}</span></td>
+                                    <td class="px-4 py-3">
+                                        <span class="lbs-badge inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold" @if($statusBg) style="background-color: {{ $statusBg }};" @endif>{{ $status }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="block font-medium">{{ $due ? $due->format('F j, Y') : '—' }}</span>
+                                        @if($due)<span class="block text-[0.8125rem] text-slate-400">{{ $due->format('g:i A') }}</span>@endif
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="block font-medium">{{ $completion ? $completion->format('F j, Y') : '—' }}</span>
+                                        @if($completion)<span class="block text-[0.8125rem] text-slate-400">{{ $completion->format('g:i A') }}</span>@endif
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="inline-block rounded-md bg-cyan-500/15 px-2 py-1 text-xs font-semibold text-cyan-300">FORMS</span>
@@ -439,7 +497,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
+                                    <td colspan="13" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
                                         No jobs submitted from forms yet.
                                     </td>
                                 </tr>
