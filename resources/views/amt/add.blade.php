@@ -55,38 +55,19 @@
                             </div>
                         </div>
                         <div>
-                            <label for="job_number" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Number <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="text" id="job_number" name="job_number" required placeholder="e.g. 12345B" autocomplete="off" maxlength="6" value="{{ old('job_number', request('job_number')) }}"
-                                    class="amt-job-number-input w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
-                                <span id="job_number_error_icon" class="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-red-100 p-1 text-red-600 dark:bg-red-900/40 dark:text-red-400" aria-hidden="true">
-                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                                </span>
-                            </div>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">5 digits + letter B only, max 6 characters (e.g. 12345B)</p>
-                            <p id="job_number_error_msg" class="mt-1 hidden text-xs font-medium text-red-600 dark:text-red-400">Job number must end with letter B</p>
-                        </div>
-                        <div class="grid gap-5 sm:grid-cols-2">
-                            <div>
-                                <label for="client_name" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Name <span class="text-red-500">*</span></label>
-                                <input type="text" id="client_name" name="client_name" required placeholder="Enter client name" autocomplete="off" value="{{ old('client_name', request('client_name')) }}"
-                                    class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
-                            </div>
-                            <div>
-                                <label for="contact_email" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Email <span class="text-red-500">*</span></label>
-                                <select id="contact_email" name="contact_email" required class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off" data-placeholder="Enter contact email">
-                                    <option value=""></option>
-                                    @if(!empty($selectedContactEmail) && !collect($bphClientEmails ?? [])->pluck('email')->contains($selectedContactEmail))
-                                        <option value="{{ $selectedContactEmail }}" selected>{{ $selectedContactEmail }}</option>
-                                    @endif
-                                    @foreach($bphClientEmails ?? [] as $row)
-                                        <option value="{{ $row->email }}" {{ (string) $selectedContactEmail === (string) $row->email ? 'selected' : '' }}>{{ $row->email }}</option>
-                                    @endforeach
-                                </select>
-                                @if(($bphClientEmails ?? collect())->isEmpty())
-                                    <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">No emails in <span class="font-mono">client_email_bph</span> yet. Add addresses under <a href="{{ route('bph_client_email.index') }}" class="font-medium underline hover:no-underline">BPH Email</a>.</p>
+                            <label for="contact_email" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Email <span class="text-red-500">*</span></label>
+                            <select id="contact_email" name="contact_email" required class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off" data-placeholder="Enter contact email">
+                                <option value=""></option>
+                                @if(!empty($selectedContactEmail) && !collect($amtClientEmails ?? [])->pluck('email')->contains($selectedContactEmail))
+                                    <option value="{{ $selectedContactEmail }}" selected>{{ $selectedContactEmail }}</option>
                                 @endif
-                            </div>
+                                @foreach($amtClientEmails ?? [] as $row)
+                                    <option value="{{ $row->email }}" {{ (string) $selectedContactEmail === (string) $row->email ? 'selected' : '' }}>{{ $row->email }}</option>
+                                @endforeach
+                            </select>
+                            @if(($amtClientEmails ?? collect())->isEmpty())
+                                <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">No emails in <span class="font-mono">client_email_amt</span> yet. Add addresses under <a href="{{ route('amt_client_email.index') }}" class="font-medium underline hover:no-underline">A&amp;M Email</a>.</p>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -293,32 +274,6 @@
             }
             initBluinqSelect2();
 
-            var jobNumberInput = document.getElementById('job_number');
-            var jobNumberErrorIcon = document.getElementById('job_number_error_icon');
-            var jobNumberErrorMsg = document.getElementById('job_number_error_msg');
-
-            function validateJobNumber() {
-                var val = (jobNumberInput.value || '').trim();
-                var isValid = val === '' || /^\d{5}B$/i.test(val);
-                if (val.length > 0 && !isValid) {
-                    jobNumberInput.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/25', 'dark:border-red-500');
-                    jobNumberInput.classList.remove('border-slate-300', 'focus:border-emerald-500', 'focus:ring-emerald-500/25', 'dark:border-slate-600');
-                    if (jobNumberErrorIcon) jobNumberErrorIcon.classList.remove('hidden');
-                    if (jobNumberErrorMsg) jobNumberErrorMsg.classList.remove('hidden');
-                } else {
-                    jobNumberInput.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/25', 'dark:border-red-500');
-                    jobNumberInput.classList.add('border-slate-300', 'focus:border-emerald-500', 'focus:ring-emerald-500/25', 'dark:border-slate-600');
-                    if (jobNumberErrorIcon) jobNumberErrorIcon.classList.add('hidden');
-                    if (jobNumberErrorMsg) jobNumberErrorMsg.classList.add('hidden');
-                }
-                return isValid;
-            }
-
-            if (jobNumberInput) {
-                jobNumberInput.addEventListener('input', validateJobNumber);
-                jobNumberInput.addEventListener('blur', validateJobNumber);
-            }
-
             function renderFileList(inputId, listId, clearBtnId) {
                 var input = document.getElementById(inputId);
                 var listEl = document.getElementById(listId);
@@ -360,11 +315,6 @@
             $btn.on('click', function(e) {
                 e.preventDefault();
                 document.getElementById('amt_notes').value = notesBody.innerHTML;
-
-                if (!validateJobNumber()) {
-                    jobNumberInput.focus();
-                    return;
-                }
 
                 var formEl = document.getElementById('amtAddForm');
                 var formData = new FormData(formEl);

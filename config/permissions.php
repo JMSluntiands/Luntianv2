@@ -64,6 +64,14 @@ return [
             'bph_client_email.update' => 'BPH Email — Update',
             'bph_client_email.destroy' => 'BPH Email — Delete',
         ],
+        'A&M Email' => [
+            'amt_client_email.index' => 'A&M Email — List',
+            'amt_client_email.create' => 'A&M Email — Create',
+            'amt_client_email.store' => 'A&M Email — Save',
+            'amt_client_email.edit' => 'A&M Email — Edit',
+            'amt_client_email.update' => 'A&M Email — Update',
+            'amt_client_email.destroy' => 'A&M Email — Delete',
+        ],
         'CSP' => [
             'csp.add' => 'CSP Add New',
             'csp.store' => 'CSP Save Job',
@@ -493,6 +501,15 @@ return [
             'sidebar' => [
                 'bph_client_email.index', 'bph_client_email.create', 'bph_client_email.store',
                 'bph_client_email.edit', 'bph_client_email.update', 'bph_client_email.destroy',
+            ],
+            'card' => [],
+            'buttons' => [],
+        ],
+        'amt_email' => [
+            'label' => 'A&M Email',
+            'sidebar' => [
+                'amt_client_email.index', 'amt_client_email.create', 'amt_client_email.store',
+                'amt_client_email.edit', 'amt_client_email.update', 'amt_client_email.destroy',
             ],
             'card' => [],
             'buttons' => [],

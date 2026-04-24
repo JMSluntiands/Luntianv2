@@ -1982,6 +1982,21 @@ class LbsJobController extends Controller
     }
 
     /**
+     * Public LBS add form (no login required), same fields/process as dashboard add.
+     */
+    public function publicAddForm(Request $request)
+    {
+        return view('lbs.add', array_merge($this->buildAddJobFormData($request, 'LBS01'), [
+            'layoutView' => 'layouts.public-form',
+            'storeRoute' => route('lbs.public.store'),
+            'sendSlackBaseUrl' => url('/lbs/add-new/job'),
+            'sendSubmissionBaseUrl' => url('/lbs/add-new/job'),
+            'listUrl' => route('lbs.public.add'),
+            'cancelUrl' => route('lbs.public.add'),
+        ]));
+    }
+
+    /**
      * Same form/data as LBS add, for Efficient Living (shared job pipeline).
      */
     public function efficientLivingAddForm(Request $request)

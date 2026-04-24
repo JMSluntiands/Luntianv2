@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ClientEmailBph;
+use App\Models\ClientEmailAmt;
 use App\Models\Compliance;
 use App\Models\EmailConfig;
 use App\Models\JobRequest;
@@ -51,7 +51,7 @@ class AmtJobController extends Controller
             ->unique('unique_code')
             ->values();
 
-        $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
+        $amtClientEmails = ClientEmailAmt::orderBy('email')->get(['id', 'email']);
 
         $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2019') !== false)
             ?? $compliances->first();
@@ -64,7 +64,7 @@ class AmtJobController extends Controller
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
             'assignmentUsers' => $assignmentUsers,
-            'bphClientEmails' => $bphClientEmails,
+            'amtClientEmails' => $amtClientEmails,
             'defaultComplianceId' => $defaultCompliance?->id,
             'defaultJobRequestId' => $defaultJobRequest?->id,
         ]);
@@ -127,7 +127,7 @@ class AmtJobController extends Controller
 
         $compliances = Compliance::orderBy('column')->get(['column']);
         $jobRequests = JobRequest::orderBy('job_request_type')->get(['job_request_type']);
-        $bphClientEmails = ClientEmailBph::orderBy('email')->get(['email']);
+        $amtClientEmails = ClientEmailAmt::orderBy('email')->get(['email']);
         $priorities = Priority::orderBy('id')->get();
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
@@ -216,7 +216,7 @@ class AmtJobController extends Controller
             'jobComments' => $jobComments,
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
-            'bphClientEmails' => $bphClientEmails,
+            'bphClientEmails' => $amtClientEmails,
             'assignmentUsers' => $assignmentUsers,
         ]);
     }
@@ -397,8 +397,6 @@ class AmtJobController extends Controller
         $data = $request->validate([
             'ncc_compliance'   => ['nullable', 'integer'],
             'job_type_request' => ['nullable', 'integer'],
-            'job_number'       => ['required', 'string', 'max:6', 'regex:/^\d{5}B$/i'],
-            'client_name'      => ['required', 'string', 'max:255'],
             'contact_email'    => ['required', 'email', 'max:255'],
             'notes'            => ['nullable', 'string'],
             'assigned_to'      => ['required', 'string', 'max:50'],
@@ -425,7 +423,6 @@ class AmtJobController extends Controller
 
         $now = now('Asia/Manila');
         $urgent = $request->boolean('urgent_job') ? 'YES' : 'NO';
-        $jobNum = strtoupper(substr($data['job_number'], 0, 6));
 
         $folderSeg = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $reference) ?: 'amt_upload';
 
@@ -458,6 +455,11 @@ class AmtJobController extends Controller
         try {
             $nextId = (int) DB::table(self::JOB_TABLE)->max('id') + 1;
 
+            // Job number / client name not on form; keep DB shape (5 digits + B, max 6 chars).
+            $jobNum = strtoupper(sprintf('%05dB', (($nextId - 1) % 99999) + 1));
+            $clientName = '';
+            $contactEmail = $data['contact_email'];
+
             $row = [
                 'id'                  => $nextId,
                 'reference'           => $reference,
@@ -466,8 +468,8 @@ class AmtJobController extends Controller
                 'job_type'            => substr($jobTypeText, 0, 100),
                 'ncc'                 => substr((string) $nccText, 0, 255),
                 'job_number'          => $jobNum,
-                'client_name'         => $data['client_name'],
-                'contact_email'       => $data['contact_email'],
+                'client_name'         => $clientName,
+                'contact_email'       => $contactEmail,
                 'notes'               => $data['notes'] ?? null,
                 'created_at'          => $now,
                 'updated_at'          => $now,

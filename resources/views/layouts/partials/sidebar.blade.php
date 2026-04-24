@@ -16,6 +16,7 @@
     $branchOpen = in_array($active, ['branch.index', 'branch.create', 'branch.edit', 'branch.archive']) || str_starts_with((string)$active, 'branch.');
     $accountsOpen = in_array($active, ['users.index', 'users.create', 'users.edit', 'users.archive', 'accounts.clients.index', 'accounts.clients.create', 'accounts.clients.edit']) || str_starts_with((string)$active, 'users.') || str_starts_with((string)$active, 'accounts.clients.');
     $bphEmailOpen = in_array($active, ['bph_client_email.index', 'bph_client_email.create', 'bph_client_email.edit']) || str_starts_with((string)$active, 'bph_client_email.');
+    $amtEmailOpen = in_array($active, ['amt_client_email.index', 'amt_client_email.create', 'amt_client_email.edit']) || str_starts_with((string)$active, 'amt_client_email.');
     $lbsListCount = $lbs_list_count ?? 0;
     $lbsReviewCount = $lbs_review_count ?? 0;
     $lbsMailboxCount = $lbs_mailbox_count ?? 0;
@@ -98,6 +99,7 @@
     $showBranchNav = $anyMay(['branch.index', 'branch.archive']);
     $showAccountsNav = $anyMay(['users.index', 'accounts.clients.index', 'users.archive']);
     $showBphEmailNav = $showJobNavFromConfig('bph_email');
+    $showAmtEmailNav = $showJobNavFromConfig('amt_email');
     $announcementRoutes = \App\Models\RolePermission::allowedRoutesForRole((string) ($userRole ?? ''), session('user_branch'));
     $showAnnouncementNav = in_array('announcement.index', $announcementRoutes, true);
     $showReportsNav = $may('reports');
@@ -108,7 +110,8 @@
         || $showJobMasterNav
         || $showBranchNav
         || $showAccountsNav
-        || $showBphEmailNav;
+        || $showBphEmailNav
+        || $showAmtEmailNav;
     $showNotificationControls = $may('settings.notifications');
     $settingsOpen = in_array($active, ['settings.email_config', 'settings.slack_config', 'settings.notifications']);
 @endphp
@@ -446,7 +449,7 @@
                         <a href="{{ route('amt.rfq') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.rfq' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">RFQ</a>
                         @endif
                         @if($may('amt.purchase'))
-                        <a href="{{ route('amt.purchase') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.purchase' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">PURCHASE</a>
+                        <a href="{{ route('amt.purchase') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.purchase' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Purchase</a>
                         @endif
                         @if($may('amt.list'))
                         <a href="{{ route('amt.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
@@ -474,13 +477,10 @@
                         @endif
                     @else
                         @if($may('amt.add'))
-                        <a href="{{ route('amt.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.add' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Add New</a>
-                        @endif
-                        @if($may('amt.rfq'))
-                        <a href="{{ route('amt.rfq') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.rfq' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">RFQ</a>
+                        <a href="{{ route('amt.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['amt.add', 'amt.rfq']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">RFQ</a>
                         @endif
                         @if($may('amt.purchase'))
-                        <a href="{{ route('amt.purchase') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.purchase' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">PURCHASE</a>
+                        <a href="{{ route('amt.purchase') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.purchase' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Purchase</a>
                         @endif
                         @if($may('amt.list'))
                         <a href="{{ route('amt.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
@@ -977,6 +977,27 @@
                     @endif
                     @if($may('bph_client_email.index'))
                     <a href="{{ route('bph_client_email.index') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['bph_client_email.index', 'bph_client_email.edit']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">List</a>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+        @if($showAmtEmailNav)
+        <div class="group nav-dropdown {{ $amtEmailOpen ? 'open' : '' }}" data-dropdown>
+            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $amtEmailOpen ? 'true' : 'false' }}" aria-controls="nav-sub-amt-email">
+                <span class="nav-trigger-inner flex items-center gap-2.5">
+                    <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    A&amp;M Email
+                </span>
+                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-amt-email" role="region" aria-label="A&amp;M Email submenu">
+                <div class="space-y-0.5 py-1 pb-2 pl-1">
+                    @if($may('amt_client_email.create'))
+                    <a href="{{ route('amt_client_email.create') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt_client_email.create' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Create Email</a>
+                    @endif
+                    @if($may('amt_client_email.index'))
+                    <a href="{{ route('amt_client_email.index') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['amt_client_email.index', 'amt_client_email.edit']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">List</a>
                     @endif
                 </div>
             </div>

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import CountUp from 'react-countup';
 import Calendar, { type HolidaySource } from './Calendar';
 
 type CardVariant = 'total' | 'completed' | 'processing' | 'pending';
@@ -161,7 +160,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
     title: 'Total Jobs',
-    bgClass: 'bg-[#FFA500] dark:bg-[#FFA500]',
+    bgClass: 'bg-[#a8622a] dark:bg-[#a8622a]',
     iconColor: 'text-white',
     pillClass: 'bg-black/20 text-white',
     icon: (
@@ -176,7 +175,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'completed',
     title: 'Completed Jobs',
-    bgClass: 'bg-[#8B4513] dark:bg-[#8B4513]',
+    bgClass: 'bg-[#6b4a38] dark:bg-[#6b4a38]',
     iconColor: 'text-white',
     pillClass: 'bg-black/25 text-white',
     icon: (
@@ -189,7 +188,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'processing',
     title: 'Processing',
-    bgClass: 'bg-[#FFC107] dark:bg-[#FFC107]',
+    bgClass: 'bg-[#8f6f32] dark:bg-[#8f6f32]',
     iconColor: 'text-white',
     pillClass: 'bg-black/20 text-white',
     icon: (
@@ -202,7 +201,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'pending',
     title: 'Pending',
-    bgClass: 'bg-[#F5DEB3] dark:bg-[#F5DEB3]',
+    bgClass: 'bg-[#d4c9b8] dark:bg-[#d4c9b8]',
     iconColor: 'text-slate-700',
     pillClass: 'bg-slate-600/25 text-slate-800',
     icon: (
@@ -265,18 +264,6 @@ function applyDashboardBranchFilter<T extends { value: number; items: { label: s
   });
 }
 
-/* Wrapper: show Count Up Animation (react-countup) only after page loader is hidden */
-function CountUpDisplay({ value, duration, start }: { value: number; duration: number; start: boolean }) {
-  if (!start) {
-    return <span className="count-up-animation tabular-nums">0</span>;
-  }
-  return (
-    <span className="count-up-animation tabular-nums" aria-live="polite">
-      <CountUp start={0} end={value} duration={duration} preserveValue={false} />
-    </span>
-  );
-}
-
 function formatHolidayDate(isoDate: string): string {
   const d = new Date(`${isoDate}T00:00:00`);
   return new Intl.DateTimeFormat('en-US', {
@@ -325,7 +312,6 @@ function StatCard({
   iconColor,
   pillClass,
   lightCard = false,
-  startCount = false,
 }: {
   index: number;
   cardKey: CardVariant;
@@ -337,7 +323,6 @@ function StatCard({
   iconColor: string;
   pillClass: string;
   lightCard?: boolean;
-  startCount?: boolean;
 }) {
   const delayClass = `dashboard-card-animate-delay-${index}`;
   const textClass = lightCard ? 'text-slate-800' : 'text-white/85';
@@ -354,8 +339,8 @@ function StatCard({
       </div>
       <div className="relative z-10 flex flex-1 flex-col p-3 sm:p-4">
         <p className={`text-xs font-semibold uppercase tracking-wider ${textClass}`}>{title}</p>
-        <p className={`mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl ${lightCard ? 'text-slate-900' : ''}`}>
-          <CountUpDisplay value={value} duration={1.2} start={startCount} />
+        <p className={`mt-1.5 text-2xl font-bold tracking-tight tabular-nums sm:text-3xl ${lightCard ? 'text-slate-900' : ''}`}>
+          {value}
         </p>
         <div className={`mt-2.5 border-t ${borderClass}`} />
         <div className="mt-2 space-y-1">
@@ -363,7 +348,6 @@ function StatCard({
             <div
               key={`${cardKey}-${item.label}-${i}`}
               className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm transition-colors ${lightCard ? 'hover:bg-slate-400/10' : 'hover:bg-white/5'}`}
-              style={{ animationDelay: `${0.35 + i * 0.05}s` }}
             >
               <div className="min-w-0 flex-1 space-y-1">
                 <p
@@ -377,8 +361,8 @@ function StatCard({
                   Branch: <span className="font-semibold tabular-nums">{item.label}</span>
                 </p>
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold ${pillClass}`}>
-                <CountUpDisplay value={item.value} duration={0.8} start={startCount} />
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${pillClass}`}>
+                {item.value}
               </span>
             </div>
           ))}
@@ -389,7 +373,6 @@ function StatCard({
 }
 
 export default function Dashboard() {
-  const [loadingDone, setLoadingDone] = useState(false);
   /** Plain { year, month } avoids controlled Date edge cases with React state updates. */
   const [viewYearMonth, setViewYearMonth] = useState(() => {
     const d = new Date();
@@ -412,29 +395,6 @@ export default function Dashboard() {
     const el = document.getElementById('dashboard-root');
     const filter = el?.dataset.dashboardBranchFilter ?? '';
     return applyDashboardBranchFilter(cards, filter);
-  }, []);
-
-  useEffect(() => {
-    let done = false;
-    const finish = () => {
-      if (done) {
-        return;
-      }
-      done = true;
-      setLoadingDone(true);
-    };
-    const loader = document.getElementById('pageLoader');
-    if (!loader || loader.classList.contains('hide')) {
-      finish();
-    } else {
-      document.addEventListener('pageLoaderHidden', finish);
-    }
-    const fallbackMs = 2000;
-    const t = window.setTimeout(finish, fallbackMs);
-    return () => {
-      document.removeEventListener('pageLoaderHidden', finish);
-      window.clearTimeout(t);
-    };
   }, []);
 
   useEffect(() => {
@@ -558,7 +518,6 @@ export default function Dashboard() {
             iconColor={card.iconColor}
             pillClass={card.pillClass}
             lightCard={index === 3}
-            startCount={loadingDone}
           />
         ))}
       </section>

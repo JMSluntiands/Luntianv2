@@ -11,6 +11,7 @@ use App\Http\Controllers\BphJobController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\ClientAccountController;
+use App\Http\Controllers\ClientEmailAmtController;
 use App\Http\Controllers\ClientEmailBphController;
 use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\CspJobController;
@@ -45,6 +46,20 @@ Route::get('/login', function () {
 })->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+$registerPublicLbsRoutes = function () {
+    Route::get('/lbs/add-new', [LbsJobController::class, 'publicAddForm'])->name('lbs.public.add');
+    Route::post('/lbs/add-new', [LbsJobController::class, 'store'])->name('lbs.public.store');
+    Route::post('/lbs/add-new/job/{id}/send-slack', [LbsJobController::class, 'sendJobSlackNotification'])->name('lbs.public.job.sendSlack');
+    Route::post('/lbs/add-new/job/{id}/send-submission-email', [LbsJobController::class, 'sendJobSubmissionEmail'])->name('lbs.public.job.sendSubmissionEmail');
+};
+
+$lbsPublicFormDomain = trim((string) config('app.lbs_public_form_domain', ''));
+if ($lbsPublicFormDomain !== '') {
+    Route::domain($lbsPublicFormDomain)->group($registerPublicLbsRoutes);
+} else {
+    $registerPublicLbsRoutes();
+}
 
 Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/unauthorized', function () {
@@ -103,6 +118,13 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/bph-client-email/{client_email_bph}/edit', [ClientEmailBphController::class, 'edit'])->name('bph_client_email.edit');
     Route::put('/dashboard/bph-client-email/{client_email_bph}', [ClientEmailBphController::class, 'update'])->name('bph_client_email.update');
     Route::delete('/dashboard/bph-client-email/{client_email_bph}', [ClientEmailBphController::class, 'destroy'])->name('bph_client_email.destroy');
+
+    Route::get('/dashboard/amt-client-email', [ClientEmailAmtController::class, 'index'])->name('amt_client_email.index');
+    Route::get('/dashboard/amt-client-email/create', [ClientEmailAmtController::class, 'create'])->name('amt_client_email.create');
+    Route::post('/dashboard/amt-client-email', [ClientEmailAmtController::class, 'store'])->name('amt_client_email.store');
+    Route::get('/dashboard/amt-client-email/{client_email_amt}/edit', [ClientEmailAmtController::class, 'edit'])->name('amt_client_email.edit');
+    Route::put('/dashboard/amt-client-email/{client_email_amt}', [ClientEmailAmtController::class, 'update'])->name('amt_client_email.update');
+    Route::delete('/dashboard/amt-client-email/{client_email_amt}', [ClientEmailAmtController::class, 'destroy'])->name('amt_client_email.destroy');
 
     Route::get('/dashboard/csp/add', function () {
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);

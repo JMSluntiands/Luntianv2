@@ -1,6 +1,6 @@
-@extends('layouts.dashboard')
+@extends($layoutView ?? 'layouts.dashboard')
 
-@section('title', 'Add New Job (LBS)')
+@section('title', 'Add New Job')
 
 @section('body_class', 'page-lbs-add')
 
@@ -8,7 +8,7 @@
     <div class="w-full max-w-full px-0">
         {{-- Page Header --}}
         <div class="mb-8">
-            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (LBS)</h1>
+            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job</h1>
             <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new LBS job.</p>
         </div>
 
@@ -208,7 +208,6 @@
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Save Job
                 </button>
-                <a href="{{ route('lbs.list') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
             </div>
         </form>
     </div>
@@ -356,7 +355,7 @@
                 }
 
                 $.ajax({
-                    url: '{{ route('lbs.store') }}',
+                    url: '{{ $storeRoute ?? route('lbs.store') }}',
                     method: 'POST',
                     data: formData,
                     processData: false,
@@ -392,9 +391,9 @@
 
             function showLbsAfterSavePrompt(jobId, submissionEmailEnabled) {
                 var submissionEmailOn = submissionEmailEnabled !== false;
-                var sendSlackUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-slack';
-                var sendUrl = '{{ url('dashboard/lbs/job') }}/' + jobId + '/send-submission-email';
-                var listUrl = '{{ route('lbs.list') }}';
+                var sendSlackUrl = '{{ $sendSlackBaseUrl ?? url('dashboard/lbs/job') }}' + '/' + jobId + '/send-slack';
+                var sendUrl = '{{ $sendSubmissionBaseUrl ?? url('dashboard/lbs/job') }}' + '/' + jobId + '/send-submission-email';
+                var listUrl = '{{ $listUrl ?? route('lbs.list') }}';
 
                 var $overlay = $(
                     '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay">' +

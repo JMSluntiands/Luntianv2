@@ -232,6 +232,11 @@ body.sidebar-open #sidebarNav {
     @apply opacity-100 pointer-events-auto;
 }
 
+/* Delete A&M client email modal visible state */
+#deleteAmtEmailModal.show {
+    @apply opacity-100 pointer-events-auto;
+}
+
 /* Hide scrollbar on sidebar nav */
 .scrollbar-hide {
     -ms-overflow-style: none;
@@ -601,13 +606,6 @@ body.sidebar-open #sidebarNav {
     border-radius: 9999px;
 }
 
-/* Count Up Animation – applied to all dashboard stat numbers */
-.count-up-animation {
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
-    transition: opacity 0.1s ease-out;
-}
-
 /* Continuous line animation – segment moves along path in a loop */
 @keyframes dashboard-graph-continuous {
     0% { stroke-dashoffset: 0; }
@@ -651,7 +649,7 @@ body.sidebar-open #sidebarNav {
 }
 
 .dashboard-card--total {
-    background: #FFA500;
+    background: #a8622a;
     color: #fff;
 }
 .dashboard-card--total:hover {
@@ -666,7 +664,7 @@ body.sidebar-open #sidebarNav {
     color: #fff;
 }
 .dashboard-card--completed {
-    background: #8B4513;
+    background: #6b4a38;
     color: #fff;
 }
 .dashboard-card--completed:hover {
@@ -681,7 +679,7 @@ body.sidebar-open #sidebarNav {
     color: #fff;
 }
 .dashboard-card--processing {
-    background: #FFC107;
+    background: #8f6f32;
     color: #fff;
 }
 .dashboard-card--processing:hover {
@@ -696,7 +694,7 @@ body.sidebar-open #sidebarNav {
     color: #fff;
 }
 .dashboard-card--pending {
-    background: #F5DEB3;
+    background: #d4c9b8;
     color: #1e293b;
 }
 .dashboard-card--pending:hover {

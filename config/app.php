@@ -56,6 +56,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public LBS Form Domain
+    |--------------------------------------------------------------------------
+    |
+    | Optional dedicated domain for the public LBS add form routes.
+    | Example: forms.your-domain.com
+    |
+    */
+    'lbs_public_form_domain' => env('LBS_PUBLIC_FORM_DOMAIN', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
