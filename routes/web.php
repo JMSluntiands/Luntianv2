@@ -48,6 +48,14 @@ Route::get('/login', function () {
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/branding/logo-light', function () {
+    if (!Storage::disk('public')->exists('logo-light.png')) {
+        abort(404);
+    }
+
+    return response()->file(Storage::disk('public')->path('logo-light.png'));
+})->name('branding.logo_light');
+
 $registerPublicLbsRoutes = function () {
     Route::get('/lbs/add-new', [LbsJobController::class, 'publicAddForm'])->name('lbs.public.add');
     Route::post('/lbs/add-new', [LbsJobController::class, 'store'])->name('lbs.public.store');
@@ -63,14 +71,6 @@ if ($lbsPublicFormDomain !== '') {
 }
 
 Route::middleware(['auth.session', 'check.permission'])->group(function () {
-    Route::get('/branding/logo-light', function () {
-        if (!Storage::disk('public')->exists('logo-light.png')) {
-            abort(404);
-        }
-
-        return response()->file(Storage::disk('public')->path('logo-light.png'));
-    })->name('branding.logo_light');
-
     Route::get('/dashboard/unauthorized', function () {
         return view('unauthorized', ['sidebar_active' => 'unauthorized']);
     })->name('unauthorized');
