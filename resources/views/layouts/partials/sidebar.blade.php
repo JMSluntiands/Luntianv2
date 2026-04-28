@@ -119,12 +119,12 @@
     <div class="sidebar-brand flex h-14 w-full flex-shrink-0 items-center justify-center border-b border-slate-200 bg-slate-50/50 px-4 dark:border-slate-700 dark:bg-slate-800/50">
         <a href="{{ route('dashboard') }}" class="flex w-full items-center justify-center no-underline">
             @php
-                $sidebarLogoUrl = \Illuminate\Support\Facades\Route::has('branding.logo_light')
-                    ? route('branding.logo_light')
-                    : asset('storage/logo-light.png');
+                $sidebarLogoUrl = rtrim(request()->getBaseUrl(), '/') . '/storage/logo-light.png';
+                if ($sidebarLogoUrl === '/storage/logo-light.png') {
+                    $sidebarLogoUrl = asset('storage/logo-light.png');
+                }
             @endphp
-            <img src="{{ $sidebarLogoUrl }}" alt="Luntian" class="sidebar-logo-img mx-auto block h-8 w-auto max-w-[130px] object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-            <span class="text-center font-bold text-xl tracking-tight text-emerald-600 dark:text-emerald-300" style="display:none;">Luntian</span>
+            <img src="{{ $sidebarLogoUrl }}" alt="Luntian" class="sidebar-logo-img mx-auto block h-8 w-auto max-w-[130px] object-contain" onerror="this.style.display='none';" />
         </a>
     </div>
     @php
