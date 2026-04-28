@@ -1211,6 +1211,8 @@ class LbsJobController extends Controller
                 ->get();
         }
 
+        $jobs = $this->attachLatestCheckerUploads($jobs);
+
         return view('lbs.mailbox', [
             'sidebar_active' => 'efficient_living.mailbox',
             'jobs' => $jobs,
@@ -1470,6 +1472,8 @@ class LbsJobController extends Controller
                 ->get();
         }
 
+        $jobs = $this->attachLatestCheckerUploads($jobs);
+
         $priorityColors = Priority::query()
             ->whereNotNull('name')
             ->pluck('color', 'name')
@@ -1486,6 +1490,43 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'statusColors'   => $statusColors,
         ]);
+    }
+
+    private function attachLatestCheckerUploads($jobs)
+    {
+        if (! $jobs || $jobs->isEmpty()) {
+            return $jobs;
+        }
+
+        $jobIds = $jobs->pluck('job_id')->filter()->map(fn ($id) => (int) $id)->values();
+        if ($jobIds->isEmpty()) {
+            return $jobs;
+        }
+
+        $latestRows = DB::table('staff_uploaded_files')
+            ->select('job_id', 'files_json', 'uploaded_at')
+            ->whereIn('job_id', $jobIds->all())
+            ->orderByDesc('uploaded_at')
+            ->orderByDesc('file_id')
+            ->get();
+
+        $latestByJob = [];
+        foreach ($latestRows as $row) {
+            $jid = (int) ($row->job_id ?? 0);
+            if ($jid <= 0 || array_key_exists($jid, $latestByJob)) {
+                continue;
+            }
+            $latestByJob[$jid] = $row;
+        }
+
+        return $jobs->map(function ($job) use ($latestByJob) {
+            $jid = (int) ($job->job_id ?? 0);
+            $latest = $latestByJob[$jid] ?? null;
+            $job->latest_checker_files_json = $latest->files_json ?? null;
+            $job->latest_checker_uploaded_at = $latest->uploaded_at ?? null;
+
+            return $job;
+        });
     }
 
     /**

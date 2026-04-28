@@ -54,9 +54,9 @@
                                 $log = $job->log_date ? \Carbon\Carbon::parse($job->log_date, 'Asia/Manila') : null;
                                 $logFormatted = $log ? $log->format('Y-m-d H:i:s') : '—';
                                 $toEmail = $job->to_email ?? '—';
-                                $planFiles = is_string($job->upload_files ?? null) ? json_decode($job->upload_files, true) : [];
-                                $projFiles = is_string($job->upload_project_files ?? null) ? json_decode($job->upload_project_files, true) : [];
-                                $hasFiles = (!empty($planFiles) && is_array($planFiles)) || (!empty($projFiles) && is_array($projFiles));
+                                $latestCheckerFiles = is_string($job->latest_checker_files_json ?? null) ? json_decode($job->latest_checker_files_json, true) : [];
+                                $latestCheckerFiles = is_array($latestCheckerFiles) ? array_values(array_filter($latestCheckerFiles, fn ($f) => is_string($f) && trim($f) !== '')) : [];
+                                $hasLatestCheckerFiles = !empty($latestCheckerFiles);
                             @endphp
                             <tr class="lbs-data-row lbs-mailbox-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ route($updateRoute, ['id' => $job->job_id]) }}">
                                 <td class="border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">
@@ -76,8 +76,13 @@
                                     <button type="button" class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" data-preview-job="{{ $job->job_id }}" title="Preview email" aria-label="Preview email">Preview</button>
                                 </td>
                                 <td class="border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Files">
-                                    @if($hasFiles)
-                                        <a href="{{ route($viewRoute, ['id' => $job->job_id]) }}#files" class="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Uploaded Files</a>
+                                    @if($hasLatestCheckerFiles)
+                                        <a href="{{ route($viewRoute, ['id' => $job->job_id]) }}#files" class="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300" title="{{ implode(', ', $latestCheckerFiles) }}">
+                                            {{ $latestCheckerFiles[0] }}
+                                            @if(count($latestCheckerFiles) > 1)
+                                                <span class="text-xs text-slate-500 dark:text-slate-400">(+{{ count($latestCheckerFiles) - 1 }})</span>
+                                            @endif
+                                        </a>
                                     @else
                                         <span class="text-slate-400">—</span>
                                     @endif
