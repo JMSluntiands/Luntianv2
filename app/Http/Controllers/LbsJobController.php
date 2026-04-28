@@ -101,10 +101,16 @@ class LbsJobController extends Controller
             }
         }
 
-        $checkerUploads = DB::table('staff_uploaded_files')
+        $checkerUploadsQuery = DB::table('staff_uploaded_files')
             ->where('job_id', (int) $job->job_id)
-            ->orderByDesc('uploaded_at')
-            ->get();
+            ->orderByDesc('uploaded_at');
+
+        $isBranchRole = strtolower(trim((string) session('user_role', ''))) === 'branch';
+        if ($isBranchRole && ! $isEfficientLiving) {
+            $checkerUploadsQuery->limit(1);
+        }
+
+        $checkerUploads = $checkerUploadsQuery->get();
 
         $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
             ->orderBy('unique_code')
