@@ -132,30 +132,6 @@ type CardTemplate = {
 
 type StatCardData = CardTemplate & { value: number; items: { label: string; value: number }[] };
 
-/* Continuous line animation – segment travels along path in a loop (visible) */
-function LineGraphBg({ light = false, variant = 'total' }: { light?: boolean; variant?: CardVariant }) {
-  const stroke = light ? 'rgba(71,85,105,0.5)' : 'rgba(255,255,255,0.65)';
-  const trackStroke = light ? 'rgba(71,85,105,0.18)' : 'rgba(255,255,255,0.22)';
-  const fill = light ? 'rgba(71,85,105,0.06)' : 'rgba(255,255,255,0.06)';
-  const lineClass = (n: number) => `dashboard-graph-continuous dashboard-graph-continuous-${variant} dashboard-graph-continuous-${n}`;
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl" aria-hidden>
-      <svg className="absolute bottom-0 left-0 h-[55%] w-full" viewBox="0 0 200 80" preserveAspectRatio="none">
-        <path d="M0 72 Q50 58 100 45 T200 28 L200 80 L0 80 Z" fill={fill} className="dashboard-graph-fill" />
-        {/* Line 1: track + moving segment (continuous) */}
-        <path d="M0 65 Q30 55 60 42 T120 30 T180 20 L200 18" fill="none" stroke={trackStroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M0 65 Q30 55 60 42 T120 30 T180 20 L200 18" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="0.08 0.26" className={lineClass(1)} />
-        {/* Line 2 */}
-        <path d="M0 58 Q40 48 80 38 T160 22 L200 15" fill="none" stroke={trackStroke} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M0 58 Q40 48 80 38 T160 22 L200 15" fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="0.08 0.26" className={lineClass(2)} />
-        {/* Line 3 */}
-        <path d="M0 70 Q25 60 50 48 T100 38 T150 28 T200 20" fill="none" stroke={trackStroke} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M0 70 Q25 60 50 48 T100 38 T150 28 T200 20" fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="0.08 0.26" className={lineClass(3)} />
-      </svg>
-    </div>
-  );
-}
-
 const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
@@ -331,8 +307,6 @@ function StatCard({
     <div
       className={`animate-dashboard-card ${delayClass} relative flex min-w-0 flex-col overflow-hidden rounded-xl transition-transform duration-300 ease-out hover:-translate-y-1 ${lightCard ? 'text-slate-800' : 'text-white'} ${bgClass}`}
     >
-      {/* Line graph background – different animation per card */}
-      <LineGraphBg light={lightCard} variant={cardKey} />
       {/* Large icon as card background – no border, no bg */}
       <div className={`pointer-events-none absolute -right-2 -top-2 h-[100px] w-[100px] opacity-20 ${iconColor}`} aria-hidden>
         {icon}
