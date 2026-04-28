@@ -21,6 +21,13 @@
                 class="flex min-w-0 flex-1 items-center overflow-hidden"
                 data-announcement-text="{{ $activeAnnouncement->message }}"
             >
+                <div class="announcement-ticker" role="status" aria-live="polite">
+                    <div class="announcement-ticker__track">
+                        <div class="announcement-ticker__content" style="--ticker-duration: 9000ms;">
+                            <span class="announcement-ticker__text">{{ $activeAnnouncement->message }}</span>
+                        </div>
+                    </div>
+                </div>
                 @yield('header_center')
             </div>
         </div>

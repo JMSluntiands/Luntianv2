@@ -10,7 +10,7 @@ type Props = {
 
 export default function AnnouncementTicker({
   text = DEFAULT_MESSAGE,
-  scrollDuration = 22000,
+  scrollDuration = 9000,
 }: Props) {
   const announcement = useMemo(() => {
     const clean = text.trim();

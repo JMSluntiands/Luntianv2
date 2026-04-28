@@ -1070,6 +1070,22 @@ class LbsJobController extends Controller
             ->toArray();
 
         $statuses = Status::orderBy('name')->get();
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
 
         return view('lbs.list', [
             'sidebar_active' => 'lbs.list',
@@ -1078,6 +1094,8 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'statusColors' => $statusColors,
             'statuses' => $statuses,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
         ]);
     }
 
@@ -1142,6 +1160,22 @@ class LbsJobController extends Controller
         $jobs = $this->queryEfficientLivingJobsByStatus('Completed', 500);
         $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
         $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
 
         return view('lbs.completed', [
             'sidebar_active' => 'efficient_living.completed',
@@ -1149,6 +1183,8 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'statusColors' => $statusColors,
             'isEfficientLiving' => true,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
         ]);
     }
 
@@ -1380,12 +1416,30 @@ class LbsJobController extends Controller
             ->whereNotNull('name')
             ->pluck('color', 'name')
             ->toArray();
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
 
         return view('lbs.completed', [
             'sidebar_active' => 'lbs.completed',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statusColors' => $statusColors,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
         ]);
     }
 
@@ -1548,7 +1602,7 @@ class LbsJobController extends Controller
         return response()->json([
             'status'          => 'success',
             'job_reference_no' => $job->job_reference_no ?? $job->reference ?? '',
-            'job_status'      => $job->job_status ?? 'For Email Confirmation',
+            'job_status'      => 'COMPLETED',
             'assessor'        => $job->staff_id ?? '',
             'assessor_email'  => $assessorEmail,
             'notes'           => $job->notes ?? '',

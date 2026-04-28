@@ -134,6 +134,26 @@
 $(function () {
   var $table = $('#lbsTable');
   var $search = $('#lbsSearch');
+  var $filterDate = $('#lbsFilterDate');
+  var $filterBuilder = $('#lbsFilterBuilder');
+  var $filterPriority = $('#lbsFilterPriority');
+  var $filterReset = $('#lbsFilterReset');
+  function initFilterSelect2() {
+    if (!$.fn || !$.fn.select2) return;
+    var commonOpts = {
+      width: '100%',
+      minimumResultsForSearch: 8
+    };
+    if ($filterBuilder.length && !$filterBuilder.data('select2')) {
+      $filterBuilder.select2(commonOpts);
+    }
+    if ($filterPriority.length && !$filterPriority.data('select2')) {
+      $filterPriority.select2(commonOpts);
+    }
+  }
+
+  initFilterSelect2();
+
   var csrfToken =
     document.querySelector('meta[name="csrf-token"]') &&
     document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -163,22 +183,57 @@ $(function () {
     $('[data-lbs-count="overdue"]').text(overdue);
   }
 
-  if ($search.length && $table.length) {
+  function applyTableFilters() {
+    if (!$table.length) return;
     var $tbody = $table.find('tbody');
-    $search.on('input', function () {
-      var q = ($.trim($(this).val()) || '').toLowerCase();
-      if (!$tbody.length) return;
-      var $rows = $tbody.find('tr').not('.lbs-row-detail');
-      $rows.each(function () {
-        var $row = $(this);
-        var text = ($row.text() || '').toLowerCase();
-        var match = !q || text.indexOf(q) !== -1;
-        $row.toggle(match);
-        var $next = $row.next('.lbs-row-detail');
-        if ($next.length) $next.toggle(match);
-      });
-      recalcStatusSummary();
+    if (!$tbody.length) return;
+
+    var q = ($search.length ? $.trim($search.val()) : '' || '').toLowerCase();
+    var filterDate = ($filterDate.length ? String($filterDate.val() || '').trim() : '');
+    var filterBuilder = ($filterBuilder.length ? String($filterBuilder.val() || '').trim().toLowerCase() : '');
+    var filterPriority = ($filterPriority.length ? String($filterPriority.val() || '').trim().toLowerCase() : '');
+
+    var $rows = $tbody.find('tr').not('.lbs-row-detail');
+    $rows.each(function () {
+      var $row = $(this);
+      var text = ($row.text() || '').toLowerCase();
+      var rowDate = String($row.attr('data-log-date-key') || '').trim();
+      var rowBuilder = String($row.attr('data-builder') || '').trim().toLowerCase();
+      var rowPriority = String($row.attr('data-priority') || '').trim().toLowerCase();
+
+      var matchSearch = !q || text.indexOf(q) !== -1;
+      var matchDate = !filterDate || rowDate === filterDate;
+      var matchBuilder = !filterBuilder || rowBuilder === filterBuilder;
+      var matchPriority = !filterPriority || rowPriority === filterPriority;
+      var match = matchSearch && matchDate && matchBuilder && matchPriority;
+
+      $row.toggle(match);
+      var $next = $row.next('.lbs-row-detail');
+      if ($next.length) {
+        if (match && !$next.prop('hidden')) {
+          $next.show();
+        } else if (!match) {
+          $next.hide();
+        }
+      }
     });
+    recalcStatusSummary();
+  }
+
+  if ($table.length) {
+    if ($search.length) $search.on('input', applyTableFilters);
+    if ($filterDate.length) $filterDate.on('change', applyTableFilters);
+    if ($filterBuilder.length) $filterBuilder.on('change', applyTableFilters);
+    if ($filterPriority.length) $filterPriority.on('change', applyTableFilters);
+    if ($filterReset.length) {
+      $filterReset.on('click', function () {
+        if ($search.length) $search.val('');
+        if ($filterDate.length) $filterDate.val('');
+        if ($filterBuilder.length) $filterBuilder.val('');
+        if ($filterPriority.length) $filterPriority.val('');
+        applyTableFilters();
+      });
+    }
   }
 
   $table.find('[data-expand-row]').on('click', function (e) {
@@ -319,6 +374,36 @@ $(function () {
 
   var statusTableSelector = '#lbsTable .lbs-status-option, #efficient_livingTable .lbs-status-option';
 
+  function resolveAppBasePath() {
+    var path = String(window.location.pathname || '');
+    var idx = path.indexOf('/dashboard/');
+    return idx >= 0 ? path.slice(0, idx) : '';
+  }
+
+  function resolveStatusRedirectUrl(statusValue) {
+    var normalized = String(statusValue || '').toLowerCase().trim();
+    var pathname = String(window.location.pathname || '').toLowerCase();
+    var basePath = resolveAppBasePath();
+    var modulePrefix = pathname.indexOf('/dashboard/efficient-living/') !== -1
+      ? '/dashboard/efficient-living'
+      : '/dashboard/lbs';
+
+    if (normalized === 'completed') {
+      return basePath + modulePrefix + '/completed';
+    }
+    if (normalized === 'for review') {
+      return basePath + modulePrefix + '/review';
+    }
+    if (normalized === 'for email confirmation') {
+      return basePath + modulePrefix + '/mailbox';
+    }
+    if (normalized === 'archived') {
+      return basePath + modulePrefix + '/trash';
+    }
+
+    return null;
+  }
+
   $(document).on('click', statusTableSelector, function (e) {
     e.stopPropagation();
     var $option = $(this);
@@ -396,8 +481,13 @@ $(function () {
             $trigger.removeClass('lbs-status-updating').addClass('lbs-status-success');
             var msg = (res && res.message) || 'Status updated to ' + val + '.';
             if (window.showSuccessToast) window.showSuccessToast(msg);
+            var redirectUrl = resolveStatusRedirectUrl(val);
             setTimeout(function () {
               $trigger.removeClass('lbs-status-success');
+              if (redirectUrl) {
+                window.location.href = redirectUrl;
+                return;
+              }
               window.location.reload();
             }, 1500);
           })
@@ -462,5 +552,5 @@ $(function () {
     });
   }
 
-  recalcStatusSummary();
+  applyTableFilters();
 });

@@ -44,6 +44,31 @@
         .animate-dashboard-card > .pointer-events-none.absolute.inset-0 {
             display: none !important;
         }
+
+        /* Force darker card palette even when old built assets are cached online */
+        .dashboard-card--total,
+        .dashboard-cards > .animate-dashboard-card:nth-child(1) {
+            background: #a8622a !important;
+            color: #fff !important;
+        }
+
+        .dashboard-card--completed,
+        .dashboard-cards > .animate-dashboard-card:nth-child(2) {
+            background: #6b4a38 !important;
+            color: #fff !important;
+        }
+
+        .dashboard-card--processing,
+        .dashboard-cards > .animate-dashboard-card:nth-child(3) {
+            background: #8f6f32 !important;
+            color: #fff !important;
+        }
+
+        .dashboard-card--pending,
+        .dashboard-cards > .animate-dashboard-card:nth-child(4) {
+            background: #d4c9b8 !important;
+            color: #1e293b !important;
+        }
     </style>
 @endpush
 

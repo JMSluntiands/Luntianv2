@@ -21,6 +21,8 @@
         $jobPrintComplianceRouteName = $jobPrintComplianceRouteName ?? 'bph.job.printCompliance';
         $jobMergeFileRouteName = $jobMergeFileRouteName ?? 'bph.job.mergeFile';
         $jobCompliancePdfFilenamePrefix = $jobCompliancePdfFilenamePrefix ?? 'BPH';
+        $jobReferenceDisplay = $job->reference ?? $job->job_reference_no ?? $jobId ?? '—';
+        $jobNumberDisplay = $job->client_reference_no ?? $job->job_reference_no ?? $job->reference ?? $jobId ?? '—';
 
         $permJobUpdate = \App\Models\RolePermission::userMayAccessRoute($jobUpdateRouteName);
         $permUpload = \App\Models\RolePermission::userMayAccessRoute($jobUploadFilesRouteName);
@@ -71,7 +73,7 @@
             <span class="text-slate-400 dark:text-slate-500">/</span>
             <a href="{{ route($listRouteName) }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Job List</a>
             <span class="text-slate-400 dark:text-slate-500">/</span>
-            <span class="font-medium text-slate-800 dark:text-white">Job {{ $job->reference ?? $job->job_id ?? $jobId ?? '' }}</span>
+            <span class="font-medium text-slate-800 dark:text-white">Job {{ $jobNumberDisplay }}</span>
         </nav>
 
         @php
@@ -82,7 +84,7 @@
             <div class="min-w-0">
                 <h1 class="m-0 mb-1 text-[1.625rem] font-bold tracking-tight text-slate-800 dark:text-white">Job Details</h1>
                 <p class="m-0 text-sm text-slate-500 dark:text-slate-400">
-                    Reference: <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ $job->reference ?? $job->job_reference_no ?? $jobId ?? '—' }}</span>
+                    Reference Number: <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ $jobNumberDisplay }}</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
@@ -188,8 +190,8 @@
                                     <dd class="job-details-dd">@if(!empty($job->log_date)){{ \Carbon\Carbon::parse($job->log_date)->format('M d, Y h:i A') }}@else—@endif</dd>
                                 </div>
                                 <div class="job-details-row">
-                                    <dt class="job-details-dt">Job Number</dt>
-                                    <dd class="job-details-dd font-mono">{{ $job->job_reference_no ?? $job->reference ?? $jobId ?? '—' }}</dd>
+                                    <dt class="job-details-dt">Reference Number</dt>
+                                    <dd class="job-details-dd font-mono">{{ $jobNumberDisplay }}</dd>
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Client</dt>

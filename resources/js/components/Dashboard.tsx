@@ -132,6 +132,19 @@ type CardTemplate = {
 
 type StatCardData = CardTemplate & { value: number; items: { label: string; value: number }[] };
 
+const BRANCH_ROUTE_PREFIX: Record<string, string> = {
+  LBS: 'lbs',
+  BPH: 'bph',
+  BLUINQ: 'bluinq',
+  'A&M': 'amt',
+  'FYRS ENERGY WISE': 'fyrs',
+  CSP: 'csp',
+  NH: 'nh',
+  'LC HOME BUILDER': 'lc-home-builder',
+  'EFFICIENT LIVING': 'efficient-living',
+  'LEADING ENERGY': 'leading-energy',
+};
+
 const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
@@ -217,6 +230,25 @@ function branchKeyMatchesStatLabel(cardLabel: string, filterRaw: string): boolea
     return true;
   }
   return a.includes(b) || b.includes(a);
+}
+
+function dashboardBasePath(): string {
+  const p = String(window.location.pathname || '');
+  const i = p.toLowerCase().indexOf('/dashboard');
+  return i >= 0 ? p.slice(0, i) : '';
+}
+
+function cardBucketToSegment(cardKey: CardVariant): string {
+  if (cardKey === 'completed') return 'completed';
+  if (cardKey === 'pending') return 'review';
+  return 'list';
+}
+
+function resolveCardRowUrl(cardKey: CardVariant, branchLabel: string): string | null {
+  const prefix = BRANCH_ROUTE_PREFIX[branchLabel];
+  if (!prefix) return null;
+  const segment = cardBucketToSegment(cardKey);
+  return `${dashboardBasePath()}/dashboard/${prefix}/${segment}`;
 }
 
 /** When user has a branch, show only that row; main total = that row's count. Empty filter = all branches. */
@@ -321,7 +353,26 @@ function StatCard({
           {items.map((item, i) => (
             <div
               key={`${cardKey}-${item.label}-${i}`}
-              className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm transition-colors ${lightCard ? 'hover:bg-slate-400/10' : 'hover:bg-white/5'}`}
+              className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm transition-colors ${resolveCardRowUrl(cardKey, item.label) ? 'cursor-pointer' : ''} ${lightCard ? 'hover:bg-slate-400/10' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                const nextUrl = resolveCardRowUrl(cardKey, item.label);
+                if (nextUrl) {
+                  window.location.href = nextUrl;
+                }
+              }}
+              role={resolveCardRowUrl(cardKey, item.label) ? 'button' : undefined}
+              tabIndex={resolveCardRowUrl(cardKey, item.label) ? 0 : undefined}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  const nextUrl = resolveCardRowUrl(cardKey, item.label);
+                  if (nextUrl) {
+                    e.preventDefault();
+                    window.location.href = nextUrl;
+                  }
+                }
+              }}
+              title={resolveCardRowUrl(cardKey, item.label) ? `Open ${item.label} ${CARD_BREAKDOWN_STATUS[cardKey]} table` : undefined}
+              aria-label={resolveCardRowUrl(cardKey, item.label) ? `Open ${item.label} ${CARD_BREAKDOWN_STATUS[cardKey]} table` : undefined}
             >
               <div className="min-w-0 flex-1 space-y-1">
                 <p
@@ -335,9 +386,15 @@ function StatCard({
                   Branch: <span className="font-semibold tabular-nums">{item.label}</span>
                 </p>
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${pillClass}`}>
-                {item.value}
-              </span>
+              {resolveCardRowUrl(cardKey, item.label) ? (
+                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums transition-opacity ${pillClass}`}>
+                  {item.value}
+                </span>
+              ) : (
+                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${pillClass}`}>
+                  {item.value}
+                </span>
+              )}
             </div>
           ))}
         </div>
