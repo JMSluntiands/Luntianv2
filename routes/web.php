@@ -31,6 +31,7 @@ use App\Http\Controllers\StatusController;
 use App\Http\Controllers\UserAccountController;
 use App\Models\ClientEmailBph;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ReportsController;
 
 Route::get('/', function () {
@@ -62,6 +63,14 @@ if ($lbsPublicFormDomain !== '') {
 }
 
 Route::middleware(['auth.session', 'check.permission'])->group(function () {
+    Route::get('/branding/logo-light', function () {
+        if (!Storage::disk('public')->exists('logo-light.png')) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path('logo-light.png'));
+    })->name('branding.logo_light');
+
     Route::get('/dashboard/unauthorized', function () {
         return view('unauthorized', ['sidebar_active' => 'unauthorized']);
     })->name('unauthorized');

@@ -10,7 +10,7 @@
                 $q->whereNull('end_date')
                   ->orWhereDate('end_date', '>=', now());
             })
-            ->orderByDesc('start_date')
+            ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->first();
     @endphp
