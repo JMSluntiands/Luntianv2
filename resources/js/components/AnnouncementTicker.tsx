@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 
-const DEFAULT_MESSAGE = 'Welcome to Luntian Dashboard. Check your jobs and calendar for updates.';
-
 type Props = {
   text?: string;
   /** Duration in ms for one full loop */
@@ -9,13 +7,16 @@ type Props = {
 };
 
 export default function AnnouncementTicker({
-  text = DEFAULT_MESSAGE,
+  text = '',
   scrollDuration = 9000,
 }: Props) {
   const announcement = useMemo(() => {
-    const clean = text.trim();
-    return clean.length ? clean : DEFAULT_MESSAGE;
+    return String(text || '').trim();
   }, [text]);
+
+  if (!announcement) {
+    return null;
+  }
 
   return (
     <div className="announcement-ticker" role="status" aria-live="polite">
