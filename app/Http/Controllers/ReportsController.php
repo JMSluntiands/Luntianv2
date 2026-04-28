@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ReportsController extends Controller
 {
@@ -16,100 +17,145 @@ class ReportsController extends Controller
      */
     private static function unionAllJobsSql(string $utf8u): string
     {
-        return "
-            SELECT
-                j.completion_date AS completion_date,
-                CONVERT(COALESCE(j.staff_id, j.checker_id) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(j.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(NULLIF(j.units, 0), j.plan_complexity, 0) AS units,
-                CONVERT(COALESCE(ca.client_account_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CASE
-                    WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_EL\\_%' THEN CONVERT('EFFICIENT LIVING' USING utf8mb4) COLLATE {$utf8u}
-                    ELSE CONVERT('LBS' USING utf8mb4) COLLATE {$utf8u}
-                END AS job_system
-            FROM jobs j
-            LEFT JOIN client_accounts ca ON ca.client_account_id = j.client_account_id
-            WHERE j.reference LIKE 'JOBS%'
+        $parts = [];
 
-            UNION ALL
+        if (Schema::hasTable('jobs')) {
+            $parts[] = "
+                SELECT
+                    j.completion_date AS completion_date,
+                    CONVERT(COALESCE(j.staff_id, j.checker_id) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(j.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(NULLIF(j.units, 0), j.plan_complexity, 0) AS units,
+                    CONVERT(COALESCE(ca.client_account_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CASE
+                        WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_EL\\_%' THEN CONVERT('EFFICIENT LIVING' USING utf8mb4) COLLATE {$utf8u}
+                        ELSE CONVERT('LBS' USING utf8mb4) COLLATE {$utf8u}
+                    END AS job_system
+                FROM jobs j
+                LEFT JOIN client_accounts ca ON ca.client_account_id = j.client_account_id
+                WHERE j.reference LIKE 'JOBS%'
+            ";
+        }
 
-            SELECT
-                b.date AS completion_date,
-                CONVERT(COALESCE(b.assigned, b.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(b.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(b.units, 0) AS units,
-                CONVERT(COALESCE(b.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CASE
-                    WHEN LOWER(TRIM(CONVERT(b.client_code USING utf8mb4) COLLATE {$utf8u})) = 'bluinq01' THEN CONVERT('BLUINQ' USING utf8mb4) COLLATE {$utf8u}
-                    ELSE CONVERT('BPH' USING utf8mb4) COLLATE {$utf8u}
-                END AS job_system
-            FROM job_bph b
+        if (Schema::hasTable('job_bph')) {
+            $parts[] = "
+                SELECT
+                    b.date AS completion_date,
+                    CONVERT(COALESCE(b.assigned, b.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(b.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(b.units, 0) AS units,
+                    CONVERT(COALESCE(b.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CASE
+                        WHEN LOWER(TRIM(CONVERT(b.client_code USING utf8mb4) COLLATE {$utf8u})) = 'bluinq01' THEN CONVERT('BLUINQ' USING utf8mb4) COLLATE {$utf8u}
+                        ELSE CONVERT('BPH' USING utf8mb4) COLLATE {$utf8u}
+                    END AS job_system
+                FROM job_bph b
+            ";
+        }
 
-            UNION ALL
+        if (Schema::hasTable('job_amt')) {
+            $parts[] = "
+                SELECT
+                    a.date AS completion_date,
+                    CONVERT(COALESCE(a.assigned, a.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(a.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(a.units, 0) AS units,
+                    CONVERT(COALESCE(a.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                FROM job_amt a
+            ";
+        }
 
-            SELECT
-                a.date AS completion_date,
-                CONVERT(COALESCE(a.assigned, a.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(a.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(a.units, 0) AS units,
-                CONVERT(COALESCE(a.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u} AS job_system
-            FROM job_amt a
+        if (Schema::hasTable('job_fyrs')) {
+            $parts[] = "
+                SELECT
+                    f.date AS completion_date,
+                    CONVERT(COALESCE(f.assigned, f.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(f.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(f.units, 0) AS units,
+                    CONVERT(COALESCE(f.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('FYRS ENERGY WISE' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                FROM job_fyrs f
+            ";
+        }
 
-            UNION ALL
+        if (Schema::hasTable('job_csp')) {
+            $parts[] = "
+                SELECT
+                    c.date AS completion_date,
+                    CONVERT(COALESCE(c.assigned, c.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(c.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(c.units, 0) AS units,
+                    CONVERT(COALESCE(c.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                FROM job_csp c
+            ";
+        }
 
-            SELECT
-                f.date AS completion_date,
-                CONVERT(COALESCE(f.assigned, f.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(f.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(f.units, 0) AS units,
-                CONVERT(COALESCE(f.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CONVERT('FYRS ENERGY WISE' USING utf8mb4) COLLATE {$utf8u} AS job_system
-            FROM job_fyrs f
+        if (Schema::hasTable('job_nh')) {
+            $parts[] = "
+                SELECT
+                    n.date AS completion_date,
+                    CONVERT(COALESCE(n.assigned, n.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(n.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(n.units, 0) AS units,
+                    CONVERT(COALESCE(n.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('NH' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                FROM job_nh n
+            ";
+        }
 
-            UNION ALL
+        if (Schema::hasTable('job_lc_home_builder')) {
+            $parts[] = "
+                SELECT
+                    l.date AS completion_date,
+                    CONVERT(COALESCE(l.assigned, l.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(l.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(l.units, 0) AS units,
+                    CONVERT(COALESCE(l.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('LC HOME BUILDER' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                FROM job_lc_home_builder l
+            ";
+        }
 
-            SELECT
-                c.date AS completion_date,
-                CONVERT(COALESCE(c.assigned, c.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(c.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(c.units, 0) AS units,
-                CONVERT(COALESCE(c.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u} AS job_system
-            FROM job_csp c
+        if (Schema::hasTable('job_leading_energy')) {
+            $parts[] = "
+                SELECT
+                    e.date AS completion_date,
+                    CONVERT(COALESCE(e.assigned, e.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(e.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE(e.units, 0) AS units,
+                    CONVERT(COALESCE(e.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('LEADING ENERGY' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                FROM job_leading_energy e
+            ";
+        }
 
-            UNION ALL
+        if (empty($parts)) {
+            return "
+                SELECT
+                    NULL AS completion_date,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    0 AS units,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS job_system
+                WHERE 1=0
+            ";
+        }
 
-            SELECT
-                n.date AS completion_date,
-                CONVERT(COALESCE(n.assigned, n.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(n.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(n.units, 0) AS units,
-                CONVERT(COALESCE(n.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CONVERT('NH' USING utf8mb4) COLLATE {$utf8u} AS job_system
-            FROM job_nh n
+        return implode("\nUNION ALL\n", $parts);
+    }
 
-            UNION ALL
-
-            SELECT
-                l.date AS completion_date,
-                CONVERT(COALESCE(l.assigned, l.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(l.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(l.units, 0) AS units,
-                CONVERT(COALESCE(l.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CONVERT('LC HOME BUILDER' USING utf8mb4) COLLATE {$utf8u} AS job_system
-            FROM job_lc_home_builder l
-
-            UNION ALL
-
-            SELECT
-                e.date AS completion_date,
-                CONVERT(COALESCE(e.assigned, e.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                CONVERT(COALESCE(e.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                COALESCE(e.units, 0) AS units,
-                CONVERT(COALESCE(e.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                CONVERT('LEADING ENERGY' USING utf8mb4) COLLATE {$utf8u} AS job_system
-            FROM job_leading_energy e
+    private static function appendClientSelectUnionPart(array &$parts, string $table, string $column, string $utf8u): void
+    {
+        if (!Schema::hasTable($table)) {
+            return;
+        }
+        $parts[] = "
+            SELECT CONVERT({$column} USING utf8mb4) COLLATE {$utf8u} AS client_label
+            FROM {$table}
+            WHERE {$column} IS NOT NULL
         ";
     }
 
@@ -210,58 +256,32 @@ class ReportsController extends Controller
 
         $clientLabels = collect();
         try {
-            $clientLabels = collect(DB::select("
-                SELECT client_label FROM (
+            $clientUnionParts = [];
+            if (Schema::hasTable('jobs')) {
+                $clientUnionParts[] = "
                     SELECT CONVERT(ca.client_account_name USING utf8mb4) COLLATE {$utf8u} AS client_label
                     FROM jobs j
                     LEFT JOIN client_accounts ca ON ca.client_account_id = j.client_account_id
                     WHERE j.reference LIKE 'JOBS%' AND ca.client_account_name IS NOT NULL
+                ";
+            }
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_bph', 'client_name', $utf8u);
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_amt', 'client_name', $utf8u);
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_fyrs', 'client_name', $utf8u);
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_csp', 'client_name', $utf8u);
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_nh', 'client_name', $utf8u);
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_lc_home_builder', 'client_name', $utf8u);
+            self::appendClientSelectUnionPart($clientUnionParts, 'job_leading_energy', 'client_name', $utf8u);
 
-                    UNION
-
-                    SELECT CONVERT(b.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_bph b
-                    WHERE b.client_name IS NOT NULL
-
-                    UNION
-
-                    SELECT CONVERT(a.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_amt a
-                    WHERE a.client_name IS NOT NULL
-
-                    UNION
-
-                    SELECT CONVERT(f.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_fyrs f
-                    WHERE f.client_name IS NOT NULL
-
-                    UNION
-
-                    SELECT CONVERT(c.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_csp c
-                    WHERE c.client_name IS NOT NULL
-
-                    UNION
-
-                    SELECT CONVERT(n.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_nh n
-                    WHERE n.client_name IS NOT NULL
-
-                    UNION
-
-                    SELECT CONVERT(l.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_lc_home_builder l
-                    WHERE l.client_name IS NOT NULL
-
-                    UNION
-
-                    SELECT CONVERT(e.client_name USING utf8mb4) COLLATE {$utf8u} AS client_label
-                    FROM job_leading_energy e
-                    WHERE e.client_name IS NOT NULL
-                ) x
-                GROUP BY client_label
-                ORDER BY client_label ASC
-            "));
+            if (!empty($clientUnionParts)) {
+                $clientUnionSql = implode("\nUNION\n", $clientUnionParts);
+                $clientLabels = collect(DB::select("
+                    SELECT client_label
+                    FROM ({$clientUnionSql}) x
+                    GROUP BY client_label
+                    ORDER BY client_label ASC
+                "));
+            }
         } catch (\Throwable $e) {
             $clientLabels = collect();
         }
