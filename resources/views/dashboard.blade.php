@@ -32,6 +32,21 @@
 
 @section('title', 'Dashboard')
 
+@push('styles')
+    <style>
+        /* Force solid stat cards for both Blade fallback and React render */
+        .dashboard-card::before {
+            content: none !important;
+            display: none !important;
+            background: none !important;
+        }
+
+        .animate-dashboard-card > .pointer-events-none.absolute.inset-0 {
+            display: none !important;
+        }
+    </style>
+@endpush
+
 @section('content')
     @php
         $dashboardPublicHolidaysYear = $dashboardPublicHolidaysYear ?? (int) now()->format('Y');
