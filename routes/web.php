@@ -35,6 +35,11 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ReportsController;
 
 Route::get('/', function () {
+    $lbsPublicHost = trim((string) config('app.lbs_public_form_domain', ''));
+    if ($lbsPublicHost !== '' && strcasecmp($lbsPublicHost, request()->getHost()) === 0) {
+        return redirect()->route('lbs.public.add');
+    }
+
     if (session()->has('user_id')) {
         return redirect()->route('dashboard');
     }
