@@ -22,8 +22,8 @@ export default function Login() {
   const [iconAnimating, setIconAnimating] = useState(false);
 
   const logoUrl = useMemo(() => {
-    if (typeof document === 'undefined') return '/storage/logo-light.png';
-    return document.querySelector('meta[name="logo-url"]')?.getAttribute('content') || '/storage/logo-light.png';
+    if (typeof document === 'undefined') return '/branding/logo-light';
+    return document.querySelector('meta[name="logo-url"]')?.getAttribute('content') || '/branding/logo-light';
   }, []);
 
   useEffect(() => {
