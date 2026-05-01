@@ -30,8 +30,10 @@ class StatusController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['nullable', 'string', 'max:255'],
             'color' => ['nullable', 'string', 'max:7', 'regex:/^#?([A-Fa-f0-9]{6})$/'],
+            'font_color' => ['nullable', 'string', 'max:7', 'regex:/^#?([A-Fa-f0-9]{6})$/'],
         ], [
             'color.regex' => 'Color must be a valid hex code (e.g. #ff0000 or ff0000).',
+            'font_color.regex' => 'Text color must be a valid hex code (e.g. #333333 or 333333).',
         ]);
 
         if ($validator->fails()) {
@@ -41,10 +43,7 @@ class StatusController extends Controller
                 ->withInput();
         }
 
-        $data = $validator->validated();
-        if (!empty($data['color']) && $data['color'][0] !== '#') {
-            $data['color'] = '#' . $data['color'];
-        }
+        $data = $this->normalizeStatusColorFields($validator->validated());
 
         Status::create($data);
 
@@ -66,8 +65,10 @@ class StatusController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['nullable', 'string', 'max:255'],
             'color' => ['nullable', 'string', 'max:7', 'regex:/^#?([A-Fa-f0-9]{6})$/'],
+            'font_color' => ['nullable', 'string', 'max:7', 'regex:/^#?([A-Fa-f0-9]{6})$/'],
         ], [
             'color.regex' => 'Color must be a valid hex code (e.g. #ff0000 or ff0000).',
+            'font_color.regex' => 'Text color must be a valid hex code (e.g. #333333 or 333333).',
         ]);
 
         if ($validator->fails()) {
@@ -77,10 +78,7 @@ class StatusController extends Controller
                 ->withInput();
         }
 
-        $data = $validator->validated();
-        if (!empty($data['color']) && $data['color'][0] !== '#') {
-            $data['color'] = '#' . $data['color'];
-        }
+        $data = $this->normalizeStatusColorFields($validator->validated());
 
         $status->update($data);
 
@@ -96,5 +94,26 @@ class StatusController extends Controller
         return redirect()
             ->route('status.index')
             ->with('success', 'Status deleted successfully.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeStatusColorFields(array $data): array
+    {
+        if (! empty($data['color']) && $data['color'][0] !== '#') {
+            $data['color'] = '#' . $data['color'];
+        }
+
+        if (array_key_exists('font_color', $data)) {
+            $fc = trim((string) $data['font_color']);
+            $data['font_color'] = $fc === '' ? null : $fc;
+        }
+        if (! empty($data['font_color']) && $data['font_color'][0] !== '#') {
+            $data['font_color'] = '#' . $data['font_color'];
+        }
+
+        return $data;
     }
 }

@@ -41,6 +41,18 @@
                     </div>
                     <span class="status-hint">Enter hex with or without # (e.g. #ff0000 or ff0000)</span>
                 </div>
+                <div class="status-form-group status-form-group-color">
+                    <label class="status-label" for="font_color">Text color (hex)</label>
+                    <div class="status-color-input-wrap">
+                        @php
+                            $fontColorOld = old('font_color', $status->font_color);
+                            $fontPickerVal = \App\Models\Status::resolveFontColor($fontColorOld);
+                        @endphp
+                        <input type="color" id="fontColorPicker" class="status-color-picker" value="{{ $fontPickerVal }}" title="Pick text color">
+                        <input type="text" id="font_color" name="font_color" class="status-input status-input-hex" placeholder="Blank = default #333333" value="{{ old('font_color', $status->font_color) }}" maxlength="7" autocomplete="off">
+                    </div>
+                    <span class="status-hint">Optional. Leave blank for default label color on chips.</span>
+                </div>
             </div>
             <div class="status-form-actions">
                 <a href="{{ route('status.index') }}" class="btn-status-cancel">Cancel</a>
@@ -63,12 +75,22 @@
             var btn = document.getElementById('statusSaveBtn');
             var picker = document.getElementById('colorPicker');
             var hexInput = document.getElementById('color');
+            var fontPicker = document.getElementById('fontColorPicker');
+            var fontHexInput = document.getElementById('font_color');
+            var defaultFontHex = '#333333';
 
             function hexToFullHex(val) {
                 val = (val || '').replace(/^#/, '');
                 if (/^[A-Fa-f0-9]{6}$/.test(val)) return '#' + val;
                 if (/^[A-Fa-f0-9]{3}$/.test(val)) return '#' + val[0]+val[0]+val[1]+val[1]+val[2]+val[2];
                 return val ? '#' + val : '';
+            }
+            function fontHexToFull(val) {
+                val = String(val || '').trim().replace(/^#/, '');
+                if (val === '') return '';
+                if (/^[A-Fa-f0-9]{6}$/.test(val)) return '#' + val.toLowerCase();
+                if (/^[A-Fa-f0-9]{3}$/.test(val)) return '#' + val[0]+val[0]+val[1]+val[1]+val[2]+val[2];
+                return '';
             }
             if (picker && hexInput) {
                 picker.addEventListener('input', function() {
@@ -77,6 +99,20 @@
                 hexInput.addEventListener('input', function() {
                     var v = hexToFullHex(this.value);
                     if (v.length === 7) picker.value = v;
+                });
+            }
+            if (fontPicker && fontHexInput) {
+                fontPicker.addEventListener('input', function() {
+                    fontHexInput.value = this.value;
+                });
+                fontHexInput.addEventListener('input', function() {
+                    var raw = String(this.value || '').trim();
+                    if (raw === '') {
+                        fontPicker.value = defaultFontHex;
+                        return;
+                    }
+                    var v = fontHexToFull(raw);
+                    if (v.length === 7) fontPicker.value = v;
                 });
             }
             if (form && btn) {

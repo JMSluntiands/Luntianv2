@@ -20,6 +20,7 @@ return [
             'lbs.mailbox' => 'LBS Mailbox',
             'lbs.trash' => 'LBS Archive',
             'lbs.job.view' => 'LBS View Job',
+            'lbs.job.acceptForm' => 'LBS Accept Forms Job',
             'lbs.job.update' => 'LBS Update Job',
             'lbs.job.uploadFiles' => 'LBS Add Job Files',
             'lbs.job.deleteFile' => 'LBS Delete File',
@@ -443,6 +444,7 @@ return [
                 'job_view.lbs.card.activity',
             ],
             'buttons' => [
+                'lbs.job.acceptForm',
                 'lbs.job.update', 'lbs.job.uploadFiles', 'lbs.job.deleteFile', 'lbs.job.file', 'lbs.job.checkerUploads',
                 'lbs.job.runComment', 'lbs.job.comment', 'lbs.job.archive', 'lbs.job.restore', 'lbs.job.sendSlack',
                 'lbs.job.sendSubmissionEmail', 'lbs.job.emailPreview', 'lbs.job.sendMailboxEmail',

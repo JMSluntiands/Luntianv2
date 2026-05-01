@@ -70,6 +70,31 @@
                                 Use a hex color (e.g. <code>#22c55e</code>). This color is used for status chips in LBS.
                             </p>
                         </div>
+                        <div>
+                            <label for="font_color" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Text color (hex)</label>
+                            <div class="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    id="fontColorPicker"
+                                    class="h-10 w-10 rounded-lg border border-slate-200 bg-transparent p-0 shadow-sm dark:border-slate-600"
+                                    value="{{ \App\Models\Status::resolveFontColor(old('font_color')) }}"
+                                    title="Pick text color"
+                                >
+                                <input
+                                    type="text"
+                                    id="font_color"
+                                    name="font_color"
+                                    value="{{ old('font_color') }}"
+                                    maxlength="7"
+                                    autocomplete="off"
+                                    placeholder="Leave blank for #333333"
+                                    class="flex-1 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:ring-emerald-500/30"
+                                >
+                            </div>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Optional. Chip label uses <code>#333333</code> when this field is empty.
+                            </p>
+                        </div>
                     </div>
                     <div class="flex items-stretch">
                         <div class="flex w-full flex-col justify-between rounded-xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700">
@@ -83,7 +108,8 @@
                             <div class="flex items-center gap-3">
                                 <span
                                     id="statusPreviewBadge"
-                                    class="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-sm"
+                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm"
+                                    style="background-color: {{ old('color', '#22c55e') }}; color: {{ \App\Models\Status::resolveFontColor(old('font_color')) }};"
                                 >
                                     {{ old('name', 'Allocated') }}
                                 </span>
@@ -91,7 +117,11 @@
                                     <p id="statusPreviewName" class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                                         {{ old('name', 'Allocated') }}
                                     </p>
-                                    <p id="statusPreviewHex" class="text-xs text-slate-500 dark:text-slate-400">{{ old('color', '#22c55e') }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                        <span id="statusPreviewBgHex">{{ old('color', '#22c55e') }}</span>
+                                        <span class="opacity-50"> · </span>
+                                        <span id="statusPreviewFontHex">{{ \App\Models\Status::resolveFontColor(old('font_color')) }}</span>
+                                    </p>
                                 </div>
                             </div>
                             <p class="mt-3 text-[0.75rem] leading-snug text-slate-500 dark:text-slate-400">
@@ -119,10 +149,14 @@
             var btn = document.getElementById('statusSaveBtn');
             var picker = document.getElementById('colorPicker');
             var hexInput = document.getElementById('color');
+            var fontPicker = document.getElementById('fontColorPicker');
+            var fontHexInput = document.getElementById('font_color');
             var nameInput = document.getElementById('name');
             var previewBadge = document.getElementById('statusPreviewBadge');
             var previewName = document.getElementById('statusPreviewName');
-            var previewHex = document.getElementById('statusPreviewHex');
+            var previewBgHex = document.getElementById('statusPreviewBgHex');
+            var previewFontHex = document.getElementById('statusPreviewFontHex');
+            var defaultFontHex = '#333333';
 
             function normalizeHex(val) {
                 val = String(val || '').trim().replace(/^#/, '');
@@ -133,20 +167,58 @@
                 return '#22c55e';
             }
 
+            function normalizeFontHex(val) {
+                val = String(val || '').trim().replace(/^#/, '');
+                if (/^[A-Fa-f0-9]{6}$/.test(val)) return '#' + val.toLowerCase();
+                if (/^[A-Fa-f0-9]{3}$/.test(val)) {
+                    return '#' + (val[0] + val[0] + val[1] + val[1] + val[2] + val[2]).toLowerCase();
+                }
+                return defaultFontHex;
+            }
+
+            function applyPreviewFontFromInput() {
+                if (!previewBadge) return;
+                var raw = fontHexInput ? String(fontHexInput.value || '').trim() : '';
+                if (raw === '') {
+                    previewBadge.style.color = defaultFontHex;
+                    if (fontPicker) fontPicker.value = defaultFontHex;
+                    if (previewFontHex) previewFontHex.textContent = defaultFontHex;
+                    return;
+                }
+                var bare = raw.replace(/^#/, '');
+                if (!/^[A-Fa-f0-9]{6}$/.test(bare) && !/^[A-Fa-f0-9]{3}$/.test(bare)) {
+                    return;
+                }
+                var full = normalizeFontHex(raw);
+                previewBadge.style.color = full;
+                if (fontPicker) fontPicker.value = full;
+                if (previewFontHex) previewFontHex.textContent = full;
+            }
+
             if (picker && hexInput) {
                 picker.addEventListener('input', function() {
                     hexInput.value = this.value;
                     var v = this.value;
                     if (previewBadge) previewBadge.style.backgroundColor = v;
-                    if (previewHex) previewHex.textContent = v;
+                    if (previewBgHex) previewBgHex.textContent = v;
                 });
                 hexInput.addEventListener('input', function() {
                     var full = normalizeHex(this.value);
                     if (this.value.length >= 3) {
                         picker.value = full;
                         if (previewBadge) previewBadge.style.backgroundColor = full;
-                        if (previewHex) previewHex.textContent = full;
+                        if (previewBgHex) previewBgHex.textContent = full;
                     }
+                });
+            }
+
+            if (fontPicker && fontHexInput) {
+                fontPicker.addEventListener('input', function() {
+                    fontHexInput.value = this.value;
+                    applyPreviewFontFromInput();
+                });
+                fontHexInput.addEventListener('input', function() {
+                    applyPreviewFontFromInput();
                 });
             }
 

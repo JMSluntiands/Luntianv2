@@ -16,15 +16,6 @@
                         autocomplete="off">
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-client-ref">Client Reference</label>
-                    <input
-                        type="text"
-                        id="edit-client-ref"
-                        class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
-                        value="{{ $job->client_reference_no ?? '' }}"
-                        autocomplete="off">
-                </div>
-                <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-number">Job Number</label>
                     <input
                         type="text"

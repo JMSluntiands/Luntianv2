@@ -59,6 +59,17 @@ class LbsJobController extends Controller
     }
 
     /**
+     * @return array{statusColors: array<string, string|null>, statusFontColors: array<string, string>}
+     */
+    private function statusBadgeColorMaps(): array
+    {
+        return [
+            'statusColors' => Status::backgroundColorsByName(),
+            'statusFontColors' => Status::fontColorsByName(),
+        ];
+    }
+
+    /**
      * LBS job detail vs Efficient Living (same `jobs` row shape; EL limits job type dropdown).
      */
     private function renderJobDetailView(object $job, string $sidebarActive, bool $isEfficientLiving)
@@ -139,6 +150,9 @@ class LbsJobController extends Controller
             'job'              => $job,
             'priorityColor'    => $priorityColor,
             'statusColor'      => $statusColor,
+            'statusFontColor'  => ! empty($job->job_status)
+                ? Status::resolveFontColor(Status::where('name', $job->job_status)->value('font_color'))
+                : Status::DEFAULT_FONT_COLOR,
             'priorities'       => $priorities,
             'statuses'         => $statuses,
             'compliances'      => $compliances,
@@ -519,6 +533,11 @@ class LbsJobController extends Controller
                     'old'   => $job->job_status,
                     'new'   => $new,
                 ];
+                if (strcasecmp($new, 'Completed') === 0) {
+                    $update['completion_date'] = now('Asia/Manila')->format('Y-m-d H:i:s');
+                } elseif (strcasecmp((string) ($job->job_status ?? ''), 'Completed') === 0) {
+                    $update['completion_date'] = null;
+                }
             }
         }
         if (array_key_exists('job_address', $data)) {
@@ -774,6 +793,10 @@ class LbsJobController extends Controller
 
     public function acceptFormJob(int $id)
     {
+        if (! RolePermission::userMayAccessRoute('lbs.job.acceptForm')) {
+            return redirect()->route('lbs.list')->with('error', 'You do not have permission to accept forms jobs.');
+        }
+
         $job = DB::table('jobs')
             ->where('job_id', $id)
             ->where('updated_by', 'FORMS')
@@ -1064,12 +1087,6 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
-        $statusColors = Status::query()
-            ->whereNotNull('name')
-            ->pluck('color', 'name')
-            ->toArray();
-
-        $statuses = Status::orderBy('name')->get();
         $filterBuilders = ClientAccount::query()
             ->whereNotNull('client_account_name')
             ->orderBy('client_account_name')
@@ -1087,16 +1104,14 @@ class LbsJobController extends Controller
             ->unique()
             ->values();
 
-        return view('lbs.list', [
+        return view('lbs.list', array_merge([
             'sidebar_active' => 'lbs.list',
             'jobs' => $jobs,
             'formsJobs' => $formsJobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
-            'statuses' => $statuses,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function efficientLivingList()
@@ -1117,6 +1132,7 @@ class LbsJobController extends Controller
                     'j.log_date',
                     'j.client_code',
                     'j.job_reference_no',
+                    'j.client_reference_no',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1139,27 +1155,20 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
-        $statusColors = Status::query()
-            ->whereNotNull('name')
-            ->pluck('color', 'name')
-            ->toArray();
-
         $statuses = Status::orderBy('name')->get();
 
-        return view('efficient_living.list', [
+        return view('efficient_living.list', array_merge([
             'sidebar_active' => 'efficient_living.list',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
             'statuses' => $statuses,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function efficientLivingCompleted()
     {
         $jobs = $this->queryEfficientLivingJobsByStatus('Completed', 500);
         $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
-        $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
         $filterBuilders = ClientAccount::query()
             ->whereNotNull('client_account_name')
             ->orderBy('client_account_name')
@@ -1177,45 +1186,40 @@ class LbsJobController extends Controller
             ->unique()
             ->values();
 
-        return view('lbs.completed', [
+        return view('lbs.completed', array_merge([
             'sidebar_active' => 'efficient_living.completed',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
             'isEfficientLiving' => true,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function efficientLivingReview()
     {
         $jobs = $this->queryEfficientLivingJobsByStatus('For Review', 500);
         $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
-        $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
 
-        return view('lbs.review', [
+        return view('lbs.review', array_merge([
             'sidebar_active' => 'efficient_living.review',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
             'isEfficientLiving' => true,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function efficientLivingTrash()
     {
         $jobs = $this->queryEfficientLivingJobsByStatus('Archived', 500);
         $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
-        $statusColors = Status::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
 
-        return view('lbs.trash', [
+        return view('lbs.trash', array_merge([
             'sidebar_active' => 'efficient_living.trash',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
             'isEfficientLiving' => true,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function efficientLivingMailbox()
@@ -1334,17 +1338,11 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
-        $statusColors = Status::query()
-            ->whereNotNull('name')
-            ->pluck('color', 'name')
-            ->toArray();
-
-        return view('lbs.trash', [
+        return view('lbs.trash', array_merge([
             'sidebar_active' => 'lbs.trash',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function restoreJob(int $id)
@@ -1412,10 +1410,6 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
-        $statusColors = Status::query()
-            ->whereNotNull('name')
-            ->pluck('color', 'name')
-            ->toArray();
         $filterBuilders = ClientAccount::query()
             ->whereNotNull('client_account_name')
             ->orderBy('client_account_name')
@@ -1433,14 +1427,13 @@ class LbsJobController extends Controller
             ->unique()
             ->values();
 
-        return view('lbs.completed', [
+        return view('lbs.completed', array_merge([
             'sidebar_active' => 'lbs.completed',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors' => $statusColors,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function review()
@@ -1484,17 +1477,11 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
-        $statusColors = Status::query()
-            ->whereNotNull('name')
-            ->pluck('color', 'name')
-            ->toArray();
-
-        return view('lbs.review', [
+        return view('lbs.review', array_merge([
             'sidebar_active' => 'lbs.review',
             'jobs'           => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors'   => $statusColors,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     public function mailbox()
@@ -1533,17 +1520,11 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
-        $statusColors = Status::query()
-            ->whereNotNull('name')
-            ->pluck('color', 'name')
-            ->toArray();
-
-        return view('lbs.mailbox', [
+        return view('lbs.mailbox', array_merge([
             'sidebar_active' => 'lbs.mailbox',
             'jobs'           => $jobs,
             'priorityColors' => $priorityColors,
-            'statusColors'   => $statusColors,
-        ]);
+        ], $this->statusBadgeColorMaps()));
     }
 
     private function attachLatestCheckerUploads($jobs)
@@ -1620,7 +1601,7 @@ class LbsJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
-        $completedDate = now('Asia/Manila')->toDateString();
+        $completedDate = now('Asia/Manila')->format('Y-m-d H:i:s');
 
         $emailConfig = EmailConfig::where('is_active', true)->first();
         if (!$emailConfig) {

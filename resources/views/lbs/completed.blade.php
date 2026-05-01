@@ -15,6 +15,7 @@
         $jobs = $jobs ?? collect();
         $priorityColors = $priorityColors ?? [];
         $statusColors = $statusColors ?? [];
+        $statusFontColors = $statusFontColors ?? [];
         $filterBuilderOptions = collect($filterBuilders ?? []);
         $filterPriorityOptions = collect($filterPriorities ?? []);
     @endphp
@@ -147,6 +148,7 @@
 
                                 $status = $job->job_status ?? 'Completed';
                                 $statusBg = $statusColors[$status] ?? null;
+                                $statusFg = $statusFontColors[$status] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
 
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
@@ -193,7 +195,7 @@
                                     <span
                                         class="lbs-badge lbs-status-badge-readonly inline-block cursor-default rounded-md px-2 py-1 text-xs font-semibold opacity-95"
                                         @if($statusBg)
-                                            style="background-color: {{ $statusBg }};"
+                                            style="background-color: {{ $statusBg }}; color: {{ $statusFg }};"
                                         @endif
                                         aria-disabled="true"
                                     >{{ $status }}</span>
@@ -216,7 +218,7 @@
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Priority</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold mt-0.5" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText }}</span></span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Staff</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="lbs-initials lbs-detail-staff-badge inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 mt-0.5 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span></span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Checker</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="lbs-initials lbs-detail-checker-badge inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 mt-0.5 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span></span></div>
-                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Status</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="lbs-detail-status-badge lbs-badge inline-block rounded-md px-2 py-1 text-xs font-semibold mt-0.5" @if($statusBg) style="background-color: {{ $statusBg }};" @endif>{{ $status }}</span></span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Status</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200"><span class="lbs-detail-status-badge lbs-badge inline-block rounded-md px-2 py-1 text-xs font-semibold mt-0.5" @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFg }};" @endif>{{ $status }}</span></span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Due Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $dueDate1 }} {{ $dueDate2 }} @if($isOverdue)<br><span class="text-red-400">(Overdue)</span>@endif</span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Completion Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $completionText }}</span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Complexity</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">@include('lbs.partials.stars', ['rating' => $complexity])</span></div>

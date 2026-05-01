@@ -171,7 +171,7 @@ $(function () {
     var forReview = 0;
     var overdue = 0;
     $rows.each(function () {
-      var txt = $.trim($(this).find('.lbs-status-trigger').text()).toLowerCase();
+      var txt = $.trim($(this).find('td[data-label="Status"]').text()).toLowerCase();
       if (txt === 'allocated') allocated++;
       if (txt === 'for review') forReview++;
       var overdueAttr = $(this).find('.lbs-td-due').attr('data-overdue');

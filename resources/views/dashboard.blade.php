@@ -48,13 +48,13 @@
         /* Force darker card palette even when old built assets are cached online */
         .dashboard-card--total,
         .dashboard-cards > .animate-dashboard-card:nth-child(1) {
-            background: #a8622a !important;
+            background: #6b4a38 !important;
             color: #fff !important;
         }
 
         .dashboard-card--completed,
         .dashboard-cards > .animate-dashboard-card:nth-child(2) {
-            background: #6b4a38 !important;
+            background: #a8622a !important;
             color: #fff !important;
         }
 

@@ -149,9 +149,9 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
     title: 'Total Jobs',
-    bgClass: 'bg-[#a8622a] dark:bg-[#a8622a]',
+    bgClass: 'bg-[#6b4a38] dark:bg-[#6b4a38]',
     iconColor: 'text-white',
-    pillClass: 'bg-black/20 text-white',
+    pillClass: 'bg-black/25 text-white',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="h-full w-full">
         <path d="M12 12h.01" />
@@ -164,9 +164,9 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'completed',
     title: 'Completed Jobs',
-    bgClass: 'bg-[#6b4a38] dark:bg-[#6b4a38]',
+    bgClass: 'bg-[#a8622a] dark:bg-[#a8622a]',
     iconColor: 'text-white',
-    pillClass: 'bg-black/25 text-white',
+    pillClass: 'bg-black/20 text-white',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="h-full w-full">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />

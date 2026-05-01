@@ -646,7 +646,7 @@ body.sidebar-open #sidebarNav {
 }
 
 .dashboard-card--total {
-    background: #a8622a;
+    background: #6b4a38;
     color: #fff;
 }
 .dashboard-card--total:hover {
@@ -657,11 +657,11 @@ body.sidebar-open #sidebarNav {
 .dashboard-card--total .dashboard-card__row-meta { color: rgba(255,255,255,0.72); }
 .dashboard-card--total .dashboard-card__icon { color: #fff; }
 .dashboard-card--total .dashboard-card__row-value {
-    background: rgba(0,0,0,0.2);
+    background: rgba(0,0,0,0.25);
     color: #fff;
 }
 .dashboard-card--completed {
-    background: #6b4a38;
+    background: #a8622a;
     color: #fff;
 }
 .dashboard-card--completed:hover {
@@ -672,7 +672,7 @@ body.sidebar-open #sidebarNav {
 .dashboard-card--completed .dashboard-card__row-meta { color: rgba(255,255,255,0.72); }
 .dashboard-card--completed .dashboard-card__icon { color: #fff; }
 .dashboard-card--completed .dashboard-card__row-value {
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.2);
     color: #fff;
 }
 .dashboard-card--processing {
@@ -2164,6 +2164,12 @@ html[data-theme="dark"] #appErrorToast {
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.8125rem;
+}
+
+/* Keep Action column from collapsing to 0 under table-fixed + tight widths */
+.page-lbs-list .lbs-table th.lbs-th-action,
+.page-lbs-list .lbs-data-row td[data-label='Action'] {
+    min-width: 6.75rem;
 }
 
 .page-lbs-list .lbs-table thead {

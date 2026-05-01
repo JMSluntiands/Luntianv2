@@ -12,6 +12,8 @@
         $addRoute = $isEfficientLivingPage ? 'efficient_living.add' : 'lbs.add';
         $viewRoute = $isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view';
         $updateRoute = $isEfficientLivingPage ? 'efficient_living.job.update' : 'lbs.job.update';
+        $statusColors = $statusColors ?? [];
+        $statusFontColors = $statusFontColors ?? [];
     @endphp
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
@@ -116,6 +118,7 @@
 
                                 $status = $job->job_status ?? 'For Review';
                                 $statusBg = $statusColors[$status] ?? null;
+                                $statusFg = $statusFontColors[$status] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
 
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
@@ -160,7 +163,7 @@
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Status" style="white-space: nowrap;">
                                     <div class="lbs-status-wrap relative inline-block" data-status-wrap>
-                                        <button type="button" class="lbs-badge lbs-status-trigger inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-600/40 focus:ring-offset-0 dark:focus:ring-blue-500/40" @if($statusBg) style="background-color: {{ $statusBg }};" @endif data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="{{ $job->job_reference_no }}">{{ $status }}</button>
+                                        <button type="button" class="lbs-badge lbs-status-trigger inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-600/40 focus:ring-offset-0 dark:focus:ring-blue-500/40" @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFg }};" @endif data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="{{ $job->job_reference_no }}">{{ $status }}</button>
                                         <div class="lbs-status-menu fixed z-[9999] flex min-w-[90px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
                                             <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-status-value="For Email Confirmation">For Email Confirmation</button>
                                             <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-status-value="Cancelled">Cancelled</button>

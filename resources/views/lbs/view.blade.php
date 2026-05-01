@@ -22,7 +22,6 @@
         $jobMergeFileRouteName = $jobMergeFileRouteName ?? 'bph.job.mergeFile';
         $jobCompliancePdfFilenamePrefix = $jobCompliancePdfFilenamePrefix ?? 'BPH';
         $jobReferenceDisplay = $job->reference ?? $job->job_reference_no ?? $jobId ?? '—';
-        $jobNumberDisplay = $job->client_reference_no ?? $job->job_reference_no ?? $job->reference ?? $jobId ?? '—';
 
         $permJobUpdate = \App\Models\RolePermission::userMayAccessRoute($jobUpdateRouteName);
         $permUpload = \App\Models\RolePermission::userMayAccessRoute($jobUploadFilesRouteName);
@@ -73,7 +72,7 @@
             <span class="text-slate-400 dark:text-slate-500">/</span>
             <a href="{{ route($listRouteName) }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Job List</a>
             <span class="text-slate-400 dark:text-slate-500">/</span>
-            <span class="font-medium text-slate-800 dark:text-white">Job {{ $jobNumberDisplay }}</span>
+            <span class="font-medium text-slate-800 dark:text-white">Job {{ $jobReferenceDisplay }}</span>
         </nav>
 
         @php
@@ -84,7 +83,7 @@
             <div class="min-w-0">
                 <h1 class="m-0 mb-1 text-[1.625rem] font-bold tracking-tight text-slate-800 dark:text-white">Job Details</h1>
                 <p class="m-0 text-sm text-slate-500 dark:text-slate-400">
-                    Reference Number: <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ $jobNumberDisplay }}</span>
+                    Reference Number: <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ $jobReferenceDisplay }}</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
@@ -126,6 +125,7 @@
             $lowerStatus = strtolower($rawStatus);
             $isAllocated = $lowerStatus === 'allocated';
             $statusBg = $statusColor ?? null;
+            $statusFgResolved = $statusFontColor ?? \App\Models\Status::DEFAULT_FONT_COLOR;
             $priorityBg = $priorityColor ?? null;
             // Disable all Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation
             $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation', 'processing'], true);
@@ -191,7 +191,11 @@
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Reference Number</dt>
-                                    <dd class="job-details-dd font-mono">{{ $jobNumberDisplay }}</dd>
+                                    <dd class="job-details-dd font-mono">{{ $jobReferenceDisplay }}</dd>
+                                </div>
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">Client Reference Number</dt>
+                                    <dd class="job-details-dd font-mono">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</dd>
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Client</dt>
@@ -220,7 +224,7 @@
                                     <dd>
                                         @if($canEditStatusInlineUi && count($inlineStatusOptions) > 0)
                                             <div class="lbs-status-wrap relative inline-block" data-status-wrap data-job-units="{{ (int) ($job->units ?? 0) }}">
-                                                <button type="button" class="lbs-badge lbs-status-trigger inline-block rounded-full border-0 px-3 py-1 text-xs font-semibold text-white cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500/40" @if($statusBg) style="background-color: {{ $statusBg }};" @endif data-status-trigger aria-haspopup="true" aria-expanded="false">{{ $job->job_status ?? '—' }}</button>
+                                                <button type="button" class="lbs-badge lbs-status-trigger inline-block rounded-full border-0 px-3 py-1 text-xs font-semibold text-white cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500/40" @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFgResolved }};" @endif data-status-trigger aria-haspopup="true" aria-expanded="false">{{ $job->job_status ?? '—' }}</button>
                                                 <div class="lbs-status-menu fixed z-[9999] flex min-w-[120px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg" role="menu" hidden>
                                                     @foreach($inlineStatusOptions as $opt)
                                                         <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10" data-status-value="{{ $opt }}">{{ $opt }}</button>
@@ -228,13 +232,17 @@
                                                 </div>
                                             </div>
                                         @else
-                                            <span class="job-details-badge inline-block rounded-full px-3 py-1 text-xs font-semibold text-white" @if($statusBg) style="background-color: {{ $statusBg }};" @endif aria-disabled="true">{{ $job->job_status ?? '—' }}</span>
+                                            <span class="job-details-badge inline-block rounded-full px-3 py-1 text-xs font-semibold text-white" @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFgResolved }};" @endif aria-disabled="true">{{ $job->job_status ?? '—' }}</span>
                                         @endif
                                     </dd>
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Job Type</dt>
                                     <dd class="job-details-dd">{{ $job->job_type ?? '—' }}</dd>
+                                </div>
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">Address</dt>
+                                    <dd class="job-details-dd whitespace-pre-line">{{ trim((string) ($job->address_client ?? '')) !== '' ? $job->address_client : '—' }}</dd>
                                 </div>
                             </dl>
                         </section>
@@ -1721,7 +1729,6 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             if (!editOverlay) return;
             // Determine which form is visible
             if (!formClient.hidden) {
-                payload.client_reference = document.getElementById('edit-client-ref')?.value || '';
                 payload.job_reference_no = document.getElementById('edit-job-number')?.value || '';
                 payload.compliance = document.getElementById('edit-compliance')?.value || '';
                 var clientSelect = $('#edit-client-name');

@@ -43,6 +43,7 @@
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">ID</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Name</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Color</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Text color</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Created</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Updated</th>
                             <th class="w-24 px-5 py-3.5 text-right font-semibold text-slate-600 dark:text-slate-300">Action</th>
@@ -63,6 +64,18 @@
                                         <span class="text-slate-400 dark:text-slate-500">—</span>
                                     @endif
                                 </td>
+                                <td class="px-5 py-3.5">
+                                    @php
+                                        $resolvedFont = \App\Models\Status::resolveFontColor($status->font_color);
+                                    @endphp
+                                    <div class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600">
+                                        <span class="h-4 min-w-[1rem] rounded-full ring-2 ring-slate-200 dark:ring-slate-700" style="background-color: {{ $resolvedFont }};" aria-hidden="true"></span>
+                                        <code class="font-medium">{{ $resolvedFont }}</code>
+                                        @if(empty($status->font_color))
+                                            <span class="text-slate-400 dark:text-slate-500">(default)</span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $status->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
                                 <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $status->updated_at?->format('M j, Y g:i A') ?? '—' }}</td>
                                 <td class="px-5 py-3.5 text-right">
@@ -82,7 +95,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
+                                <td colspan="7" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
                                     <svg class="mx-auto mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     <p class="font-medium">No status records yet.</p>
                                     <p class="mt-1 text-sm"><a href="{{ route('status.create') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Add one</a> to get started.</p>

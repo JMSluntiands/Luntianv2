@@ -8,6 +8,8 @@
     @php
         $filterBuilderOptions = collect($filterBuilders ?? []);
         $filterPriorityOptions = collect($filterPriorities ?? []);
+        $statusColors = $statusColors ?? [];
+        $statusFontColors = $statusFontColors ?? [];
     @endphp
     <div class="flex max-w-full flex-col pb-0">
         <div class="mb-5">
@@ -55,12 +57,13 @@
 
         <div class="mt-1 max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
-                <table class="lbs-table w-full min-w-[1320px] table-fixed border-collapse text-sm" id="lbsTable">
+                <table class="lbs-table w-full min-w-[1440px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
-                        <col style="width: 110px">
+                        <col style="width: 120px">
                         <col style="width: 140px">
                         <col style="width: 260px">
                         <col style="width: 105px">
+                        <col style="width: 125px">
                         <col style="width: 260px">
                         <col style="width: 150px">
                         <col style="width: 70px">
@@ -72,7 +75,7 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th class="lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort="">
+                            <th class="lbs-th lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort="">
                                 <span>Action</span>
                             </th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
@@ -85,6 +88,10 @@
                             </th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
                                 <span>Reference</span>
+                                <span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span>
+                            </th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
+                                <span>Client reference</span>
                                 <span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span>
                             </th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
@@ -175,38 +182,14 @@
 
                                 $status = $job->job_status ?? 'Allocated';
                                 $statusBg  = $statusColors[$status] ?? null;
-                                $statusLower = strtolower($status);
-                                $canEditStatus = in_array($statusLower, ['allocated', 'accepted', 'processing', 'revised', 'for checking', 'for review'], true);
-                                $statusOptions = [];
-                                if ($statusLower === 'allocated') {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $n = strtolower((string)($s->name ?? ''));
-                                        if (in_array($n, ['accepted', 'processing'], true)) $statusOptions[] = $s->name;
-                                    }
-                                } elseif (in_array($statusLower, ['accepted', 'processing', 'revised'], true)) {
-                                    foreach ($statuses ?? [] as $s) {
-                                        if (strtolower((string)($s->name ?? '')) === 'for checking') $statusOptions[] = $s->name;
-                                    }
-                                } elseif ($statusLower === 'for checking') {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $n = strtolower((string)($s->name ?? ''));
-                                        if (in_array($n, ['for review', 'revised'], true)) $statusOptions[] = $s->name;
-                                    }
-                                } elseif ($statusLower === 'for review') {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $n = strtolower((string)($s->name ?? ''));
-                                        if (in_array($n, ['for email confirmation', 'cancelled', 'revised', 'for checking'], true)) $statusOptions[] = $s->name;
-                                    }
-                                } else {
-                                    foreach ($statuses ?? [] as $s) { $statusOptions[] = $s->name; }
-                                }
+                                $statusFg = $statusFontColors[$status] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
 
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ route('lbs.job.update', ['id' => $job->job_id]) }}" data-log-date-key="{{ $logDateFilter }}" data-builder="{{ $builderFilter }}" data-priority="{{ $priorityFilter }}">
-                                <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
-                                    <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
+                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-log-date-key="{{ $logDateFilter }}" data-builder="{{ $builderFilter }}" data-priority="{{ $priorityFilter }}">
+                                <td class="lbs-td overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Action" style="white-space: nowrap;">
+                                    <div class="relative z-10 flex flex-nowrap items-center justify-center gap-1.5">
                                         <a href="{{ route('lbs.add', ['duplicate' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate" aria-label="Duplicate job to Add New form">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
@@ -226,8 +209,12 @@
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span>
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $job->ncc_compliance ?? '' }}</span>
                                 </td>
-                                @php $tableReference = $job->job_reference_no ?? $job->reference ?? '—'; @endphp
+                                @php
+                                    $tableReference = $job->job_reference_no ?? $job->reference ?? '—';
+                                    $clientRefDisplay = trim((string) ($job->client_reference_no ?? ''));
+                                @endphp
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Reference" data-sort="{{ $tableReference }}" style="white-space: nowrap;">{{ $tableReference }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client reference" data-sort="{{ $clientRefDisplay }}" style="white-space: nowrap;">{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Type">
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->job_type }}</span>
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $job->job_request_id }}</span>
@@ -243,62 +230,21 @@
                                     </span>
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Staff" style="white-space: nowrap;">
-                                    <div class="lbs-initials-wrap relative inline-block" data-initials-wrap data-role="staff">
-                                        <button type="button" class="lbs-initials lbs-initials-trigger inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200" data-initials-trigger aria-haspopup="true" aria-expanded="false">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</button>
-                                        <div class="lbs-initials-menu fixed z-[9999] flex min-w-[70px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="SB">SB</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="GM">GM</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="PEP">PEP</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JDR">JDR</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JS">JS</button>
-                                        </div>
-                                    </div>
+                                    <span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</span>
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Checker" style="white-space: nowrap;">
-                                    <div class="lbs-initials-wrap relative inline-block" data-initials-wrap data-role="checker">
-                                        <button type="button" class="lbs-initials lbs-initials-trigger inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200" data-initials-trigger aria-haspopup="true" aria-expanded="false">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</button>
-                                        <div class="lbs-initials-menu fixed z-[9999] flex min-w-[70px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="SB">SB</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="GM">GM</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="PEP">PEP</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JDR">JDR</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JS">JS</button>
-                                        </div>
-                                    </div>
+                                    <span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</span>
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Status" style="white-space: nowrap;">
-                                    @if($canEditStatus && count($statusOptions) > 0)
-                                        <div class="lbs-status-wrap relative inline-block" data-status-wrap>
-                                            <button
-                                                type="button"
-                                                class="lbs-badge lbs-status-trigger inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-600/40 focus:ring-offset-0 dark:focus:ring-blue-500/40"
-                                                @if($statusBg)
-                                                    style="background-color: {{ $statusBg }};"
-                                                @endif
-                                                data-status-trigger
-                                                aria-haspopup="true"
-                                                aria-expanded="false"
-                                                data-reference="{{ $job->job_reference_no }}"
-                                            >
-                                                {{ $status }}
-                                            </button>
-                                            <div class="lbs-status-menu fixed z-[9999] flex min-w-[90px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
-                                                @foreach($statusOptions as $opt)
-                                                    <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-status-value="{{ $opt }}">{{ $opt }}</button>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @else
-                                        <span
-                                            class="lbs-badge lbs-status-badge-readonly inline-block cursor-default rounded-md px-2 py-1 text-xs font-semibold opacity-95"
-                                            @if($statusBg)
-                                                style="background-color: {{ $statusBg }};"
-                                            @endif
-                                            aria-disabled="true"
-                                        >
-                                            {{ $status }}
-                                        </span>
-                                    @endif
+                                    <span
+                                        class="lbs-badge lbs-status-badge-readonly inline-block cursor-default rounded-md px-2 py-1 text-xs font-semibold opacity-95"
+                                        @if($statusBg)
+                                            style="background-color: {{ $statusBg }}; color: {{ $statusFg }};"
+                                        @endif
+                                        aria-disabled="true"
+                                    >
+                                        {{ $status }}
+                                    </span>
                                 </td>
                                 <td class="lbs-td lbs-td-due border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Due Date" data-sort="{{ $due ? $due->format('Y-m-d H:i:s') : '' }}" data-overdue="{{ $isOverdue ? '1' : '0' }}">
                                     <span class="block font-medium text-slate-800 dark:text-slate-200 {{ $isOverdue ? 'text-red-400 dark:text-red-400' : '' }}">{{ $dueDate1 }}</span>
@@ -322,7 +268,7 @@
                                 </td>
                             </tr>
                             <tr class="lbs-row-detail border-b border-slate-200 dark:border-slate-700" id="lbs-detail-{{ $index }}" hidden>
-                                <td colspan="12" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
+                                <td colspan="13" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
                                     <div class="px-0 py-0">
                                         <div class="grid gap-x-6 gap-y-4 px-5 py-5" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
                                             <div class="flex flex-col gap-1.5">
@@ -336,6 +282,10 @@
                                             <div class="flex flex-col gap-1.5">
                                                 <span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Reference</span>
                                                 <span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $tableReference }}</span>
+                                            </div>
+                                            <div class="flex flex-col gap-1.5">
+                                                <span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client reference</span>
+                                                <span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}</span>
                                             </div>
                                             <div class="flex flex-col gap-1.5">
                                                 <span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Job Type</span>
@@ -368,7 +318,7 @@
                                                     <span
                                                         class="lbs-detail-status-badge lbs-badge inline-block rounded-md px-2 py-1 text-xs font-semibold mt-0.5"
                                                         @if($statusBg)
-                                                            style="background-color: {{ $statusBg }};"
+                                                            style="background-color: {{ $statusBg }}; color: {{ $statusFg }};"
                                                         @endif
                                                     >
                                                         {{ $status }}
@@ -399,7 +349,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="12">
+                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="13">
                                     No LBS jobs found.
                                 </td>
                             </tr>
@@ -416,12 +366,13 @@
             </div>
             <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
                 <div class="max-w-full overflow-x-auto">
-                    <table class="lbs-table w-full min-w-[1320px] table-fixed border-collapse text-sm">
+                    <table class="lbs-table w-full min-w-[1440px] table-fixed border-collapse text-sm">
                         <colgroup>
                             <col style="width: 110px">
                             <col style="width: 140px">
                             <col style="width: 260px">
                             <col style="width: 105px">
+                            <col style="width: 125px">
                             <col style="width: 260px">
                             <col style="width: 140px">
                             <col style="width: 70px">
@@ -437,6 +388,7 @@
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Log Date</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Reference</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client reference</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Staff</th>
@@ -455,6 +407,7 @@
                                     $priorityBg = $priorityColors[$priorityText] ?? null;
                                     $status = $formJob->job_status ?? 'Allocated';
                                     $statusBg = $statusColors[$status] ?? null;
+                                    $statusFg = $statusFontColors[$status] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
                                     $due = null;
                                     if ($formLog) {
                                         $start = $formLog->copy();
@@ -476,12 +429,14 @@
                                     $completion = $formJob->completion_date ? \Carbon\Carbon::parse($formJob->completion_date, 'Asia/Manila') : null;
                                 @endphp
                                 <tr class="border-b border-slate-200 text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
-                                    <td class="px-4 py-3">
-                                        <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
-                                            <form method="POST" action="{{ route('lbs.job.acceptForm', ['id' => $formJob->job_id]) }}">
-                                                @csrf
-                                                <button type="submit" class="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-500">Accept</button>
-                                            </form>
+                                    <td class="px-4 py-3 text-center" data-label="Action">
+                                        <div class="relative z-10 flex flex-nowrap items-center justify-center gap-1.5">
+                                            @if(\App\Models\RolePermission::userMayAccessRoute('lbs.job.acceptForm'))
+                                                <form method="POST" action="{{ route('lbs.job.acceptForm', ['id' => $formJob->job_id]) }}">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-500">Accept</button>
+                                                </form>
+                                            @endif
                                             <a href="{{ route('lbs.job.view', ['id' => $formJob->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                             </a>
@@ -496,6 +451,8 @@
                                         <span class="block text-[0.8125rem] text-slate-400">{{ $formJob->ncc_compliance ?? '' }}</span>
                                     </td>
                                     <td class="px-4 py-3">{{ $formJob->job_reference_no ?: '—' }}</td>
+                                    @php $formClientRef = trim((string) ($formJob->client_reference_no ?? '')); @endphp
+                                    <td class="px-4 py-3" data-label="Client reference">{{ $formClientRef !== '' ? $formClientRef : '—' }}</td>
                                     <td class="px-4 py-3">
                                         <span class="block font-medium">{{ $formJob->job_type ?: '—' }}</span>
                                         <span class="block text-[0.8125rem] text-slate-400">{{ $formJob->job_request_id ?? '' }}</span>
@@ -506,7 +463,7 @@
                                     <td class="px-4 py-3"><span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $formJob->staff_id ? strtoupper($formJob->staff_id) : '--' }}</span></td>
                                     <td class="px-4 py-3"><span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $formJob->checker_id ? strtoupper($formJob->checker_id) : '--' }}</span></td>
                                     <td class="px-4 py-3">
-                                        <span class="lbs-badge inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold" @if($statusBg) style="background-color: {{ $statusBg }};" @endif>{{ $status }}</span>
+                                        <span class="lbs-badge inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold" @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFg }};" @endif>{{ $status }}</span>
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="block font-medium">{{ $due ? $due->format('F j, Y') : '—' }}</span>
@@ -522,7 +479,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="12" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
+                                    <td colspan="13" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
                                         No jobs submitted from forms yet.
                                     </td>
                                 </tr>
@@ -557,8 +514,6 @@
 .lbs-badge-processing { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
 .lbs-badge-for-checking { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
 .lbs-badge-revised { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
-/* Dropdowns: hidden must override display */
-.lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
 </style>
 @endpush
 

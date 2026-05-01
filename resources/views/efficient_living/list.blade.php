@@ -5,6 +5,10 @@
 @section('body_class', 'page-efficient_living-list')
 
 @section('content')
+    @php
+        $statusColors = $statusColors ?? [];
+        $statusFontColors = $statusFontColors ?? [];
+    @endphp
     <div class="block max-w-full pb-0 efficient_living-list-page">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4 efficient_living-list-header">
             <div class="min-w-0 efficient_living-list-header-text">
@@ -103,6 +107,7 @@
                                 $statusClass = 'efficient_living-badge-' . strtolower(str_replace(' ', '-', $status));
                                 $priorityBg = $priorityColors[$priorityText] ?? null;
                                 $statusBg = $statusColors[$status] ?? null;
+                                $statusFg = $statusFontColors[$status] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
                                 $priorityLower = strtolower($priorityText);
 
                                 $statusLower = strtolower($status);
@@ -228,7 +233,7 @@
                                                 type="button"
                                                 class="lbs-badge lbs-status-trigger inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-600/40 focus:ring-offset-0 dark:focus:ring-blue-500/40"
                                                 @if($statusBg)
-                                                    style="background-color: {{ $statusBg }};"
+                                                    style="background-color: {{ $statusBg }}; color: {{ $statusFg }};"
                                                 @endif
                                                 data-status-trigger
                                                 aria-haspopup="true"
@@ -245,7 +250,7 @@
                                         @if($statusBg)
                                             <span
                                                 class="lbs-badge lbs-status-badge-readonly inline-block cursor-default rounded-md px-2 py-1 text-xs font-semibold opacity-95"
-                                                style="background-color: {{ $statusBg }};"
+                                                style="background-color: {{ $statusBg }}; color: {{ $statusFg }};"
                                                 aria-disabled="true"
                                             >{{ $status }}</span>
                                         @else
