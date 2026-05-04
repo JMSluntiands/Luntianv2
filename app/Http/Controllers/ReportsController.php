@@ -175,6 +175,10 @@ class ReportsController extends Controller
         $client = strtolower($filterClientRaw);
         $client = ($client === '' || $client === 'all') ? '' : $filterClientRaw;
 
+        $filterStaffRaw = trim((string) $request->query('staff', 'all'));
+        $staffKey = strtolower($filterStaffRaw);
+        $staff = ($staffKey === '' || $staffKey === 'all') ? '' : $filterStaffRaw;
+
         $dateFrom = trim((string) $request->query('date_from', ''));
         $dateTo = trim((string) $request->query('date_to', ''));
 
@@ -192,6 +196,10 @@ class ReportsController extends Controller
         if ($client !== '') {
             $where .= ' AND LOWER(TRIM(u.client_label)) = LOWER(?)';
             $filterParams[] = $client;
+        }
+        if ($staff !== '') {
+            $where .= ' AND LOWER(TRIM(u.user_code)) = LOWER(?)';
+            $filterParams[] = $staff;
         }
         if ($dateFrom !== '') {
             $where .= ' AND DATE(u.completion_date) >= ?';
@@ -292,6 +300,29 @@ class ReportsController extends Controller
             ->values()
             ->all();
 
+        $staffOptions = [];
+        try {
+            $staffSql = "
+                SELECT t.user_code AS user_code
+                FROM (
+                    SELECT DISTINCT TRIM(u.user_code) AS user_code
+                    FROM ({$union}) u
+                    WHERE u.user_code IS NOT NULL AND TRIM(u.user_code) <> ''
+                ) t
+                WHERE t.user_code IS NOT NULL AND t.user_code <> ''
+                ORDER BY t.user_code ASC
+            ";
+            $staffOptions = collect(DB::select($staffSql))
+                ->pluck('user_code')
+                ->map(fn ($v) => is_string($v) ? trim($v) : '')
+                ->filter(fn ($v) => $v !== '')
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            $staffOptions = [];
+        }
+
         $summaryByLabel = $summaryRows->keyBy('job_system');
 
         return view('reports.index', [
@@ -306,6 +337,8 @@ class ReportsController extends Controller
             'filterDateTo' => $dateTo,
             'filterEntries' => $entries,
             'filterClient' => $filterClientRaw === '' ? 'all' : $filterClientRaw,
+            'staffOptions' => $staffOptions,
+            'filterStaff' => $filterStaffRaw === '' ? 'all' : $filterStaffRaw,
         ]);
     }
 }

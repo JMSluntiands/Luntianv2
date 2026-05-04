@@ -46,6 +46,16 @@
                             @endforeach
                     </select>
                 </div>
+                <div class="reports-filter-group reports-filter-group-staff">
+                    <label for="reportsStaff" class="reports-filter-label">Staff</label>
+                    <select id="reportsStaff" name="staff" class="reports-filter-select select2-single" aria-label="Staff filter">
+                        <option value="">Select staff</option>
+                        <option value="all" @selected(($filterStaff ?? 'all') === 'all')>ALL</option>
+                        @foreach(($staffOptions ?? []) as $sopt)
+                            <option value="{{ $sopt }}" @selected(($filterStaff ?? 'all') === $sopt)>{{ $sopt }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="reports-filter-group reports-filter-group-daterange">
                     <label class="reports-filter-label">Completion Date</label>
                     <div class="reports-filter-date-wrap reports-filter-date-range-wrap">
@@ -257,12 +267,16 @@
             // Apply button: redirect with query params
             var applyBtn = document.querySelector('.reports-btn-apply');
             var clientSel = document.getElementById('reportsClient');
+            var staffSel = document.getElementById('reportsStaff');
             var entriesSel = document.getElementById('reportsEntries');
             if (applyBtn) {
                 applyBtn.addEventListener('click', function () {
                     var params = new URLSearchParams();
                     if (clientSel && clientSel.value) {
                         params.set('client', clientSel.value);
+                    }
+                    if (staffSel && staffSel.value) {
+                        params.set('staff', staffSel.value);
                     }
                     if (fromHidden && fromHidden.value) {
                         params.set('date_from', fromHidden.value);
