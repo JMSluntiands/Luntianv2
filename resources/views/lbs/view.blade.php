@@ -127,31 +127,14 @@
             $statusBg = $statusColor ?? null;
             $statusFgResolved = $statusFontColor ?? \App\Models\Status::DEFAULT_FONT_COLOR;
             $priorityBg = $priorityColor ?? null;
-            // Disable all Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation
-            $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation', 'processing'], true);
-            // Same flow as Edit Job Details modal: Allocated→Accepted/Processing; Accepted/Processing/Revised→For Checking; For Checking→For Review/Revised
-            //
-            // Efficient Living: enable inline status edit only when current status is "Allocated"
-            $canEditStatusInline = in_array($lowerStatus, ['allocated'], true)
-                || (!$isEfficientLivingView && in_array($lowerStatus, ['allocated', 'accepted', 'processing', 'revised', 'for checking'], true));
-            $inlineStatusOptions = [];
-            if ($lowerStatus === 'allocated') {
-                foreach ($statuses ?? [] as $s) {
-                    $n = strtolower((string)($s->name ?? ''));
-                    if (in_array($n, ['accepted', 'processing'], true)) $inlineStatusOptions[] = $s->name;
-                }
-            } elseif (in_array($lowerStatus, ['accepted', 'processing', 'revised'], true)) {
-                foreach ($statuses ?? [] as $s) {
-                    if (strtolower((string)($s->name ?? '')) === 'for checking') $inlineStatusOptions[] = $s->name;
-                }
-            } elseif ($lowerStatus === 'for checking') {
-                foreach ($statuses ?? [] as $s) {
-                    $n = strtolower((string)($s->name ?? ''));
-                    if (in_array($n, ['for review', 'revised'], true)) $inlineStatusOptions[] = $s->name;
-                }
-            } else {
-                foreach ($statuses ?? [] as $s) { $inlineStatusOptions[] = $s->name; }
+            // Disable Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation (status still advances via inline flow or modal when Edit is available)
+            $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
+            // One-step status flow (LBS); Efficient Living: inline status only from Allocated
+            $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
+            if ($isEfficientLivingView && $lowerStatus !== 'allocated') {
+                $inlineStatusOptions = [];
             }
+            $canEditStatusInline = count($inlineStatusOptions) > 0;
 
             $canEditDetailsUi = $canEditDetails && $permJobUpdate;
             $canEditStatusInlineUi = $canEditStatusInline && $permJobUpdate;
