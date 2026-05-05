@@ -1049,36 +1049,39 @@ class LbsJobController extends Controller
                 ->limit(200)
                 ->get();
 
-            $formsQuery = DB::table('jobs as j')
-                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->where('j.reference', 'like', 'JOBS%')
-                ->where('j.updated_by', '=', 'FORMS')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
-            JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
-            $formsJobs = $formsQuery
-                ->select(
-                    'j.job_id',
-                    'j.reference',
-                    'j.log_date',
-                    'j.client_code',
-                    'j.job_reference_no',
-                    'j.client_reference_no',
-                    'j.staff_id',
-                    'j.checker_id',
-                    'j.ncc_compliance',
-                    'j.job_request_id',
-                    'j.address_client',
-                    'j.job_type',
-                    'j.priority',
-                    'j.plan_complexity',
-                    'j.units',
-                    'j.job_status',
-                    'j.completion_date',
-                    'ca.client_account_name'
-                )
-                ->orderByDesc('j.log_date')
-                ->limit(200)
-                ->get();
+            $formsJobs = collect();
+            if (RolePermission::userMayAccessRoute('lbs.list.formsSubmitted')) {
+                $formsQuery = DB::table('jobs as j')
+                    ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                    ->where('j.reference', 'like', 'JOBS%')
+                    ->where('j.updated_by', '=', 'FORMS')
+                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+                JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
+                $formsJobs = $formsQuery
+                    ->select(
+                        'j.job_id',
+                        'j.reference',
+                        'j.log_date',
+                        'j.client_code',
+                        'j.job_reference_no',
+                        'j.client_reference_no',
+                        'j.staff_id',
+                        'j.checker_id',
+                        'j.ncc_compliance',
+                        'j.job_request_id',
+                        'j.address_client',
+                        'j.job_type',
+                        'j.priority',
+                        'j.plan_complexity',
+                        'j.units',
+                        'j.job_status',
+                        'j.completion_date',
+                        'ca.client_account_name'
+                    )
+                    ->orderByDesc('j.log_date')
+                    ->limit(200)
+                    ->get();
+            }
         }
 
         // Map priority/status name -> color (hex) for badges

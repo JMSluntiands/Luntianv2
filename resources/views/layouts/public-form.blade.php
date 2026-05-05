@@ -28,11 +28,18 @@
 <body class="overflow-x-hidden @yield('body_class', '')">
     <main class="min-h-screen bg-slate-50 p-4 dark:bg-slate-900 md:p-6">
         <div class="mx-auto w-full max-w-6xl">
+            <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
+                <span class="text-sm font-medium text-slate-500 dark:text-slate-400 max-[480px]:sr-only">Theme</span>
+                @include('layouts.partials.theme-toggle-button')
+            </div>
             @yield('content')
         </div>
     </main>
 
     @include('layouts.partials.app-toast')
+    <script>
+        @include('layouts.partials.theme-toggle-script')
+    </script>
     @stack('scripts')
 </body>
 </html>
