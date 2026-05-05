@@ -359,6 +359,7 @@
             </div>
         </div>
 
+        @if(\App\Models\RolePermission::userMayAccessRoute('lbs.list.formsSubmitted'))
         <div class="mt-7">
             <div class="mb-3 flex items-center justify-between gap-2">
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Forms Submitted Jobs</h2>
@@ -489,6 +490,7 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 @endsection
 

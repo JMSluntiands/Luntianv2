@@ -15,6 +15,7 @@ return [
         'LBS' => [
             'lbs.add' => 'LBS Add New',
             'lbs.list' => 'LBS List',
+            'lbs.list.formsSubmitted' => 'LBS Forms Submitted Jobs',
             'lbs.completed' => 'LBS Completed',
             'lbs.review' => 'LBS For Review',
             'lbs.mailbox' => 'LBS Mailbox',
@@ -428,7 +429,7 @@ return [
         'lbs' => [
             'label' => 'LBS',
             'sidebar' => [
-                'lbs.add', 'lbs.list', 'lbs.completed', 'lbs.review', 'lbs.mailbox', 'lbs.trash', 'lbs.job.view',
+                'lbs.add', 'lbs.list', 'lbs.list.formsSubmitted', 'lbs.completed', 'lbs.review', 'lbs.mailbox', 'lbs.trash', 'lbs.job.view',
                 'job_view.lbs.edit_assigned',
             ],
             'card' => [
