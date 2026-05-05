@@ -15,6 +15,7 @@ return [
         'LBS' => [
             'lbs.add' => 'LBS Add New',
             'lbs.list' => 'LBS List',
+            'lbs.list.tablesFragment' => 'LBS List — refresh tables',
             'lbs.list.formsSubmitted' => 'LBS Forms Submitted Jobs',
             'lbs.completed' => 'LBS Completed',
             'lbs.review' => 'LBS For Review',

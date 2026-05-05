@@ -60,60 +60,15 @@
             <div class="job-view-edit-form job-view-edit-form-job space-y-4" id="jobViewEditFormJob" hidden>
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-status">Job Status</label>
+                    @php
+                        $currentStatus = trim($job->job_status ?? '');
+                        $editModalNextStatuses = \App\Support\LbsJobStatusFlow::nextAllowedLabels($currentStatus, $statuses ?? []);
+                    @endphp
                     <select id="edit-job-status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
-                        @php
-                            $currentStatus = trim($job->job_status ?? '');
-                            $currentStatusLower = strtolower($currentStatus);
-                        @endphp
-
-                        {{-- Allocation / checking flow:
-                             - If Allocated       → options: Accepted, Processing
-                             - If Accepted/Processing/Revised → option: For Checking
-                             - If For Checking    → options: For Review, Revised
-                             - Otherwise          → show all statuses
-                        --}}
-                        @if($currentStatusLower === 'allocated')
-                            {{-- Current Allocated (display only) --}}
-                            <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
-                            @foreach($statuses ?? [] as $status)
-                                @php
-                                    $name = (string) ($status->name ?? '');
-                                    $nameLower = strtolower($name);
-                                @endphp
-                                @if(in_array($nameLower, ['accepted', 'processing'], true))
-                                    <option value="{{ $name }}">{{ $name }}</option>
-                                @endif
-                            @endforeach
-                        @elseif(in_array($currentStatusLower, ['accepted', 'processing', 'revised'], true))
-                            {{-- From Accepted / Processing / Revised → can only move to For Checking --}}
-                            <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
-                            @php
-                                $forCheckingName = null;
-                                foreach ($statuses ?? [] as $s) {
-                                    if (strtolower(trim((string)($s->name ?? ''))) === 'for checking') { $forCheckingName = $s->name; break; }
-                                }
-                            @endphp
-                            @if($forCheckingName)
-                                <option value="{{ $forCheckingName }}">{{ $forCheckingName }}</option>
-                            @endif
-                        @elseif($currentStatusLower === 'for checking')
-                            {{-- From For Checking → can move to For Review or Revised --}}
-                            <option value="{{ $currentStatus }}" selected disabled>{{ $currentStatus }}</option>
-                            @foreach($statuses ?? [] as $status)
-                                @php
-                                    $name = (string) ($status->name ?? '');
-                                    $nameLower = strtolower($name);
-                                @endphp
-                                @if(in_array($nameLower, ['for review', 'revised'], true))
-                                    <option value="{{ $name }}">{{ $name }}</option>
-                                @endif
-                            @endforeach
-                        @else
-                            {{-- Fallback: show all statuses --}}
-                            @foreach($statuses ?? [] as $status)
-                                <option value="{{ $status->name }}" @selected(($job->job_status ?? '') === $status->name)>{{ $status->name }}</option>
-                            @endforeach
-                        @endif
+                        <option value="{{ $currentStatus }}" selected @if(count($editModalNextStatuses) > 0) disabled @endif>{{ $currentStatus !== '' ? $currentStatus : '—' }}</option>
+                        @foreach($editModalNextStatuses as $name)
+                            <option value="{{ $name }}">{{ $name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="flex flex-col gap-1.5">

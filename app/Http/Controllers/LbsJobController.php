@@ -13,6 +13,7 @@ use App\Models\RolePermission;
 use App\Models\EmailConfig;
 use App\Services\JobCountsScope;
 use App\Support\FecUnitsValidation;
+use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -527,6 +528,12 @@ class LbsJobController extends Controller
         if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
             $new = trim((string) $data['job_status']);
             if ($new !== $job->job_status) {
+                if (! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid status change. Jobs advance one step at a time: ' . LbsJobStatusFlow::describeFlow() . '.',
+                    ], 422);
+                }
                 $update['job_status'] = $new;
                 $changes[] = [
                     'field' => 'Job Status',
@@ -1009,7 +1016,8 @@ class LbsJobController extends Controller
         ]);
     }
 
-    public function index()
+    /** Jobs + badge colors for the LBS list main/forms tables (full page or AJAX fragment). */
+    private function buildLbsListJobsPayload(): array
     {
         if (JobCountsScope::branchBlocksLbsStandardList()) {
             $jobs = collect();
@@ -1084,12 +1092,20 @@ class LbsJobController extends Controller
             }
         }
 
-        // Map priority/status name -> color (hex) for badges
         $priorityColors = Priority::query()
             ->whereNotNull('name')
             ->pluck('color', 'name')
             ->toArray();
 
+        return array_merge([
+            'jobs' => $jobs,
+            'formsJobs' => $formsJobs,
+            'priorityColors' => $priorityColors,
+        ], $this->statusBadgeColorMaps());
+    }
+
+    public function index()
+    {
         $filterBuilders = ClientAccount::query()
             ->whereNotNull('client_account_name')
             ->orderBy('client_account_name')
@@ -1107,14 +1123,21 @@ class LbsJobController extends Controller
             ->unique()
             ->values();
 
-        return view('lbs.list', array_merge([
+        return view('lbs.list', array_merge($this->buildLbsListJobsPayload(), [
             'sidebar_active' => 'lbs.list',
-            'jobs' => $jobs,
-            'formsJobs' => $formsJobs,
-            'priorityColors' => $priorityColors,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ], $this->statusBadgeColorMaps()));
+        ]));
+    }
+
+    /**
+     * HTML fragment for the LBS list tables (main list + optional forms block), for in-place refresh.
+     */
+    public function indexTablesFragment()
+    {
+        return response()
+            ->view('lbs.partials.list-tables-body', $this->buildLbsListJobsPayload())
+            ->header('Cache-Control', 'no-store, must-revalidate');
     }
 
     public function efficientLivingList()
@@ -1203,12 +1226,14 @@ class LbsJobController extends Controller
     {
         $jobs = $this->queryEfficientLivingJobsByStatus('For Review', 500);
         $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statuses = Status::orderBy('name')->get();
 
         return view('lbs.review', array_merge([
             'sidebar_active' => 'efficient_living.review',
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'isEfficientLiving' => true,
+            'statuses' => $statuses,
         ], $this->statusBadgeColorMaps()));
     }
 
@@ -1480,10 +1505,13 @@ class LbsJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
+        $statuses = Status::orderBy('name')->get();
+
         return view('lbs.review', array_merge([
             'sidebar_active' => 'lbs.review',
             'jobs'           => $jobs,
             'priorityColors' => $priorityColors,
+            'statuses'       => $statuses,
         ], $this->statusBadgeColorMaps()));
     }
 
@@ -1735,7 +1763,6 @@ class LbsJobController extends Controller
             'job_address'      => ['required', 'string', 'max:1000'],
             'priority'         => ['required', 'integer'],
             'job_type'         => ['required', 'integer'],
-            'job_status'       => ['required', 'string', 'max:50'],
             'assigned_to'      => ['required', 'string', 'max:10'],
             'checked_by'       => ['required', 'string', 'max:10'],
             'notes'            => ['nullable', 'string'],
@@ -1840,7 +1867,7 @@ class LbsJobController extends Controller
                 'upload_project_files'=> json_encode($docNames),
                 // last_update has default CURRENT_TIMESTAMP
                 'updated_by'          => $request->route()?->getName() === 'lbs.public.store' ? 'FORMS' : null,
-                'job_status'          => ucfirst($data['job_status']),
+                'job_status'          => 'Allocated',
                 'dwelling'            => '',
                 'client_account_id'   => $client->client_account_id,
                 'completion_date'     => null,

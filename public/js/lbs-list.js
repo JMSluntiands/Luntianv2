@@ -132,12 +132,18 @@
 })(window);
 
 $(function () {
-  var $table = $('#lbsTable');
+  function getLbsTable() {
+    return $('#lbsTable');
+  }
+
   var $search = $('#lbsSearch');
   var $filterDate = $('#lbsFilterDate');
   var $filterBuilder = $('#lbsFilterBuilder');
   var $filterPriority = $('#lbsFilterPriority');
   var $filterReset = $('#lbsFilterReset');
+  var $lbsListRefreshBtn = $('#lbsListRefreshBtn');
+  var $lbsListTablesInner = $('#lbs-list-tables-inner');
+  var $lbsListTablesRoot = $('#lbs-list-tables-refresh-root');
   function initFilterSelect2() {
     if (!$.fn || !$.fn.select2) return;
     var commonOpts = {
@@ -159,6 +165,7 @@ $(function () {
     document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
   function recalcStatusSummary() {
+    var $table = getLbsTable();
     if (!$table.length) return;
     var $rows = $table
       .find('tbody tr')
@@ -184,6 +191,7 @@ $(function () {
   }
 
   function applyTableFilters() {
+    var $table = getLbsTable();
     if (!$table.length) return;
     var $tbody = $table.find('tbody');
     if (!$tbody.length) return;
@@ -220,7 +228,7 @@ $(function () {
     recalcStatusSummary();
   }
 
-  if ($table.length) {
+  if (getLbsTable().length) {
     if ($search.length) $search.on('input', applyTableFilters);
     if ($filterDate.length) $filterDate.on('change', applyTableFilters);
     if ($filterBuilder.length) $filterBuilder.on('change', applyTableFilters);
@@ -236,17 +244,105 @@ $(function () {
     }
   }
 
-  $table.find('[data-expand-row]').on('click', function (e) {
-    e.stopPropagation();
-    var $row = $(this).closest('tr');
-    var $next = $row.next('.lbs-row-detail');
-    if (!$next.length) return;
-    var open = $next.prop('hidden');
-    $next.prop('hidden', !open);
-    $(this)
-      .attr('aria-expanded', open)
-      .attr('title', open ? 'Hide details' : 'View full row details below');
-  });
+  function bindLbsMainTableInteractions() {
+    var $table = getLbsTable();
+    if (!$table.length) return;
+
+    $table
+      .find('[data-expand-row]')
+      .off('click.lbsMainExpand')
+      .on('click.lbsMainExpand', function (e) {
+        e.stopPropagation();
+        var $row = $(this).closest('tr');
+        var $next = $row.next('.lbs-row-detail');
+        if (!$next.length) return;
+        var open = $next.prop('hidden');
+        $next.prop('hidden', !open);
+        $(this)
+          .attr('aria-expanded', open)
+          .attr('title', open ? 'Hide details' : 'View full row details below');
+      });
+
+    var $thead = $table.find('thead');
+    $thead.off('click.lbsMainSort').on('click.lbsMainSort', 'th', function (e) {
+      var $tbl = getLbsTable();
+      if (!$tbl.length) return;
+      var $th = $(e.target).closest('th');
+      if (!$th.length || $th.hasClass('lbs-th-action')) return;
+      var current = $th.attr('data-sort') || '';
+      var next = current === 'asc' ? 'desc' : 'asc';
+      var $thAll = $tbl.find('thead th');
+      $thAll.attr('data-sort', '');
+      $th.attr('data-sort', next);
+      var colIndex = $th.index();
+      var $tbody = $tbl.find('tbody');
+      var rows = $tbody
+        .find('tr')
+        .not('.lbs-row-detail')
+        .get();
+      rows.sort(function (a, b) {
+        var aCell = a.children[colIndex];
+        var bCell = b.children[colIndex];
+        var aVal = (aCell && (aCell.getAttribute('data-sort') || aCell.textContent)) || '';
+        var bVal = (bCell && (bCell.getAttribute('data-sort') || bCell.textContent)) || '';
+        var aNum = parseFloat(aVal);
+        var bNum = parseFloat(bVal);
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return next === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+        if (next === 'asc') {
+          return String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
+        }
+        return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
+      });
+      rows.forEach(function (row) {
+        var $row = $(row);
+        $tbody.append($row);
+        var $detail = $row.next('.lbs-row-detail');
+        if ($detail.length) $tbody.append($detail);
+      });
+    });
+  }
+
+  bindLbsMainTableInteractions();
+
+  if ($lbsListRefreshBtn.length && $lbsListTablesInner.length && $lbsListTablesRoot.length) {
+    var refreshUrl = String($lbsListTablesRoot.data('refresh-url') || '').trim();
+    if (refreshUrl) {
+      $lbsListRefreshBtn.on('click', function () {
+        if ($lbsListRefreshBtn.prop('disabled')) return;
+        var icon = $lbsListRefreshBtn.find('.lbs-list-refresh-icon');
+        $lbsListRefreshBtn.prop('disabled', true).attr('aria-busy', 'true');
+        if (icon.length) icon.addClass('animate-spin');
+
+        fetch(refreshUrl, {
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'text/html',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error('refresh failed');
+            return res.text();
+          })
+          .then(function (html) {
+            $lbsListTablesInner.html(html);
+            bindLbsMainTableInteractions();
+            applyTableFilters();
+          })
+          .catch(function () {
+            var msg = 'Could not refresh the table. Try again or reload the page.';
+            if (window.showSuccessToast) window.showSuccessToast(msg);
+            else window.alert(msg);
+          })
+          .finally(function () {
+            $lbsListRefreshBtn.prop('disabled', false).attr('aria-busy', 'false');
+            if (icon.length) icon.removeClass('animate-spin');
+          });
+      });
+    }
+  }
 
   function closeAllStatusMenus() {
     $('.lbs-status-menu').prop('hidden', true);
@@ -512,45 +608,6 @@ $(function () {
     closeAllStatusMenus();
     closeAllInitialsMenus();
   });
-
-  if ($table.length) {
-    var $thead = $table.find('thead');
-    $thead.on('click', 'th', function (e) {
-      var $th = $(e.target).closest('th');
-      if (!$th.length || $th.hasClass('lbs-th-action')) return;
-      var current = $th.attr('data-sort') || '';
-      var next = current === 'asc' ? 'desc' : 'asc';
-      $thead.find('th').attr('data-sort', '');
-      $th.attr('data-sort', next);
-      var colIndex = $th.index();
-      var $tbody = $table.find('tbody');
-      var rows = $tbody
-        .find('tr')
-        .not('.lbs-row-detail')
-        .get();
-      rows.sort(function (a, b) {
-        var aCell = a.children[colIndex];
-        var bCell = b.children[colIndex];
-        var aVal = (aCell && (aCell.getAttribute('data-sort') || aCell.textContent)) || '';
-        var bVal = (bCell && (bCell.getAttribute('data-sort') || bCell.textContent)) || '';
-        var aNum = parseFloat(aVal);
-        var bNum = parseFloat(bVal);
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-          return next === 'asc' ? aNum - bNum : bNum - aNum;
-        }
-        if (next === 'asc') {
-          return String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
-        }
-        return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
-      });
-      rows.forEach(function (row) {
-        var $row = $(row);
-        $tbody.append($row);
-        var $detail = $row.next('.lbs-row-detail');
-        if ($detail.length) $tbody.append($detail);
-      });
-    });
-  }
 
   applyTableFilters();
 });

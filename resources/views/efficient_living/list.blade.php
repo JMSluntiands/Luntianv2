@@ -111,40 +111,8 @@
                                 $priorityLower = strtolower($priorityText);
 
                                 $statusLower = strtolower($status);
-                                $canEditStatus = in_array($statusLower, ['allocated', 'accepted', 'processing', 'revised', 'for checking', 'for review'], true);
-                                $statusOptions = [];
-                                if ($statusLower === 'allocated') {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $n = strtolower((string) ($s->name ?? ''));
-                                        if (in_array($n, ['accepted', 'processing'], true)) {
-                                            $statusOptions[] = $s->name;
-                                        }
-                                    }
-                                } elseif (in_array($statusLower, ['accepted', 'processing', 'revised'], true)) {
-                                    foreach ($statuses ?? [] as $s) {
-                                        if (strtolower((string) ($s->name ?? '')) === 'for checking') {
-                                            $statusOptions[] = $s->name;
-                                        }
-                                    }
-                                } elseif ($statusLower === 'for checking') {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $n = strtolower((string) ($s->name ?? ''));
-                                        if (in_array($n, ['for review', 'revised'], true)) {
-                                            $statusOptions[] = $s->name;
-                                        }
-                                    }
-                                } elseif ($statusLower === 'for review') {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $n = strtolower((string) ($s->name ?? ''));
-                                        if (in_array($n, ['for email confirmation', 'cancelled', 'revised', 'for checking'], true)) {
-                                            $statusOptions[] = $s->name;
-                                        }
-                                    }
-                                } else {
-                                    foreach ($statuses ?? [] as $s) {
-                                        $statusOptions[] = $s->name;
-                                    }
-                                }
+                                $statusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($status, $statuses ?? []);
+                                $canEditStatus = count($statusOptions) > 0;
 
                                 $completion = $job->completion_date ? \Carbon\Carbon::parse($job->completion_date, 'Asia/Manila') : null;
                                 $due = null;

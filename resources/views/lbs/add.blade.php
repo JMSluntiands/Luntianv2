@@ -73,7 +73,7 @@
                         <input type="text" id="job_address" name="job_address" value="{{ isset($duplicateJob) ? e($duplicateJob->job_address ?? '') : '' }}" placeholder="Complete Address" autocomplete="off"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                     </div>
-                    <div class="grid gap-5 sm:grid-cols-3">
+                    <div class="grid gap-5 sm:grid-cols-2">
                         <div>
                             <label for="priority" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
                             <select id="priority" name="priority" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
@@ -90,16 +90,6 @@
                                 @foreach($jobRequests ?? [] as $jobRequest)
                                     <option value="{{ $jobRequest->id }}" {{ $selJobRequest !== null && (int) $selJobRequest === (int) $jobRequest->id ? 'selected' : '' }}>{{ $jobRequest->job_request_type ?? '' }}</option>
                                 @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label for="job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status</label>
-                            <select id="job_status" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="">Select status</option>
-                                <option value="allocated" selected>Allocated</option>
-                                <option value="pending">Pending</option>
-                                <option value="processing">Processing</option>
-                                <option value="completed">Completed</option>
                             </select>
                         </div>
                     </div>
