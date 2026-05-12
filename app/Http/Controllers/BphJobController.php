@@ -11,6 +11,8 @@ use App\Models\Status;
 use App\Models\User;
 use App\Models\RolePermission;
 use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -88,6 +90,34 @@ class BphJobController extends Controller
         return match ($this->pipelineJobTable()) {
             'job_fyrs' => 'fyrs',
             default => 'bph',
+        };
+    }
+
+    private function slackProductLabelForPipelineJob(object $job): string
+    {
+        $cc = strtolower(trim((string) ($job->client_code ?? '')));
+        if (str_contains($cc, 'bluinq')) {
+            return 'Bluinq';
+        }
+
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'A&M',
+            'job_fyrs' => 'Fyrs Energy Wise',
+            default => 'BPH',
+        };
+    }
+
+    private function pipelineJobSlackViewRouteName(object $job): string
+    {
+        $cc = strtolower(trim((string) ($job->client_code ?? '')));
+        if (str_contains($cc, 'bluinq')) {
+            return 'bluinq.view';
+        }
+
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'amt.view',
+            'job_fyrs' => 'fyrs.view',
+            default => 'bph.view',
         };
     }
 
@@ -470,10 +500,7 @@ class BphJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
-        $slackConfig = \App\Models\SlackConfig::first();
-        $slackWebhook = ($slackConfig && $slackConfig->is_active && !empty($slackConfig->webhook_url))
-            ? $slackConfig->webhook_url
-            : config('services.slack.lbs_webhook');
+        $slackWebhook = SlackWebhookResolver::newJobWebhook();
 
         if (!$slackWebhook) {
             return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);
@@ -993,9 +1020,33 @@ class BphJobController extends Controller
             $logDescription = 'Updated additional / specification information.';
         }
 
+        $prevStaff = SlackAssignmentNotifier::normalizeCode($job->assigned ?? null);
+        $prevChecker = SlackAssignmentNotifier::normalizeCode($job->checked ?? null);
+        $nextStaff = array_key_exists('assigned', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['assigned'])
+            : $prevStaff;
+        $nextChecker = array_key_exists('checked', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
+            : $prevChecker;
+        $pipelineAssignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
         $update['updated_at'] = now('Asia/Manila');
 
         DB::table($this->pipelineJobTable())->where('id', $id)->update($update);
+
+        if ($pipelineAssignmentChanged) {
+            $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
+            $jobUrl = route($this->pipelineJobSlackViewRouteName($job), ['id' => $id]);
+            SlackAssignmentNotifier::notifyAssignment(
+                $this->slackProductLabelForPipelineJob($job),
+                $id,
+                (string) ($job->reference ?? $job->job_number ?? ''),
+                $nextStaff !== '' ? $nextStaff : null,
+                $nextChecker !== '' ? $nextChecker : null,
+                $jobStatus,
+                $jobUrl
+            );
+        }
 
         $log = $this->createBphActivityLog(
             (int) $id,

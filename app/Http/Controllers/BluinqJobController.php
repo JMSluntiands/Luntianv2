@@ -10,6 +10,7 @@ use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Services\SlackWebhookResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -412,10 +413,7 @@ class BluinqJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
-        $slackConfig = \App\Models\SlackConfig::first();
-        $slackWebhook = ($slackConfig && $slackConfig->is_active && !empty($slackConfig->webhook_url))
-            ? $slackConfig->webhook_url
-            : config('services.slack.lbs_webhook');
+        $slackWebhook = SlackWebhookResolver::newJobWebhook();
 
         if (!$slackWebhook) {
             return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);

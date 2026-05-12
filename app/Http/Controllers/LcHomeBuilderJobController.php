@@ -7,6 +7,7 @@ use App\Models\Compliance;
 use App\Models\JobRequest;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
 use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -237,8 +238,32 @@ class LcHomeBuilderJobController extends Controller
             return response()->json(['status' => 'success', 'message' => 'No changes to update.']);
         }
 
+        $prevStaff = SlackAssignmentNotifier::normalizeCode($job->assigned ?? null);
+        $prevChecker = SlackAssignmentNotifier::normalizeCode($job->checked ?? null);
+        $nextStaff = array_key_exists('assigned', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['assigned'])
+            : $prevStaff;
+        $nextChecker = array_key_exists('checked', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
+            : $prevChecker;
+        $assignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_lc_home_builder')->where('id', $id)->update($update);
+
+        if ($assignmentChanged) {
+            $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
+            $jobUrl = route('lc_home_builder.list') . '?' . http_build_query(['job_id' => $id]);
+            SlackAssignmentNotifier::notifyAssignment(
+                'LC Home Builder',
+                $id,
+                (string) ($job->reference ?? ''),
+                $nextStaff !== '' ? $nextStaff : null,
+                $nextChecker !== '' ? $nextChecker : null,
+                $jobStatus,
+                $jobUrl
+            );
+        }
 
         return response()->json([
             'status' => 'success',

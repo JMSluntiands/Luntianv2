@@ -297,7 +297,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/settings/email-config/toggle', [EmailConfigController::class, 'toggleActive'])->name('settings.email_config.toggle');
     Route::get('/dashboard/settings/slack-config', [SlackConfigController::class, 'index'])->name('settings.slack_config');
     Route::post('/dashboard/settings/slack-config', [SlackConfigController::class, 'store'])->name('settings.slack_config.store');
-    Route::post('/dashboard/settings/slack-config/toggle', [SlackConfigController::class, 'toggleActive'])->name('settings.slack_config.toggle');
+    Route::post('/dashboard/settings/slack-config/toggle', [SlackConfigController::class, 'togglePurpose'])->name('settings.slack_config.toggle');
     Route::get('/dashboard/settings/notifications', [NotificationSettingsController::class, 'index'])->name('settings.notifications');
     Route::get('/dashboard/settings/permission', [PermissionController::class, 'index'])->name('settings.permission');
     Route::post('/dashboard/settings/permission', [PermissionController::class, 'store'])->name('settings.permission.store');
