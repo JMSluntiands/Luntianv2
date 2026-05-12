@@ -13,7 +13,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [toastExiting, setToastExiting] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return true;
     const saved = localStorage.getItem(THEME_KEY);
@@ -84,7 +83,6 @@ export default function Login() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success && data.redirect) {
-        setRedirectUrl(data.redirect);
         setLoginSuccess(true);
         setIsLoading(false);
         setTimeout(() => {
@@ -124,13 +122,13 @@ export default function Login() {
       >
         <div className="login-bg-arch-gradient" />
       </div>
-      {/* Login success overlay – animation before redirect to dashboard */}
+      {/* Login success overlay – animation before redirect (may be Slack deep link, not only dashboard) */}
       {loginSuccess && (
         <div
           className={`login-success-overlay ${!isDark ? 'login-success-overlay-light' : ''}`}
           role="status"
           aria-live="polite"
-          aria-label="Login successful, redirecting to dashboard"
+          aria-label="Login successful, redirecting"
         >
           <div className="login-success-card">
             <div className="login-success-icon-wrap">
@@ -140,7 +138,7 @@ export default function Login() {
               Welcome back!
             </h2>
             <p className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Taking you to the dashboard...
+              Redirecting you now...
             </p>
             <div className="login-success-progress" />
           </div>

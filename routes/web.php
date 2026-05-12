@@ -30,6 +30,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\UserAccountController;
 use App\Models\ClientEmailBph;
+use App\Support\LoginReturnPath;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ReportsController;
@@ -40,8 +41,24 @@ Route::get('/', function () {
         return redirect()->route('lbs.public.add');
     }
 
+    $returnTo = request()->query('return_to');
+    $decodedReturn = null;
+    if (is_string($returnTo) && $returnTo !== '') {
+        $decodedReturn = rawurldecode($returnTo);
+    }
+
     if (session()->has('user_id')) {
+        if (is_string($decodedReturn) && LoginReturnPath::isAllowed($decodedReturn)) {
+            return redirect()->to(LoginReturnPath::absoluteUrlFor(request(), $decodedReturn));
+        }
+
         return redirect()->route('dashboard');
+    }
+
+    if (is_string($decodedReturn) && $decodedReturn !== '' && LoginReturnPath::isAllowed($decodedReturn)) {
+        session([
+            'url.intended' => LoginReturnPath::absoluteUrlFor(request(), $decodedReturn),
+        ]);
     }
 
     return view('app');
