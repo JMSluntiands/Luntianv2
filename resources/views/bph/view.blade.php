@@ -122,13 +122,8 @@
                         @php
                             $selAssigned = strtoupper((string) old('assigned', $job->assigned));
                         @endphp
-                        <select name="assigned" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                            @foreach(($assignmentUsers ?? collect()) as $code)
-                                <option value="{{ $code }}" {{ $selAssigned === (string) $code ? 'selected' : '' }}>{{ $code }}</option>
-                            @endforeach
-                            @if(!empty($selAssigned) && !collect($assignmentUsers ?? [])->contains($selAssigned))
-                                <option value="{{ $selAssigned }}" selected>{{ $selAssigned }}</option>
-                            @endif
+                        <select name="assigned" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                            @include('partials.assignment-user-options', ['selected' => $selAssigned, 'includeGm' => true, 'preserveSelected' => true])
                         </select>
                     </div>
                     <div>
@@ -136,13 +131,8 @@
                         @php
                             $selChecked = strtoupper((string) old('checked', $job->checked));
                         @endphp
-                        <select name="checked" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                            @foreach(($assignmentUsers ?? collect()) as $code)
-                                <option value="{{ $code }}" {{ $selChecked === (string) $code ? 'selected' : '' }}>{{ $code }}</option>
-                            @endforeach
-                            @if(!empty($selChecked) && !collect($assignmentUsers ?? [])->contains($selChecked))
-                                <option value="{{ $selChecked }}" selected>{{ $selChecked }}</option>
-                            @endif
+                        <select name="checked" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                            @include('partials.assignment-user-options', ['selected' => $selChecked, 'includeGm' => true, 'preserveSelected' => true])
                         </select>
                     </div>
                 </div>
@@ -167,7 +157,7 @@
     <script>
         (function () {
             if (typeof $ !== 'undefined' && $.fn.select2) {
-                $('.select2-single').each(function () {
+                $('.select2-single:not(.assignment-user-select)').each(function () {
                     var $el = $(this);
                     var ph = $el.data('placeholder');
                     var opts = { width: '100%', allowClear: false };
@@ -178,6 +168,8 @@
                     }
                     $el.select2(opts);
                 });
+                @include('partials.assignment-user-select2')
+                initAssignmentUserSelect2($(document));
             }
         })();
     </script>

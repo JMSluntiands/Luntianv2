@@ -125,34 +125,14 @@
                 @if($permEditAssignedInModal)
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-assigned">Staff</label>
-                    <select id="edit-job-assigned" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
-                        <option value="" @selected($selAssignedRaw === '')>—</option>
-                        <option value="GM" @selected($selAssignedU === 'GM')>GM</option>
-                        @foreach($assignmentUsers ?? [] as $user)
-                            @php $code = trim((string) (is_object($user) ? ($user->unique_code ?? '') : $user)); @endphp
-                            @if($code !== '' && strtoupper($code) !== 'GM')
-                                <option value="{{ $code }}" @selected(strtoupper($code) === $selAssignedU)>{{ $code }}</option>
-                            @endif
-                        @endforeach
-                        @if($selAssignedRaw !== '' && $selAssignedU !== 'GM' && !in_array($selAssignedU, $assignmentOptionCodes, true))
-                            <option value="{{ $selAssignedRaw }}" selected>{{ $selAssignedU }}</option>
-                        @endif
+                    <select id="edit-job-assigned" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
+                        @include('partials.assignment-user-options', ['selected' => $selAssignedRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => '—', 'preserveSelected' => true])
                     </select>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-checker">Checker</label>
-                    <select id="edit-job-checker" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
-                        <option value="" @selected($selCheckerRaw === '')>—</option>
-                        <option value="GM" @selected($selCheckerU === 'GM')>GM</option>
-                        @foreach($assignmentUsers ?? [] as $user)
-                            @php $code = trim((string) (is_object($user) ? ($user->unique_code ?? '') : $user)); @endphp
-                            @if($code !== '' && strtoupper($code) !== 'GM')
-                                <option value="{{ $code }}" @selected(strtoupper($code) === $selCheckerU)>{{ $code }}</option>
-                            @endif
-                        @endforeach
-                        @if($selCheckerRaw !== '' && $selCheckerU !== 'GM' && !in_array($selCheckerU, $assignmentOptionCodes, true))
-                            <option value="{{ $selCheckerRaw }}" selected>{{ $selCheckerU }}</option>
-                        @endif
+                    <select id="edit-job-checker" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
+                        @include('partials.assignment-user-options', ['selected' => $selCheckerRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => '—', 'preserveSelected' => true])
                     </select>
                 </div>
                 @endif

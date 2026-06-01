@@ -1893,8 +1893,10 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 })();
 </script>
     <script>
+    @include('partials.assignment-user-select2')
     $(function() {
-        $('.job-view-modal .select2-single').select2({ width: '100%', allowClear: false });
+        $('.job-view-modal .select2-single:not(.assignment-user-select)').select2({ width: '100%', allowClear: false });
+        initAssignmentUserSelect2($('.job-view-modal'));
     });
     </script>
 @endpush
