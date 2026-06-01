@@ -67,17 +67,25 @@ class User extends Authenticatable
     public function scopeForJobAssignment(Builder $query): Builder
     {
         return $query
+            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
             ->where(function (Builder $q) {
-                $q->whereNull('role')
-                    ->orWhereRaw('LOWER(TRIM(role)) != ?', ['admin']);
+                $q->whereNull('branch')
+                    ->orWhereRaw('TRIM(COALESCE(branch, "")) = ?', ['']);
             })
-            ->where(function (Builder $q) {
-                $q->whereRaw('LOWER(TRIM(COALESCE(role, ""))) != ?', ['branch'])
-                    ->where(function (Builder $q2) {
-                        $q2->whereNull('branch')
-                            ->orWhereRaw('TRIM(COALESCE(branch, "")) = ?', ['']);
-                    });
-            });
+            ->whereNotNull('unique_code')
+            ->whereRaw('TRIM(unique_code) != ?', ['']);
+    }
+
+    public function assignmentOptionLabel(): string
+    {
+        $code = trim((string) $this->unique_code);
+        $name = trim((string) ($this->fullname ?: $this->username ?: ''));
+
+        if ($name === '' || strtoupper($name) === strtoupper($code)) {
+            return $code;
+        }
+
+        return $code . ' — ' . $name;
     }
 
     public static function assignmentUsersForSelect(): Collection
@@ -85,7 +93,7 @@ class User extends Authenticatable
         return static::query()
             ->forJobAssignment()
             ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
+            ->get(['id', 'unique_code', 'username', 'fullname'])
             ->unique('unique_code')
             ->values();
     }

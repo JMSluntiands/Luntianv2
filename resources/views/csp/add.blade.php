@@ -168,26 +168,14 @@
                     <div class="grid gap-5 sm:grid-cols-2">
                         <div>
                             <label for="assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Assigned To</label>
-                            <select id="assigned_to" name="assigned_to" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                                <option value="">Select user</option>
-                                <option value="GM" selected>GM</option>
-                                @foreach($assignmentUsers ?? [] as $user)
-                                    @if(strtoupper($user->unique_code ?? '') !== 'GM')
-                                        <option value="{{ $user->unique_code }}">{{ $user->unique_code }}</option>
-                                    @endif
-                                @endforeach
+                            <select id="assigned_to" name="assigned_to" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                @include('partials.assignment-user-options', ['selected' => 'GM', 'includeSelectPlaceholder' => true])
                             </select>
                         </div>
                         <div>
                             <label for="checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checked By</label>
-                            <select id="checked_by" name="checked_by" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                                <option value="">Select user</option>
-                                <option value="GM" selected>GM</option>
-                                @foreach($assignmentUsers ?? [] as $user)
-                                    @if(strtoupper($user->unique_code ?? '') !== 'GM')
-                                        <option value="{{ $user->unique_code }}">{{ $user->unique_code }}</option>
-                                    @endif
-                                @endforeach
+                            <select id="checked_by" name="checked_by" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                @include('partials.assignment-user-options', ['selected' => 'GM', 'includeSelectPlaceholder' => true])
                             </select>
                         </div>
                     </div>
@@ -239,7 +227,7 @@
             notesBody.addEventListener('focus', updateNotesActiveState);
             notesBody.addEventListener('keyup', updateNotesActiveState);
             notesBody.addEventListener('mouseup', updateNotesActiveState);
-            $('.select2-single').each(function () {
+            $('.select2-single:not(.assignment-user-select)').each(function () {
                 var $el = $(this);
                 var opts = { width: '100%', allowClear: false };
                 if ($el.attr('id') === 'contact_email') {
@@ -249,6 +237,7 @@
                 }
                 $el.select2(opts);
             });
+            initAssignmentUserSelect2($('#cspAddForm'));
 
             // Job number validation (same pattern as BPH)
             var jobNumberInput = document.getElementById('job_number');

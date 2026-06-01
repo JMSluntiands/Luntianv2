@@ -108,10 +108,7 @@ class BluinqJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::assignmentUserCodes();
-        if (!$assignmentUsers->contains('GM')) {
-            $assignmentUsers->prepend('GM');
-        }
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $activityLogs = DB::table('bph_activity_logs')
             ->where('job_id', (int) $viewJob->job_id)

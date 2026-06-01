@@ -1,0 +1,42 @@
+{
+  "_index-Ck92IDcg.js": {
+    "file": "assets/index-Ck92IDcg.js",
+    "name": "index"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CuhBlwNq.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.tsx": {
+    "file": "assets/app-BnHEA4iM.js",
+    "name": "app",
+    "src": "resources/js/app.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-Ck92IDcg.js"
+    ]
+  },
+  "resources/js/dashboard.tsx": {
+    "file": "assets/dashboard-DWehgAR6.js",
+    "name": "dashboard",
+    "src": "resources/js/dashboard.tsx",
+    "isEntry": true,
+    "imports": [
+      "_index-Ck92IDcg.js"
+    ]
+  },
+  "resources/js/layout.ts": {
+    "file": "assets/layout-DLfo3hrH.js",
+    "name": "layout",
+    "src": "resources/js/layout.ts",
+    "isEntry": true,
+    "imports": [
+      "_index-Ck92IDcg.js"
+    ]
+  }
+}

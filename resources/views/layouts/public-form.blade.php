@@ -40,6 +40,7 @@
     <script>
         @include('layouts.partials.theme-toggle-script')
     </script>
+    @include('partials.assignment-user-select2')
     @stack('scripts')
 </body>
 </html>
