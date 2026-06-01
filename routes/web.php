@@ -15,6 +15,7 @@ use App\Http\Controllers\ClientEmailAmtController;
 use App\Http\Controllers\ClientEmailBphController;
 use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\CspJobController;
+use App\Models\User;
 use App\Http\Controllers\DashboardHolidayController;
 use App\Http\Controllers\EmailConfigController;
 use App\Http\Controllers\JobRequestController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\UserAccountController;
 use App\Models\ClientEmailBph;
+use App\Support\LoginReturnPath;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ReportsController;
@@ -40,8 +42,24 @@ Route::get('/', function () {
         return redirect()->route('lbs.public.add');
     }
 
+    $returnTo = request()->query('return_to');
+    $decodedReturn = null;
+    if (is_string($returnTo) && $returnTo !== '') {
+        $decodedReturn = rawurldecode($returnTo);
+    }
+
     if (session()->has('user_id')) {
+        if (is_string($decodedReturn) && LoginReturnPath::isAllowed($decodedReturn)) {
+            return redirect()->to(LoginReturnPath::absoluteUrlFor(request(), $decodedReturn));
+        }
+
         return redirect()->route('dashboard');
+    }
+
+    if (is_string($decodedReturn) && $decodedReturn !== '' && LoginReturnPath::isAllowed($decodedReturn)) {
+        session([
+            'url.intended' => LoginReturnPath::absoluteUrlFor(request(), $decodedReturn),
+        ]);
     }
 
     return view('app');
@@ -148,6 +166,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
         return view('csp.add', [
             'sidebar_active' => 'csp.add',
             'bphClientEmails' => $bphClientEmails,
+            'assignmentUsers' => User::assignmentUsersForSelect(),
         ]);
     })->name('csp.add');
 
@@ -297,7 +316,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/settings/email-config/toggle', [EmailConfigController::class, 'toggleActive'])->name('settings.email_config.toggle');
     Route::get('/dashboard/settings/slack-config', [SlackConfigController::class, 'index'])->name('settings.slack_config');
     Route::post('/dashboard/settings/slack-config', [SlackConfigController::class, 'store'])->name('settings.slack_config.store');
-    Route::post('/dashboard/settings/slack-config/toggle', [SlackConfigController::class, 'toggleActive'])->name('settings.slack_config.toggle');
+    Route::post('/dashboard/settings/slack-config/toggle', [SlackConfigController::class, 'togglePurpose'])->name('settings.slack_config.toggle');
     Route::get('/dashboard/settings/notifications', [NotificationSettingsController::class, 'index'])->name('settings.notifications');
     Route::get('/dashboard/settings/permission', [PermissionController::class, 'index'])->name('settings.permission');
     Route::post('/dashboard/settings/permission', [PermissionController::class, 'store'])->name('settings.permission.store');

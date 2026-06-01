@@ -211,7 +211,7 @@ return [
             'settings.email_config' => 'Email Configuration',
             'settings.email_config.toggle' => 'Email Sending On/Off',
             'settings.slack_config' => 'Slack Configuration',
-            'settings.slack_config.toggle' => 'Slack Notifications On/Off',
+            'settings.slack_config.toggle' => 'Slack switches (new job / assignment)',
             'settings.notifications' => 'Notification Controls Page',
             'settings.permission' => 'Permission',
         ],

@@ -7,6 +7,7 @@ use App\Models\Compliance;
 use App\Models\JobRequest;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
 use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,11 +22,7 @@ class LeadingEnergyJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
         $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2019') !== false)
@@ -301,8 +298,32 @@ class LeadingEnergyJobController extends Controller
             return response()->json(['status' => 'success', 'message' => 'No changes to update.']);
         }
 
+        $prevStaff = SlackAssignmentNotifier::normalizeCode($job->assigned ?? null);
+        $prevChecker = SlackAssignmentNotifier::normalizeCode($job->checked ?? null);
+        $nextStaff = array_key_exists('assigned', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['assigned'])
+            : $prevStaff;
+        $nextChecker = array_key_exists('checked', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
+            : $prevChecker;
+        $assignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_leading_energy')->where('id', $id)->update($update);
+
+        if ($assignmentChanged) {
+            $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
+            $jobUrl = route('leading_energy.view', ['id' => $id]);
+            SlackAssignmentNotifier::notifyAssignment(
+                'Leading Energy',
+                $id,
+                (string) ($job->reference ?? ''),
+                $nextStaff !== '' ? $nextStaff : null,
+                $nextChecker !== '' ? $nextChecker : null,
+                $jobStatus,
+                $jobUrl
+            );
+        }
 
         return response()->json([
             'status' => 'success',

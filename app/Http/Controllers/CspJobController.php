@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\EmailConfig;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
 use App\Support\FecUnitsValidation;
 
 class CspJobController extends Controller
@@ -410,8 +411,32 @@ class CspJobController extends Controller
             ]);
         }
 
+        $prevStaff = SlackAssignmentNotifier::normalizeCode($job->assigned ?? null);
+        $prevChecker = SlackAssignmentNotifier::normalizeCode($job->checked ?? null);
+        $nextStaff = array_key_exists('assigned', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['assigned'])
+            : $prevStaff;
+        $nextChecker = array_key_exists('checked', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
+            : $prevChecker;
+        $assignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_csp')->where('id', $id)->update($update);
+
+        if ($assignmentChanged) {
+            $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
+            $jobUrl = route('csp.view', ['id' => $id]);
+            SlackAssignmentNotifier::notifyAssignment(
+                'CSP',
+                $id,
+                (string) ($job->reference ?? ''),
+                $nextStaff !== '' ? $nextStaff : null,
+                $nextChecker !== '' ? $nextChecker : null,
+                $jobStatus,
+                $jobUrl
+            );
+        }
 
         return response()->json([
             'status'  => 'success',

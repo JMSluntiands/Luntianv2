@@ -53,21 +53,43 @@
         @endif
 
         @if(\App\Models\RolePermission::userMayAccessRoute('settings.slack_config.toggle'))
+        @if(!$slackConfig)
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
-            <div class="flex items-center justify-between gap-4">
+            <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Slack</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Save webhook URLs in <a href="{{ route('settings.slack_config') }}" class="font-semibold text-emerald-600 underline hover:text-emerald-500 dark:text-emerald-400">Slack Configuration</a> before using the switches below.</p>
+        </div>
+        @else
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+            <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Slack Notifications</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Current status: <span class="font-medium">{{ !empty($slackConfig?->is_active) ? 'ON' : 'OFF' }}</span></p>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Slack — new jobs</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Status: <span class="font-medium">{{ ($slackConfig->new_job_slack_active ?? true) ? 'ON' : 'OFF' }}</span></p>
                 </div>
                 <form action="{{ route('settings.slack_config.toggle') }}" method="POST">
                     @csrf
-                    <input type="hidden" name="is_active" value="{{ !empty($slackConfig?->is_active) ? 0 : 1 }}">
-                    <button type="submit" class="inline-flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold {{ !empty($slackConfig?->is_active) ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500' }}">
-                        {{ !empty($slackConfig?->is_active) ? 'Turn OFF' : 'Turn ON' }}
+                    <input type="hidden" name="purpose" value="new_job">
+                    <button type="submit" class="inline-flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold {{ ($slackConfig->new_job_slack_active ?? true) ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500' }}">
+                        {{ ($slackConfig->new_job_slack_active ?? true) ? 'Turn OFF' : 'Turn ON' }}
                     </button>
                 </form>
             </div>
         </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Slack — assignment changes</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Status: <span class="font-medium">{{ ($slackConfig->assignment_slack_active ?? true) ? 'ON' : 'OFF' }}</span></p>
+                </div>
+                <form action="{{ route('settings.slack_config.toggle') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="purpose" value="assignment">
+                    <button type="submit" class="inline-flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold {{ ($slackConfig->assignment_slack_active ?? true) ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500' }}">
+                        {{ ($slackConfig->assignment_slack_active ?? true) ? 'Turn OFF' : 'Turn ON' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        @endif
         @endif
     </div>
 @endsection

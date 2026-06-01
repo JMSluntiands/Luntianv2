@@ -28,7 +28,8 @@ class SlackConfigController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'webhook_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_url'), 'url')],
+            'webhook_new_job_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_new_job_url'), 'url')],
+            'webhook_assignment_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_assignment_url'), 'url')],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -41,6 +42,11 @@ class SlackConfigController extends Controller
         }
 
         $data = $validator->validated();
+        foreach (['webhook_new_job_url', 'webhook_assignment_url'] as $key) {
+            if (array_key_exists($key, $data) && $data[$key] === '') {
+                $data[$key] = null;
+            }
+        }
         $data['name'] = 'LBS Notifications';
 
         $config = SlackConfig::first();
@@ -49,6 +55,9 @@ class SlackConfigController extends Controller
             $config->update($data);
             $message = 'Slack configuration updated successfully.';
         } else {
+            $data['is_active'] = true;
+            $data['new_job_slack_active'] = true;
+            $data['assignment_slack_active'] = true;
             SlackConfig::create($data);
             $message = 'Slack configuration saved successfully.';
         }
@@ -59,29 +68,36 @@ class SlackConfigController extends Controller
     }
 
     /**
-     * Toggle slack notifications on/off from sidebar quick controls.
+     * Toggle new-job or assignment Slack on/off (separate switches per webhook).
      */
-    public function toggleActive(Request $request)
+    public function togglePurpose(Request $request)
     {
-        $request->validate([
-            'is_active' => ['required', 'boolean'],
+        $validated = $request->validate([
+            'purpose' => ['required', 'string', Rule::in(['new_job', 'assignment'])],
         ]);
 
         $config = SlackConfig::first();
         if (! $config) {
             return redirect()
                 ->route('settings.slack_config')
-                ->withErrors(['slack_config' => 'Please save Slack Configuration first before turning it on or off.']);
+                ->withErrors(['slack_config' => 'Save Slack configuration first before changing notification switches.']);
         }
 
+        $purpose = $validated['purpose'];
+        $field = $purpose === 'new_job' ? 'new_job_slack_active' : 'assignment_slack_active';
+        $next = ! (bool) $config->getAttribute($field);
+
+        $config->update([$field => $next]);
+        $config->refresh();
         $config->update([
-            'is_active' => $request->boolean('is_active'),
+            'is_active' => $config->new_job_slack_active || $config->assignment_slack_active,
         ]);
+
+        $label = $purpose === 'new_job' ? 'New job Slack' : 'Assignment Slack';
+        $state = $next ? 'on' : 'off';
 
         return redirect()
             ->back()
-            ->with('success', $request->boolean('is_active')
-                ? 'Slack notifications turned on.'
-                : 'Slack notifications turned off.');
+            ->with('success', "{$label} notifications turned {$state}.");
     }
 }

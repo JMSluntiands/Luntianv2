@@ -12,6 +12,8 @@ use App\Models\User;
 use App\Models\RolePermission;
 use App\Models\EmailConfig;
 use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
 use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
@@ -124,11 +126,7 @@ class LbsJobController extends Controller
 
         $checkerUploads = $checkerUploadsQuery->get();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -249,7 +247,7 @@ class LbsJobController extends Controller
             'jobRequests' => JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get(),
             'activityLogs' => collect(),
             'userRoleMap' => [],
-            'assignmentUsers' => User::whereIn('role', ['staff', 'checker'])->orderBy('unique_code')->get(['id', 'unique_code'])->unique('unique_code')->values(),
+            'assignmentUsers' => User::assignmentUsersForSelect(),
             'checkerUploads' => collect(),
             'runComments' => collect(),
             'jobComments' => collect(),
@@ -334,11 +332,7 @@ class LbsJobController extends Controller
             ->orderByDesc('uploaded_at')
             ->get();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -743,6 +737,36 @@ class LbsJobController extends Controller
                 'activity_description' => $description,
                 'updated_by'           => session('user_name') ?? 'LBS Account',
             ]);
+
+            $assignmentSlack = false;
+            foreach ($changes as $c) {
+                if (in_array($c['field'] ?? '', ['Staff', 'Checker'], true)) {
+                    $assignmentSlack = true;
+                    break;
+                }
+            }
+            if ($assignmentSlack) {
+                $finalStaff = array_key_exists('staff_id', $update)
+                    ? ($update['staff_id'] !== null && $update['staff_id'] !== '' ? trim((string) $update['staff_id']) : null)
+                    : ($job->staff_id ? trim((string) $job->staff_id) : null);
+                $finalChecker = array_key_exists('checker_id', $update)
+                    ? ($update['checker_id'] !== null && $update['checker_id'] !== '' ? trim((string) $update['checker_id']) : null)
+                    : ($job->checker_id ? trim((string) $job->checker_id) : null);
+                $product = $jvProduct === 'efficient_living' ? 'Efficient Living' : 'LBS';
+                $ref = trim((string) ($job->reference ?? $job->job_reference_no ?? ''));
+                $jobStatus = (string) (array_key_exists('job_status', $update) ? $update['job_status'] : ($job->job_status ?? ''));
+                $viewRoute = $jvProduct === 'efficient_living' ? 'efficient_living.job.view' : 'lbs.job.view';
+                $jobUrl = route($viewRoute, ['id' => $id]);
+                SlackAssignmentNotifier::notifyAssignment(
+                    $product,
+                    $id,
+                    $ref,
+                    SlackAssignmentNotifier::normalizeCode($finalStaff) !== '' ? SlackAssignmentNotifier::normalizeCode($finalStaff) : null,
+                    SlackAssignmentNotifier::normalizeCode($finalChecker) !== '' ? SlackAssignmentNotifier::normalizeCode($finalChecker) : null,
+                    $jobStatus,
+                    $jobUrl
+                );
+            }
 
             return response()->json([
                 'status'  => 'success',
@@ -1902,10 +1926,7 @@ class LbsJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
-        $slackConfig = \App\Models\SlackConfig::first();
-        $slackWebhook = ($slackConfig && $slackConfig->is_active && !empty($slackConfig->webhook_url))
-            ? $slackConfig->webhook_url
-            : config('services.slack.lbs_webhook');
+        $slackWebhook = SlackWebhookResolver::newJobWebhook();
 
         if (!$slackWebhook) {
             return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);
@@ -2225,11 +2246,7 @@ class LbsJobController extends Controller
             && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
             ?? $jobRequests->first();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $duplicateJob = null;
         $duplicateId = $request->query('duplicate');

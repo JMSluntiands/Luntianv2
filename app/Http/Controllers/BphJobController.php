@@ -11,6 +11,8 @@ use App\Models\Status;
 use App\Models\User;
 use App\Models\RolePermission;
 use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -88,6 +90,34 @@ class BphJobController extends Controller
         return match ($this->pipelineJobTable()) {
             'job_fyrs' => 'fyrs',
             default => 'bph',
+        };
+    }
+
+    private function slackProductLabelForPipelineJob(object $job): string
+    {
+        $cc = strtolower(trim((string) ($job->client_code ?? '')));
+        if (str_contains($cc, 'bluinq')) {
+            return 'Bluinq';
+        }
+
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'A&M',
+            'job_fyrs' => 'Fyrs Energy Wise',
+            default => 'BPH',
+        };
+    }
+
+    private function pipelineJobSlackViewRouteName(object $job): string
+    {
+        $cc = strtolower(trim((string) ($job->client_code ?? '')));
+        if (str_contains($cc, 'bluinq')) {
+            return 'bluinq.view';
+        }
+
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'amt.view',
+            'job_fyrs' => 'fyrs.view',
+            default => 'bph.view',
         };
     }
 
@@ -322,11 +352,7 @@ class BphJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -470,10 +496,7 @@ class BphJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
-        $slackConfig = \App\Models\SlackConfig::first();
-        $slackWebhook = ($slackConfig && $slackConfig->is_active && !empty($slackConfig->webhook_url))
-            ? $slackConfig->webhook_url
-            : config('services.slack.lbs_webhook');
+        $slackWebhook = SlackWebhookResolver::newJobWebhook();
 
         if (!$slackWebhook) {
             return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);
@@ -728,14 +751,7 @@ class BphJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['unique_code'])
-            ->pluck('unique_code')
-            ->filter()
-            ->map(fn ($v) => strtoupper((string) $v))
-            ->unique()
-            ->values();
+        $assignmentUsers = User::assignmentUserCodes();
         if (!$assignmentUsers->contains('GM')) {
             $assignmentUsers->prepend('GM');
         }
@@ -878,17 +894,7 @@ class BphJobController extends Controller
             unset($data['notes']);
         }
 
-        $allowedUsers = User::whereIn('role', ['staff', 'checker'])
-            ->pluck('unique_code')
-            ->filter()
-            ->map(fn ($v) => strtoupper((string) $v))
-            ->unique()
-            ->values()
-            ->all();
-        if (!in_array('GM', $allowedUsers, true)) {
-            $allowedUsers[] = 'GM';
-        }
-        $allowedUsers = array_values(array_filter($allowedUsers, fn ($v) => $v !== ''));
+        $allowedUsers = User::allowedAssignmentUserCodes();
         $assignedCandidate = strtoupper((string) ($data['staff_id'] ?? $data['assigned'] ?? $job->assigned ?? ''));
         $checkedCandidate = strtoupper((string) ($data['checker_id'] ?? $data['checked'] ?? $job->checked ?? ''));
         if (($assignedCandidate !== '' && !in_array($assignedCandidate, $allowedUsers, true))
@@ -993,9 +999,33 @@ class BphJobController extends Controller
             $logDescription = 'Updated additional / specification information.';
         }
 
+        $prevStaff = SlackAssignmentNotifier::normalizeCode($job->assigned ?? null);
+        $prevChecker = SlackAssignmentNotifier::normalizeCode($job->checked ?? null);
+        $nextStaff = array_key_exists('assigned', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['assigned'])
+            : $prevStaff;
+        $nextChecker = array_key_exists('checked', $update)
+            ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
+            : $prevChecker;
+        $pipelineAssignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
         $update['updated_at'] = now('Asia/Manila');
 
         DB::table($this->pipelineJobTable())->where('id', $id)->update($update);
+
+        if ($pipelineAssignmentChanged) {
+            $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
+            $jobUrl = route($this->pipelineJobSlackViewRouteName($job), ['id' => $id]);
+            SlackAssignmentNotifier::notifyAssignment(
+                $this->slackProductLabelForPipelineJob($job),
+                $id,
+                (string) ($job->reference ?? $job->job_number ?? ''),
+                $nextStaff !== '' ? $nextStaff : null,
+                $nextChecker !== '' ? $nextChecker : null,
+                $jobStatus,
+                $jobUrl
+            );
+        }
 
         $log = $this->createBphActivityLog(
             (int) $id,

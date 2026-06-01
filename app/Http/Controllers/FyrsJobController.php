@@ -10,6 +10,7 @@ use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Services\SlackWebhookResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -45,11 +46,7 @@ class FyrsJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -123,14 +120,7 @@ class FyrsJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['unique_code'])
-            ->pluck('unique_code')
-            ->filter()
-            ->map(fn ($v) => strtoupper((string) $v))
-            ->unique()
-            ->values();
+        $assignmentUsers = User::assignmentUserCodes();
         if (!$assignmentUsers->contains('GM')) {
             $assignmentUsers->prepend('GM');
         }
@@ -484,10 +474,7 @@ class FyrsJobController extends Controller
     {
         $job = $this->assertFyrsJob($id);
 
-        $slackConfig = \App\Models\SlackConfig::first();
-        $slackWebhook = ($slackConfig && $slackConfig->is_active && !empty($slackConfig->webhook_url))
-            ? $slackConfig->webhook_url
-            : config('services.slack.lbs_webhook');
+        $slackWebhook = SlackWebhookResolver::newJobWebhook();
 
         if (!$slackWebhook) {
             return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);

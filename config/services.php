@@ -34,6 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
         'lbs_webhook' => env('LBS_SLACK_WEBHOOK_URL'),
+        'lbs_webhook_new_job' => env('LBS_SLACK_NEW_JOB_WEBHOOK_URL'),
+        'lbs_webhook_assignment' => env('LBS_SLACK_ASSIGNMENT_WEBHOOK_URL'),
     ],
 
 ];
