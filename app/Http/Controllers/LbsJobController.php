@@ -126,11 +126,7 @@ class LbsJobController extends Controller
 
         $checkerUploads = $checkerUploadsQuery->get();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -251,7 +247,7 @@ class LbsJobController extends Controller
             'jobRequests' => JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get(),
             'activityLogs' => collect(),
             'userRoleMap' => [],
-            'assignmentUsers' => User::whereIn('role', ['staff', 'checker'])->orderBy('unique_code')->get(['id', 'unique_code'])->unique('unique_code')->values(),
+            'assignmentUsers' => User::assignmentUsersForSelect(),
             'checkerUploads' => collect(),
             'runComments' => collect(),
             'jobComments' => collect(),
@@ -336,11 +332,7 @@ class LbsJobController extends Controller
             ->orderByDesc('uploaded_at')
             ->get();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -2254,11 +2246,7 @@ class LbsJobController extends Controller
             && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
             ?? $jobRequests->first();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $duplicateJob = null;
         $duplicateId = $request->query('duplicate');

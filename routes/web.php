@@ -15,6 +15,7 @@ use App\Http\Controllers\ClientEmailAmtController;
 use App\Http\Controllers\ClientEmailBphController;
 use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\CspJobController;
+use App\Models\User;
 use App\Http\Controllers\DashboardHolidayController;
 use App\Http\Controllers\EmailConfigController;
 use App\Http\Controllers\JobRequestController;
@@ -165,6 +166,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
         return view('csp.add', [
             'sidebar_active' => 'csp.add',
             'bphClientEmails' => $bphClientEmails,
+            'assignmentUsers' => User::assignmentUsersForSelect(),
         ]);
     })->name('csp.add');
 

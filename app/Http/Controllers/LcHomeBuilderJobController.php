@@ -26,11 +26,7 @@ class LcHomeBuilderJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 

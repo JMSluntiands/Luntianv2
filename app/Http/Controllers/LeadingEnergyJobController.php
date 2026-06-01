@@ -22,11 +22,7 @@ class LeadingEnergyJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
         $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2019') !== false)

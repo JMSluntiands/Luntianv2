@@ -352,11 +352,7 @@ class BphJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['id', 'unique_code'])
-            ->unique('unique_code')
-            ->values();
+        $assignmentUsers = User::assignmentUsersForSelect();
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -755,14 +751,7 @@ class BphJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::whereIn('role', ['staff', 'checker'])
-            ->orderBy('unique_code')
-            ->get(['unique_code'])
-            ->pluck('unique_code')
-            ->filter()
-            ->map(fn ($v) => strtoupper((string) $v))
-            ->unique()
-            ->values();
+        $assignmentUsers = User::assignmentUserCodes();
         if (!$assignmentUsers->contains('GM')) {
             $assignmentUsers->prepend('GM');
         }
@@ -905,17 +894,7 @@ class BphJobController extends Controller
             unset($data['notes']);
         }
 
-        $allowedUsers = User::whereIn('role', ['staff', 'checker'])
-            ->pluck('unique_code')
-            ->filter()
-            ->map(fn ($v) => strtoupper((string) $v))
-            ->unique()
-            ->values()
-            ->all();
-        if (!in_array('GM', $allowedUsers, true)) {
-            $allowedUsers[] = 'GM';
-        }
-        $allowedUsers = array_values(array_filter($allowedUsers, fn ($v) => $v !== ''));
+        $allowedUsers = User::allowedAssignmentUserCodes();
         $assignedCandidate = strtoupper((string) ($data['staff_id'] ?? $data['assigned'] ?? $job->assigned ?? ''));
         $checkedCandidate = strtoupper((string) ($data['checker_id'] ?? $data['checked'] ?? $job->checked ?? ''));
         if (($assignedCandidate !== '' && !in_array($assignedCandidate, $allowedUsers, true))
