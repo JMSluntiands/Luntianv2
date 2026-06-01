@@ -286,7 +286,6 @@
                 });
             }
             initLcSelect2();
-            @include('partials.assignment-user-select2')
             initAssignmentUserSelect2($('#lcHomeBuilderAddForm'));
 
             // Job number validation: 5 digits + letter B (e.g. 12345B)

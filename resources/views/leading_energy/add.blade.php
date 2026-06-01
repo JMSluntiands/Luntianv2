@@ -178,7 +178,6 @@ $(function() {
         });
     });
     $('#leadingEnergyAddForm select:not(.assignment-user-select)').select2({ width: '100%', allowClear: false });
-    @include('partials.assignment-user-select2')
     initAssignmentUserSelect2($('#leadingEnergyAddForm'));
 
     var jobNumberInput = document.getElementById('job_number');

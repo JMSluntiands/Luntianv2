@@ -306,7 +306,6 @@
 
             // Select2: all selects in this form become searchable dropdowns
             $('#elAddForm select:not(.assignment-user-select)').select2({ width: '100%', allowClear: false });
-            @include('partials.assignment-user-select2')
             initAssignmentUserSelect2($('#elAddForm'));
 
             @if(isset($duplicateJob) && ($duplicateJob->notes ?? '') !== '')

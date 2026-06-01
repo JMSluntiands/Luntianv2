@@ -168,7 +168,6 @@
                     }
                     $el.select2(opts);
                 });
-                @include('partials.assignment-user-select2')
                 initAssignmentUserSelect2($(document));
             }
         })();

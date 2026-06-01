@@ -243,7 +243,6 @@ $(function() {
         });
     }
     initNhSelect2();
-    @include('partials.assignment-user-select2')
     initAssignmentUserSelect2($('#nhAddForm'));
 
     var jobNumberInput = document.getElementById('job_number');

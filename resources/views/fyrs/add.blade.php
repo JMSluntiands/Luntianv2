@@ -280,7 +280,6 @@
                 });
             }
             initBluinqSelect2();
-            @include('partials.assignment-user-select2')
             initAssignmentUserSelect2($('#fyrsAddForm'));
 
             var jobNumberInput = document.getElementById('job_number');

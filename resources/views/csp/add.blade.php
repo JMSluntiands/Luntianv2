@@ -237,7 +237,6 @@
                 }
                 $el.select2(opts);
             });
-            @include('partials.assignment-user-select2')
             initAssignmentUserSelect2($('#cspAddForm'));
 
             // Job number validation (same pattern as BPH)

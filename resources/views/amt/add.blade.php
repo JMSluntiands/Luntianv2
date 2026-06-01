@@ -261,7 +261,6 @@
                 });
             }
             initBluinqSelect2();
-            @include('partials.assignment-user-select2')
             initAssignmentUserSelect2($('#amtAddForm'));
 
             function renderFileList(inputId, listId, clearBtnId) {

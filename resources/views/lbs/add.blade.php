@@ -270,7 +270,6 @@
 
             // Select2: all selects in this form become searchable dropdowns
             $('#lbsAddForm select:not(.assignment-user-select)').select2({ width: '100%', allowClear: false });
-            @include('partials.assignment-user-select2')
             initAssignmentUserSelect2($('#lbsAddForm'));
 
             @if(isset($duplicateJob) && ($duplicateJob->notes ?? '') !== '')
