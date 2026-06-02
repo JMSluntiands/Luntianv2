@@ -7,10 +7,10 @@ use App\Models\User;
 use Illuminate\Database\Query\Builder;
 
 /**
- * Limits job counts / lists only for User role to rows where they appear as
- * assigned (staff) or checker. Staff and Checker should see all encoded jobs.
- * Branch/office users are not assignment-scoped here; they rely on
- * {@see RolePermission::dashboardStatCardsBranchFilter()} (user branch → vertical).
+ * Job counts / lists are no longer assignment-scoped by role.
+ * Staff, Checker, and User can view all encoded jobs.
+ * Branch/office users still rely on {@see RolePermission::dashboardStatCardsBranchFilter()}
+ * (user branch → vertical).
  */
 class JobCountsScope
 {
@@ -34,7 +34,7 @@ class JobCountsScope
             return false;
         }
 
-        return self::normalizeRole() === 'user';
+        return false;
     }
 
     public static function assignmentCodeUpper(): ?string
