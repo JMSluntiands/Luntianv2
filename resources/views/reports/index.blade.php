@@ -8,7 +8,7 @@
     <div class="reports-page">
         <div class="reports-header">
             <h1 class="reports-title">Reports</h1>
-            <p class="reports-subtitle">Completion dates within your range, distinct job types, units summed per day and type.</p>
+            <p class="reports-subtitle">Completion dates within your range, units summed per day, job type, and user.</p>
         </div>
 
         <div class="reports-summary-card">
