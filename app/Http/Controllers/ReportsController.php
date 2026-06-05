@@ -211,23 +211,24 @@ class ReportsController extends Controller
         }
 
         // One row per completion day, job type, and user; units summed per user.
+        // Inner subquery normalizes columns first so GROUP BY works with ONLY_FULL_GROUP_BY.
         $sqlGrouped = "
             SELECT
-                g.completion_date,
-                g.user_code,
-                g.job_type,
-                g.units
+                src.completion_date,
+                src.user_code,
+                src.job_type,
+                SUM(src.unit_val) AS units
             FROM (
                 SELECT
                     DATE(u.completion_date) AS completion_date,
                     NULLIF(TRIM(u.user_code), '') AS user_code,
                     u.job_type AS job_type,
-                    SUM(COALESCE(u.units, 0)) AS units
+                    COALESCE(u.units, 0) AS unit_val
                 FROM ({$union}) u
                 WHERE {$where}
-                GROUP BY DATE(u.completion_date), u.job_type, NULLIF(TRIM(u.user_code), '')
-            ) g
-            ORDER BY g.completion_date DESC, g.user_code ASC, g.job_type ASC
+            ) src
+            GROUP BY src.completion_date, src.user_code, src.job_type
+            ORDER BY src.completion_date DESC, src.user_code ASC, src.job_type ASC
             LIMIT ?
         ";
 
