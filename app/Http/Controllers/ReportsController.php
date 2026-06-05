@@ -210,7 +210,7 @@ class ReportsController extends Controller
             $filterParams[] = $dateTo;
         }
 
-        // One row per calendar completion day + distinct job type; units summed across all matching jobs.
+        // One row per completion day, job type, and user; units summed per user.
         $sqlGrouped = "
             SELECT
                 g.completion_date,
@@ -220,14 +220,14 @@ class ReportsController extends Controller
             FROM (
                 SELECT
                     DATE(u.completion_date) AS completion_date,
-                    GROUP_CONCAT(DISTINCT NULLIF(TRIM(u.user_code), '') ORDER BY u.user_code SEPARATOR ', ') AS user_code,
+                    NULLIF(TRIM(u.user_code), '') AS user_code,
                     u.job_type AS job_type,
                     SUM(COALESCE(u.units, 0)) AS units
                 FROM ({$union}) u
                 WHERE {$where}
-                GROUP BY DATE(u.completion_date), u.job_type
+                GROUP BY DATE(u.completion_date), u.job_type, NULLIF(TRIM(u.user_code), '')
             ) g
-            ORDER BY g.completion_date DESC, g.job_type ASC
+            ORDER BY g.completion_date DESC, g.user_code ASC, g.job_type ASC
             LIMIT ?
         ";
 
