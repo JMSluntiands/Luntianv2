@@ -197,6 +197,13 @@ class JobCountsScope
         return ['LT01', 'Luntian'];
     }
 
+    private static function jobRequestIdColumn(string $alias): string
+    {
+        $alias = trim($alias);
+
+        return $alias !== '' ? "{$alias}.job_request_id" : 'job_request_id';
+    }
+
     /** @return list<string> */
     public static function luntianJobRequestIds(): array
     {
@@ -222,7 +229,7 @@ class JobCountsScope
     public static function applyLuntianJobsScope(Builder $q, string $alias = 'j'): void
     {
         $ids = self::luntianJobRequestIds();
-        $col = "{$alias}.job_request_id";
+        $col = self::jobRequestIdColumn($alias);
         $q->where(function ($w) use ($col, $ids) {
             $w->whereRaw("{$col} LIKE 'EA\\_LT\\_%'");
             if ($ids !== []) {
@@ -234,7 +241,7 @@ class JobCountsScope
     public static function applyExcludeLuntianJobsScope(Builder $q, string $alias = 'j'): void
     {
         $ids = self::luntianJobRequestIds();
-        $col = "{$alias}.job_request_id";
+        $col = self::jobRequestIdColumn($alias);
         $q->where(function ($w) use ($col, $ids) {
             $w->whereNull($col)
                 ->orWhere($col, '')
@@ -249,7 +256,7 @@ class JobCountsScope
 
     public static function applyExcludeEfficientLivingJobsScope(Builder $q, string $alias = 'j'): void
     {
-        $col = "{$alias}.job_request_id";
+        $col = self::jobRequestIdColumn($alias);
         $q->where(function ($w) use ($col) {
             $w->whereNull($col)
                 ->orWhere($col, '')

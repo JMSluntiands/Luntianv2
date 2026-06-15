@@ -114,9 +114,9 @@ class DashboardJobStatsService
         if ($productLine === 'efficient_living') {
             $q->whereRaw("job_request_id LIKE 'EA\_EL\_%'");
         } elseif ($productLine === 'luntian') {
-            JobCountsScope::applyLuntianJobsScope($q);
+            JobCountsScope::applyLuntianJobsScope($q, '');
         } else {
-            JobCountsScope::applyLbsStandardJobsScope($q);
+            JobCountsScope::applyLbsStandardJobsScope($q, '');
         }
 
         $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])

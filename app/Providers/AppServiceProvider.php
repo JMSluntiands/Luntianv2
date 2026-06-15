@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         try {
             View::composer('layouts.partials.sidebar', function ($view) {
                 $lbsBase = DB::table('jobs')->where('reference', 'like', 'JOBS%');
-                JobCountsScope::applyLbsStandardJobsScope($lbsBase);
+                JobCountsScope::applyLbsStandardJobsScope($lbsBase, '');
                 JobCountsScope::applyJobsTableAssignment($lbsBase);
                 $counts = $lbsBase
                     ->selectRaw("
@@ -69,7 +69,7 @@ class AppServiceProvider extends ServiceProvider
 
                 $ltBase = DB::table('jobs')
                     ->where('reference', 'like', 'JOBS%');
-                JobCountsScope::applyLuntianJobsScope($ltBase);
+                JobCountsScope::applyLuntianJobsScope($ltBase, '');
                 JobCountsScope::applyJobsTableAssignment($ltBase);
                 $ltCounts = $ltBase
                     ->selectRaw("
