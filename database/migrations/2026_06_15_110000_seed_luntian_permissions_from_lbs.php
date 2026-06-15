@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\LuntianPermissionMirror;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -30,17 +31,7 @@ return new class extends Migration
 
     private function mapRouteNameToLuntian(string $name): ?string
     {
-        if (str_starts_with($name, 'job_view.lbs.')) {
-            return str_replace('job_view.lbs.', 'job_view.luntian.', $name);
-        }
-        if (preg_match('/^lbs\.(add|list|completed|review|mailbox|trash|store)$/', $name, $m)) {
-            return 'luntian.'.$m[1];
-        }
-        if (preg_match('/^lbs\.job\.(view|update|restore|emailPreview|sendMailboxEmail|sendSlack|sendSubmissionEmail)$/', $name, $m)) {
-            return 'luntian.job.'.$m[1];
-        }
-
-        return null;
+        return LuntianPermissionMirror::mapRouteNameToLuntian($name);
     }
 
     /** @return list<string> */
