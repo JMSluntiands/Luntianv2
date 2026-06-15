@@ -139,6 +139,10 @@
 
             $canEditDetailsUi = $canEditDetails && $permJobUpdate;
             $canEditStatusInlineUi = $canEditStatusInline && $permJobUpdate;
+            $canEditComplexityUi = $permJobUpdate
+                && $permBtnEditComplexity
+                && ! in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true)
+                && ($canEditDetails || $isEfficientLivingView || $isLuntianView);
 
             $showDetailsBlock = $permCardClient || $permCardJob || $permCardNotes || $permCardComplexity;
             $showFilesBlock = $permCardPlans || $permCardDocuments || $permCardChecker;
@@ -308,7 +312,7 @@
                             <h2 class="m-0 text-base font-semibold text-slate-800 dark:text-white">Complexity</h2>
                         </div>
                         <div class="flex flex-1 flex-col justify-center px-5 py-5">
-                            @if($canEditDetailsUi && $permBtnEditComplexity)
+                            @if($canEditComplexityUi)
                                 <button type="button" class="job-view-complexity-button mx-auto inline-flex items-center gap-0.5 rounded-lg border-0 bg-transparent p-1 outline-none ring-slate-400/40 transition-colors hover:bg-slate-100 focus-visible:ring-2 dark:hover:bg-slate-700/50" data-complexity-rating="{{ $notesSectionComplexity }}" title="Click a star to set complexity (1–5)" aria-label="Plan complexity {{ $notesSectionComplexity }} of 5, click a star to change">
                                     @for ($ci = 1; $ci <= 5; $ci++)
                                         <span class="lbs-star {{ $ci <= $notesSectionComplexity ? 'lbs-star-filled' : 'lbs-star-empty' }} inline-flex shrink-0 rounded p-0.5" role="presentation">
