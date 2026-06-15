@@ -2756,10 +2756,7 @@ class LbsJobController extends Controller
     {
         if ($this->isLuntianJobRequestClientCode($clientCode)) {
             return JobRequest::query()
-                ->where(function ($q) {
-                    $q->whereIn('client_code', $this->luntianJobRequestClientCodes())
-                        ->orWhereRaw('LOWER(TRIM(client_code)) = ?', ['luntian']);
-                })
+                ->forLuntianVertical()
                 ->orderBy('job_request_type')
                 ->get();
         }

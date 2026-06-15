@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\JobRequest;
 use App\Models\RolePermission;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
@@ -207,23 +208,13 @@ class JobCountsScope
     /** @return list<string> */
     public static function luntianJobRequestIds(): array
     {
-        static $cached = null;
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        $cached = DB::table('job_requests')
-            ->where(function ($q) {
-                $q->whereIn('client_code', self::luntianJobRequestClientCodes())
-                    ->orWhereRaw('LOWER(TRIM(client_code)) = ?', ['luntian']);
-            })
+        return JobRequest::query()
+            ->forLuntianVertical()
             ->pluck('job_request_id')
             ->map(fn ($id) => (string) $id)
             ->filter()
             ->values()
             ->all();
-
-        return $cached;
     }
 
     public static function applyLuntianJobsScope(Builder $q, string $alias = 'j'): void
