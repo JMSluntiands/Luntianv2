@@ -295,6 +295,21 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/efficient-living/mailbox', [LbsJobController::class, 'efficientLivingMailbox'])->name('efficient_living.mailbox');
     Route::get('/dashboard/efficient-living/trash', [LbsJobController::class, 'efficientLivingTrash'])->name('efficient_living.trash');
 
+    Route::get('/dashboard/luntian/add', [LbsJobController::class, 'luntianAddForm'])->name('luntian.add');
+    Route::post('/dashboard/luntian', [LbsJobController::class, 'store'])->name('luntian.store');
+    Route::post('/dashboard/luntian/job/{id}/send-slack', [LbsJobController::class, 'sendJobSlackNotification'])->name('luntian.job.sendSlack');
+    Route::post('/dashboard/luntian/job/{id}/send-submission-email', [LbsJobController::class, 'sendJobSubmissionEmail'])->name('luntian.job.sendSubmissionEmail');
+    Route::get('/dashboard/luntian/job/{id}', [LbsJobController::class, 'luntianShow'])->name('luntian.job.view');
+    Route::put('/dashboard/luntian/job/{id}', [LbsJobController::class, 'update'])->name('luntian.job.update');
+    Route::get('/dashboard/luntian/job/{id}/restore', [LbsJobController::class, 'restoreJob'])->name('luntian.job.restore');
+    Route::get('/dashboard/luntian/job/{id}/email-preview', [LbsJobController::class, 'emailPreview'])->name('luntian.job.emailPreview');
+    Route::post('/dashboard/luntian/job/{id}/send-mailbox-email', [LbsJobController::class, 'sendMailboxEmail'])->name('luntian.job.sendMailboxEmail');
+    Route::get('/dashboard/luntian/list', [LbsJobController::class, 'luntianList'])->name('luntian.list');
+    Route::get('/dashboard/luntian/completed', [LbsJobController::class, 'luntianCompleted'])->name('luntian.completed');
+    Route::get('/dashboard/luntian/review', [LbsJobController::class, 'luntianReview'])->name('luntian.review');
+    Route::get('/dashboard/luntian/mailbox', [LbsJobController::class, 'luntianMailbox'])->name('luntian.mailbox');
+    Route::get('/dashboard/luntian/trash', [LbsJobController::class, 'luntianTrash'])->name('luntian.trash');
+
     Route::get('/dashboard/leading-energy/add', [LeadingEnergyJobController::class, 'addForm'])->name('leading_energy.add');
     Route::post('/dashboard/leading-energy/store', [LeadingEnergyJobController::class, 'store'])->name('leading_energy.store');
     Route::post('/dashboard/leading-energy/job/{id}/send-slack', [LeadingEnergyJobController::class, 'sendSlackNotification'])->name('leading_energy.job.sendSlack');

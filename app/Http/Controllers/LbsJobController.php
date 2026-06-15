@@ -73,10 +73,12 @@ class LbsJobController extends Controller
     }
 
     /**
-     * LBS job detail vs Efficient Living (same `jobs` row shape; EL limits job type dropdown).
+     * LBS job detail vs Efficient Living / Luntian (same `jobs` row shape; vertical limits job type dropdown).
      */
-    private function renderJobDetailView(object $job, string $sidebarActive, bool $isEfficientLiving)
+    private function renderJobDetailView(object $job, string $sidebarActive, string $product = 'lbs')
     {
+        $isEfficientLiving = $product === 'efficient_living';
+        $isLuntian = $product === 'luntian';
         $priorityColor = !empty($job->priority)
             ? Priority::where('name', $job->priority)->value('color')
             : null;
@@ -89,8 +91,13 @@ class LbsJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $compliances = Compliance::orderBy('column')->get();
         $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
-        $jobRequests = $isEfficientLiving
-            ? JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get()
+        $clientCodeFilter = match ($product) {
+            'efficient_living' => 'EL01',
+            'luntian' => 'LT01',
+            default => null,
+        };
+        $jobRequests = $clientCodeFilter
+            ? JobRequest::where('client_code', $clientCodeFilter)->orderBy('job_request_type')->get()
             : JobRequest::orderBy('job_request_type')->get();
 
         $activityLogs = ActivityLog::where('job_id', (int) $job->job_id)
@@ -120,7 +127,7 @@ class LbsJobController extends Controller
             ->orderByDesc('uploaded_at');
 
         $isBranchRole = strtolower(trim((string) session('user_role', ''))) === 'branch';
-        if ($isBranchRole && ! $isEfficientLiving) {
+        if ($isBranchRole && $product === 'lbs') {
             $checkerUploadsQuery->limit(1);
         }
 
@@ -140,11 +147,16 @@ class LbsJobController extends Controller
             ->limit(50)
             ->get();
 
-        $viewName = $isEfficientLiving ? 'efficient_living.view' : 'lbs.view';
+        $viewName = match ($product) {
+            'efficient_living' => 'efficient_living.view',
+            'luntian' => 'luntian.view',
+            default => 'lbs.view',
+        };
 
         return view($viewName, [
             'sidebar_active'   => $sidebarActive,
             'isEfficientLiving' => $isEfficientLiving,
+            'isLuntian'        => $isLuntian,
             'jobId'            => $job->job_id,
             'job'              => $job,
             'priorityColor'    => $priorityColor,
@@ -198,7 +210,7 @@ class LbsJobController extends Controller
             ->first();
 
         if ($job) {
-            return $this->renderJobDetailView($job, 'efficient_living.list', true);
+            return $this->renderJobDetailView($job, 'efficient_living.list', 'efficient_living');
         }
 
         $row = DB::table('job_el')->where('id', $id)->first();
@@ -485,7 +497,11 @@ class LbsJobController extends Controller
             'units'             => ['nullable', 'integer', 'min:0', 'max:9999'],
         ]);
 
-        $jvProduct = $request->route()?->getName() === 'efficient_living.job.update' ? 'efficient_living' : 'lbs';
+        $jvProduct = match ($request->route()?->getName()) {
+            'efficient_living.job.update' => 'efficient_living',
+            'luntian.job.update' => 'luntian',
+            default => 'lbs',
+        };
 
         if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.job_details')) {
             unset(
@@ -752,10 +768,18 @@ class LbsJobController extends Controller
                 $finalChecker = array_key_exists('checker_id', $update)
                     ? ($update['checker_id'] !== null && $update['checker_id'] !== '' ? trim((string) $update['checker_id']) : null)
                     : ($job->checker_id ? trim((string) $job->checker_id) : null);
-                $product = $jvProduct === 'efficient_living' ? 'Efficient Living' : 'LBS';
+                $product = match ($jvProduct) {
+                    'efficient_living' => 'Efficient Living',
+                    'luntian' => 'Luntian',
+                    default => 'LBS',
+                };
                 $ref = trim((string) ($job->reference ?? $job->job_reference_no ?? ''));
                 $jobStatus = (string) (array_key_exists('job_status', $update) ? $update['job_status'] : ($job->job_status ?? ''));
-                $viewRoute = $jvProduct === 'efficient_living' ? 'efficient_living.job.view' : 'lbs.job.view';
+                $viewRoute = match ($jvProduct) {
+                    'efficient_living' => 'efficient_living.job.view',
+                    'luntian' => 'luntian.job.view',
+                    default => 'lbs.job.view',
+                };
                 $jobUrl = route($viewRoute, ['id' => $id]);
                 SlackAssignmentNotifier::notifyAssignment(
                     $product,
@@ -1312,6 +1336,192 @@ class LbsJobController extends Controller
         ]);
     }
 
+    public function luntianList()
+    {
+        if (JobCountsScope::branchBlocksLuntianList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
+                ->where('j.reference', 'like', 'JOBS%')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statuses = Status::orderBy('name')->get();
+
+        return view('luntian.list', array_merge([
+            'sidebar_active' => 'luntian.list',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statuses' => $statuses,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function luntianCompleted()
+    {
+        $jobs = $this->queryLuntianJobsByStatus('Completed', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return view('lbs.completed', array_merge([
+            'sidebar_active' => 'luntian.completed',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isLuntian' => true,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function luntianReview()
+    {
+        $jobs = $this->queryLuntianJobsByStatus('For Review', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statuses = Status::orderBy('name')->get();
+
+        return view('lbs.review', array_merge([
+            'sidebar_active' => 'luntian.review',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isLuntian' => true,
+            'statuses' => $statuses,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function luntianTrash()
+    {
+        $jobs = $this->queryLuntianJobsByStatus('Archived', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+
+        return view('lbs.trash', array_merge([
+            'sidebar_active' => 'luntian.trash',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isLuntian' => true,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function luntianMailbox()
+    {
+        if (JobCountsScope::branchBlocksLuntianList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+                ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
+                ->where('j.job_status', '=', 'For Email Confirmation');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.upload_files',
+                    'j.upload_project_files',
+                    'j.units',
+                    'ca.client_account_name',
+                    'cl.client_email as to_email'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
+
+        $jobs = $this->attachLatestCheckerUploads($jobs);
+
+        return view('lbs.mailbox', [
+            'sidebar_active' => 'luntian.mailbox',
+            'jobs' => $jobs,
+            'isLuntian' => true,
+        ]);
+    }
+
+    public function luntianShow(int $id)
+    {
+        $job = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id)
+            ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
+            ->first();
+
+        if (! $job) {
+            abort(404);
+        }
+
+        return $this->renderJobDetailView($job, 'luntian.list', 'luntian');
+    }
+
     private function queryEfficientLivingJobsByStatus(string $status, int $limit = 200)
     {
         if (JobCountsScope::branchBlocksEfficientLivingList()) {
@@ -1320,6 +1530,44 @@ class LbsJobController extends Controller
         $q = DB::table('jobs as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
             ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', $status);
+        JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+
+        return $q
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.units',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc('j.log_date')
+            ->limit($limit)
+            ->get();
+    }
+
+    private function queryLuntianJobsByStatus(string $status, int $limit = 200)
+    {
+        if (JobCountsScope::branchBlocksLuntianList()) {
+            return collect();
+        }
+        $q = DB::table('jobs as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
             ->where('j.reference', 'like', 'JOBS%')
             ->where('j.job_status', '=', $status);
         JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
@@ -1898,13 +2146,16 @@ class LbsJobController extends Controller
                 'units'               => 0,
             ]);
 
-            $isEfficientLiving = ($jobRequest->client_code ?? '') === 'EL01';
+            $clientCode = (string) ($jobRequest->client_code ?? '');
+            $successMessage = match ($clientCode) {
+                'EL01' => 'Efficient Living job created successfully.',
+                'LT01' => 'Luntian job created successfully.',
+                default => 'LBS job created successfully.',
+            };
 
             return response()->json([
                 'status'  => 'success',
-                'message' => $isEfficientLiving
-                    ? 'Efficient Living job created successfully.'
-                    : 'LBS job created successfully.',
+                'message' => $successMessage,
                 'job_id'  => $jobId,
                 'submission_email_enabled' => EmailConfig::where('is_active', true)->exists(),
             ]);
@@ -1944,10 +2195,22 @@ class LbsJobController extends Controller
         $assigned = $job->staff_id ?? '';
         $checked = $job->checker_id ?? '';
 
-        $isEl = $this->isEfficientLivingJob($job);
-        $slackHeadline = $isEl ? '🆕 New Efficient Living Job Submitted' : '🆕 New LBS Job Submitted';
-        $refFieldTitle = $isEl ? 'EL Ref #' : 'LBS Ref #';
-        $slackFooter = $isEl ? 'Luntian Efficient Living Job Management' : 'Luntian LBS Job Management';
+        $jobProduct = $this->resolveLbsJobProduct($job);
+        $slackHeadline = match ($jobProduct) {
+            'efficient_living' => '🆕 New Efficient Living Job Submitted',
+            'luntian' => '🆕 New Luntian Job Submitted',
+            default => '🆕 New LBS Job Submitted',
+        };
+        $refFieldTitle = match ($jobProduct) {
+            'efficient_living' => 'EL Ref #',
+            'luntian' => 'Luntian Ref #',
+            default => 'LBS Ref #',
+        };
+        $slackFooter = match ($jobProduct) {
+            'efficient_living' => 'Luntian Efficient Living Job Management',
+            'luntian' => 'Luntian Job Management',
+            default => 'Luntian LBS Job Management',
+        };
 
         try {
             $slackMessage = [
@@ -2063,9 +2326,17 @@ class LbsJobController extends Controller
         $headerTitle = $lbsRef . '_' . $jobTypeShort . '_' . $clientRef;
 
         $clientRefSubj = trim($job->client_reference_no ?? '') ?: '';
-        $isEl = $this->isEfficientLivingJob($job);
-        $subjectLead = $isEl ? 'LUNTIAN Efficient Living Job Submission: ' : 'LUNTIAN Job Submission: ';
-        $refLabel = $isEl ? 'EL Ref #' : 'LBS Ref #';
+        $jobProduct = $this->resolveLbsJobProduct($job);
+        $subjectLead = match ($jobProduct) {
+            'efficient_living' => 'LUNTIAN Efficient Living Job Submission: ',
+            'luntian' => 'LUNTIAN Luntian Job Submission: ',
+            default => 'LUNTIAN Job Submission: ',
+        };
+        $refLabel = match ($jobProduct) {
+            'efficient_living' => 'EL Ref #',
+            'luntian' => 'Luntian Ref #',
+            default => 'LBS Ref #',
+        };
         $emailSubject = $subjectLead . trim($accountClient) . ' LUNTIAN' . $lbsRef
             . ($clientRefSubj !== '' ? '-' . $clientRefSubj : '') . '-' . $nccCompliance;
 
@@ -2202,6 +2473,13 @@ class LbsJobController extends Controller
         ]));
     }
 
+    public function luntianAddForm(Request $request)
+    {
+        return view('luntian.add', array_merge($this->buildAddJobFormData($request, 'LT01'), [
+            'sidebar_active' => 'luntian.add',
+        ]));
+    }
+
     /**
      * Jobs created from Efficient Living add use EA_EL_* job_request_id values (client EL01).
      */
@@ -2210,6 +2488,28 @@ class LbsJobController extends Controller
         $jid = (string) ($job->job_request_id ?? '');
 
         return str_starts_with($jid, 'EA_EL_');
+    }
+
+    /**
+     * Jobs created from Luntian add use EA_LT_* job_request_id values (client LT01).
+     */
+    private function isLuntianJob(object $job): bool
+    {
+        $jid = (string) ($job->job_request_id ?? '');
+
+        return str_starts_with($jid, 'EA_LT_');
+    }
+
+    private function resolveLbsJobProduct(object $job): string
+    {
+        if ($this->isEfficientLivingJob($job)) {
+            return 'efficient_living';
+        }
+        if ($this->isLuntianJob($job)) {
+            return 'luntian';
+        }
+
+        return 'lbs';
     }
 
     /**

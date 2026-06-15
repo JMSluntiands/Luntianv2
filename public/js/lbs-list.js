@@ -440,7 +440,7 @@ $(function () {
     });
   });
 
-  $(document).on('click', '#lbsTable [data-status-trigger], #efficient_livingTable [data-status-trigger]', function (e) {
+  $(document).on('click', '#lbsTable [data-status-trigger], #efficient_livingTable [data-status-trigger], #luntianTable [data-status-trigger]', function (e) {
     e.stopPropagation();
     e.preventDefault();
     var $trigger = $(this);
@@ -468,7 +468,7 @@ $(function () {
     $trigger.attr('aria-expanded', 'true');
   });
 
-  var statusTableSelector = '#lbsTable .lbs-status-option, #efficient_livingTable .lbs-status-option';
+  var statusTableSelector = '#lbsTable .lbs-status-option, #efficient_livingTable .lbs-status-option, #luntianTable .lbs-status-option';
 
   function resolveAppBasePath() {
     var path = String(window.location.pathname || '');

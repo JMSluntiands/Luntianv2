@@ -1,16 +1,17 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Mailbox' : 'LBS Mailbox')
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Mailbox' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Mailbox' : 'LBS Mailbox'))
 
 @section('body_class', 'page-lbs-mailbox')
 
 @section('content')
     @php
+        $isLuntianPage = (bool) ($isLuntian ?? false);
         $isEfficientLivingPage = (bool) ($isEfficientLiving ?? false);
-        $branchLabel = $isEfficientLivingPage ? 'Efficient Living' : 'LBS';
-        $viewRoute = $isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view';
-        $updateRoute = $isEfficientLivingPage ? 'efficient_living.job.update' : 'lbs.job.update';
-        $jobBaseUrl = $isEfficientLivingPage ? url('/dashboard/efficient-living/job') : url('/dashboard/lbs/job');
+        $branchLabel = $isLuntianPage ? 'Luntian' : ($isEfficientLivingPage ? 'Efficient Living' : 'LBS');
+        $viewRoute = $isLuntianPage ? 'luntian.job.view' : ($isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view');
+        $updateRoute = $isLuntianPage ? 'luntian.job.update' : ($isEfficientLivingPage ? 'efficient_living.job.update' : 'lbs.job.update');
+        $jobBaseUrl = $isLuntianPage ? url('/dashboard/luntian/job') : ($isEfficientLivingPage ? url('/dashboard/efficient-living/job') : url('/dashboard/lbs/job'));
     @endphp
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">

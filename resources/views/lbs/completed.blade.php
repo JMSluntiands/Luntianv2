@@ -1,17 +1,18 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Completed' : 'LBS Completed')
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Completed' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Completed' : 'LBS Completed'))
 
 @section('body_class', 'page-lbs-completed')
 
 @section('content')
     @php
+        $isLuntianPage = (bool) ($isLuntian ?? false);
         $isEfficientLivingPage = (bool) ($isEfficientLiving ?? false);
-        $branchLabel = $isEfficientLivingPage ? 'Efficient Living' : 'LBS';
-        $clientCodeFallback = $isEfficientLivingPage ? 'EL' : 'LBS';
-        $addRoute = $isEfficientLivingPage ? 'efficient_living.add' : 'lbs.add';
-        $viewRoute = $isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view';
-        $updateRoute = $isEfficientLivingPage ? 'efficient_living.job.update' : 'lbs.job.update';
+        $branchLabel = $isLuntianPage ? 'Luntian' : ($isEfficientLivingPage ? 'Efficient Living' : 'LBS');
+        $clientCodeFallback = $isLuntianPage ? 'LT' : ($isEfficientLivingPage ? 'EL' : 'LBS');
+        $addRoute = $isLuntianPage ? 'luntian.add' : ($isEfficientLivingPage ? 'efficient_living.add' : 'lbs.add');
+        $viewRoute = $isLuntianPage ? 'luntian.job.view' : ($isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view');
+        $updateRoute = $isLuntianPage ? 'luntian.job.update' : ($isEfficientLivingPage ? 'efficient_living.job.update' : 'lbs.job.update');
         $jobs = $jobs ?? collect();
         $priorityColors = $priorityColors ?? [];
         $statusColors = $statusColors ?? [];

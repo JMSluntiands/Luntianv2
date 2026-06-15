@@ -153,6 +153,21 @@ class JobCountsScope
         return $label !== '' && $label !== 'EFFICIENT LIVING';
     }
 
+    public static function branchBlocksLuntianList(): bool
+    {
+        if (self::normalizeRole() !== 'branch' || self::isGlobalAdmin()) {
+            return false;
+        }
+        $ub = RolePermission::normalizeBranch((string) session('user_branch', ''));
+        if ($ub === '') {
+            return false;
+        }
+        $mapped = RolePermission::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
+        $label = strtoupper(preg_replace('/\s+/u', ' ', trim((string) $mapped)));
+
+        return $label !== '' && $label !== 'LUNTIAN';
+    }
+
     /**
      * Branch role: only rows for lists tied to this product line (e.g. CSP job_csp lists).
      * Uses the same mapping as dashboard stat cards.

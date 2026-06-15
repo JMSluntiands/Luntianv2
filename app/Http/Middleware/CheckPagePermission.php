@@ -31,6 +31,7 @@ class CheckPagePermission
                 'lbs.job.checkerUploads' => [
                     'job_view.lbs.button.checker_uploads.add',
                     'job_view.efficient_living.button.checker_uploads.add',
+                    'job_view.luntian.button.checker_uploads.add',
                 ],
                 'bph.job.checkerUploads' => [
                     'job_view.bph.button.checker_uploads.add',

@@ -29,6 +29,7 @@ class ReportsController extends Controller
                     CONVERT(COALESCE(ca.client_account_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
                     CASE
                         WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_EL\\_%' THEN CONVERT('EFFICIENT LIVING' USING utf8mb4) COLLATE {$utf8u}
+                        WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_LT\\_%' THEN CONVERT('LUNTIAN' USING utf8mb4) COLLATE {$utf8u}
                         ELSE CONVERT('LBS' USING utf8mb4) COLLATE {$utf8u}
                     END AS job_system
                 FROM jobs j

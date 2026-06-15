@@ -19,7 +19,7 @@
                 <div class="reports-summary-sep"></div>
                 <div class="reports-summary-meta">Total units: <strong>{{ $totalUnitsInFilter ?? 0 }}</strong></div>
                 <ul class="reports-summary-list">
-                    @foreach(['LBS', 'EFFICIENT LIVING', 'BPH', 'BLUINQ', 'CSP', 'NH', 'LC HOME BUILDER', 'LEADING ENERGY'] as $label)
+                    @foreach(['LBS', 'LUNTIAN', 'EFFICIENT LIVING', 'BPH', 'BLUINQ', 'CSP', 'NH', 'LC HOME BUILDER', 'LEADING ENERGY'] as $label)
                         @php
                             $s = ($summaryByLabel ?? collect())[$label] ?? null;
                             $u = $s ? (int) ($s->units_sum ?? 0) : 0;

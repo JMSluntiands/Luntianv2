@@ -1,16 +1,17 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Archive' : 'LBS Archive')
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Archive' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Archive' : 'LBS Archive'))
 
 @section('body_class', 'page-lbs-trash')
 
 @section('content')
     @php
+        $isLuntianPage = (bool) ($isLuntian ?? false);
         $isEfficientLivingPage = (bool) ($isEfficientLiving ?? false);
-        $branchLabel = $isEfficientLivingPage ? 'Efficient Living' : 'LBS';
-        $clientCodeFallback = $isEfficientLivingPage ? 'EL' : 'LBS';
-        $viewRoute = $isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view';
-        $restoreRoute = $isEfficientLivingPage ? 'efficient_living.job.restore' : 'lbs.job.restore';
+        $branchLabel = $isLuntianPage ? 'Luntian' : ($isEfficientLivingPage ? 'Efficient Living' : 'LBS');
+        $clientCodeFallback = $isLuntianPage ? 'LT' : ($isEfficientLivingPage ? 'EL' : 'LBS');
+        $viewRoute = $isLuntianPage ? 'luntian.job.view' : ($isEfficientLivingPage ? 'efficient_living.job.view' : 'lbs.job.view');
+        $restoreRoute = $isLuntianPage ? 'luntian.job.restore' : ($isEfficientLivingPage ? 'efficient_living.job.restore' : 'lbs.job.restore');
         $statusColors = $statusColors ?? [];
         $statusFontColors = $statusFontColors ?? [];
         $archivedBg = $statusColors['Archived'] ?? null;

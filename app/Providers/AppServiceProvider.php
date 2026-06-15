@@ -66,6 +66,21 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('efficient_living_review_count', $elReview);
                 $view->with('efficient_living_mailbox_count', $elMailbox);
 
+                $ltBase = DB::table('jobs')
+                    ->whereRaw("job_request_id LIKE 'EA\_LT\_%'")
+                    ->where('reference', 'like', 'JOBS%');
+                JobCountsScope::applyJobsTableAssignment($ltBase);
+                $ltCounts = $ltBase
+                    ->selectRaw("
+                        SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                        SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                    ")
+                    ->first();
+                $view->with('luntian_list_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->allocated_count ?? 0)));
+                $view->with('luntian_review_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->review_count ?? 0)));
+                $view->with('luntian_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->mailbox_count ?? 0)));
+
                 // BPH sidebar badges from `job_bph`
                 $bphBase = DB::table('job_bph')
                     ->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);

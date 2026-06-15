@@ -3,6 +3,7 @@
     $userRole = session('user_role');
     $isStaff = strtolower((string) ($userRole ?? '')) === 'staff';
     $lbsOpen = in_array($active, ['lbs.add', 'lbs.list', 'lbs.completed', 'lbs.review', 'lbs.mailbox', 'lbs.trash']) || str_starts_with((string)$active, 'lbs.');
+    $luntianOpen = in_array($active, ['luntian.add', 'luntian.list', 'luntian.completed', 'luntian.review', 'luntian.mailbox', 'luntian.trash']) || str_starts_with((string)$active, 'luntian.');
     $bphOpen = in_array($active, ['bph.add', 'bph.list', 'bph.completed', 'bph.review', 'bph.mailbox', 'bph.trash']) || str_starts_with((string)$active, 'bph.');
     $bluinqOpen = in_array($active, ['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash']) || str_starts_with((string)$active, 'bluinq.');
     $amtOpen = in_array($active, ['amt.add', 'amt.list', 'amt.completed', 'amt.review', 'amt.mailbox', 'amt.trash']) || str_starts_with((string)$active, 'amt.');
@@ -20,6 +21,9 @@
     $lbsListCount = $lbs_list_count ?? 0;
     $lbsReviewCount = $lbs_review_count ?? 0;
     $lbsMailboxCount = $lbs_mailbox_count ?? 0;
+    $luntianListCount = $luntian_list_count ?? 0;
+    $luntianReviewCount = $luntian_review_count ?? 0;
+    $luntianMailboxCount = $luntian_mailbox_count ?? 0;
     $elListCount = $efficient_living_list_count ?? 0;
     $elReviewCount = $efficient_living_review_count ?? 0;
     $elMailboxCount = $efficient_living_mailbox_count ?? 0;
@@ -72,6 +76,7 @@
         return $anyMay(array_values(array_unique([...$jobSidebarRoutes($jobKey), ...$also])));
     };
     $showLbsNav = $showJobNavFromConfig('lbs');
+    $showLuntianNav = $showJobNavFromConfig('luntian');
     $showBphNav = $showJobNavFromConfig('bph');
     $showEfficientLivingNav = $showJobNavFromConfig('efficient_living');
     $showBluinqNav = $showJobNavFromConfig('bluinq');
@@ -94,7 +99,7 @@
     $showLeadingEnergyNav = $showJobNavFromConfig('leading_energy', [
         'leading_energy.job.sendSlack', 'leading_energy.job.sendSubmissionEmail', 'leading_energy.job.emailPreview', 'leading_energy.job.sendMailboxEmail',
     ]);
-    $showJobManagement = $showLbsNav || $showBphNav || $showEfficientLivingNav || $showBluinqNav || $showAmtNav || $showFyrsNav || $showCspNav || $showNhNav || $showLcHomeBuilderNav || $showLeadingEnergyNav;
+    $showJobManagement = $showLbsNav || $showLuntianNav || $showBphNav || $showEfficientLivingNav || $showBluinqNav || $showAmtNav || $showFyrsNav || $showCspNav || $showNhNav || $showLcHomeBuilderNav || $showLeadingEnergyNav;
     $showJobMasterNav = $anyMay(['compliance.index', 'priority.index', 'status.index', 'job_request.index', 'client.index']);
     $showBranchNav = $anyMay(['branch.index', 'branch.archive']);
     $showAccountsNav = $anyMay(['users.index', 'accounts.clients.index', 'users.archive']);
@@ -216,6 +221,75 @@
                         @endif
                         @if($may('lbs.trash'))
                         <a href="{{ route('lbs.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lbs.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
+                        @endif
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+        @if($showLuntianNav)
+        <div class="group nav-dropdown {{ $luntianOpen ? 'open' : '' }}" data-dropdown>
+            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $luntianOpen ? 'true' : 'false' }}" aria-controls="nav-sub-luntian">
+                <span class="nav-trigger-inner flex items-center gap-2.5">
+                    <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Luntian
+                </span>
+                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-luntian" role="region" aria-label="Luntian submenu">
+                <div class="space-y-0.5 py-1 pb-2 pl-1">
+                    @if($isStaff)
+                        @if($may('luntian.list'))
+                        <a href="{{ route('luntian.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                            <span class="nav-subitem-label">List</span>
+                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white" data-lt-sidebar="allocated">{{ $luntianListCount }}</span>
+                        </a>
+                        @endif
+                        @if($may('luntian.completed'))
+                        <a href="{{ route('luntian.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
+                        @endif
+                        @if($may('luntian.review'))
+                        <a href="{{ route('luntian.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                            <span class="nav-subitem-label">For Review</span>
+                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white" data-lt-sidebar="for-review">{{ $luntianReviewCount }}</span>
+                        </a>
+                        @endif
+                        @if($may('luntian.mailbox'))
+                        <a href="{{ route('luntian.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                            <span class="nav-subitem-label">Mailbox</span>
+                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white" data-lt-sidebar="mailbox">{{ $luntianMailboxCount }}</span>
+                        </a>
+                        @endif
+                        @if($may('luntian.trash'))
+                        <a href="{{ route('luntian.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
+                        @endif
+                    @else
+                        @if($may('luntian.add'))
+                        <a href="{{ route('luntian.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.add' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Add New</a>
+                        @endif
+                        @if($may('luntian.list'))
+                        <a href="{{ route('luntian.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                            <span class="nav-subitem-label">List</span>
+                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white" data-lt-sidebar="allocated">{{ $luntianListCount }}</span>
+                        </a>
+                        @endif
+                        @if($may('luntian.completed'))
+                        <a href="{{ route('luntian.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
+                        @endif
+                        @if($may('luntian.review'))
+                        <a href="{{ route('luntian.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                            <span class="nav-subitem-label">For Review</span>
+                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white" data-lt-sidebar="for-review">{{ $luntianReviewCount }}</span>
+                        </a>
+                        @endif
+                        @if($may('luntian.mailbox'))
+                        <a href="{{ route('luntian.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                            <span class="nav-subitem-label">Mailbox</span>
+                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white" data-lt-sidebar="mailbox">{{ $luntianMailboxCount }}</span>
+                        </a>
+                        @endif
+                        @if($may('luntian.trash'))
+                        <a href="{{ route('luntian.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'luntian.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
                         @endif
                     @endif
                 </div>

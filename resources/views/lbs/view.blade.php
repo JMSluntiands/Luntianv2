@@ -6,11 +6,12 @@
 
 @section('content')
     @php
+        $isLuntianView = (bool) ($isLuntian ?? false);
         $isEfficientLivingView = (bool) ($isEfficientLiving ?? false);
         $isBphView = (bool) ($isBphView ?? false);
-        $listRouteName = $listRouteName ?? ($isEfficientLivingView ? 'efficient_living.list' : 'lbs.list');
-        $trashRouteName = $trashRouteName ?? ($isEfficientLivingView ? 'efficient_living.trash' : 'lbs.trash');
-        $jobUpdateRouteName = $jobUpdateRouteName ?? ($isEfficientLivingView ? 'efficient_living.job.update' : 'lbs.job.update');
+        $listRouteName = $listRouteName ?? ($isLuntianView ? 'luntian.list' : ($isEfficientLivingView ? 'efficient_living.list' : 'lbs.list'));
+        $trashRouteName = $trashRouteName ?? ($isLuntianView ? 'luntian.trash' : ($isEfficientLivingView ? 'efficient_living.trash' : 'lbs.trash'));
+        $jobUpdateRouteName = $jobUpdateRouteName ?? ($isLuntianView ? 'luntian.job.update' : ($isEfficientLivingView ? 'efficient_living.job.update' : 'lbs.job.update'));
         $jobUploadFilesRouteName = $jobUploadFilesRouteName ?? 'lbs.job.uploadFiles';
         $jobDeleteFileRouteName = $jobDeleteFileRouteName ?? 'lbs.job.deleteFile';
         $jobArchiveRouteName = $jobArchiveRouteName ?? 'lbs.job.archive';
@@ -34,7 +35,7 @@
         $permBphPrintCompliance = \App\Models\RolePermission::userMayAccessRoute($jobPrintComplianceRouteName);
         $permBphMergeFile = \App\Models\RolePermission::userMayAccessRoute($jobMergeFileRouteName);
 
-        $jobViewModuleKey = $jobViewModuleKey ?? ($isBphView ? 'bph' : ($isEfficientLivingView ? 'efficient_living' : 'lbs'));
+        $jobViewModuleKey = $jobViewModuleKey ?? ($isBphView ? 'bph' : ($isLuntianView ? 'luntian' : ($isEfficientLivingView ? 'efficient_living' : 'lbs')));
         $jobViewCardModuleKey = $jobViewCardModuleKey ?? $jobViewModuleKey;
         $jv = 'job_view.' . $jobViewModuleKey;
         $jvCard = 'job_view.' . $jobViewCardModuleKey;
@@ -87,7 +88,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                @if(!$isArchived && !$isEfficientLivingView && $permArchive && $permBtnArchiveJob)
+                @if(!$isArchived && !$isEfficientLivingView && !$isLuntianView && $permArchive && $permBtnArchiveJob)
                     <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" id="jobViewArchiveJobBtn" aria-label="Archive this job">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                         Archive this job
@@ -128,10 +129,10 @@
             $statusFgResolved = $statusFontColor ?? \App\Models\Status::DEFAULT_FONT_COLOR;
             $priorityBg = $priorityColor ?? null;
             // Disable Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation (status still advances via inline flow or modal when Edit is available)
-            $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
+            $canEditDetails = !$isEfficientLivingView && !$isLuntianView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
             // One-step status flow (LBS); Efficient Living: inline status only from Allocated
             $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
-            if ($isEfficientLivingView && $lowerStatus !== 'allocated') {
+            if (($isEfficientLivingView || $isLuntianView) && $lowerStatus !== 'allocated') {
                 $inlineStatusOptions = [];
             }
             $canEditStatusInline = count($inlineStatusOptions) > 0;

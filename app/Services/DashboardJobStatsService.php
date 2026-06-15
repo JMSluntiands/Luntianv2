@@ -89,8 +89,9 @@ class DashboardJobStatsService
         }
 
         return match ($branchLabel) {
-            'LBS' => self::countJobsTable($bucket, false),
-            'EFFICIENT LIVING' => self::countJobsTable($bucket, true),
+            'LBS' => self::countJobsTable($bucket, 'lbs'),
+            'LUNTIAN' => self::countJobsTable($bucket, 'luntian'),
+            'EFFICIENT LIVING' => self::countJobsTable($bucket, 'efficient_living'),
             'BPH' => self::countJobBph($bucket, 'bph'),
             'BLUINQ' => self::countJobBph($bucket, 'bluinq'),
             'A&M' => self::countJobBph($bucket, 'amt'),
@@ -100,7 +101,7 @@ class DashboardJobStatsService
     }
 
     /** Base: JOBS%, branch split; every bucket restricted to log_date calendar day = today (Manila). */
-    private static function countJobsTable(string $bucket, bool $efficientLiving): int
+    private static function countJobsTable(string $bucket, string $productLine = 'lbs'): int
     {
         if (! Schema::hasTable('jobs')) {
             return 0;
@@ -110,11 +111,16 @@ class DashboardJobStatsService
 
         $q = DB::table('jobs')->where('reference', 'like', 'JOBS%');
 
-        if ($efficientLiving) {
+        if ($productLine === 'efficient_living') {
             $q->whereRaw("job_request_id LIKE 'EA\_EL\_%'");
+        } elseif ($productLine === 'luntian') {
+            $q->whereRaw("job_request_id LIKE 'EA\_LT\_%'");
         } else {
             $q->where(function ($w) {
-                $w->whereRaw("job_request_id NOT LIKE 'EA\_EL\_%'")
+                $w->where(function ($inner) {
+                    $inner->whereRaw("job_request_id NOT LIKE 'EA\_EL\_%'")
+                        ->whereRaw("job_request_id NOT LIKE 'EA\_LT\_%'");
+                })
                     ->orWhereNull('job_request_id')
                     ->orWhere('job_request_id', '');
             });
