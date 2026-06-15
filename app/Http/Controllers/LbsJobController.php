@@ -1486,7 +1486,7 @@ class LbsJobController extends Controller
 
     public function luntianShow(int $id)
     {
-        $job = DB::table('jobs as j')
+        $q = DB::table('jobs as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
             ->select(
                 'j.job_id',
@@ -1511,9 +1511,9 @@ class LbsJobController extends Controller
                 'j.client_account_id',
                 'ca.client_account_name'
             )
-            ->where('j.job_id', $id)
-            ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
-            ->first();
+            ->where('j.job_id', $id);
+        $this->applyLuntianJobRequestScope($q, 'j');
+        $job = $q->first();
 
         if (! $job) {
             abort(404);

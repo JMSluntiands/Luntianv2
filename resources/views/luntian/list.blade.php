@@ -12,19 +12,19 @@
     <div class="block max-w-full pb-0 luntian-list-page">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4 luntian-list-header">
             <div class="min-w-0 luntian-list-header-text">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-100 luntian-list-title">Luntian List</h1>
-                <p class="m-0 text-[0.9375rem] leading-snug text-slate-400 luntian-list-subtitle">View and manage all Luntian jobs.</p>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-slate-100 luntian-list-title">Luntian List</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400 luntian-list-subtitle">View and manage all Luntian jobs.</p>
             </div>
             <div class="shrink-0 luntian-list-search-wrap">
-                <label for="luntianSearch" class="mb-1.5 block text-xs font-semibold text-slate-400 luntian-search-label">Search</label>
+                <label for="luntianSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400 luntian-search-label">Search</label>
                 <div class="relative flex min-w-[260px] items-center luntian-search-input-wrap">
-                    <svg class="luntian-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="luntianSearch" class="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-3.5 text-sm text-slate-200 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 luntian-search-input" placeholder="Search by client, job number, email..." autocomplete="off" aria-label="Search Luntian jobs">
+                    <svg class="luntian-search-icon pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="search" id="luntianSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 luntian-search-input" placeholder="Search by client, job number, email..." autocomplete="off" aria-label="Search Luntian jobs">
                 </div>
             </div>
         </div>
 
-        <div class="max-w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow luntian-table-card">
+        <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900 luntian-table-card">
             <div class="luntian-table-wrap">
                 <table class="luntian-table" id="luntianTable">
                     <colgroup>
@@ -261,96 +261,10 @@
 
 @push('styles')
 <style>
-.luntian-list-page { width: 100%; max-width: 100%; }
-.luntian-list-header { margin-bottom: 1.75rem; }
-.luntian-list-title { color: rgb(248 250 252); }
-.luntian-list-subtitle { color: rgb(148 163 184); }
-.luntian-list-search-wrap { min-width: 260px; }
-.luntian-search-icon { pointer-events: none; position: absolute; left: 0.75rem; color: rgb(148 163 184); }
-.luntian-table-card { overflow: hidden; }
-.luntian-table-wrap { overflow-x: auto; }
-.luntian-table { width: 100%; min-width: 1750px; border-collapse: collapse; font-size: 0.875rem; table-layout: fixed; }
-.luntian-table col.luntian-col-action { width: 110px; }
-.luntian-table col.luntian-col-log-date { width: 150px; }
-.luntian-table col.luntian-col-client { width: 220px; }
-.luntian-table col.luntian-col-client-name { width: 130px; }
-.luntian-table col.luntian-col-reference { width: 150px; }
-.luntian-table col.luntian-col-job-type { width: 360px; }
-.luntian-table col.luntian-col-priority { width: 150px; }
-.luntian-table col.luntian-col-staff { width: 120px; }
-.luntian-table col.luntian-col-checker { width: 120px; }
-.luntian-table col.luntian-col-status { width: 170px; }
-.luntian-table col.luntian-col-due-date { width: 160px; }
-.luntian-table col.luntian-col-completion-date { width: 170px; }
-.luntian-table col.luntian-col-complexity { width: 140px; }
-.luntian-th { cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 1px solid rgb(51 65 85); background: rgb(30 41 59); padding: 0.75rem 1rem; text-align: left; font-weight: 600; color: rgb(148 163 184); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.04em; }
-.luntian-th-action { cursor: default; }
-.luntian-sort-icon { margin-left: 0.25rem; font-size: 0.75rem; opacity: .65; }
 .luntian-th[data-sort="asc"] .luntian-sort-icon { font-size: 0; opacity: 1; }
 .luntian-th[data-sort="asc"] .luntian-sort-icon::before { content: "↑"; font-size: 0.75rem; }
 .luntian-th[data-sort="desc"] .luntian-sort-icon { font-size: 0; opacity: 1; }
 .luntian-th[data-sort="desc"] .luntian-sort-icon::before { content: "↓"; font-size: 0.75rem; }
-.luntian-td { border-bottom: 1px solid rgb(51 65 85); padding: 0.75rem 1rem; vertical-align: middle; color: rgb(226 232 240); background: rgb(15 23 42); }
-/* Row hover: same as LBS — green on data cells only; action column stays base slate (LBS first td has no .lbs-td) */
-.page-luntian-list .luntian-data-row:hover .luntian-td:not(.luntian-td-action) { background: #ecfdf5; color: rgb(15 23 42); }
-.page-luntian-list .luntian-data-row:hover .luntian-td-action { background: rgb(15 23 42); color: rgb(226 232 240); }
-.page-luntian-list .luntian-data-row:hover .luntian-date-line2,
-.page-luntian-list .luntian-data-row:hover .luntian-job-line2 { color: rgb(100 116 139); }
-[data-theme="dark"] .page-luntian-list .luntian-data-row:hover .luntian-td:not(.luntian-td-action) { background: rgba(6, 78, 59, 0.9); color: rgb(241 245 249); }
-[data-theme="dark"] .page-luntian-list .luntian-data-row:hover .luntian-td-action { background: rgba(15, 23, 42, 0.98); color: rgb(226 232 240); }
-[data-theme="dark"] .page-luntian-list .luntian-data-row:hover .luntian-date-line2,
-[data-theme="dark"] .page-luntian-list .luntian-data-row:hover .luntian-job-line2 { color: rgb(167 243 208); }
-.luntian-td-nowrap { white-space: nowrap; }
-.luntian-td-job-type { min-width: 340px; }
-.luntian-date-line1, .luntian-job-line1 { display: block; font-weight: 500; color: rgb(226 232 240); }
-.luntian-date-line2, .luntian-job-line2 { display: block; font-size: 0.8125rem; color: rgb(148 163 184); }
-.luntian-job-line1 { line-height: 1.35; word-break: normal; overflow-wrap: break-word; }
-.luntian-job-line2 { margin-top: 0.25rem; }
-/* Match LBS list badge shaping (app.css .page-lbs-list .lbs-priority / .lbs-badge) */
-.page-luntian-list .lbs-priority {
-    border-radius: 9999px;
-    padding-inline: 0.7rem;
-    padding-block: 0.2rem;
-    font-size: 0.75rem;
-}
-.page-luntian-list .lbs-badge {
-    border-radius: 9999px;
-    padding-inline: 0.65rem;
-    padding-block: 0.2rem;
-    font-size: 0.75rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-.page-luntian-list .lbs-status-trigger {
-    box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.6);
-}
-[data-theme="dark"] .page-luntian-list .lbs-status-trigger {
-    box-shadow: 0 12px 26px -18px rgba(0, 0, 0, 0.9);
-}
-.page-luntian-list .lbs-initials-trigger {
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-.luntian-badge, .luntian-initials { display: inline-block; border: 0; border-radius: 0.5rem; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
-.luntian-initials { border: 1px solid rgb(71 85 105); background: rgb(30 41 59); color: rgb(226 232 240); min-width: 2.8rem; }
-.luntian-priority { display: inline-block; border: 0; border-radius: 0.5rem; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 700; line-height: 1.2; cursor: pointer; color: rgb(226 232 240); background: rgb(148 163 184 / 0.15); }
-.luntian-badge-pending { background: rgb(250 204 21 / 0.2); color: rgb(161 98 7); }
-.luntian-badge-accepted { background: rgb(34 197 94 / 0.2); color: rgb(21 128 61); }
-.luntian-badge-allocated { background: rgb(59 130 246 / 0.2); color: rgb(37 99 235); }
-.luntian-badge-awaiting-further-information { background: rgb(245 158 11 / 0.2); color: rgb(180 83 9); }
-.luntian-badge-completed { background: rgb(16 185 129 / 0.2); color: rgb(5 150 105); }
-.luntian-status-menu,
-.luntian-initials-menu { position: fixed; z-index: 9999; display: flex; min-width: 90px; flex-direction: column; gap: 2px; border-radius: 0.5rem; border: 1px solid rgb(51 65 85); background: rgb(30 41 59); padding: 0.25rem; box-shadow: 0 10px 20px rgb(15 23 42 / 0.25); }
-.luntian-status-menu[hidden],
-.luntian-initials-menu[hidden] { display: none !important; }
-.luntian-status-option,
-.luntian-initials-option { border: 0; border-radius: 0.375rem; background: transparent; padding: 0.35rem 0.5rem; text-align: left; font-size: 0.75rem; font-weight: 500; color: rgb(226 232 240); cursor: pointer; }
-.luntian-status-option:hover,
-.luntian-initials-option:hover { background: rgb(255 255 255 / 0.12); }
-/* Shared with LBS list (lbs-list.js): menus use hidden */
-.lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
 </style>
 @endpush
 
