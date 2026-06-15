@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\RolePermission;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Job counts / lists are no longer assignment-scoped by role.
@@ -188,5 +189,78 @@ class JobCountsScope
             return;
         }
         $q->whereRaw('1 = 0');
+    }
+
+    /** @return list<string> */
+    public static function luntianJobRequestClientCodes(): array
+    {
+        return ['LT01', 'Luntian'];
+    }
+
+    /** @return list<string> */
+    public static function luntianJobRequestIds(): array
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $cached = DB::table('job_requests')
+            ->where(function ($q) {
+                $q->whereIn('client_code', self::luntianJobRequestClientCodes())
+                    ->orWhereRaw('LOWER(TRIM(client_code)) = ?', ['luntian']);
+            })
+            ->pluck('job_request_id')
+            ->map(fn ($id) => (string) $id)
+            ->filter()
+            ->values()
+            ->all();
+
+        return $cached;
+    }
+
+    public static function applyLuntianJobsScope(Builder $q, string $alias = 'j'): void
+    {
+        $ids = self::luntianJobRequestIds();
+        $col = "{$alias}.job_request_id";
+        $q->where(function ($w) use ($col, $ids) {
+            $w->whereRaw("{$col} LIKE 'EA\\_LT\\_%'");
+            if ($ids !== []) {
+                $w->orWhereIn($col, $ids);
+            }
+        });
+    }
+
+    public static function applyExcludeLuntianJobsScope(Builder $q, string $alias = 'j'): void
+    {
+        $ids = self::luntianJobRequestIds();
+        $col = "{$alias}.job_request_id";
+        $q->where(function ($w) use ($col, $ids) {
+            $w->whereNull($col)
+                ->orWhere($col, '')
+                ->orWhere(function ($inner) use ($col, $ids) {
+                    $inner->whereRaw("{$col} NOT LIKE 'EA\\_LT\\_%'");
+                    if ($ids !== []) {
+                        $inner->whereNotIn($col, $ids);
+                    }
+                });
+        });
+    }
+
+    public static function applyExcludeEfficientLivingJobsScope(Builder $q, string $alias = 'j'): void
+    {
+        $col = "{$alias}.job_request_id";
+        $q->where(function ($w) use ($col) {
+            $w->whereNull($col)
+                ->orWhere($col, '')
+                ->orWhereRaw("{$col} NOT LIKE 'EA\\_EL\\_%'");
+        });
+    }
+
+    /** Main LBS pipeline: shared `jobs` table rows that are not EL or Luntian verticals. */
+    public static function applyLbsStandardJobsScope(Builder $q, string $alias = 'j'): void
+    {
+        self::applyExcludeEfficientLivingJobsScope($q, $alias);
+        self::applyExcludeLuntianJobsScope($q, $alias);
     }
 }

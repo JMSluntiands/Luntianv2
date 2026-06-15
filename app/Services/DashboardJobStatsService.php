@@ -114,16 +114,9 @@ class DashboardJobStatsService
         if ($productLine === 'efficient_living') {
             $q->whereRaw("job_request_id LIKE 'EA\_EL\_%'");
         } elseif ($productLine === 'luntian') {
-            $q->whereRaw("job_request_id LIKE 'EA\_LT\_%'");
+            JobCountsScope::applyLuntianJobsScope($q);
         } else {
-            $q->where(function ($w) {
-                $w->where(function ($inner) {
-                    $inner->whereRaw("job_request_id NOT LIKE 'EA\_EL\_%'")
-                        ->whereRaw("job_request_id NOT LIKE 'EA\_LT\_%'");
-                })
-                    ->orWhereNull('job_request_id')
-                    ->orWhere('job_request_id', '');
-            });
+            JobCountsScope::applyLbsStandardJobsScope($q);
         }
 
         $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])

@@ -1079,6 +1079,7 @@ class LbsJobController extends Controller
                     $query->whereNull('j.updated_by')
                         ->orWhere('j.updated_by', '!=', 'FORMS');
                 });
+            JobCountsScope::applyLbsStandardJobsScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -1112,6 +1113,7 @@ class LbsJobController extends Controller
                     ->where('j.reference', 'like', 'JOBS%')
                     ->where('j.updated_by', '=', 'FORMS')
                     ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+                JobCountsScope::applyLbsStandardJobsScope($formsQuery, 'j');
                 JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
                 $formsJobs = $formsQuery
                     ->select(
@@ -1607,6 +1609,7 @@ class LbsJobController extends Controller
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOBS%')
                 ->where('j.job_status', '=', 'Archived');
+            JobCountsScope::applyLbsStandardJobsScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -1677,8 +1680,8 @@ class LbsJobController extends Controller
             $q = DB::table('jobs as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOBS%')
-                ->where('j.job_status', '=', 'Completed')
-                ->whereRaw("(j.job_request_id IS NULL OR j.job_request_id NOT LIKE 'EA\_EL\_%')");
+                ->where('j.job_status', '=', 'Completed');
+            JobCountsScope::applyLbsStandardJobsScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -1745,6 +1748,7 @@ class LbsJobController extends Controller
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOBS%')
                 ->where('j.job_status', '=', 'For Review');
+            JobCountsScope::applyLbsStandardJobsScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -1797,6 +1801,7 @@ class LbsJobController extends Controller
                 ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
                 ->where('j.reference', 'like', 'JOBS%')
                 ->where('j.job_status', '=', 'For Email Confirmation');
+            JobCountsScope::applyLbsStandardJobsScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -2728,7 +2733,7 @@ class LbsJobController extends Controller
     /** @return list<string> */
     private function luntianJobRequestClientCodes(): array
     {
-        return ['LT01', 'Luntian'];
+        return JobCountsScope::luntianJobRequestClientCodes();
     }
 
     private function isLuntianJobRequestClientCode(?string $clientCode): bool
@@ -2767,22 +2772,7 @@ class LbsJobController extends Controller
     /** @param \Illuminate\Database\Query\Builder $query */
     private function applyLuntianJobRequestScope($query, string $jobAlias = 'j'): void
     {
-        $luntianRequestIds = JobRequest::query()
-            ->where(function ($q) {
-                $q->whereIn('client_code', $this->luntianJobRequestClientCodes())
-                    ->orWhereRaw('LOWER(TRIM(client_code)) = ?', ['luntian']);
-            })
-            ->pluck('job_request_id')
-            ->filter()
-            ->values()
-            ->all();
-
-        $query->where(function ($q) use ($jobAlias, $luntianRequestIds) {
-            $q->whereRaw("{$jobAlias}.job_request_id LIKE 'EA\\_LT\\_%'");
-            if ($luntianRequestIds !== []) {
-                $q->orWhereIn("{$jobAlias}.job_request_id", $luntianRequestIds);
-            }
-        });
+        JobCountsScope::applyLuntianJobsScope($query, $jobAlias);
     }
 }
 

@@ -33,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         try {
             View::composer('layouts.partials.sidebar', function ($view) {
                 $lbsBase = DB::table('jobs')->where('reference', 'like', 'JOBS%');
+                JobCountsScope::applyLbsStandardJobsScope($lbsBase);
                 JobCountsScope::applyJobsTableAssignment($lbsBase);
                 $counts = $lbsBase
                     ->selectRaw("
@@ -67,8 +68,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('efficient_living_mailbox_count', $elMailbox);
 
                 $ltBase = DB::table('jobs')
-                    ->whereRaw("job_request_id LIKE 'EA\_LT\_%'")
                     ->where('reference', 'like', 'JOBS%');
+                JobCountsScope::applyLuntianJobsScope($ltBase);
                 JobCountsScope::applyJobsTableAssignment($ltBase);
                 $ltCounts = $ltBase
                     ->selectRaw("
