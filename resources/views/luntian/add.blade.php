@@ -15,52 +15,17 @@
         <form id="elAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @php
-                $preRef = isset($duplicateJob) ? ($duplicateJob->reference_no ?? '') : 'JOBS0823-003';
                 $selCompliance = isset($duplicateJob) ? ($duplicateJob->compliance_id ?? null) : ($defaultComplianceId ?? null);
                 $selClient = isset($duplicateJob) ? ($duplicateJob->client_account_id ?? null) : ($defaultClientAccountId ?? null);
                 $selPriority = isset($duplicateJob) ? ($duplicateJob->priority_id ?? null) : ($defaultPriorityId ?? null);
                 $selJobRequest = isset($duplicateJob) ? ($duplicateJob->job_request_id ?? null) : ($defaultJobRequestId ?? null);
             @endphp
-
-            {{-- Client Details Card --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
-                <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef ?: 'JOBS0823-003' }}</span>
-                </div>
-                <div class="p-5">
-                    <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label for="reference_no" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Reference No.</label>
-                            <input type="text" id="reference_no" name="reference_no" value="{{ isset($duplicateJob) ? e($duplicateJob->reference_no ?? '') : '' }}" placeholder="Enter Reference Number" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
-                                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
-                        </div>
-                        <div>
-                            <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference</label>
-                            <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Client Reference" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
-                                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
-                        </div>
-                        <div>
-                            <label for="compliance" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Compliance</label>
-                            <select id="compliance" name="compliance" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="">Select compliance</option>
-                                @foreach($compliances ?? [] as $c)
-                                    <option value="{{ $c->id }}" {{ $selCompliance !== null && (int) $selCompliance === (int) $c->id ? 'selected' : '' }}>{{ $c->column ?? '' }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client</label>
-                            <select id="client" name="client" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="">Select client</option>
-                                @foreach($clientAccounts ?? [] as $client)
-                                    <option value="{{ $client->client_account_id }}" {{ $selClient !== null && (int) $selClient === (int) $client->client_account_id ? 'selected' : '' }}>{{ $client->client_account_name ?? '' }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <input type="hidden" name="compliance" value="{{ $selCompliance }}">
+            <input type="hidden" name="client" value="{{ $selClient }}">
+            @if(isset($duplicateJob))
+                <input type="hidden" name="reference_no" value="{{ e($duplicateJob->reference_no ?? '') }}">
+                <input type="hidden" name="client_reference" value="{{ e($duplicateJob->client_reference ?? '') }}">
+            @endif
 
             {{-- Job Details Card --}}
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
@@ -361,11 +326,6 @@
 
                 var formEl = document.getElementById('elAddForm');
                 var formData = new FormData(formEl);
-
-                var headerRef = $('#jobReferenceContent').text().trim();
-                if (headerRef) {
-                    formData.append('header_reference', headerRef);
-                }
 
                 $.ajax({
                     url: '{{ route('luntian.store') }}',

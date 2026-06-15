@@ -2058,6 +2058,7 @@ class LbsJobController extends Controller
 
         $headerRef = $request->input('header_reference');
         $now = now('Asia/Manila');
+        $isLuntianStore = $request->route()?->getName() === 'luntian.store';
 
         // Ensure reference column starts with JOBS so the job appears in LBS list; append -1
         $referenceValue = $headerRef ?: ($data['reference_no'] ?? '');
@@ -2066,6 +2067,8 @@ class LbsJobController extends Controller
         }
         if ($referenceValue !== '') {
             $referenceValue = $referenceValue . '-1';
+        } elseif ($isLuntianStore) {
+            $referenceValue = 'JOBS' . $now->format('YmdHis') . '-1';
         }
 
         // `jobs.client_code` references `clients.client_code`. `client_accounts` may store codes
@@ -2480,7 +2483,14 @@ class LbsJobController extends Controller
 
     public function luntianAddForm(Request $request)
     {
-        return view('luntian.add', array_merge($this->buildAddJobFormData($request, 'LT01'), [
+        $data = $this->buildAddJobFormData($request, 'LT01');
+        $luntianClient = ClientAccount::where('client_code', 'LT01')->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Luntian%')->first();
+        if ($luntianClient) {
+            $data['defaultClientAccountId'] = $luntianClient->client_account_id;
+        }
+
+        return view('luntian.add', array_merge($data, [
             'sidebar_active' => 'luntian.add',
         ]));
     }
