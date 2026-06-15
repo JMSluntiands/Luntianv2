@@ -97,7 +97,7 @@ class LbsJobController extends Controller
             default => null,
         };
         $jobRequests = $clientCodeFilter
-            ? JobRequest::where('client_code', $clientCodeFilter)->orderBy('job_request_type')->get()
+            ? $this->jobRequestsForVerticalClient($clientCodeFilter)
             : JobRequest::orderBy('job_request_type')->get();
 
         $activityLogs = ActivityLog::where('job_id', (int) $job->job_id)
@@ -1343,9 +1343,9 @@ class LbsJobController extends Controller
         } else {
             $q = DB::table('jobs as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
                 ->where('j.reference', 'like', 'JOBS%')
                 ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            $this->applyLuntianJobRequestScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -1454,8 +1454,8 @@ class LbsJobController extends Controller
             $q = DB::table('jobs as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
-                ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
                 ->where('j.job_status', '=', 'For Email Confirmation');
+            $this->applyLuntianJobRequestScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
                 ->select(
@@ -1567,9 +1567,9 @@ class LbsJobController extends Controller
         }
         $q = DB::table('jobs as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->whereRaw("j.job_request_id LIKE 'EA\_LT\_%'")
             ->where('j.reference', 'like', 'JOBS%')
             ->where('j.job_status', '=', $status);
+        $this->applyLuntianJobRequestScope($q, 'j');
         JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
 
         return $q
@@ -2147,9 +2147,9 @@ class LbsJobController extends Controller
             ]);
 
             $clientCode = (string) ($jobRequest->client_code ?? '');
-            $successMessage = match ($clientCode) {
-                'EL01' => 'Efficient Living job created successfully.',
-                'LT01' => 'Luntian job created successfully.',
+            $successMessage = match (true) {
+                $clientCode === 'EL01' => 'Efficient Living job created successfully.',
+                $this->isLuntianJobRequestClientCode($clientCode) => 'Luntian job created successfully.',
                 default => 'LBS job created successfully.',
             };
 
@@ -2491,13 +2491,23 @@ class LbsJobController extends Controller
     }
 
     /**
-     * Jobs created from Luntian add use EA_LT_* job_request_id values (client LT01).
+     * Jobs created from Luntian add use EA_LT_* job_request_id values and/or Luntian client codes.
      */
     private function isLuntianJob(object $job): bool
     {
         $jid = (string) ($job->job_request_id ?? '');
+        if (str_starts_with($jid, 'EA_LT_')) {
+            return true;
+        }
+        if ($jid === '') {
+            return false;
+        }
 
-        return str_starts_with($jid, 'EA_LT_');
+        $jobRequest = JobRequest::query()
+            ->where('job_request_id', $jid)
+            ->first();
+
+        return $jobRequest !== null && $this->isLuntianJobRequestClientCode($jobRequest->client_code);
     }
 
     private function resolveLbsJobProduct(object $job): string
@@ -2539,9 +2549,7 @@ class LbsJobController extends Controller
         $defaultPriority = Priority::where('name', 'like', '%Top (COB)%')->first()
             ?? $priorities->first();
 
-        $jobRequests = JobRequest::where('client_code', $jobRequestClientCode)
-            ->orderBy('job_request_type')
-            ->get();
+        $jobRequests = $this->jobRequestsForVerticalClient($jobRequestClientCode);
         $defaultJobRequest = $jobRequests->first(fn ($jr) => $jr->job_request_type
             && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
             ?? $jobRequests->first();
@@ -2573,15 +2581,13 @@ class LbsJobController extends Controller
                 }
                 $jobRequestId = null;
                 if (!empty($job->job_request_id)) {
-                    $jr = JobRequest::where('client_code', $jobRequestClientCode)
-                        ->where('job_request_id', $job->job_request_id)
-                        ->first();
+                    $jr = $this->jobRequestsForVerticalClient($jobRequestClientCode)
+                        ->firstWhere('job_request_id', $job->job_request_id);
                     $jobRequestId = $jr?->id;
                 }
                 if ($jobRequestId === null && !empty($job->job_type)) {
-                    $jr = JobRequest::where('client_code', $jobRequestClientCode)
-                        ->where('job_request_type', $job->job_type)
-                        ->first();
+                    $jr = $this->jobRequestsForVerticalClient($jobRequestClientCode)
+                        ->firstWhere('job_request_type', $job->job_type);
                     $jobRequestId = $jr?->id;
                 }
 
@@ -2717,6 +2723,66 @@ class LbsJobController extends Controller
         }
 
         return '';
+    }
+
+    /** @return list<string> */
+    private function luntianJobRequestClientCodes(): array
+    {
+        return ['LT01', 'Luntian'];
+    }
+
+    private function isLuntianJobRequestClientCode(?string $clientCode): bool
+    {
+        $clientCode = trim((string) $clientCode);
+        if ($clientCode === '') {
+            return false;
+        }
+
+        foreach ($this->luntianJobRequestClientCodes() as $code) {
+            if (strcasecmp($clientCode, $code) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function jobRequestsForVerticalClient(string $clientCode)
+    {
+        if ($this->isLuntianJobRequestClientCode($clientCode)) {
+            return JobRequest::query()
+                ->where(function ($q) {
+                    $q->whereIn('client_code', $this->luntianJobRequestClientCodes())
+                        ->orWhereRaw('LOWER(TRIM(client_code)) = ?', ['luntian']);
+                })
+                ->orderBy('job_request_type')
+                ->get();
+        }
+
+        return JobRequest::where('client_code', $clientCode)
+            ->orderBy('job_request_type')
+            ->get();
+    }
+
+    /** @param \Illuminate\Database\Query\Builder $query */
+    private function applyLuntianJobRequestScope($query, string $jobAlias = 'j'): void
+    {
+        $luntianRequestIds = JobRequest::query()
+            ->where(function ($q) {
+                $q->whereIn('client_code', $this->luntianJobRequestClientCodes())
+                    ->orWhereRaw('LOWER(TRIM(client_code)) = ?', ['luntian']);
+            })
+            ->pluck('job_request_id')
+            ->filter()
+            ->values()
+            ->all();
+
+        $query->where(function ($q) use ($jobAlias, $luntianRequestIds) {
+            $q->whereRaw("{$jobAlias}.job_request_id LIKE 'EA\\_LT\\_%'");
+            if ($luntianRequestIds !== []) {
+                $q->orWhereIn("{$jobAlias}.job_request_id", $luntianRequestIds);
+            }
+        });
     }
 }
 
