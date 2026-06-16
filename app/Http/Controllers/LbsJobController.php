@@ -2764,6 +2764,8 @@ class LbsJobController extends Controller
     private function jobRequestsForVerticalClient(string $clientCode)
     {
         if ($this->isLuntianJobRequestClientCode($clientCode)) {
+            JobRequest::seedLuntianTypesFromLbsIfMissing();
+
             return JobRequest::query()
                 ->forLuntianVertical()
                 ->orderBy('job_request_type')
