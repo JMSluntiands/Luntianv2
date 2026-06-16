@@ -78,14 +78,7 @@ class User extends Authenticatable
 
     public function assignmentOptionLabel(): string
     {
-        $code = trim((string) $this->unique_code);
-        $name = trim((string) ($this->fullname ?: $this->username ?: ''));
-
-        if ($name === '' || strtoupper($name) === strtoupper($code)) {
-            return $code;
-        }
-
-        return $code . ' — ' . $name;
+        return trim((string) $this->unique_code);
     }
 
     public static function assignmentUsersForSelect(): Collection
