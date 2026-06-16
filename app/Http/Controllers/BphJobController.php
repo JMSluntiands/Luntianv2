@@ -14,6 +14,7 @@ use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
+use App\Support\JobUploadFolder;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -1140,7 +1141,7 @@ class BphJobController extends Controller
                 $existing = array_values(array_filter(array_map('strval', $decoded)));
             }
         }
-        $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
+        $folderName = JobUploadFolder::bphFolderName($job, $id);
         $saved = $existing;
         foreach ((array) $request->file('files', []) as $file) {
             if (!$file || !$file->isValid()) {
@@ -1190,7 +1191,7 @@ class BphJobController extends Controller
         $fileName = (string) $request->input('file_name');
         $list = array_values(array_filter($list, fn ($n) => (string) $n !== $fileName));
         DB::table($this->pipelineJobTable())->where('id', $id)->update([$column => json_encode($list), 'updated_at' => now('Asia/Manila')]);
-        $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
+        $folderName = JobUploadFolder::bphFolderName($job, $id);
         Storage::disk('local')->delete($this->pipelineStorageBase().'/' . $folderName . '/' . $fileName);
         $log = $this->createBphActivityLog(
             (int) $id,
@@ -1215,9 +1216,8 @@ class BphJobController extends Controller
     {
         $job = DB::table($this->pipelineJobTable())->where('id', $id)->first();
         if (!$job) abort(404);
-        $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
-        $path = $this->pipelineStorageBase().'/' . $folderName . '/' . $file;
-        if (!Storage::disk('local')->exists($path)) {
+        $path = JobUploadFolder::bphStoragePath($this->pipelineStorageBase(), $job, $id, $file);
+        if (!$path) {
             abort(404);
         }
         return Storage::disk('local')->download($path, $file);
@@ -1252,7 +1252,7 @@ class BphJobController extends Controller
             'files.*' => ['file', 'max:51200'],
             'notes' => ['nullable', 'string'],
         ]);
-        $folderName = preg_replace('/[^A-Za-z0-9\-\_]/', '_', (string) ($job->reference ?? 'job_' . $id));
+        $folderName = JobUploadFolder::bphFolderName($job, $id);
         $fileNames = [];
         foreach ((array) $request->file('files', []) as $file) {
             if (!$file || !$file->isValid()) continue;

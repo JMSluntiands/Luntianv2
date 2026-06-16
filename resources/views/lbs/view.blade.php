@@ -114,7 +114,11 @@
         @php
             $planFiles = [];
             $docFiles = [];
-            $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? '';
+            if (!empty($isBphView)) {
+                $folderName = \App\Support\JobUploadFolder::bphFolderName($job, (int) $jobId);
+            } else {
+                $folderName = \App\Support\JobUploadFolder::lbsFolderName($job, (int) $jobId);
+            }
 
             if (!empty($job->upload_files)) {
                 $decoded = json_decode($job->upload_files, true);
@@ -357,7 +361,7 @@
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Plans">Add Files</button>
                     @endif
                 </div>
-                @if(!empty($planFiles) && $folderName)
+                @if(!empty($planFiles))
                     <ul class="space-y-2">
                         @foreach($planFiles as $file)
                             @php $fileName = (string) $file; $fileUrl = route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]); @endphp
@@ -404,7 +408,7 @@
                         ? ($jobCompliancePdfFilenamePrefix . '-Compliance-' . ($bphCompliancePdfBase !== '' ? $bphCompliancePdfBase : 'summary') . '.pdf')
                         : '';
                     $hasBphComplianceRow = $bphComplianceInDocs && $bphCompliancePdfUrl && $permBphPrintCompliance;
-                    $hasDocumentsList = $hasBphComplianceRow || (!empty($docFiles) && $folderName);
+                    $hasDocumentsList = $hasBphComplianceRow || !empty($docFiles);
                 @endphp
                 @if($hasDocumentsList)
                     <ul class="space-y-2">
@@ -423,7 +427,7 @@
                                 </div>
                             </li>
                         @endif
-                        @if(!empty($docFiles) && $folderName)
+                        @if(!empty($docFiles))
                             @foreach($docFiles as $file)
                                 @php $fileName = (string) $file; $fileUrl = route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]); @endphp
                                 <li class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/50">
@@ -475,7 +479,7 @@
                                 <div class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Upload {{ $uploadNumber }}</div>
                                 <div class="space-y-2">
                                     @foreach($files as $fileName)
-                                        @php $fileName = (string) $fileName; $fileUrl = isset($folderName) && $folderName ? route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]) : '#'; @endphp
+                                        @php $fileName = (string) $fileName; $fileUrl = route($jobFileRouteName, ['id' => $jobId, 'file' => $fileName]); @endphp
                                         <div class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800/50">
                                             <div class="flex min-w-0 items-center gap-2">
                                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4z"/></svg></span>

@@ -15,6 +15,7 @@ use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
+use App\Support\JobUploadFolder;
 use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -920,7 +921,7 @@ class LbsJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+            $folderName = JobUploadFolder::lbsFolderName($job, $id);
             $path = 'lbs-documents/' . $folderName . '/' . $safeName;
             Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
             $list[] = $safeName;
@@ -980,9 +981,10 @@ class LbsJobController extends Controller
 
         DB::table('jobs')->where('job_id', $id)->update([$column => json_encode($list)]);
 
-        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
-        $storagePath = 'lbs-documents/' . $folderName . '/' . $fileName;
-        Storage::disk('local')->delete($storagePath);
+        $storagePath = JobUploadFolder::lbsStoragePath($job, $id, $fileName);
+        if ($storagePath) {
+            Storage::disk('local')->delete($storagePath);
+        }
 
         $sectionLabel = $section === 'plans' ? 'Plans' : 'Documents';
         $now = now('Asia/Manila');
@@ -1028,7 +1030,7 @@ class LbsJobController extends Controller
             }
             $original = $file->getClientOriginalName() ?: $file->hashName();
             $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
+            $folderName = JobUploadFolder::lbsFolderName($job, $id);
             $path = 'lbs-documents/' . $folderName . '/' . $safeName;
             Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
             $fileNames[] = $safeName;
@@ -1996,9 +1998,6 @@ class LbsJobController extends Controller
             'notes'           => $notes,
         ];
 
-        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
-        $basePath = 'lbs-documents/' . $folderName . '/';
-
         $attachments = [];
         $latestCheckerUpload = DB::table('staff_uploaded_files')
             ->where('job_id', (int) $id)
@@ -2009,8 +2008,8 @@ class LbsJobController extends Controller
             $files = json_decode($latestCheckerUpload->files_json, true);
             if (is_array($files)) {
                 foreach ($files as $fileName) {
-                    $storagePath = $basePath . $fileName;
-                    if (Storage::disk('local')->exists($storagePath)) {
+                    $storagePath = JobUploadFolder::lbsStoragePath($job, $id, (string) $fileName);
+                    if ($storagePath) {
                         $attachments[] = [
                             'path' => Storage::disk('local')->path($storagePath),
                             'name' => $fileName,
@@ -2119,11 +2118,12 @@ class LbsJobController extends Controller
             // Handle file uploads (plans & docs) similar to legacy flow, but store securely in storage
             $referenceNo = trim((string) ($data['reference_no'] ?? ''));
             $clientReference = trim((string) ($data['client_reference'] ?? ''));
-            $uploadFolderName = $referenceNo;
-            if ($uploadFolderName === '') {
-                $uploadFolderName = $clientReference;
-            }
-            if ($uploadFolderName === '') {
+            $uploadFolderName = JobUploadFolder::lbsFolderName((object) [
+                'job_reference_no'    => $referenceNo,
+                'client_reference_no' => $clientReference,
+                'reference'           => $referenceValue,
+            ], 0);
+            if ($uploadFolderName === 'job_0') {
                 $uploadFolderName = preg_replace('/-1$/', '', $referenceValue) ?: ('AUTO_' . $now->format('YmdHis'));
             }
 
@@ -2376,14 +2376,12 @@ class LbsJobController extends Controller
         $emailSubject = $subjectLead . trim($accountClient) . ' LUNTIAN' . $lbsRef
             . ($clientRefSubj !== '' ? '-' . $clientRefSubj : '') . '-' . $nccCompliance;
 
-        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
-        $basePath = 'lbs-documents/' . $folderName . '/';
         $planNames = json_decode($job->upload_files ?? '[]', true) ?: [];
         $docNames = json_decode($job->upload_project_files ?? '[]', true) ?: [];
         $attachments = [];
         foreach (array_merge($planNames, $docNames) as $fileName) {
-            $storagePath = $basePath . $fileName;
-            if (Storage::disk('local')->exists($storagePath)) {
+            $storagePath = JobUploadFolder::lbsStoragePath($job, $id, (string) $fileName);
+            if ($storagePath) {
                 $attachments[] = [
                     'path' => Storage::disk('local')->path($storagePath),
                     'name' => $fileName,
@@ -2433,7 +2431,6 @@ class LbsJobController extends Controller
             abort(404);
         }
 
-        $folderName = $job->job_reference_no ?? $job->client_reference_no ?? $job->reference ?? ('job_' . $id);
         $fileName = $file;
 
         $planFiles = [];
@@ -2465,8 +2462,8 @@ class LbsJobController extends Controller
             abort(404);
         }
 
-        $storagePath = 'lbs-documents/' . $folderName . '/' . $fileName;
-        if (!Storage::disk('local')->exists($storagePath)) {
+        $storagePath = JobUploadFolder::lbsStoragePath($job, $id, $fileName);
+        if (!$storagePath) {
             abort(404);
         }
 
