@@ -627,8 +627,16 @@ class LbsJobController extends Controller
             }
         }
         if (array_key_exists('job_reference_no', $data)) {
-            $new = $data['job_reference_no'];
-            if ($new !== $job->job_reference_no) {
+            $new = trim((string) ($data['job_reference_no'] ?? ''));
+            if ($new === '') {
+                $new = trim((string) ($job->job_reference_no ?? ''));
+            }
+            if ($new === '') {
+                $new = trim((string) ($job->reference ?? ''));
+                $new = preg_replace('/-1$/', '', $new);
+            }
+            $old = trim((string) ($job->job_reference_no ?? ''));
+            if ($new !== $old) {
                 $update['job_reference_no'] = $new;
                 $changes[] = [
                     'field' => 'Job Number',
@@ -656,7 +664,11 @@ class LbsJobController extends Controller
                     $jobRequestRow = JobRequest::where('job_request_id', $job->job_request_id)->first();
                     $jrCode = trim((string) ($jobRequestRow->client_code ?? ''));
                     $rawAccountCode = trim((string) ($newClient->client_code ?? ''));
-                    $resolvedCode = $this->resolveJobsClientCodeForClientsTable($rawAccountCode, $jrCode);
+                    if ($this->isLuntianJob($job)) {
+                        $resolvedCode = $this->resolveJobsClientCodeForClientsTable('', $jrCode);
+                    } else {
+                        $resolvedCode = $this->resolveJobsClientCodeForClientsTable($rawAccountCode, $jrCode);
+                    }
                     if ($resolvedCode === '') {
                         return response()->json([
                             'status'  => 'error',
@@ -2075,15 +2087,16 @@ class LbsJobController extends Controller
             $referenceValue = 'JOBS' . $now->format('YmdHis') . '-1';
         }
 
+        $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
+        $isLuntianVertical = $isLuntianStore || $this->isLuntianJobRequestClientCode($jobRequestClientCode);
+
         // `jobs.client_code` references `clients.client_code`. `client_accounts` may store codes
         // that are not in `clients` (e.g. internal labels); fall back to the job type’s code.
-        $clientCodeForJob = $client->client_code ?? null;
-        if ((string) $clientCodeForJob === '' && session('user_id')) {
+        $clientCodeForJob = trim((string) ($client->client_code ?? ''));
+        if ($clientCodeForJob === '' && ! $isLuntianVertical && session('user_id')) {
             $currentUser = User::find(session('user_id'));
-            $clientCodeForJob = $currentUser?->unique_code ?? null;
+            $clientCodeForJob = trim((string) ($currentUser?->unique_code ?? ''));
         }
-        $clientCodeForJob = trim((string) ($clientCodeForJob ?? ''));
-        $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
         $clientCodeForJob = $this->resolveJobsClientCodeForClientsTable($clientCodeForJob, $jobRequestClientCode);
         if ($clientCodeForJob === '') {
             return response()->json([
@@ -2138,11 +2151,16 @@ class LbsJobController extends Controller
                 $docNames[] = $safeName;
             }
 
+            $jobReferenceNo = trim((string) ($data['reference_no'] ?? ''));
+            if ($jobReferenceNo === '' && $referenceValue !== '') {
+                $jobReferenceNo = preg_replace('/-1$/', '', $referenceValue);
+            }
+
             $jobId = DB::table('jobs')->insertGetId([
                 'reference'           => $referenceValue,
                 'log_date'            => $now->format('Y-m-d H:i:s'),
                 'client_code'         => $clientCodeForJob,
-                'job_reference_no'    => $data['reference_no'] ?? '',
+                'job_reference_no'    => $jobReferenceNo,
                 'client_reference_no' => $data['client_reference'] ?? null,
                 'staff_id'            => $data['assigned_to'] ?? null,
                 'checker_id'          => $data['checked_by'] ?? null,
@@ -2494,7 +2512,7 @@ class LbsJobController extends Controller
     public function luntianAddForm(Request $request)
     {
         $data = $this->buildAddJobFormData($request, 'LT01');
-        $luntianClient = ClientAccount::where('client_account_name', 'like', '%Luntian%')->first();
+        $luntianClient = $this->defaultLuntianClientAccount();
         if ($luntianClient) {
             $data['defaultClientAccountId'] = $luntianClient->client_account_id;
         }
@@ -2502,6 +2520,15 @@ class LbsJobController extends Controller
         return view('luntian.add', array_merge($data, [
             'sidebar_active' => 'luntian.add',
         ]));
+    }
+
+    private function defaultLuntianClientAccount(): ?ClientAccount
+    {
+        return ClientAccount::where('client_account_name', 'Luntian Pty Ltd')->first()
+            ?? ClientAccount::where('client_account_name', 'like', 'Luntian Pty%')->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Luntian%')
+                ->orderBy('client_account_name')
+                ->first();
     }
 
     /**

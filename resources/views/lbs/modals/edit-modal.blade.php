@@ -17,11 +17,21 @@
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-number">Job Number</label>
+                    @php
+                        $editJobNumber = trim((string) ($job->job_reference_no ?? ''));
+                        if ($editJobNumber === '') {
+                            $editJobNumber = trim((string) ($job->reference ?? ''));
+                            $editJobNumber = preg_replace('/-1$/', '', $editJobNumber);
+                        }
+                        if ($editJobNumber === '') {
+                            $editJobNumber = (string) ($jobId ?? '');
+                        }
+                    @endphp
                     <input
                         type="text"
                         id="edit-job-number"
                         class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
-                        value="{{ $job->job_reference_no ?? ($job->reference ?? $jobId ?? '') }}"
+                        value="{{ $editJobNumber }}"
                         autocomplete="off">
                 </div>
                 <div class="flex flex-col gap-1.5">
