@@ -503,15 +503,19 @@ class LbsJobController extends Controller
             default => 'lbs',
         };
 
-        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.job_details')) {
+        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.client_details')) {
             unset(
-                $data['job_address'],
-                $data['priority'],
-                $data['job_type'],
                 $data['client_reference'],
                 $data['job_reference_no'],
                 $data['compliance'],
                 $data['client_id']
+            );
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.job_details')) {
+            unset(
+                $data['job_address'],
+                $data['priority'],
+                $data['job_type']
             );
         }
         if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.notes')) {

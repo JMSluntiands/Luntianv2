@@ -65,6 +65,16 @@
         $permBtnSendComment = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.comments.job.send');
 
         $permModuleCheckerAdd = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.checker_uploads.add');
+
+        // Luntian reuses LBS file/comment API routes; gate by Luntian job_view + update permissions.
+        if ($isLuntianView) {
+            $permUpload = $permJobUpdate && $permBtnAddFiles;
+            $permDeleteFile = $permJobUpdate && $permBtnDeleteFiles;
+            $permDownloadFile = $permJobUpdate && ($permBtnAddFiles || $permBtnDeleteFiles);
+            $permChecker = $permJobUpdate && $permModuleCheckerAdd;
+            $permRunComment = $permJobUpdate && $permBtnSendRunComment;
+            $permComment = $permJobUpdate && $permBtnSendComment;
+        }
     @endphp
     <div class="min-h-0 w-full max-w-full">
         {{-- Breadcrumb --}}
@@ -129,7 +139,7 @@
             $statusFgResolved = $statusFontColor ?? \App\Models\Status::DEFAULT_FONT_COLOR;
             $priorityBg = $priorityColor ?? null;
             // Disable Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation (status still advances via inline flow or modal when Edit is available)
-            $canEditDetails = !$isEfficientLivingView && !$isLuntianView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
+            $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
             // One-step status flow (LBS); Efficient Living: inline status only from Allocated
             $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
             if (($isEfficientLivingView || $isLuntianView) && $lowerStatus !== 'allocated') {
@@ -142,7 +152,7 @@
             $canEditComplexityUi = $permJobUpdate
                 && $permBtnEditComplexity
                 && ! in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true)
-                && ($canEditDetails || $isEfficientLivingView || $isLuntianView);
+                && ($canEditDetails || $isEfficientLivingView);
 
             $showDetailsBlock = $permCardClient || $permCardJob || $permCardNotes || $permCardComplexity;
             $showFilesBlock = $permCardPlans || $permCardDocuments || $permCardChecker;

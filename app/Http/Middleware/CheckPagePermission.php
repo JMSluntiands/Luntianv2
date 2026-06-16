@@ -27,7 +27,41 @@ class CheckPagePermission
         }
 
         if (!RolePermission::userMayAccessRoute($routeName)) {
-            $checkerUploadAlternates = [
+            $routePermissionAlternates = [
+                'lbs.job.uploadFiles' => [
+                    'job_view.lbs.button.files.add',
+                    'job_view.efficient_living.button.files.add',
+                    'job_view.luntian.button.files.add',
+                ],
+                'lbs.job.deleteFile' => [
+                    'job_view.lbs.button.files.delete',
+                    'job_view.efficient_living.button.files.delete',
+                    'job_view.luntian.button.files.delete',
+                ],
+                'lbs.job.file' => [
+                    'job_view.lbs.button.files.add',
+                    'job_view.lbs.button.files.delete',
+                    'job_view.lbs.card.plans',
+                    'job_view.lbs.card.documents',
+                    'job_view.efficient_living.button.files.add',
+                    'job_view.efficient_living.card.plans',
+                    'job_view.efficient_living.card.documents',
+                    'job_view.luntian.button.files.add',
+                    'job_view.luntian.button.files.delete',
+                    'job_view.luntian.card.plans',
+                    'job_view.luntian.card.documents',
+                    'luntian.job.view',
+                ],
+                'lbs.job.runComment' => [
+                    'job_view.lbs.button.comments.run.send',
+                    'job_view.efficient_living.button.comments.run.send',
+                    'job_view.luntian.button.comments.run.send',
+                ],
+                'lbs.job.comment' => [
+                    'job_view.lbs.button.comments.job.send',
+                    'job_view.efficient_living.button.comments.job.send',
+                    'job_view.luntian.button.comments.job.send',
+                ],
                 'lbs.job.checkerUploads' => [
                     'job_view.lbs.button.checker_uploads.add',
                     'job_view.efficient_living.button.checker_uploads.add',
@@ -37,8 +71,8 @@ class CheckPagePermission
                     'job_view.bph.button.checker_uploads.add',
                 ],
             ];
-            if (isset($checkerUploadAlternates[$routeName])) {
-                foreach ($checkerUploadAlternates[$routeName] as $altRoute) {
+            if (isset($routePermissionAlternates[$routeName])) {
+                foreach ($routePermissionAlternates[$routeName] as $altRoute) {
                     if (RolePermission::userMayAccessRoute($altRoute)) {
                         return $next($request);
                     }
