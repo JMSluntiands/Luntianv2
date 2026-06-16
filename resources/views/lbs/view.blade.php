@@ -66,11 +66,12 @@
 
         $permModuleCheckerAdd = \App\Models\RolePermission::userMayAccessRoute($jv . '.button.checker_uploads.add');
 
-        // Luntian reuses LBS file/comment API routes; gate by Luntian job_view + update permissions.
+        // Luntian reuses LBS file/comment API routes.
+        // Allow download when the user can view any of the file cards, even if they can't upload/delete.
         if ($isLuntianView) {
             $permUpload = $permJobUpdate && $permBtnAddFiles;
             $permDeleteFile = $permJobUpdate && $permBtnDeleteFiles;
-            $permDownloadFile = $permJobUpdate && ($permBtnAddFiles || $permBtnDeleteFiles);
+            $permDownloadFile = $permJobUpdate && ($permCardPlans || $permCardDocuments || $permCardChecker);
             $permChecker = $permJobUpdate && $permModuleCheckerAdd;
             $permRunComment = $permJobUpdate && $permBtnSendRunComment;
             $permComment = $permJobUpdate && $permBtnSendComment;
