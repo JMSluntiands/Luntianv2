@@ -2100,6 +2100,12 @@ class LbsJobController extends Controller
 
         try {
             // Handle file uploads (plans & docs) similar to legacy flow, but store securely in storage
+            $referenceNo = trim((string) ($data['reference_no'] ?? ''));
+            $clientReference = trim((string) ($data['client_reference'] ?? ''));
+            $uploadFolderName = $referenceNo !== ''
+                ? $referenceNo
+                : ($clientReference !== '' ? $clientReference : preg_replace('/-1$/', '', $referenceValue) ?: ('AUTO_' . $now->format('YmdHis')));
+
             $planNames = [];
             foreach ((array) $request->file('plans', []) as $file) {
                 if (!$file) {
@@ -2107,9 +2113,7 @@ class LbsJobController extends Controller
                 }
                 $original = $file->getClientOriginalName() ?: $file->hashName();
                 $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-                $folderName = $data['reference_no']
-                    ?: ($data['client_reference'] ?: 'AUTO_' . $now->format('YmdHis'));
-                $path = 'lbs-documents/' . $folderName . '/' . $safeName;
+                $path = 'lbs-documents/' . $uploadFolderName . '/' . $safeName;
                 Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
                 $planNames[] = $safeName;
             }
@@ -2121,9 +2125,7 @@ class LbsJobController extends Controller
                 }
                 $original = $file->getClientOriginalName() ?: $file->hashName();
                 $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-                $folderName = $data['reference_no']
-                    ?: ($data['client_reference'] ?: 'AUTO_' . $now->format('YmdHis'));
-                $path = 'lbs-documents/' . $folderName . '/' . $safeName;
+                $path = 'lbs-documents/' . $uploadFolderName . '/' . $safeName;
                 Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
                 $docNames[] = $safeName;
             }
