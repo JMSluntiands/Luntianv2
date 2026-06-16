@@ -2102,9 +2102,13 @@ class LbsJobController extends Controller
             // Handle file uploads (plans & docs) similar to legacy flow, but store securely in storage
             $referenceNo = trim((string) ($data['reference_no'] ?? ''));
             $clientReference = trim((string) ($data['client_reference'] ?? ''));
-            $uploadFolderName = $referenceNo !== ''
-                ? $referenceNo
-                : ($clientReference !== '' ? $clientReference : preg_replace('/-1$/', '', $referenceValue) ?: ('AUTO_' . $now->format('YmdHis')));
+            $uploadFolderName = $referenceNo;
+            if ($uploadFolderName === '') {
+                $uploadFolderName = $clientReference;
+            }
+            if ($uploadFolderName === '') {
+                $uploadFolderName = preg_replace('/-1$/', '', $referenceValue) ?: ('AUTO_' . $now->format('YmdHis'));
+            }
 
             $planNames = [];
             foreach ((array) $request->file('plans', []) as $file) {
