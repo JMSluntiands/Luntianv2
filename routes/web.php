@@ -166,7 +166,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
         return view('csp.add', [
             'sidebar_active' => 'csp.add',
             'bphClientEmails' => $bphClientEmails,
-            'assignmentUsers' => User::assignmentUsersForSelect(),
+            'assignmentUsers' => User::assignmentUsersForSelect('csp'),
         ]);
     })->name('csp.add');
 

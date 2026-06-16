@@ -26,7 +26,7 @@
             $searchText = strtolower($code);
         }
     @endphp
-    @if($code !== '' && strtoupper($code) !== 'GM')
+    @if($code !== '' && (strtoupper($code) !== 'GM' || ! $showGm))
         <option
             value="{{ $code }}"
             data-search="{{ $searchText }}"

@@ -27,6 +27,7 @@ class User extends Authenticatable
         'fullname',
         'role',
         'branch',
+        'add_job_modules',
         'task',
         'status',
         'password',
@@ -53,6 +54,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'add_job_modules' => 'array',
         ];
     }
 
@@ -81,13 +83,28 @@ class User extends Authenticatable
         return trim((string) $this->unique_code);
     }
 
-    public static function assignmentUsersForSelect(): Collection
+    public function appearsInAddJobModule(?string $module): bool
+    {
+        if ($module === null || trim($module) === '') {
+            return true;
+        }
+
+        $modules = $this->add_job_modules;
+        if (! is_array($modules) || $modules === []) {
+            return false;
+        }
+
+        return in_array($module, $modules, true);
+    }
+
+    public static function assignmentUsersForSelect(?string $module = null): Collection
     {
         return static::query()
             ->forJobAssignment()
             ->orderBy('unique_code')
-            ->get(['id', 'unique_code', 'username', 'fullname'])
+            ->get(['id', 'unique_code', 'username', 'fullname', 'add_job_modules'])
             ->unique('unique_code')
+            ->filter(fn (self $user) => $user->appearsInAddJobModule($module))
             ->values();
     }
 

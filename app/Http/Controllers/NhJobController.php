@@ -25,7 +25,7 @@ class NhJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentUsers = User::assignmentUsersForSelect('nh');
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
         $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2019') !== false)

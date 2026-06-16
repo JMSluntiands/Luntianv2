@@ -46,7 +46,7 @@ class AmtJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentUsers = User::assignmentUsersForSelect('amt');
 
         $amtClientEmails = ClientEmailAmt::orderBy('email')->get(['id', 'email']);
 

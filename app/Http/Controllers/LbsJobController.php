@@ -2528,6 +2528,15 @@ class LbsJobController extends Controller
                 ->first();
     }
 
+    private function assignmentModuleForClientCode(string $jobRequestClientCode): string
+    {
+        return match (strtoupper(trim($jobRequestClientCode))) {
+            'EL01' => 'efficient_living',
+            'LT01' => 'luntian',
+            default => 'lbs',
+        };
+    }
+
     /**
      * Jobs created from Efficient Living add use EA_EL_* job_request_id values (client EL01).
      */
@@ -2602,7 +2611,7 @@ class LbsJobController extends Controller
             && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
             ?? $jobRequests->first();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentUsers = User::assignmentUsersForSelect($this->assignmentModuleForClientCode($jobRequestClientCode));
 
         $duplicateJob = null;
         $duplicateId = $request->query('duplicate');

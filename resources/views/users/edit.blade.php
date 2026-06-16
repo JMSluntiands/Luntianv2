@@ -82,6 +82,7 @@
                                 Branch is <strong>required</strong> only when role is set to <strong>Branch</strong>.
                             </p>
                         </div>
+                        @include('users.partials.add-job-modules-field', ['user' => $user])
                     </div>
                 </div>
 

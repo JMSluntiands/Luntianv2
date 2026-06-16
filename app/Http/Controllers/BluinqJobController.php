@@ -31,7 +31,7 @@ class BluinqJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentUsers = User::assignmentUsersForSelect('bluinq');
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
