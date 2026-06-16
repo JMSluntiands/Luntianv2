@@ -2484,8 +2484,7 @@ class LbsJobController extends Controller
     public function luntianAddForm(Request $request)
     {
         $data = $this->buildAddJobFormData($request, 'LT01');
-        $luntianClient = ClientAccount::where('client_code', 'LT01')->first()
-            ?? ClientAccount::where('client_account_name', 'like', '%Luntian%')->first();
+        $luntianClient = ClientAccount::where('client_account_name', 'like', '%Luntian%')->first();
         if ($luntianClient) {
             $data['defaultClientAccountId'] = $luntianClient->client_account_id;
         }
