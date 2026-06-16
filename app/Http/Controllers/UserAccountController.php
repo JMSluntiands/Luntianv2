@@ -44,8 +44,10 @@ class UserAccountController extends Controller
             'role'        => ['required', 'string', 'max:255', 'in:Branch,Admin,Staff,Checker,User'],
             'branch'      => ['nullable', 'string', 'max:255', 'required_if:role,Branch'],
             'password'    => ['nullable', 'string', 'min:6', 'max:255'],
-            'add_job_modules' => ['nullable', 'array'],
-            'add_job_modules.*' => ['string', Rule::in(AddJobModules::keys())],
+            'add_job_staff_modules' => ['nullable', 'array'],
+            'add_job_staff_modules.*' => ['string', Rule::in(AddJobModules::keys())],
+            'add_job_checker_modules' => ['nullable', 'array'],
+            'add_job_checker_modules.*' => ['string', Rule::in(AddJobModules::keys())],
         ]);
 
         if ($validator->fails()) {
@@ -60,7 +62,8 @@ class UserAccountController extends Controller
         $data['task']   = 'Active';
         $data['status'] = 'Active';
         $data['branch'] = $data['branch'] ?? '';
-        $data['add_job_modules'] = array_values($data['add_job_modules'] ?? []);
+        $data['add_job_staff_modules'] = array_values($data['add_job_staff_modules'] ?? []);
+        $data['add_job_checker_modules'] = array_values($data['add_job_checker_modules'] ?? []);
 
         if (empty($data['password'] ?? null)) {
             $data['password'] = '123456';
@@ -100,8 +103,10 @@ class UserAccountController extends Controller
             'role'        => ['required', 'string', 'max:255', 'in:Branch,Admin,Staff,Checker,User'],
             'branch'      => ['nullable', 'string', 'max:255', 'required_if:role,Branch'],
             'password'    => ['nullable', 'string', 'min:6', 'max:255'],
-            'add_job_modules' => ['nullable', 'array'],
-            'add_job_modules.*' => ['string', Rule::in(AddJobModules::keys())],
+            'add_job_staff_modules' => ['nullable', 'array'],
+            'add_job_staff_modules.*' => ['string', Rule::in(AddJobModules::keys())],
+            'add_job_checker_modules' => ['nullable', 'array'],
+            'add_job_checker_modules.*' => ['string', Rule::in(AddJobModules::keys())],
         ]);
 
         if ($validator->fails()) {
@@ -114,7 +119,8 @@ class UserAccountController extends Controller
         $data = $validator->validated();
 
         $data['branch'] = $data['branch'] ?? '';
-        $data['add_job_modules'] = array_values($data['add_job_modules'] ?? []);
+        $data['add_job_staff_modules'] = array_values($data['add_job_staff_modules'] ?? []);
+        $data['add_job_checker_modules'] = array_values($data['add_job_checker_modules'] ?? []);
 
         if (empty($data['password'] ?? null)) {
             unset($data['password']);

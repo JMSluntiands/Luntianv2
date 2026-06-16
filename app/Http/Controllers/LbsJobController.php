@@ -2611,7 +2611,9 @@ class LbsJobController extends Controller
             && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
             ?? $jobRequests->first();
 
-        $assignmentUsers = User::assignmentUsersForSelect($this->assignmentModuleForClientCode($jobRequestClientCode));
+        $assignmentModule = $this->assignmentModuleForClientCode($jobRequestClientCode);
+        $assignmentStaffUsers = User::assignmentUsersForSelect($assignmentModule, 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect($assignmentModule, 'checker');
 
         $duplicateJob = null;
         $duplicateId = $request->query('duplicate');
@@ -2672,7 +2674,9 @@ class LbsJobController extends Controller
             'defaultPriorityId'     => $defaultPriority?->id,
             'jobRequests'          => $jobRequests,
             'defaultJobRequestId'   => $defaultJobRequest?->id,
-            'assignmentUsers'      => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
+            'assignmentUsers'      => $assignmentStaffUsers,
             'duplicateJob'         => $duplicateJob,
         ];
     }

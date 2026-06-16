@@ -47,7 +47,8 @@
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Full Name</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Role</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Branch</th>
-                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Add New Job</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Staff modules</th>
+                            <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Checker modules</th>
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">Status</th>
                             <th class="w-28 px-5 py-3.5 text-right font-semibold text-slate-600 dark:text-slate-300">Action</th>
                         </tr>
@@ -71,15 +72,27 @@
                                 </td>
                                 <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">{{ $user->branch ?: '—' }}</td>
                                 <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">
-                                    @php
-                                        $addJobModules = is_array($user->add_job_modules) ? $user->add_job_modules : [];
-                                    @endphp
-                                    @if(empty($addJobModules))
+                                    @php $staffModules = is_array($user->add_job_staff_modules) ? $user->add_job_staff_modules : []; @endphp
+                                    @if(empty($staffModules))
                                         <span class="text-slate-400 dark:text-slate-500">—</span>
                                     @else
-                                        <div class="flex max-w-[220px] flex-wrap gap-1">
-                                            @foreach($addJobModules as $moduleKey)
-                                                <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-medium text-emerald-700 ring-1 ring-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/30">
+                                        <div class="flex max-w-[180px] flex-wrap gap-1">
+                                            @foreach($staffModules as $moduleKey)
+                                                <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[0.7rem] font-medium text-blue-700 ring-1 ring-blue-500/20 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-blue-500/30">
+                                                    {{ \App\Support\AddJobModules::label((string) $moduleKey) }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">
+                                    @php $checkerModules = is_array($user->add_job_checker_modules) ? $user->add_job_checker_modules : []; @endphp
+                                    @if(empty($checkerModules))
+                                        <span class="text-slate-400 dark:text-slate-500">—</span>
+                                    @else
+                                        <div class="flex max-w-[180px] flex-wrap gap-1">
+                                            @foreach($checkerModules as $moduleKey)
+                                                <span class="inline-flex items-center rounded-full bg-violet-500/10 px-2 py-0.5 text-[0.7rem] font-medium text-violet-700 ring-1 ring-violet-500/20 dark:bg-violet-500/15 dark:text-violet-300 dark:ring-violet-500/30">
                                                     {{ \App\Support\AddJobModules::label((string) $moduleKey) }}
                                                 </span>
                                             @endforeach
@@ -110,7 +123,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
+                                <td colspan="11" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
                                     <svg class="mx-auto mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a4 4 0 00-5.33-3.8M9 20H4v-2a4 4 0 015.33-3.8M8 7a4 4 0 118 0 4 4 0 01-8 0z"/></svg>
                                     <p class="font-medium">No user accounts yet.</p>
                                     <p class="mt-1 text-sm"><a href="{{ route('users.create') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Add one</a> to get started.</p>

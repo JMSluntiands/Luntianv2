@@ -46,7 +46,8 @@ class FyrsJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect('fyrs');
+        $assignmentStaffUsers = User::assignmentUsersForSelect('fyrs', 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect('fyrs', 'checker');
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -61,7 +62,8 @@ class FyrsJobController extends Controller
             'sidebar_active' => 'fyrs.add',
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'bphClientEmails' => $bphClientEmails,
             'defaultComplianceId' => $defaultCompliance?->id,
             'defaultJobRequestId' => $defaultJobRequest?->id,

@@ -22,7 +22,8 @@ class LeadingEnergyJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect('leading_energy');
+        $assignmentStaffUsers = User::assignmentUsersForSelect('leading_energy', 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect('leading_energy', 'checker');
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
         $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2019') !== false)
@@ -34,7 +35,8 @@ class LeadingEnergyJobController extends Controller
             'sidebar_active' => 'leading_energy.add',
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'bphClientEmails' => $bphClientEmails,
             'defaultComplianceId' => $defaultCompliance?->id,
             'defaultJobRequestId' => $defaultJobRequest?->id,

@@ -26,7 +26,8 @@ class LcHomeBuilderJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect('lc_home_builder');
+        $assignmentStaffUsers = User::assignmentUsersForSelect('lc_home_builder', 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect('lc_home_builder', 'checker');
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -39,7 +40,8 @@ class LcHomeBuilderJobController extends Controller
             'sidebar_active' => 'lc_home_builder.add',
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'bphClientEmails' => $bphClientEmails,
             'defaultComplianceId' => $defaultCompliance?->id,
             'defaultJobRequestId' => $defaultJobRequest?->id,

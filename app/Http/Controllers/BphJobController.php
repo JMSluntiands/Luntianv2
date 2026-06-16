@@ -353,7 +353,8 @@ class BphJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect('bph');
+        $assignmentStaffUsers = User::assignmentUsersForSelect('bph', 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect('bph', 'checker');
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -366,7 +367,8 @@ class BphJobController extends Controller
             'sidebar_active' => 'bph.add',
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'bphClientEmails' => $bphClientEmails,
             'defaultComplianceId' => $defaultCompliance?->id,
             'defaultJobRequestId' => $defaultJobRequest?->id,

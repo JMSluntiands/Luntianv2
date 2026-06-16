@@ -31,7 +31,8 @@ class BluinqJobController extends Controller
     {
         $compliances = Compliance::orderBy('column')->get();
         $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentUsers = User::assignmentUsersForSelect('bluinq');
+        $assignmentStaffUsers = User::assignmentUsersForSelect('bluinq', 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect('bluinq', 'checker');
 
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -45,7 +46,8 @@ class BluinqJobController extends Controller
             'sidebar_active' => 'bluinq.add',
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'bphClientEmails' => $bphClientEmails,
             'defaultComplianceId' => $defaultCompliance?->id,
             'defaultJobRequestId' => $defaultJobRequest?->id,

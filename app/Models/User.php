@@ -27,7 +27,8 @@ class User extends Authenticatable
         'fullname',
         'role',
         'branch',
-        'add_job_modules',
+        'add_job_staff_modules',
+        'add_job_checker_modules',
         'task',
         'status',
         'password',
@@ -54,7 +55,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'add_job_modules' => 'array',
+            'add_job_staff_modules' => 'array',
+            'add_job_checker_modules' => 'array',
         ];
     }
 
@@ -83,13 +85,16 @@ class User extends Authenticatable
         return trim((string) $this->unique_code);
     }
 
-    public function appearsInAddJobModule(?string $module): bool
+    public function appearsInAddJobModule(?string $module, string $assignmentRole = 'staff'): bool
     {
         if ($module === null || trim($module) === '') {
             return true;
         }
 
-        $modules = $this->add_job_modules;
+        $modules = $assignmentRole === 'checker'
+            ? $this->add_job_checker_modules
+            : $this->add_job_staff_modules;
+
         if (! is_array($modules) || $modules === []) {
             return false;
         }
@@ -97,14 +102,14 @@ class User extends Authenticatable
         return in_array($module, $modules, true);
     }
 
-    public static function assignmentUsersForSelect(?string $module = null): Collection
+    public static function assignmentUsersForSelect(?string $module = null, string $assignmentRole = 'staff'): Collection
     {
         return static::query()
             ->forJobAssignment()
             ->orderBy('unique_code')
-            ->get(['id', 'unique_code', 'username', 'fullname', 'add_job_modules'])
+            ->get(['id', 'unique_code', 'username', 'fullname', 'add_job_staff_modules', 'add_job_checker_modules'])
             ->unique('unique_code')
-            ->filter(fn (self $user) => $user->appearsInAddJobModule($module))
+            ->filter(fn (self $user) => $user->appearsInAddJobModule($module, $assignmentRole))
             ->values();
     }
 
