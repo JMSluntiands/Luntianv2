@@ -2399,7 +2399,7 @@ html:not([data-theme="dark"]) .page-lbs-list .lbs-data-row:hover .lbs-td {
 .page-luntian-list .luntian-table col.luntian-col-action { width: 110px; }
 .page-luntian-list .luntian-table col.luntian-col-log-date { width: 150px; }
 .page-luntian-list .luntian-table col.luntian-col-client { width: 220px; }
-.page-luntian-list .luntian-table col.luntian-col-client-name { width: 130px; }
+.page-luntian-list .luntian-table col.luntian-col-job-address { width: 260px; }
 .page-luntian-list .luntian-table col.luntian-col-reference { width: 150px; }
 .page-luntian-list .luntian-table col.luntian-col-job-type { width: 360px; }
 .page-luntian-list .luntian-table col.luntian-col-priority { width: 150px; }

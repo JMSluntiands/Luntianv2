@@ -123,7 +123,7 @@
                             $selAssigned = strtoupper((string) old('assigned', $job->assigned));
                         @endphp
                         <select name="assigned" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                            @include('partials.assignment-user-options', ['selected' => $selAssigned, 'includeGm' => true, 'preserveSelected' => true])
+                            @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentStaffUsers ?? [], 'selected' => $selAssigned, 'includeSelectPlaceholder' => true, 'preserveSelected' => true, 'includeGm' => false])
                         </select>
                     </div>
                     <div>
@@ -132,7 +132,7 @@
                             $selChecked = strtoupper((string) old('checked', $job->checked));
                         @endphp
                         <select name="checked" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                            @include('partials.assignment-user-options', ['selected' => $selChecked, 'includeGm' => true, 'preserveSelected' => true])
+                            @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentCheckerUsers ?? [], 'selected' => $selChecked, 'includeSelectPlaceholder' => true, 'preserveSelected' => true, 'includeGm' => false])
                         </select>
                     </div>
                 </div>

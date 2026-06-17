@@ -136,13 +136,13 @@
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-assigned">Staff</label>
                     <select id="edit-job-assigned" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
-                        @include('partials.assignment-user-options', ['selected' => $selAssignedRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => '—', 'preserveSelected' => true])
+                        @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentStaffUsers ?? ($assignmentUsers ?? []), 'selected' => $selAssignedRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => '—', 'preserveSelected' => true, 'includeGm' => false])
                     </select>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-checker">Checker</label>
                     <select id="edit-job-checker" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
-                        @include('partials.assignment-user-options', ['selected' => $selCheckerRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => '—', 'preserveSelected' => true])
+                        @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentCheckerUsers ?? ($assignmentUsers ?? []), 'selected' => $selCheckerRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => '—', 'preserveSelected' => true, 'includeGm' => false])
                     </select>
                 </div>
                 @endif

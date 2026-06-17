@@ -56,7 +56,7 @@ class BluinqJobController extends Controller
 
     public function list()
     {
-        return view('bluinq.list', ['sidebar_active' => 'bluinq.list']);
+        return view('bluinq.list', array_merge(['sidebar_active' => 'bluinq.list'], User::assignmentInitialsViewData('bluinq')));
     }
 
     /**
@@ -110,7 +110,7 @@ class BluinqJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentSelect = User::assignmentSelectLists('bluinq');
 
         $activityLogs = DB::table('bph_activity_logs')
             ->where('job_id', (int) $viewJob->job_id)
@@ -181,7 +181,9 @@ class BluinqJobController extends Controller
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
             'bphClientEmails' => $bphClientEmails,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers' => $assignmentSelect['assignmentStaffUsers'],
         ]);
     }
 

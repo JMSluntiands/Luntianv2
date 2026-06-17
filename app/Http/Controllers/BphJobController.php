@@ -94,6 +94,15 @@ class BphJobController extends Controller
         };
     }
 
+    private function pipelineAssignmentModule(): string
+    {
+        return match ($this->pipelineJobTable()) {
+            'job_amt' => 'amt',
+            'job_fyrs' => 'fyrs',
+            default => 'bph',
+        };
+    }
+
     private function slackProductLabelForPipelineJob(object $job): string
     {
         $cc = strtolower(trim((string) ($job->client_code ?? '')));
@@ -124,7 +133,7 @@ class BphJobController extends Controller
 
     public function list()
     {
-        return view('bph.list', ['sidebar_active' => 'bph.list']);
+        return view('bph.list', array_merge(['sidebar_active' => 'bph.list'], User::assignmentInitialsViewData('bph')));
     }
 
     public function completed()
@@ -754,7 +763,7 @@ class BphJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentSelect = User::assignmentSelectLists($this->pipelineAssignmentModule());
 
         $activityLogs = DB::table('bph_activity_logs')
             ->where('job_id', (int) $viewJob->job_id)
@@ -824,7 +833,9 @@ class BphJobController extends Controller
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
             'bphClientEmails' => $bphClientEmails,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers' => $assignmentSelect['assignmentStaffUsers'],
         ]);
     }
 
@@ -894,11 +905,13 @@ class BphJobController extends Controller
             unset($data['notes']);
         }
 
-        $allowedUsers = User::allowedAssignmentUserCodes();
+        $assignmentModule = $this->pipelineAssignmentModule();
+        $staffAllowed = User::allowedAssignmentUserCodes($assignmentModule, 'staff');
+        $checkerAllowed = User::allowedAssignmentUserCodes($assignmentModule, 'checker');
         $assignedCandidate = strtoupper((string) ($data['staff_id'] ?? $data['assigned'] ?? $job->assigned ?? ''));
         $checkedCandidate = strtoupper((string) ($data['checker_id'] ?? $data['checked'] ?? $job->checked ?? ''));
-        if (($assignedCandidate !== '' && !in_array($assignedCandidate, $allowedUsers, true))
-            || ($checkedCandidate !== '' && !in_array($checkedCandidate, $allowedUsers, true))) {
+        if (($assignedCandidate !== '' && ! in_array($assignedCandidate, $staffAllowed, true))
+            || ($checkedCandidate !== '' && ! in_array($checkedCandidate, $checkerAllowed, true))) {
             return redirect()
                 ->back()
                 ->withErrors(['assigned' => 'Assigned/Checked must be a valid user code.'])

@@ -88,7 +88,7 @@ class User extends Authenticatable
     public function appearsInAddJobModule(?string $module, string $assignmentRole = 'staff'): bool
     {
         if ($module === null || trim($module) === '') {
-            return true;
+            return false;
         }
 
         $modules = $assignmentRole === 'checker'
@@ -107,32 +107,56 @@ class User extends Authenticatable
         return static::query()
             ->forJobAssignment()
             ->orderBy('unique_code')
+            ->orderByDesc('id')
             ->get(['id', 'unique_code', 'username', 'fullname', 'add_job_staff_modules', 'add_job_checker_modules'])
-            ->unique('unique_code')
-            ->filter(fn (self $user) => $user->appearsInAddJobModule($module, $assignmentRole))
+            ->groupBy(fn (self $user) => strtoupper(trim((string) $user->unique_code)))
+            ->map(fn (Collection $group) => $group->first(
+                fn (self $user) => $user->appearsInAddJobModule($module, $assignmentRole)
+            ))
+            ->filter()
+            ->sortBy(fn (self $user) => strtoupper(trim((string) $user->unique_code)))
             ->values();
     }
 
-    public static function assignmentUserCodes(): Collection
+    /** Default Assigned To / Checked By when GM is eligible for that dropdown. */
+    public static function defaultAssignmentSelection(Collection $users): string
     {
-        return static::query()
-            ->forJobAssignment()
-            ->orderBy('unique_code')
-            ->pluck('unique_code')
-            ->filter()
-            ->map(fn ($v) => strtoupper((string) $v))
-            ->unique()
-            ->values();
+        foreach ($users as $user) {
+            $code = strtoupper(trim((string) (is_object($user) ? ($user->unique_code ?? '') : $user)));
+            if ($code === 'GM') {
+                return 'GM';
+            }
+        }
+
+        return '';
+    }
+
+    /** @return array{assignmentStaffUsers: Collection, assignmentCheckerUsers: Collection} */
+    public static function assignmentSelectLists(?string $module): array
+    {
+        return [
+            'assignmentStaffUsers' => static::assignmentUsersForSelect($module, 'staff'),
+            'assignmentCheckerUsers' => static::assignmentUsersForSelect($module, 'checker'),
+        ];
+    }
+
+    /** @return array{assignmentStaffCodes: list<string>, assignmentCheckerCodes: list<string>} */
+    public static function assignmentInitialsViewData(?string $module): array
+    {
+        return [
+            'assignmentStaffCodes' => static::allowedAssignmentUserCodes($module, 'staff'),
+            'assignmentCheckerCodes' => static::allowedAssignmentUserCodes($module, 'checker'),
+        ];
     }
 
     /** @return list<string> */
-    public static function allowedAssignmentUserCodes(): array
+    public static function allowedAssignmentUserCodes(?string $module, string $assignmentRole = 'staff'): array
     {
-        $codes = static::assignmentUserCodes()->all();
-        if (! in_array('GM', $codes, true)) {
-            $codes[] = 'GM';
-        }
-
-        return array_values(array_filter($codes, fn ($v) => $v !== ''));
+        return static::assignmentUsersForSelect($module, $assignmentRole)
+            ->map(fn (self $user) => strtoupper(trim((string) $user->unique_code)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

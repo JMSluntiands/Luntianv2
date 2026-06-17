@@ -156,7 +156,7 @@ class LeadingEnergyJobController extends Controller
 
     public function list()
     {
-        return view('leading_energy.list', ['sidebar_active' => 'leading_energy.list']);
+        return view('leading_energy.list', array_merge(['sidebar_active' => 'leading_energy.list'], User::assignmentInitialsViewData('leading_energy')));
     }
 
     public function show(int $id)

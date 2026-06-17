@@ -2,6 +2,14 @@
     $selectedValue = strtoupper(trim((string) ($selected ?? '')));
     $showPlaceholder = (bool) ($includeSelectPlaceholder ?? false);
     $showGm = (bool) ($includeGm ?? true);
+    $assignmentUserList = collect($assignmentUsers ?? []);
+
+    if ($selectedValue === '' && empty($preserveSelected)) {
+        $gmDefault = \App\Models\User::defaultAssignmentSelection($assignmentUserList);
+        if ($gmDefault !== '') {
+            $selectedValue = $gmDefault;
+        }
+    }
 @endphp
 
 @if($showPlaceholder)
@@ -12,7 +20,7 @@
     <option value="GM" @selected($selectedValue === 'GM')>GM</option>
 @endif
 
-@foreach($assignmentUsers ?? [] as $user)
+@foreach($assignmentUserList as $user)
     @php
         if (is_object($user)) {
             $code = trim((string) ($user->unique_code ?? ''));
@@ -37,7 +45,7 @@
 
 @if(!empty($preserveSelected) && $selectedValue !== '' && $selectedValue !== 'GM')
     @php
-        $existingCodes = collect($assignmentUsers ?? [])
+        $existingCodes = $assignmentUserList
             ->map(fn ($u) => strtoupper(trim((string) (is_object($u) ? ($u->unique_code ?? '') : $u))))
             ->filter()
             ->all();

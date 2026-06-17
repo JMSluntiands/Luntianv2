@@ -195,7 +195,7 @@ class LcHomeBuilderJobController extends Controller
 
     public function list()
     {
-        return view('lc_home_builder.list', ['sidebar_active' => 'lc_home_builder.list']);
+        return view('lc_home_builder.list', array_merge(['sidebar_active' => 'lc_home_builder.list'], User::assignmentInitialsViewData('lc_home_builder')));
     }
 
     public function update(Request $request, int $id)

@@ -31,7 +31,7 @@
                         <col class="luntian-col-action">
                         <col class="luntian-col-log-date">
                         <col class="luntian-col-client">
-                        <col class="luntian-col-client-name">
+                        <col class="luntian-col-job-address">
                         <col class="luntian-col-reference">
                         <col class="luntian-col-job-type">
                         <col class="luntian-col-priority">
@@ -57,7 +57,7 @@
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="luntian-th" data-sort="">
-                                <span>Client Name</span>
+                                <span>Job Address</span>
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="luntian-th" data-sort="">
@@ -152,7 +152,7 @@
                                     <span class="luntian-date-line1">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span>
                                     <span class="luntian-date-line2">{{ $job->ncc_compliance ?? '' }}</span>
                                 </td>
-                                <td class="luntian-td luntian-td-nowrap" data-label="Client Name">{{ $job->client_code ?? '—' }}</td>
+                                <td class="luntian-td" data-label="Job Address">{{ trim((string) ($job->address_client ?? '')) !== '' ? $job->address_client : '—' }}</td>
                                 <td class="luntian-td luntian-td-nowrap" data-label="Reference">{{ $job->job_reference_no ?? '—' }}</td>
                                 <td class="luntian-td luntian-td-job-type" data-label="Job Type">
                                     <span class="luntian-job-line1">{{ $job->job_type ?? '—' }}</span>
@@ -171,28 +171,10 @@
                                     @endif
                                 </td>
                                 <td class="luntian-td luntian-td-nowrap" data-label="Staff" style="white-space: nowrap;">
-                                    <div class="lbs-initials-wrap relative inline-block" data-initials-wrap data-role="staff">
-                                        <button type="button" class="lbs-initials lbs-initials-trigger inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200" data-initials-trigger aria-haspopup="true" aria-expanded="false">{{ $job->staff_id ? strtoupper($job->staff_id) : '--' }}</button>
-                                        <div class="lbs-initials-menu fixed z-[9999] flex min-w-[70px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="SB">SB</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="GM">GM</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="PEP">PEP</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JDR">JDR</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JS">JS</button>
-                                        </div>
-                                    </div>
+                                    @include('partials.assignment-initials-cell', ['role' => 'staff', 'current' => $job->staff_id ?? '', 'options' => $assignmentStaffCodes ?? []])
                                 </td>
                                 <td class="luntian-td luntian-td-nowrap" data-label="Checker" style="white-space: nowrap;">
-                                    <div class="lbs-initials-wrap relative inline-block" data-initials-wrap data-role="checker">
-                                        <button type="button" class="lbs-initials lbs-initials-trigger inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200" data-initials-trigger aria-haspopup="true" aria-expanded="false">{{ $job->checker_id ? strtoupper($job->checker_id) : '--' }}</button>
-                                        <div class="lbs-initials-menu fixed z-[9999] flex min-w-[70px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="SB">SB</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="GM">GM</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="PEP">PEP</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JDR">JDR</button>
-                                            <button type="button" role="menuitem" class="lbs-initials-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10 dark:text-slate-200 dark:hover:bg-white/10" data-value="JS">JS</button>
-                                        </div>
-                                    </div>
+                                    @include('partials.assignment-initials-cell', ['role' => 'checker', 'current' => $job->checker_id ?? '', 'options' => $assignmentCheckerCodes ?? []])
                                 </td>
                                 <td class="luntian-td luntian-td-nowrap" data-label="Status" style="white-space: nowrap;">
                                     @if($canEditStatus && count($statusOptions) > 0)

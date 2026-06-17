@@ -71,7 +71,7 @@ class AmtJobController extends Controller
 
     public function list()
     {
-        return view('amt.list', ['sidebar_active' => 'amt.list']);
+        return view('amt.list', array_merge(['sidebar_active' => 'amt.list'], User::assignmentInitialsViewData('amt')));
     }
 
     /** Request for quotation — placeholder before job list workflow. */
@@ -131,7 +131,7 @@ class AmtJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentSelect = User::assignmentSelectLists('amt');
 
         $activityLogs = DB::table('bph_activity_logs')
             ->where('job_id', (int) $viewJob->job_id)
@@ -206,7 +206,9 @@ class AmtJobController extends Controller
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
             'bphClientEmails' => $amtClientEmails,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers' => $assignmentSelect['assignmentStaffUsers'],
         ]);
     }
 

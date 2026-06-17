@@ -134,7 +134,7 @@ class LbsJobController extends Controller
 
         $checkerUploads = $checkerUploadsQuery->get();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentSelect = User::assignmentSelectLists($this->assignmentModuleForJob($job));
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -172,7 +172,9 @@ class LbsJobController extends Controller
             'jobRequests'      => $jobRequests,
             'activityLogs'     => $activityLogs,
             'userRoleMap'      => $userRoleMap,
-            'assignmentUsers'  => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers'  => $assignmentSelect['assignmentStaffUsers'],
             'checkerUploads'   => $checkerUploads,
             'runComments'      => $runComments,
             'jobComments'      => $jobComments,
@@ -245,6 +247,7 @@ class LbsJobController extends Controller
 
         $priorityColor = !empty($legacyJob->priority) ? Priority::where('name', $legacyJob->priority)->value('color') : null;
         $statusColor = !empty($legacyJob->job_status) ? Status::where('name', $legacyJob->job_status)->value('color') : null;
+        $assignmentSelect = User::assignmentSelectLists('efficient_living');
 
         return view('efficient_living.view', [
             'sidebar_active' => 'efficient_living.list',
@@ -260,7 +263,9 @@ class LbsJobController extends Controller
             'jobRequests' => JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get(),
             'activityLogs' => collect(),
             'userRoleMap' => [],
-            'assignmentUsers' => User::assignmentUsersForSelect(),
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers' => $assignmentSelect['assignmentStaffUsers'],
             'checkerUploads' => collect(),
             'runComments' => collect(),
             'jobComments' => collect(),
@@ -345,7 +350,7 @@ class LbsJobController extends Controller
             ->orderByDesc('uploaded_at')
             ->get();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentSelect = User::assignmentSelectLists($this->assignmentModuleForJob($job));
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -371,7 +376,9 @@ class LbsJobController extends Controller
             'jobRequests'      => $jobRequests,
             'activityLogs'     => $activityLogs,
             'userRoleMap'      => $userRoleMap,
-            'assignmentUsers'  => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers'  => $assignmentSelect['assignmentStaffUsers'],
             'checkerUploads'   => $checkerUploads,
             'runComments'      => $runComments,
             'jobComments'      => $jobComments,
@@ -1169,7 +1176,7 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'formsJobs' => $formsJobs,
             'priorityColors' => $priorityColors,
-        ], $this->statusBadgeColorMaps());
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('lbs'));
     }
 
     public function index()
@@ -1256,7 +1263,7 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statuses' => $statuses,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('efficient_living')));
     }
 
     public function efficientLivingCompleted()
@@ -1287,7 +1294,7 @@ class LbsJobController extends Controller
             'isEfficientLiving' => true,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('efficient_living')));
     }
 
     public function efficientLivingReview()
@@ -1302,7 +1309,7 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'isEfficientLiving' => true,
             'statuses' => $statuses,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('efficient_living')));
     }
 
     public function efficientLivingTrash()
@@ -1385,6 +1392,7 @@ class LbsJobController extends Controller
                     'j.units',
                     'j.job_status',
                     'j.completion_date',
+                    'j.address_client',
                     'ca.client_account_name'
                 )
                 ->orderByDesc('j.log_date')
@@ -1404,7 +1412,7 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statuses' => $statuses,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('luntian')));
     }
 
     public function luntianCompleted()
@@ -1435,7 +1443,7 @@ class LbsJobController extends Controller
             'isLuntian' => true,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('luntian')));
     }
 
     public function luntianReview()
@@ -1450,7 +1458,7 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'isLuntian' => true,
             'statuses' => $statuses,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('luntian')));
     }
 
     public function luntianTrash()
@@ -1754,7 +1762,7 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('lbs')));
     }
 
     public function review()
@@ -1806,7 +1814,7 @@ class LbsJobController extends Controller
             'jobs'           => $jobs,
             'priorityColors' => $priorityColors,
             'statuses'       => $statuses,
-        ], $this->statusBadgeColorMaps()));
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('lbs')));
     }
 
     public function mailbox()
@@ -2535,6 +2543,19 @@ class LbsJobController extends Controller
             'LT01' => 'luntian',
             default => 'lbs',
         };
+    }
+
+    private function assignmentModuleForJob(object $job): string
+    {
+        if ($this->isEfficientLivingJob($job)) {
+            return 'efficient_living';
+        }
+
+        if ($this->isLuntianJob($job)) {
+            return 'luntian';
+        }
+
+        return $this->assignmentModuleForClientCode((string) ($job->client_code ?? ''));
     }
 
     /**

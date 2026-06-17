@@ -72,7 +72,7 @@ class FyrsJobController extends Controller
 
     public function list()
     {
-        return view('fyrs.list', ['sidebar_active' => 'fyrs.list']);
+        return view('fyrs.list', array_merge(['sidebar_active' => 'fyrs.list'], User::assignmentInitialsViewData('fyrs')));
     }
 
     /**
@@ -122,7 +122,7 @@ class FyrsJobController extends Controller
         $statuses = Status::orderBy('name')->get();
         $clientAccounts = collect();
 
-        $assignmentUsers = User::assignmentUsersForSelect();
+        $assignmentSelect = User::assignmentSelectLists('fyrs');
 
         $activityLogs = DB::table('bph_activity_logs')
             ->where('job_id', (int) $viewJob->job_id)
@@ -197,7 +197,9 @@ class FyrsJobController extends Controller
             'compliances' => $compliances,
             'jobRequests' => $jobRequests,
             'bphClientEmails' => $bphClientEmails,
-            'assignmentUsers' => $assignmentUsers,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers' => $assignmentSelect['assignmentStaffUsers'],
         ]);
     }
 

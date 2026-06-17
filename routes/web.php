@@ -179,7 +179,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/csp/job/{id}/print/compliance-summary', [CspJobController::class, 'printComplianceSummary'])->name('csp.job.printCompliance');
 
     Route::get('/dashboard/csp/list', function () {
-        return view('csp.list', ['sidebar_active' => 'csp.list']);
+        return view('csp.list', array_merge(['sidebar_active' => 'csp.list'], User::assignmentInitialsViewData('csp')));
     })->name('csp.list');
     Route::get('/dashboard/csp/completed', function () {
         return view('csp.completed', ['sidebar_active' => 'csp.completed']);
@@ -259,7 +259,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::put('/dashboard/nh/job/{id}', [NhJobController::class, 'update'])->name('nh.update');
     Route::post('/dashboard/nh/job/{id}/send-slack', [NhJobController::class, 'sendSlackNotification'])->name('nh.job.sendSlack');
     Route::post('/dashboard/nh/job/{id}/send-submission-email', [NhJobController::class, 'sendSubmissionEmail'])->name('nh.job.sendSubmissionEmail');
-    Route::get('/dashboard/nh/list', fn () => view('nh.list', ['sidebar_active' => 'nh.list']))->name('nh.list');
+    Route::get('/dashboard/nh/list', fn () => view('nh.list', array_merge(['sidebar_active' => 'nh.list'], User::assignmentInitialsViewData('nh'))))->name('nh.list');
     Route::get('/dashboard/nh/completed', fn () => view('nh.completed', ['sidebar_active' => 'nh.completed']))->name('nh.completed');
     Route::get('/dashboard/nh/review', fn () => view('nh.review', ['sidebar_active' => 'nh.review']))->name('nh.review');
     Route::get('/dashboard/nh/mailbox', [NhJobController::class, 'mailbox'])->name('nh.mailbox');
