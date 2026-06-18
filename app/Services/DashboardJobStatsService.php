@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
- * Dashboard job counts: all buckets use jobs **created / logged today** (Philippine calendar).
- * Sub-counts split that cohort by current status (case-insensitive).
+ * Dashboard job counts (Philippine calendar):
+ * - total / processing / pending: jobs **logged today** (log_date or created_at).
+ * - completed: jobs **completed today** (completion_date or BPH `date`).
  */
 class DashboardJobStatsService
 {
@@ -100,14 +101,14 @@ class DashboardJobStatsService
         };
     }
 
-    /** Base: JOBS%, branch split; every bucket restricted to log_date calendar day = today (Manila). */
+    /** Base: JOBS%, branch split; date window depends on bucket (log_date vs completion_date). */
     private static function countJobsTable(string $bucket, string $productLine = 'lbs'): int
     {
         if (! Schema::hasTable('jobs')) {
             return 0;
         }
 
-        [, , $date] = self::dayBoundsManila();
+        [$start, $end, $date] = self::dayBoundsManila();
 
         $q = DB::table('jobs')->where('reference', 'like', 'JOBS%');
 
@@ -119,8 +120,13 @@ class DashboardJobStatsService
             JobCountsScope::applyLbsStandardJobsScope($q, '');
         }
 
-        $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])
-            ->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
+        if ($bucket === 'completed') {
+            $q->whereBetween('completion_date', [$start, $end]);
+        } else {
+            $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date]);
+        }
+
+        $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
 
         JobCountsScope::applyJobsTableAssignment($q);
 
@@ -143,7 +149,7 @@ class DashboardJobStatsService
         return (int) $q->count();
     }
 
-    /** Every bucket: created_at today (Manila window); then status filter for sub-cards. */
+    /** Date window: created_at for most buckets; BPH `date` (completion) for completed. */
     private static function countJobBph(string $bucket, string $which): int
     {
         $table = 'job_bph';
@@ -157,7 +163,7 @@ class DashboardJobStatsService
             return 0;
         }
 
-        [$start, $end] = self::dayBoundsManila();
+        [$start, $end, $date] = self::dayBoundsManila();
 
         $q = DB::table($table);
 
@@ -171,8 +177,13 @@ class DashboardJobStatsService
             $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
         }
 
-        $q->whereBetween('created_at', [$start, $end])
-            ->whereRaw("LOWER(TRIM(status)) != ?", ['archived']);
+        if ($bucket === 'completed') {
+            $q->where('date', $date);
+        } else {
+            $q->whereBetween('created_at', [$start, $end]);
+        }
+
+        $q->whereRaw("LOWER(TRIM(status)) != ?", ['archived']);
 
         JobCountsScope::applyJobBphAssignment($q);
 
