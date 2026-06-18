@@ -31,7 +31,7 @@
                         <col class="luntian-col-action">
                         <col class="luntian-col-log-date">
                         <col class="luntian-col-client">
-                        <col class="luntian-col-job-address">
+                        <col class="luntian-col-client-reference">
                         <col class="luntian-col-reference">
                         <col class="luntian-col-job-type">
                         <col class="luntian-col-priority">
@@ -57,7 +57,7 @@
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="luntian-th" data-sort="">
-                                <span>Job Address</span>
+                                <span>Client Reference</span>
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="luntian-th" data-sort="">
@@ -152,7 +152,7 @@
                                     <span class="luntian-date-line1">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span>
                                     <span class="luntian-date-line2">{{ $job->ncc_compliance ?? '' }}</span>
                                 </td>
-                                <td class="luntian-td" data-label="Job Address">{{ trim((string) ($job->address_client ?? '')) !== '' ? $job->address_client : '—' }}</td>
+                                <td class="luntian-td" data-label="Client Reference">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</td>
                                 <td class="luntian-td luntian-td-nowrap" data-label="Reference">{{ $job->job_reference_no ?? '—' }}</td>
                                 <td class="luntian-td luntian-td-job-type" data-label="Job Type">
                                     <span class="luntian-job-line1">{{ $job->job_type ?? '—' }}</span>

@@ -10,8 +10,8 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total / pending: jobs **logged today** (log_date or created_at).
- * - processing: jobs **logged today only** (log_date or created_at) with in-progress status.
+ * - total: jobs **logged today** OR **completed today** (log_date / created_at + completion_date / BPH date).
+ * - processing / pending: jobs **logged today** (log_date or created_at).
  * - completed: jobs **completed today** (completion_date or BPH `date`).
  */
 class DashboardJobStatsService
@@ -28,28 +28,49 @@ class DashboardJobStatsService
         return [$start, $end, $date];
     }
 
+    private static function whereJobsLogDateToday($q, string $start, string $end, string $date): void
+    {
+        $q->where(function ($w) use ($start, $end, $date) {
+            $w->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])
+                ->orWhereBetween('log_date', [$start, $end]);
+        });
+    }
+
     private static function applyJobsTableDayFilter($q, string $bucket, string $start, string $end, string $date): void
     {
-        if ($bucket === 'completed') {
-            $q->whereBetween('completion_date', [$start, $end]);
+        match ($bucket) {
+            'completed' => $q->whereBetween('completion_date', [$start, $end]),
+            'total' => $q->where(function ($w) use ($start, $end, $date) {
+                $w->where(function ($logged) use ($start, $end, $date) {
+                    self::whereJobsLogDateToday($logged, $start, $end, $date);
+                })->orWhere(function ($completed) use ($start, $end) {
+                    $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
+                        ->whereBetween('completion_date', [$start, $end]);
+                });
+            }),
+            default => self::whereJobsLogDateToday($q, $start, $end, $date),
+        };
+    }
 
-            return;
-        }
-
-        // total, processing, pending: log_date today (Manila) — processing never uses completion_date
-        $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date]);
+    private static function whereJobBphLoggedToday($q, string $start, string $end): void
+    {
+        $q->whereBetween('created_at', [$start, $end]);
     }
 
     private static function applyJobBphDayFilter($q, string $bucket, string $start, string $end, string $date): void
     {
-        if ($bucket === 'completed') {
-            $q->where('date', $date);
-
-            return;
-        }
-
-        // total, processing, pending: created_at today — processing never uses BPH `date` (completion)
-        $q->whereBetween('created_at', [$start, $end]);
+        match ($bucket) {
+            'completed' => $q->where('date', $date),
+            'total' => $q->where(function ($w) use ($start, $end, $date) {
+                $w->where(function ($logged) use ($start, $end) {
+                    self::whereJobBphLoggedToday($logged, $start, $end);
+                })->orWhere(function ($completed) use ($date) {
+                    $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
+                        ->where('date', $date);
+                });
+            }),
+            default => self::whereJobBphLoggedToday($q, $start, $end),
+        };
     }
 
     /**

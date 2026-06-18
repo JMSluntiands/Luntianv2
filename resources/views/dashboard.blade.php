@@ -116,13 +116,13 @@
         <div class="dashboard-page" data-dashboard-fallback>
             <header class="dashboard-page__header">
                 <h1 class="dashboard-page__title">Dashboard</h1>
-                <p class="dashboard-page__subtitle">Welcome back! Here&apos;s an overview of your jobs and calendar.</p>
+                <p class="dashboard-page__subtitle">As of today, {{ now('Asia/Manila')->format('F j, Y') }} &mdash; overview of your jobs and calendar.</p>
             </header>
             <section class="dashboard-cards">
                 <div class="dashboard-card dashboard-card--total">
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
-                        <span class="dashboard-card__label">Total Jobs (As of Today)</span>
+                        <span class="dashboard-card__label">Total Jobs</span>
                         <p class="dashboard-card__value">{{ array_sum($dTotal) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M22 13a18.15 18.15 0 0 1-20 0"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg></span>
                         <div class="dashboard-card__sep"></div>
@@ -130,7 +130,7 @@
                             @foreach ($dTotal as $rowLabel => $rowValue)
                                 <div class="dashboard-card__row">
                                     <span class="dashboard-card__row-label-group">
-                                        <span class="dashboard-card__row-label dashboard-card__row-status">Total jobs as of today</span>
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Total jobs</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
                                     <span class="dashboard-card__row-value">{{ $rowValue }}</span>
@@ -142,7 +142,7 @@
                 <div class="dashboard-card dashboard-card--completed">
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
-                        <span class="dashboard-card__label">Completed Jobs (As of Today)</span>
+                        <span class="dashboard-card__label">Completed Jobs</span>
                         <p class="dashboard-card__value">{{ array_sum($dCompleted) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></span>
                         <div class="dashboard-card__sep"></div>
@@ -150,7 +150,7 @@
                             @foreach ($dCompleted as $rowLabel => $rowValue)
                                 <div class="dashboard-card__row">
                                     <span class="dashboard-card__row-label-group">
-                                        <span class="dashboard-card__row-label dashboard-card__row-status">Completed as of today</span>
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Completed</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
                                     <span class="dashboard-card__row-value">{{ $rowValue }}</span>
@@ -162,7 +162,7 @@
                 <div class="dashboard-card dashboard-card--processing">
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
-                        <span class="dashboard-card__label">Processing (As of Today)</span>
+                        <span class="dashboard-card__label">Processing</span>
                         <p class="dashboard-card__value">{{ array_sum($dProcessing) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
                         <div class="dashboard-card__sep"></div>
@@ -170,7 +170,7 @@
                             @foreach ($dProcessing as $rowLabel => $rowValue)
                                 <div class="dashboard-card__row">
                                     <span class="dashboard-card__row-label-group">
-                                        <span class="dashboard-card__row-label dashboard-card__row-status">Processing as of today</span>
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Processing</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
                                     <span class="dashboard-card__row-value">{{ $rowValue }}</span>
@@ -182,7 +182,7 @@
                 <div class="dashboard-card dashboard-card--pending">
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
-                        <span class="dashboard-card__label">Pending (As of Today)</span>
+                        <span class="dashboard-card__label">Pending</span>
                         <p class="dashboard-card__value">{{ array_sum($dPending) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
                         <div class="dashboard-card__sep"></div>
@@ -190,7 +190,7 @@
                             @foreach ($dPending as $rowLabel => $rowValue)
                                 <div class="dashboard-card__row">
                                     <span class="dashboard-card__row-label-group">
-                                        <span class="dashboard-card__row-label dashboard-card__row-status">Pending as of today</span>
+                                        <span class="dashboard-card__row-label dashboard-card__row-status">Pending</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
                                     <span class="dashboard-card__row-value">{{ $rowValue }}</span>

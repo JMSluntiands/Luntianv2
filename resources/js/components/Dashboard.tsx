@@ -5,10 +5,10 @@ type CardVariant = 'total' | 'completed' | 'processing' | 'pending';
 
 /** Primary line in each card’s breakdown — ties the row to what that card measures (not the branch name). */
 const CARD_BREAKDOWN_STATUS: Record<CardVariant, string> = {
-  total: 'Total jobs as of today',
-  completed: 'Completed as of today',
-  processing: 'Processing as of today',
-  pending: 'Pending as of today',
+  total: 'Total jobs',
+  completed: 'Completed',
+  processing: 'Processing',
+  pending: 'Pending',
 };
 
 type DashboardStatsPayload = {
@@ -150,7 +150,7 @@ const BRANCH_ROUTE_PREFIX: Record<string, string> = {
 const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
-    title: 'Total Jobs (As of Today)',
+    title: 'Total Jobs',
     bgClass: 'bg-[#6b4a38] dark:bg-[#6b4a38]',
     iconColor: 'text-white',
     pillClass: 'bg-black/25 text-white',
@@ -165,7 +165,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     key: 'completed',
-    title: 'Completed Jobs (As of Today)',
+    title: 'Completed Jobs',
     bgClass: 'bg-[#a8622a] dark:bg-[#a8622a]',
     iconColor: 'text-white',
     pillClass: 'bg-black/20 text-white',
@@ -178,7 +178,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     key: 'processing',
-    title: 'Processing (As of Today)',
+    title: 'Processing',
     bgClass: 'bg-[#8f6f32] dark:bg-[#8f6f32]',
     iconColor: 'text-white',
     pillClass: 'bg-black/20 text-white',
@@ -191,7 +191,7 @@ const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     key: 'pending',
-    title: 'Pending (As of Today)',
+    title: 'Pending',
     bgClass: 'bg-[#d4c9b8] dark:bg-[#d4c9b8]',
     iconColor: 'text-slate-700',
     pillClass: 'bg-slate-600/25 text-slate-800',
@@ -214,6 +214,17 @@ function buildStatCards(stats: DashboardStatsPayload | null): StatCardData[] {
     const value = items.reduce((sum, it) => sum + it.value, 0);
     return { ...tpl, value, items };
   });
+}
+
+function dashboardAsOfSubtitle(): string {
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Manila',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date());
+
+  return `As of today, ${formatted} — overview of your jobs and calendar.`;
 }
 
 function normalizeBranchKey(s: string): string {
@@ -532,9 +543,7 @@ export default function Dashboard() {
     <div className="dashboard-page min-h-0 w-full">
       <header className="dashboard-page__header">
         <h1 className="dashboard-page__title">Dashboard</h1>
-        <p className="dashboard-page__subtitle">
-          Welcome back! Here&apos;s an overview of your jobs and calendar.
-        </p>
+        <p className="dashboard-page__subtitle">{dashboardAsOfSubtitle()}</p>
       </header>
 
       <section className="dashboard-cards">
