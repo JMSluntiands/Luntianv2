@@ -10,8 +10,8 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total: jobs **logged today** OR **completed today** (log_date / created_at + completion_date / BPH date).
- * - processing / pending: jobs **logged today** (log_date or created_at).
+ * - total: jobs **logged today** (log_date) plus **completed today** (completion_date).
+ * - processing / pending: jobs **logged today** (log_date or created_at) by status.
  * - completed: jobs **completed today** (completion_date or BPH `date`).
  */
 class DashboardJobStatsService
@@ -28,28 +28,45 @@ class DashboardJobStatsService
         return [$start, $end, $date];
     }
 
-    private static function whereJobsLogDateToday($q, string $start, string $end, string $date): void
+    /** jobs.log_date calendar day = today (Manila); varchar/datetime safe. */
+    private static function whereJobsLogDateToday($q, string $date): void
     {
-        $q->where(function ($w) use ($start, $end, $date) {
-            $w->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])
-                ->orWhereBetween('log_date', [$start, $end]);
-        });
+        $q->whereRaw("LEFT(NULLIF(TRIM(log_date), ''), 10) = ?", [$date]);
+    }
+
+    private static function applyLbsPipelineExclusions($q, string $productLine): void
+    {
+        if ($productLine === 'lbs') {
+            $q->where(function ($w) {
+                $w->whereNull('updated_by')
+                    ->orWhereRaw("UPPER(TRIM(updated_by)) != ?", ['FORMS']);
+            });
+        }
     }
 
     private static function applyJobsTableDayFilter($q, string $bucket, string $start, string $end, string $date): void
     {
-        match ($bucket) {
-            'completed' => $q->whereBetween('completion_date', [$start, $end]),
-            'total' => $q->where(function ($w) use ($start, $end, $date) {
-                $w->where(function ($logged) use ($start, $end, $date) {
-                    self::whereJobsLogDateToday($logged, $start, $end, $date);
+        if ($bucket === 'completed') {
+            $q->whereBetween('completion_date', [$start, $end]);
+
+            return;
+        }
+
+        if ($bucket === 'total') {
+            $q->where(function ($w) use ($start, $end, $date) {
+                $w->where(function ($logged) use ($date) {
+                    self::whereJobsLogDateToday($logged, $date);
                 })->orWhere(function ($completed) use ($start, $end) {
                     $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
                         ->whereBetween('completion_date', [$start, $end]);
                 });
-            }),
-            default => self::whereJobsLogDateToday($q, $start, $end, $date),
-        };
+            });
+
+            return;
+        }
+
+        // processing, pending: strict log_date today only
+        self::whereJobsLogDateToday($q, $date);
     }
 
     private static function whereJobBphLoggedToday($q, string $start, string $end): void
@@ -59,18 +76,26 @@ class DashboardJobStatsService
 
     private static function applyJobBphDayFilter($q, string $bucket, string $start, string $end, string $date): void
     {
-        match ($bucket) {
-            'completed' => $q->where('date', $date),
-            'total' => $q->where(function ($w) use ($start, $end, $date) {
+        if ($bucket === 'completed') {
+            $q->where('date', $date);
+
+            return;
+        }
+
+        if ($bucket === 'total') {
+            $q->where(function ($w) use ($start, $end, $date) {
                 $w->where(function ($logged) use ($start, $end) {
                     self::whereJobBphLoggedToday($logged, $start, $end);
                 })->orWhere(function ($completed) use ($date) {
                     $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
                         ->where('date', $date);
                 });
-            }),
-            default => self::whereJobBphLoggedToday($q, $start, $end),
-        };
+            });
+
+            return;
+        }
+
+        self::whereJobBphLoggedToday($q, $start, $end);
     }
 
     /**
@@ -147,7 +172,6 @@ class DashboardJobStatsService
         };
     }
 
-    /** Base: JOBS%, branch split; date window depends on bucket (log_date vs completion_date). */
     private static function countJobsTable(string $bucket, string $productLine = 'lbs'): int
     {
         if (! Schema::hasTable('jobs')) {
@@ -166,6 +190,8 @@ class DashboardJobStatsService
             JobCountsScope::applyLbsStandardJobsScope($q, '');
         }
 
+        self::applyLbsPipelineExclusions($q, $productLine);
+
         self::applyJobsTableDayFilter($q, $bucket, $start, $end, $date);
 
         $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
@@ -181,7 +207,7 @@ class DashboardJobStatsService
             case 'processing':
                 $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('for review', 'for email confirmation', 'completed', 'archived')")
                     ->whereNotNull('job_status')
-                    ->whereRaw('TRIM(job_status) != ?', ['']);
+                    ->whereRaw("TRIM(job_status) != ''");
                 break;
             case 'pending':
                 $q->whereRaw("LOWER(TRIM(job_status)) IN ('for review', 'for email confirmation')");
@@ -191,7 +217,6 @@ class DashboardJobStatsService
         return (int) $q->count();
     }
 
-    /** Date window: created_at for most buckets; BPH `date` (completion) for completed. */
     private static function countJobBph(string $bucket, string $which): int
     {
         $table = 'job_bph';
@@ -234,7 +259,7 @@ class DashboardJobStatsService
             case 'processing':
                 $q->whereRaw("LOWER(TRIM(status)) NOT IN ('for review', 'for email confirmation', 'completed', 'archived')")
                     ->whereNotNull('status')
-                    ->whereRaw('TRIM(status) != ?', ['']);
+                    ->whereRaw("TRIM(status) != ''");
                 break;
             case 'pending':
                 $q->whereRaw("LOWER(TRIM(status)) IN ('for review', 'for email confirmation')");
