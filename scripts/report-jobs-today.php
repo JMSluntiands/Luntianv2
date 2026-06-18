@@ -95,10 +95,11 @@ $cProc = (clone $lbsBase)
 echo "  processing (status Processing, log_date today): {$cProc}\n";
 
 $cPen = (clone $lbsBase)
-    ->whereBetween('last_update', [$start, $end])
-    ->whereRaw("LOWER(TRIM(job_status)) IN ('for review', 'for email confirmation')")
+    ->whereRaw("(NULLIF(TRIM(log_date), '') IS NULL OR SUBSTRING(NULLIF(TRIM(log_date), ''), 1, 10) != ?)", [$date])
+    ->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed'])
+    ->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived'])
     ->count();
-echo "  pending (definition): {$cPen}\n";
+echo "  pending (non-completed, log_date not today): {$cPen}\n";
 
 echo "\nSQL (copy-paste check):\n";
 echo DB::table('jobs')

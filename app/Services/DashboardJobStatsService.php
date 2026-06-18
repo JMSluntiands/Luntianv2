@@ -10,9 +10,9 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total: jobs **logged today** (except Completed) plus **completed today** (completion_date).
+ * - total: all **non-completed** jobs plus **completed today** (completion_date).
  * - processing: jobs **logged today** with status **Processing** only.
- * - pending: jobs **logged today** with For Review / For Email Confirmation.
+ * - pending: **non-completed** jobs **not logged today** (backlog).
  * - completed: jobs **completed today** (completion_date or BPH `date`).
  */
 class DashboardJobStatsService
@@ -35,6 +35,12 @@ class DashboardJobStatsService
         $q->whereRaw("LEFT(NULLIF(TRIM(log_date), ''), 10) = ?", [$date]);
     }
 
+    /** jobs.log_date calendar day is not today (Manila); null/empty treated as not today. */
+    private static function whereJobsLogDateNotToday($q, string $date): void
+    {
+        $q->whereRaw("(NULLIF(TRIM(log_date), '') IS NULL OR LEFT(NULLIF(TRIM(log_date), ''), 10) != ?)", [$date]);
+    }
+
     private static function applyLbsPipelineExclusions($q, string $productLine): void
     {
         if ($productLine === 'lbs') {
@@ -54,26 +60,39 @@ class DashboardJobStatsService
         }
 
         if ($bucket === 'total') {
-            $q->where(function ($w) use ($start, $end, $date) {
-                $w->where(function ($logged) use ($date) {
-                    self::whereJobsLogDateToday($logged, $date);
-                    $logged->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed']);
-                })->orWhere(function ($completed) use ($start, $end) {
-                    $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
-                        ->whereBetween('completion_date', [$start, $end]);
-                });
+            $q->where(function ($w) use ($start, $end) {
+                $w->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed'])
+                    ->orWhere(function ($completed) use ($start, $end) {
+                        $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
+                            ->whereBetween('completion_date', [$start, $end]);
+                    });
             });
 
             return;
         }
 
-        // processing, pending: strict log_date today only
+        if ($bucket === 'pending') {
+            self::whereJobsLogDateNotToday($q, $date);
+
+            return;
+        }
+
+        // processing: strict log_date today only
         self::whereJobsLogDateToday($q, $date);
     }
 
     private static function whereJobBphLoggedToday($q, string $start, string $end): void
     {
         $q->whereBetween('created_at', [$start, $end]);
+    }
+
+    private static function whereJobBphLoggedNotToday($q, string $start, string $end): void
+    {
+        $q->where(function ($w) use ($start, $end) {
+            $w->whereNull('created_at')
+                ->orWhere('created_at', '<', $start)
+                ->orWhere('created_at', '>', $end);
+        });
     }
 
     private static function applyJobBphDayFilter($q, string $bucket, string $start, string $end, string $date): void
@@ -86,14 +105,18 @@ class DashboardJobStatsService
 
         if ($bucket === 'total') {
             $q->where(function ($w) use ($start, $end, $date) {
-                $w->where(function ($logged) use ($start, $end) {
-                    self::whereJobBphLoggedToday($logged, $start, $end);
-                    $logged->whereRaw("LOWER(TRIM(status)) != ?", ['completed']);
-                })->orWhere(function ($completed) use ($date) {
-                    $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
-                        ->where('date', $date);
-                });
+                $w->whereRaw("LOWER(TRIM(status)) != ?", ['completed'])
+                    ->orWhere(function ($completed) use ($date) {
+                        $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
+                            ->where('date', $date);
+                    });
             });
+
+            return;
+        }
+
+        if ($bucket === 'pending') {
+            self::whereJobBphLoggedNotToday($q, $start, $end);
 
             return;
         }
@@ -211,7 +234,7 @@ class DashboardJobStatsService
                 $q->whereRaw('LOWER(TRIM(job_status)) = ?', ['processing']);
                 break;
             case 'pending':
-                $q->whereRaw("LOWER(TRIM(job_status)) IN ('for review', 'for email confirmation')");
+                $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed']);
                 break;
         }
 
@@ -261,7 +284,7 @@ class DashboardJobStatsService
                 $q->whereRaw('LOWER(TRIM(status)) = ?', ['processing']);
                 break;
             case 'pending':
-                $q->whereRaw("LOWER(TRIM(status)) IN ('for review', 'for email confirmation')");
+                $q->whereRaw("LOWER(TRIM(status)) != ?", ['completed']);
                 break;
         }
 
