@@ -10,7 +10,8 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total / processing / pending: jobs **logged today** (log_date or created_at).
+ * - total / pending: jobs **logged today** (log_date or created_at).
+ * - processing: jobs **logged today only** (log_date or created_at) with in-progress status.
  * - completed: jobs **completed today** (completion_date or BPH `date`).
  */
 class DashboardJobStatsService
@@ -25,6 +26,30 @@ class DashboardJobStatsService
         $date = Carbon::now(self::TZ)->toDateString();
 
         return [$start, $end, $date];
+    }
+
+    private static function applyJobsTableDayFilter($q, string $bucket, string $start, string $end, string $date): void
+    {
+        if ($bucket === 'completed') {
+            $q->whereBetween('completion_date', [$start, $end]);
+
+            return;
+        }
+
+        // total, processing, pending: log_date today (Manila) — processing never uses completion_date
+        $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date]);
+    }
+
+    private static function applyJobBphDayFilter($q, string $bucket, string $start, string $end, string $date): void
+    {
+        if ($bucket === 'completed') {
+            $q->where('date', $date);
+
+            return;
+        }
+
+        // total, processing, pending: created_at today — processing never uses BPH `date` (completion)
+        $q->whereBetween('created_at', [$start, $end]);
     }
 
     /**
@@ -120,11 +145,7 @@ class DashboardJobStatsService
             JobCountsScope::applyLbsStandardJobsScope($q, '');
         }
 
-        if ($bucket === 'completed') {
-            $q->whereBetween('completion_date', [$start, $end]);
-        } else {
-            $q->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date]);
-        }
+        self::applyJobsTableDayFilter($q, $bucket, $start, $end, $date);
 
         $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
 
@@ -177,11 +198,7 @@ class DashboardJobStatsService
             $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
         }
 
-        if ($bucket === 'completed') {
-            $q->where('date', $date);
-        } else {
-            $q->whereBetween('created_at', [$start, $end]);
-        }
+        self::applyJobBphDayFilter($q, $bucket, $start, $end, $date);
 
         $q->whereRaw("LOWER(TRIM(status)) != ?", ['archived']);
 
