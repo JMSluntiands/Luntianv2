@@ -10,8 +10,9 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total: jobs **logged today** (log_date) plus **completed today** (completion_date).
- * - processing / pending: jobs **logged today** (log_date or created_at) by status.
+ * - total: jobs **logged today** (except Completed) plus **completed today** (completion_date).
+ * - processing: jobs **logged today** with status **Processing** only.
+ * - pending: jobs **logged today** with For Review / For Email Confirmation.
  * - completed: jobs **completed today** (completion_date or BPH `date`).
  */
 class DashboardJobStatsService
@@ -56,6 +57,7 @@ class DashboardJobStatsService
             $q->where(function ($w) use ($start, $end, $date) {
                 $w->where(function ($logged) use ($date) {
                     self::whereJobsLogDateToday($logged, $date);
+                    $logged->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed']);
                 })->orWhere(function ($completed) use ($start, $end) {
                     $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
                         ->whereBetween('completion_date', [$start, $end]);
@@ -86,6 +88,7 @@ class DashboardJobStatsService
             $q->where(function ($w) use ($start, $end, $date) {
                 $w->where(function ($logged) use ($start, $end) {
                     self::whereJobBphLoggedToday($logged, $start, $end);
+                    $logged->whereRaw("LOWER(TRIM(status)) != ?", ['completed']);
                 })->orWhere(function ($completed) use ($date) {
                     $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
                         ->where('date', $date);
@@ -205,9 +208,7 @@ class DashboardJobStatsService
                 $q->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed']);
                 break;
             case 'processing':
-                $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('for review', 'for email confirmation', 'completed', 'archived')")
-                    ->whereNotNull('job_status')
-                    ->whereRaw("TRIM(job_status) != ''");
+                $q->whereRaw('LOWER(TRIM(job_status)) = ?', ['processing']);
                 break;
             case 'pending':
                 $q->whereRaw("LOWER(TRIM(job_status)) IN ('for review', 'for email confirmation')");
@@ -257,9 +258,7 @@ class DashboardJobStatsService
                 $q->whereRaw('LOWER(TRIM(status)) = ?', ['completed']);
                 break;
             case 'processing':
-                $q->whereRaw("LOWER(TRIM(status)) NOT IN ('for review', 'for email confirmation', 'completed', 'archived')")
-                    ->whereNotNull('status')
-                    ->whereRaw("TRIM(status) != ''");
+                $q->whereRaw('LOWER(TRIM(status)) = ?', ['processing']);
                 break;
             case 'pending':
                 $q->whereRaw("LOWER(TRIM(status)) IN ('for review', 'for email confirmation')");

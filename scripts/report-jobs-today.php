@@ -89,12 +89,10 @@ $c2 = (clone $lbsBase)
 echo "  completed + last_update today only: {$c2}\n";
 
 $cProc = (clone $lbsBase)
-    ->whereBetween('last_update', [$start, $end])
-    ->whereRaw("LOWER(TRIM(job_status)) NOT IN ('for review', 'for email confirmation', 'completed', 'archived')")
-    ->whereNotNull('job_status')
-    ->whereRaw('TRIM(job_status) != ?', [''])
+    ->whereRaw('SUBSTRING(NULLIF(TRIM(log_date), \'\'), 1, 10) = ?', [$date])
+    ->whereRaw('LOWER(TRIM(job_status)) = ?', ['processing'])
     ->count();
-echo "  processing (definition): {$cProc}\n";
+echo "  processing (status Processing, log_date today): {$cProc}\n";
 
 $cPen = (clone $lbsBase)
     ->whereBetween('last_update', [$start, $end])
