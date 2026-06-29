@@ -10,10 +10,9 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total: all **non-completed** jobs plus **completed today** (completion_date).
- * - processing: jobs **logged today** with status **Processing** only.
- * - pending: **non-completed** jobs **not logged today** (backlog).
- * - completed: jobs **completed today** (completion_date or BPH `date`).
+ * - total: **completed + processing + pending** (sum of the three cards).
+ * - completed / processing: **as of today** (log_date or completion_date).
+ * - pending: **non-completed backlog** from **previous dates** (not logged today).
  */
 class DashboardJobStatsService
 {
@@ -60,12 +59,14 @@ class DashboardJobStatsService
         }
 
         if ($bucket === 'total') {
-            $q->where(function ($w) use ($start, $end) {
-                $w->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed'])
-                    ->orWhere(function ($completed) use ($start, $end) {
-                        $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
-                            ->whereBetween('completion_date', [$start, $end]);
-                    });
+            $q->where(function ($w) use ($start, $end, $date) {
+                $w->where(function ($logged) use ($date) {
+                    self::whereJobsLogDateToday($logged, $date);
+                    $logged->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed']);
+                })->orWhere(function ($completed) use ($start, $end) {
+                    $completed->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed'])
+                        ->whereBetween('completion_date', [$start, $end]);
+                });
             });
 
             return;
@@ -105,11 +106,13 @@ class DashboardJobStatsService
 
         if ($bucket === 'total') {
             $q->where(function ($w) use ($start, $end, $date) {
-                $w->whereRaw("LOWER(TRIM(status)) != ?", ['completed'])
-                    ->orWhere(function ($completed) use ($date) {
-                        $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
-                            ->where('date', $date);
-                    });
+                $w->where(function ($logged) use ($start, $end) {
+                    self::whereJobBphLoggedToday($logged, $start, $end);
+                    $logged->whereRaw("LOWER(TRIM(status)) != ?", ['completed']);
+                })->orWhere(function ($completed) use ($date) {
+                    $completed->whereRaw('LOWER(TRIM(status)) = ?', ['completed'])
+                        ->where('date', $date);
+                });
             });
 
             return;
@@ -145,10 +148,12 @@ class DashboardJobStatsService
 
         try {
             foreach ($labels as $label) {
-                $out['total'][$label] = self::countJobsBranchBucket($label, 'total');
                 $out['completed'][$label] = self::countJobsBranchBucket($label, 'completed');
                 $out['processing'][$label] = self::countJobsBranchBucket($label, 'processing');
                 $out['pending'][$label] = self::countJobsBranchBucket($label, 'pending');
+                $out['total'][$label] = $out['completed'][$label]
+                    + $out['processing'][$label]
+                    + $out['pending'][$label];
             }
         } catch (Throwable) {
             foreach ($labels as $label) {

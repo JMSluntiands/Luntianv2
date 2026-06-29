@@ -96,6 +96,8 @@
 .lbs-badge-processing { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
 .lbs-badge-for-checking { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
 .lbs-badge-revised { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+.lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
+.lbs-status-trigger, .lbs-initials-trigger { cursor: pointer; }
 </style>
 @endpush
 

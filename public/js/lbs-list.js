@@ -201,7 +201,8 @@ $(function () {
     var filterBuilder = ($filterBuilder.length ? String($filterBuilder.val() || '').trim().toLowerCase() : '');
     var filterPriority = ($filterPriority.length ? String($filterPriority.val() || '').trim().toLowerCase() : '');
 
-    var $rows = $tbody.find('tr').not('.lbs-row-detail');
+    var $rows = $tbody.find('tr').not('.lbs-row-detail').not('.lbs-filter-empty');
+    var visible = 0;
     $rows.each(function () {
       var $row = $(this);
       var text = ($row.text() || '').toLowerCase();
@@ -216,6 +217,7 @@ $(function () {
       var match = matchSearch && matchDate && matchBuilder && matchPriority;
 
       $row.toggle(match);
+      if (match) visible++;
       var $next = $row.next('.lbs-row-detail');
       if ($next.length) {
         if (match && !$next.prop('hidden')) {
@@ -225,24 +227,66 @@ $(function () {
         }
       }
     });
+
+    var colCount = $table.find('thead th').length || 13;
+    var $empty = $tbody.find('.lbs-filter-empty');
+    if ($rows.length && visible === 0) {
+      if (!$empty.length) {
+        $empty = $(
+          '<tr class="lbs-filter-empty"><td class="border-b border-slate-200 px-4 py-6 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="' +
+            colCount +
+            '">No jobs match your search or filters.</td></tr>'
+        );
+        $tbody.append($empty);
+      }
+      $empty.show();
+    } else if ($empty.length) {
+      $empty.hide();
+    }
+
     recalcStatusSummary();
   }
 
-  if (getLbsTable().length) {
-    if ($search.length) $search.on('input', applyTableFilters);
-    if ($filterDate.length) $filterDate.on('change', applyTableFilters);
-    if ($filterBuilder.length) $filterBuilder.on('change', applyTableFilters);
-    if ($filterPriority.length) $filterPriority.on('change', applyTableFilters);
+  function resetFilterSelect($el) {
+    if (!$el || !$el.length) return;
+    $el.val('');
+    if ($el.data('select2')) {
+      $el.trigger('change.select2');
+    }
+  }
+
+  function bindTableFilters() {
+    if (!getLbsTable().length) return;
+
+    if ($search.length) {
+      $search.off('.lbsFilter').on('input.lbsFilter keyup.lbsFilter search.lbsFilter', applyTableFilters);
+    }
+    if ($filterDate.length) {
+      $filterDate.off('.lbsFilter').on('change.lbsFilter input.lbsFilter', applyTableFilters);
+    }
+
+    var selectEvents = 'change.lbsFilter select2:select.lbsFilter select2:clear.lbsFilter select2:unselect.lbsFilter';
+    if ($filterBuilder.length) {
+      $filterBuilder.off('.lbsFilter').on(selectEvents, applyTableFilters);
+    }
+    if ($filterPriority.length) {
+      $filterPriority.off('.lbsFilter').on(selectEvents, applyTableFilters);
+    }
     if ($filterReset.length) {
-      $filterReset.on('click', function () {
+      $filterReset.off('.lbsFilter').on('click.lbsFilter', function () {
         if ($search.length) $search.val('');
         if ($filterDate.length) $filterDate.val('');
-        if ($filterBuilder.length) $filterBuilder.val('');
-        if ($filterPriority.length) $filterPriority.val('');
+        resetFilterSelect($filterBuilder);
+        resetFilterSelect($filterPriority);
         applyTableFilters();
       });
     }
+
+    applyTableFilters();
   }
+
+  initFilterSelect2();
+  bindTableFilters();
 
   function bindLbsMainTableInteractions() {
     var $table = getLbsTable();
@@ -354,90 +398,92 @@ $(function () {
     $('[data-initials-trigger]').attr('aria-expanded', 'false');
   }
 
-  $('[data-initials-wrap]').each(function () {
-    var $wrap = $(this);
-    var $trigger = $wrap.find('[data-initials-trigger]');
+  $(document).on('click.lbsInitialsTrigger', '[data-initials-trigger]', function (e) {
+    e.stopPropagation();
+    var $trigger = $(this);
+    var $wrap = $trigger.closest('[data-initials-wrap]');
     var $menu = $wrap.find('.lbs-initials-menu');
-    var role = $wrap.data('role');
-    if (!$trigger.length || !$menu.length) return;
+    if (!$menu.length) return;
 
-    $trigger.on('click', function (e) {
-      e.stopPropagation();
-      if (!$menu.prop('hidden')) {
-        $menu.prop('hidden', true);
-        $trigger.attr('aria-expanded', 'false');
-        return;
-      }
-      closeAllStatusMenus();
-      closeAllInitialsMenus();
-      var rect = this.getBoundingClientRect();
-      $menu.css({
-        top: rect.bottom + 4,
-        left: rect.left,
-        minWidth: Math.max(rect.width, 70)
-      });
-      $menu.prop('hidden', false);
-      $trigger.attr('aria-expanded', 'true');
-    });
-
-    $menu.find('.lbs-initials-option').on('click', function (e) {
-      e.stopPropagation();
-      var val = $(this).data('value');
-      var $row = $wrap.closest('tr.lbs-data-row');
-      var updateUrl = $row.length && $row.data('update-url');
-      var prevVal = $trigger.text();
+    if (!$menu.prop('hidden')) {
       $menu.prop('hidden', true);
       $trigger.attr('aria-expanded', 'false');
+      return;
+    }
+    closeAllStatusMenus();
+    closeAllInitialsMenus();
+    var rect = this.getBoundingClientRect();
+    $menu.css({
+      top: rect.bottom + 4,
+      left: rect.left,
+      minWidth: Math.max(rect.width, 70)
+    });
+    $menu.prop('hidden', false);
+    $trigger.attr('aria-expanded', 'true');
+  });
 
-      if (!updateUrl || !csrfToken) {
-        $trigger.text(val);
-        var $detail = $row.next('.lbs-row-detail');
-        if ($detail.length) {
-          var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
-          $detail.find(selector).text(val);
-        }
-        return;
-      }
+  $(document).on('click.lbsInitialsOption', '.lbs-initials-option', function (e) {
+    e.stopPropagation();
+    var $option = $(this);
+    var val = $option.data('value');
+    var $wrap = $option.closest('[data-initials-wrap]');
+    var $trigger = $wrap.find('[data-initials-trigger]');
+    var role = $wrap.data('role');
+    var $row = $wrap.closest('tr.lbs-data-row');
+    var updateUrl = $row.length && $row.data('update-url');
+    var prevVal = $trigger.text();
+    var $menu = $wrap.find('.lbs-initials-menu');
+    $menu.prop('hidden', true);
+    $trigger.attr('aria-expanded', 'false');
 
+    if (!updateUrl || !csrfToken) {
       $trigger.text(val);
       var $detail = $row.next('.lbs-row-detail');
       if ($detail.length) {
         var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
         $detail.find(selector).text(val);
       }
+      return;
+    }
 
-      var payload = new URLSearchParams();
-      payload.append('_token', csrfToken);
-      if (role === 'staff') payload.append('staff_id', val);
-      else payload.append('checker_id', val);
+    $trigger.text(val);
+    var $detail = $row.next('.lbs-row-detail');
+    if ($detail.length) {
+      var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
+      $detail.find(selector).text(val);
+    }
 
-      $.ajax({
-        url: updateUrl,
-        method: 'PUT',
-        data: payload.toString(),
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+    var payload = new URLSearchParams();
+    payload.append('_token', csrfToken);
+    if (role === 'staff') payload.append('staff_id', val);
+    else payload.append('checker_id', val);
+
+    $.ajax({
+      url: updateUrl,
+      method: 'PUT',
+      data: payload.toString(),
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    })
+      .done(function (res) {
+        var msg = (res && res.message) || 'Staff/Checker updated successfully.';
+        if (window.showSuccessToast) window.showSuccessToast(msg);
+        setTimeout(function () {
+          window.location.reload();
+        }, 800);
       })
-        .done(function (res) {
-          var msg = (res && res.message) || 'Staff/Checker updated successfully.';
-          if (window.showSuccessToast) window.showSuccessToast(msg);
-          setTimeout(function () {
-            window.location.reload();
-          }, 800);
-        })
-        .fail(function (xhr) {
-          var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update.';
-          if (window.showSuccessToast) window.showSuccessToast(msg);
-          $trigger.text(prevVal);
-          if ($detail.length) {
-            var sel = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
-            $detail.find(sel).text(prevVal);
-          }
-        });
-    });
+      .fail(function (xhr) {
+        var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update.';
+        if (window.showSuccessToast) window.showSuccessToast(msg);
+        $trigger.text(prevVal);
+        if ($detail.length) {
+          var sel = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
+          $detail.find(sel).text(prevVal);
+        }
+      });
   });
 
   $(document).on('click', '#lbsTable [data-status-trigger], #efficient_livingTable [data-status-trigger], #luntianTable [data-status-trigger]', function (e) {

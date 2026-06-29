@@ -1176,6 +1176,7 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'formsJobs' => $formsJobs,
             'priorityColors' => $priorityColors,
+            'statuses' => Status::orderBy('name')->get(),
         ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('lbs'));
     }
 
@@ -1294,6 +1295,7 @@ class LbsJobController extends Controller
             'isEfficientLiving' => true,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
+            'statuses' => Status::orderBy('name')->get(),
         ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('efficient_living')));
     }
 
@@ -1443,6 +1445,7 @@ class LbsJobController extends Controller
             'isLuntian' => true,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
+            'statuses' => Status::orderBy('name')->get(),
         ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('luntian')));
     }
 
@@ -1583,7 +1586,8 @@ class LbsJobController extends Controller
                 'j.completion_date',
                 'ca.client_account_name'
             )
-            ->orderByDesc('j.log_date')
+            ->orderByDesc($status === 'Completed' ? 'j.completion_date' : 'j.log_date')
+            ->when($status === 'Completed', fn ($q) => $q->orderByDesc('j.log_date'))
             ->limit($limit)
             ->get();
     }
@@ -1621,7 +1625,8 @@ class LbsJobController extends Controller
                 'j.completion_date',
                 'ca.client_account_name'
             )
-            ->orderByDesc('j.log_date')
+            ->orderByDesc($status === 'Completed' ? 'j.completion_date' : 'j.log_date')
+            ->when($status === 'Completed', fn ($q) => $q->orderByDesc('j.log_date'))
             ->limit($limit)
             ->get();
     }
@@ -1729,6 +1734,7 @@ class LbsJobController extends Controller
                     'j.completion_date',
                     'ca.client_account_name'
                 )
+                ->orderByDesc('j.completion_date')
                 ->orderByDesc('j.log_date')
                 ->limit(500)
                 ->get();
@@ -1762,6 +1768,7 @@ class LbsJobController extends Controller
             'priorityColors' => $priorityColors,
             'filterBuilders' => $filterBuilders,
             'filterPriorities' => $filterPriorities,
+            'statuses' => Status::orderBy('name')->get(),
         ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('lbs')));
     }
 
