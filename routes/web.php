@@ -17,6 +17,7 @@ use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\CspJobController;
 use App\Models\User;
 use App\Http\Controllers\DashboardHolidayController;
+use App\Http\Controllers\DashboardStatsController;
 use App\Http\Controllers\EmailConfigController;
 use App\Http\Controllers\JobRequestController;
 use App\Http\Controllers\LbsJobController;
@@ -99,6 +100,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     })->name('unauthorized');
 
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/stats', DashboardStatsController::class)->name('dashboard.stats');
     Route::get('/dashboard/holidays/{year}', DashboardHolidayController::class)->name('dashboard.holidays');
     Route::get('/dashboard/lbs/add', [LbsJobController::class, 'addForm'])->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');

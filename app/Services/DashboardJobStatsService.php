@@ -11,8 +11,9 @@ use Throwable;
 /**
  * Dashboard job counts (Philippine calendar):
  * - total: **completed + processing + pending** (sum of the three cards).
- * - completed / processing: **as of today** (log_date or completion_date).
- * - pending: **non-completed backlog** from **previous dates** (not logged today).
+ * - completed: **completed today** (completion_date).
+ * - processing: status **Processing** (any date).
+ * - pending: **non-completed backlog** from **previous dates**, excluding **Processing** status.
  */
 class DashboardJobStatsService
 {
@@ -78,7 +79,11 @@ class DashboardJobStatsService
             return;
         }
 
-        // processing: strict log_date today only
+        if ($bucket === 'processing') {
+            return;
+        }
+
+        // legacy buckets that still use log_date today
         self::whereJobsLogDateToday($q, $date);
     }
 
@@ -121,6 +126,10 @@ class DashboardJobStatsService
         if ($bucket === 'pending') {
             self::whereJobBphLoggedNotToday($q, $start, $end);
 
+            return;
+        }
+
+        if ($bucket === 'processing') {
             return;
         }
 
@@ -239,7 +248,7 @@ class DashboardJobStatsService
                 $q->whereRaw('LOWER(TRIM(job_status)) = ?', ['processing']);
                 break;
             case 'pending':
-                $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['completed']);
+                $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('completed', 'processing')");
                 break;
         }
 
@@ -289,7 +298,7 @@ class DashboardJobStatsService
                 $q->whereRaw('LOWER(TRIM(status)) = ?', ['processing']);
                 break;
             case 'pending':
-                $q->whereRaw("LOWER(TRIM(status)) != ?", ['completed']);
+                $q->whereRaw("LOWER(TRIM(status)) NOT IN ('completed', 'processing')");
                 break;
         }
 

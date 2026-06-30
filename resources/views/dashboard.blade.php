@@ -69,6 +69,88 @@
             background: #d4c9b8 !important;
             color: #1e293b !important;
         }
+
+        .dashboard-refresh-widget {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.375rem;
+            width: fit-content;
+            margin: 0;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: start;
+            column-gap: 1rem;
+            width: 100%;
+        }
+        .dashboard-layout__refresh {
+            grid-column: 2;
+            grid-row: 1;
+            z-index: 2;
+            margin-top: 0.125rem;
+        }
+        .dashboard-layout__main {
+            grid-column: 1 / -1;
+            grid-row: 1;
+            min-width: 0;
+        }
+        [data-theme="dark"] .dashboard-refresh-widget {
+            border-color: #475569;
+            background: #1e293b;
+            color: #e2e8f0;
+            box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+        }
+        .dashboard-refresh-widget--active {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        [data-theme="dark"] .dashboard-refresh-widget--active {
+            border-color: #059669;
+            background: #064e3b;
+        }
+        .dashboard-refresh-widget__count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.25rem;
+            height: 1.25rem;
+            padding: 0 0.25rem;
+            border-radius: 0.25rem;
+            background: #059669;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .dashboard-refresh-widget__count--tick {
+            animation: dashboard-refresh-tick 0.35s ease-out;
+        }
+        @keyframes dashboard-refresh-tick {
+            0% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        .dashboard-refresh-widget__dot {
+            width: 0.375rem;
+            height: 0.375rem;
+            border-radius: 9999px;
+            background: #10b981;
+            animation: dashboard-refresh-pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes dashboard-refresh-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.85); }
+        }
     </style>
 @endpush
 
@@ -106,12 +188,22 @@
     @endphp
     <script type="application/json" id="dashboard-stats-json">@json($dashboardStats)</script>
     <script type="application/json" id="dashboard-holidays-initial" data-year="{{ $dashboardPublicHolidaysYear }}">@json($dashboardPublicHolidays)</script>
-    <div
-        id="dashboard-root"
-        class="w-full min-w-0"
-        data-dashboard-branch-filter="{{ $dashboardBranchFilter }}"
-        data-holidays-api-base="{{ url('/dashboard/holidays') }}"
-    >
+    <div class="dashboard-layout">
+        <div class="dashboard-layout__refresh">
+            <div id="dashboard-refresh-widget" class="dashboard-refresh-widget" aria-live="polite" aria-atomic="true">
+                <span class="dashboard-refresh-widget__dot" aria-hidden="true"></span>
+                <span data-refresh-label>Refresh in</span>
+                <strong id="dashboard-refresh-count" class="dashboard-refresh-widget__count">5</strong>
+                <span>sec</span>
+            </div>
+        </div>
+        <div
+            id="dashboard-root"
+            class="dashboard-layout__main w-full min-w-0"
+            data-dashboard-branch-filter="{{ $dashboardBranchFilter }}"
+            data-holidays-api-base="{{ url('/dashboard/holidays') }}"
+            data-stats-api-base="{{ url('/dashboard/stats') }}"
+        >
         {{-- Fallback: visible if React has not mounted yet or JS fails --}}
         <div class="dashboard-page" data-dashboard-fallback>
             <header class="dashboard-page__header">
@@ -123,7 +215,7 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Total Jobs</span>
-                        <p class="dashboard-card__value">{{ array_sum($dTotal) }}</p>
+                        <p class="dashboard-card__value" data-dashboard-stat="total" data-dashboard-scope="sum">{{ array_sum($dTotal) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M22 13a18.15 18.15 0 0 1-20 0"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
@@ -133,7 +225,7 @@
                                         <span class="dashboard-card__row-label dashboard-card__row-status">Total jobs</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
-                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                    <span class="dashboard-card__row-value" data-dashboard-stat="total" data-dashboard-branch="{{ $rowLabel }}">{{ $rowValue }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -143,7 +235,7 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Completed Jobs</span>
-                        <p class="dashboard-card__value">{{ array_sum($dCompleted) }}</p>
+                        <p class="dashboard-card__value" data-dashboard-stat="completed" data-dashboard-scope="sum">{{ array_sum($dCompleted) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
@@ -153,7 +245,7 @@
                                         <span class="dashboard-card__row-label dashboard-card__row-status">Completed</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
-                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                    <span class="dashboard-card__row-value" data-dashboard-stat="completed" data-dashboard-branch="{{ $rowLabel }}">{{ $rowValue }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -163,7 +255,7 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Processing</span>
-                        <p class="dashboard-card__value">{{ array_sum($dProcessing) }}</p>
+                        <p class="dashboard-card__value" data-dashboard-stat="processing" data-dashboard-scope="sum">{{ array_sum($dProcessing) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
@@ -173,7 +265,7 @@
                                         <span class="dashboard-card__row-label dashboard-card__row-status">Processing</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
-                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                    <span class="dashboard-card__row-value" data-dashboard-stat="processing" data-dashboard-branch="{{ $rowLabel }}">{{ $rowValue }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -183,7 +275,7 @@
                     <div class="dashboard-card__gradient" aria-hidden></div>
                     <div class="dashboard-card__inner">
                         <span class="dashboard-card__label">Pending</span>
-                        <p class="dashboard-card__value">{{ array_sum($dPending) }}</p>
+                        <p class="dashboard-card__value" data-dashboard-stat="pending" data-dashboard-scope="sum">{{ array_sum($dPending) }}</p>
                         <span class="dashboard-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:1.75rem;height:1.75rem"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
                         <div class="dashboard-card__sep"></div>
                         <div class="dashboard-card__rows">
@@ -193,7 +285,7 @@
                                         <span class="dashboard-card__row-label dashboard-card__row-status">Pending</span>
                                         <span class="dashboard-card__row-meta">Branch: <strong>{{ $rowLabel }}</strong></span>
                                     </span>
-                                    <span class="dashboard-card__row-value">{{ $rowValue }}</span>
+                                    <span class="dashboard-card__row-value" data-dashboard-stat="pending" data-dashboard-branch="{{ $rowLabel }}">{{ $rowValue }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -261,8 +353,10 @@
             </section>
         </div>
     </div>
+    </div>
 @endsection
 
 @push('scripts')
     @vite(['resources/js/dashboard.tsx'])
+    <script src="{{ asset('js/dashboard-auto-refresh.js') }}"></script>
 @endpush

@@ -432,13 +432,27 @@ export default function Dashboard() {
   const [phHolidays, setPhHolidays] = useState<HolidayItem[]>([]);
   const [auHolidays, setAuHolidays] = useState<HolidayItem[]>([]);
   const [holidayLoading, setHolidayLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStatsPayload>(() =>
+    normalizeStatsPayload(parseDashboardStats())
+  );
 
   const statCards = useMemo(() => {
-    const stats = parseDashboardStats();
-    const cards = buildStatCards(stats);
+    const cards = buildStatCards(dashboardStats);
     const el = document.getElementById('dashboard-root');
     const filter = el?.dataset.dashboardBranchFilter ?? '';
     return applyDashboardBranchFilter(cards, filter);
+  }, [dashboardStats]);
+
+  useEffect(() => {
+    const onStatsUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<DashboardStatsPayload>).detail;
+      if (detail) {
+        setDashboardStats(normalizeStatsPayload(detail));
+      }
+    };
+
+    document.addEventListener('dashboard:statsUpdated', onStatsUpdated);
+    return () => document.removeEventListener('dashboard:statsUpdated', onStatsUpdated);
   }, []);
 
   useEffect(() => {
