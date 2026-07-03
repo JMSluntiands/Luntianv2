@@ -7,6 +7,7 @@ use App\Models\ClientAccount;
 use App\Models\Compliance;
 use App\Models\JotformConfig;
 use App\Models\JobRequest;
+use App\Models\Priority;
 use App\Support\JobUploadFolder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -24,62 +25,35 @@ class JotformSubmissionService
             throw new \InvalidArgumentException('Submission form ID does not match configured JotForm.');
         }
 
-        $referenceNo = $this->mappedValue($submissionFields, (string) ($config->map_reference_no ?? 'lbsRef'));
-        $clientReference = $this->mappedValue($submissionFields, (string) ($config->map_client_reference ?? 'clientRef'));
-        $jobAddress = $this->mappedValue($submissionFields, (string) ($config->map_job_address ?? 'jobAddress'));
-        $notes = $this->mappedValue($submissionFields, (string) ($config->map_notes ?? 'notes'));
+        $referenceNo = $this->mappedValue($config, $submissionFields, 'map_reference_no', 'lbsRef');
+        $clientReference = $this->mappedValue($config, $submissionFields, 'map_client_reference', 'clientRef');
+        $jobAddress = $this->mappedValue($config, $submissionFields, 'map_job_address', 'jobAddress');
+        $notes = $this->mappedValue($config, $submissionFields, 'map_notes', 'notes');
+        $complianceText = $this->mappedValue($config, $submissionFields, 'map_compliance', 'nccCompliance');
+        $clientText = $this->mappedValue($config, $submissionFields, 'map_client', 'accountClient');
+        $priorityText = $this->mappedValue($config, $submissionFields, 'map_priority', 'priority');
+        $jobTypeText = $this->mappedValue($config, $submissionFields, 'map_job_type', 'jobType');
+        $assignedTo = $this->mappedValue($config, $submissionFields, 'map_assigned_to', 'staffInitials');
+        $checkedBy = $this->mappedValue($config, $submissionFields, 'map_checked_by', 'checkerInitials');
+        $jobStatus = $this->mappedValue($config, $submissionFields, 'map_job_status', 'jobStatus');
 
-        $complianceText = $this->mappedValue($submissionFields, (string) ($config->map_compliance ?? 'nccCompliance'));
-        $clientText = $this->mappedValue($submissionFields, (string) ($config->map_client ?? 'accountClient'));
-        $priorityText = $this->mappedValue($submissionFields, (string) ($config->map_priority ?? 'priority'));
-        $jobTypeText = $this->mappedValue($submissionFields, (string) ($config->map_job_type ?? 'jobType'));
-        $assignedTo = $this->mappedValue($submissionFields, (string) ($config->map_assigned_to ?? 'staffInitials'));
-        $checkedBy = $this->mappedValue($submissionFields, (string) ($config->map_checked_by ?? 'checkerInitials'));
-        $jobStatus = $this->mappedValue($submissionFields, (string) ($config->map_job_status ?? 'jobStatus'));
+        $compliance = $complianceText !== '' ? $this->resolveCompliance($complianceText) : null;
+        $client = $clientText !== '' ? $this->resolveClientAccount($clientText) : null;
+        $jobRequest = $jobTypeText !== '' ? $this->resolveJobRequest($jobTypeText) : null;
 
-        if ($assignedTo === '' && trim((string) ($config->default_assigned_to ?? '')) !== '') {
-            $assignedTo = trim((string) $config->default_assigned_to);
-        }
-        if ($checkedBy === '' && trim((string) ($config->default_checked_by ?? '')) !== '') {
-            $checkedBy = trim((string) $config->default_checked_by);
-        }
-
-        $compliance = $this->resolveCompliance($complianceText);
-        if (! $compliance) {
-            throw new \InvalidArgumentException('Compliance from JotForm is missing or not recognized: '.($complianceText ?: '(empty)'));
-        }
-
-        $client = $this->resolveClientAccount($clientText);
-        if (! $client) {
-            throw new \InvalidArgumentException('Client from JotForm is missing or not recognized: '.($clientText ?: '(empty)'));
-        }
-
-        $jobRequest = $this->resolveJobRequest($jobTypeText);
         if (! $jobRequest) {
-            throw new \InvalidArgumentException('Job type from JotForm is missing or not recognized: '.($jobTypeText ?: '(empty)'));
+            $jobRequest = $this->resolveDefaultJobRequest($config);
         }
 
         if ($priorityText === '') {
-            throw new \InvalidArgumentException('Priority from JotForm is missing.');
+            $priorityText = $this->resolveDefaultPriorityText($config);
         }
 
-        if ($assignedTo === '') {
-            throw new \InvalidArgumentException('Assigned to (staff initials) from JotForm is missing. Add a Staff Initials field to the JotForm, or set a default in Jot Form Configuration.');
-        }
-
-        if ($checkedBy === '') {
-            throw new \InvalidArgumentException('Checked by (checker initials) from JotForm is missing. Add a Checker Initials field to the JotForm, or set a default in Jot Form Configuration.');
-        }
-
-        $assignedTo = strtoupper(trim($assignedTo));
-        $checkedBy = strtoupper(trim($checkedBy));
+        $assignedTo = $assignedTo !== '' ? strtoupper(trim($assignedTo)) : null;
+        $checkedBy = $checkedBy !== '' ? strtoupper(trim($checkedBy)) : null;
 
         if ($jobAddress === '') {
-            $jobAddress = 'Submitted via JotForm';
-        }
-
-        if ($jobStatus === '') {
-            $jobStatus = 'Allocated';
+            $jobAddress = null;
         }
 
         $now = now('Asia/Manila');
@@ -94,7 +68,10 @@ class JotformSubmissionService
             trim((string) ($jobRequest->client_code ?? ''))
         );
         if ($clientCodeForJob === '') {
-            throw new \RuntimeException('No valid client code for this job. Check client account and job type in JotForm submission.');
+            $clientCodeForJob = 'LBS01';
+        }
+        if (! DB::table('clients')->where('client_code', $clientCodeForJob)->exists()) {
+            $clientCodeForJob = 'LBS01';
         }
 
         $jobReferenceNo = $referenceNo !== '' ? $referenceNo : preg_replace('/-1$/', '', $referenceValue);
@@ -108,17 +85,25 @@ class JotformSubmissionService
         }
 
         $planNames = $this->downloadMappedFiles(
+            $config,
             $submissionFields,
-            (string) ($config->map_upload_plans ?? 'uploadPlans'),
+            'map_upload_plans',
+            'uploadPlans',
             $uploadFolderName
         );
         $docNames = $this->downloadMappedFiles(
+            $config,
             $submissionFields,
-            (string) ($config->map_upload_documents ?? 'uploadDocuments'),
+            'map_upload_documents',
+            'uploadDocuments',
             $uploadFolderName
         );
 
         $updatedBy = $config->queue_in_forms_submitted ? 'FORMS' : null;
+        $jobRequestId = (string) ($jobRequest->job_request_id ?? $jobRequest->id ?? '');
+        if ($jobRequestId === '') {
+            $jobRequestId = 'EA_LBS_1SDB';
+        }
 
         $jobId = DB::table('jobs')->insertGetId([
             'reference' => $referenceValue,
@@ -129,18 +114,18 @@ class JotformSubmissionService
             'staff_id' => $assignedTo,
             'checker_id' => $checkedBy,
             'ncc_compliance' => $compliance->column ?? null,
-            'job_request_id' => $jobRequest->job_request_id ?? (string) $jobRequest->id,
+            'job_request_id' => $jobRequestId,
             'address_client' => $jobAddress,
-            'job_type' => $jobRequest->job_request_type ?? $jobTypeText,
+            'job_type' => $jobRequest->job_request_type ?? ($jobTypeText !== '' ? $jobTypeText : null),
             'priority' => $priorityText,
             'plan_complexity' => null,
             'notes' => $notes !== '' ? $notes : null,
             'upload_files' => json_encode($planNames),
             'upload_project_files' => json_encode($docNames),
             'updated_by' => $updatedBy,
-            'job_status' => $jobStatus,
+            'job_status' => $jobStatus !== '' ? $jobStatus : '',
             'dwelling' => '',
-            'client_account_id' => $client->client_account_id,
+            'client_account_id' => $client->client_account_id ?? null,
             'completion_date' => null,
             'units' => 0,
         ]);
@@ -209,6 +194,69 @@ class JotformSubmissionService
         return $fields;
     }
 
+    /**
+     * @param  array<string, mixed>  $submission
+     */
+    private function mappedValue(JotformConfig $config, array $submission, string $configKey, string $fallbackKey): string
+    {
+        $mapKey = trim((string) ($config->{$configKey} ?? ''));
+        if ($mapKey === '') {
+            return '';
+        }
+
+        return $this->valueFromSubmission($submission, $mapKey !== '' ? $mapKey : $fallbackKey);
+    }
+
+    /**
+     * @param  array<string, mixed>  $submission
+     */
+    private function valueFromSubmission(array $submission, string $jotformKey): string
+    {
+        if ($jotformKey === '') {
+            return '';
+        }
+
+        foreach ($submission as $key => $value) {
+            if (! $this->fieldKeyMatches((string) $key, $jotformKey)) {
+                continue;
+            }
+            if (is_array($value)) {
+                return trim(implode(', ', array_map('strval', $value)));
+            }
+
+            return trim((string) $value);
+        }
+
+        return '';
+    }
+
+    private function resolveDefaultJobRequest(JotformConfig $config): ?JobRequest
+    {
+        if ($config->default_job_request_id) {
+            $fromConfig = JobRequest::query()->find($config->default_job_request_id);
+            if ($fromConfig) {
+                return $fromConfig;
+            }
+        }
+
+        return JobRequest::query()
+            ->where('client_code', 'LBS01')
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function resolveDefaultPriorityText(JotformConfig $config): string
+    {
+        if ($config->default_priority_id) {
+            $priority = Priority::query()->find($config->default_priority_id);
+            if ($priority && trim((string) ($priority->name ?? '')) !== '') {
+                return trim((string) $priority->name);
+            }
+        }
+
+        return 'Standard (2 days)';
+    }
+
     private function resolveCompliance(string $text): ?Compliance
     {
         $text = trim($text);
@@ -274,13 +322,19 @@ class JotformSubmissionService
      * @param  array<string, mixed>  $submission
      * @return list<string>
      */
-    private function downloadMappedFiles(array $submission, string $jotformKey, string $uploadFolderName): array
-    {
-        if ($jotformKey === '') {
+    private function downloadMappedFiles(
+        JotformConfig $config,
+        array $submission,
+        string $configKey,
+        string $fallbackKey,
+        string $uploadFolderName
+    ): array {
+        $mapKey = trim((string) ($config->{$configKey} ?? ''));
+        if ($mapKey === '') {
             return [];
         }
 
-        $urls = $this->urlsFromField($submission, $jotformKey);
+        $urls = $this->urlsFromField($submission, $mapKey !== '' ? $mapKey : $fallbackKey);
         $saved = [];
 
         foreach ($urls as $url) {
@@ -387,29 +441,6 @@ class JotformSubmissionService
 
             return null;
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $submission
-     */
-    private function mappedValue(array $submission, string $jotformKey): string
-    {
-        if ($jotformKey === '') {
-            return '';
-        }
-
-        foreach ($submission as $key => $value) {
-            if (! $this->fieldKeyMatches((string) $key, $jotformKey)) {
-                continue;
-            }
-            if (is_array($value)) {
-                return trim(implode(', ', array_map('strval', $value)));
-            }
-
-            return trim((string) $value);
-        }
-
-        return '';
     }
 
     private function fieldKeyMatches(string $fieldKey, string $jotformKey): bool

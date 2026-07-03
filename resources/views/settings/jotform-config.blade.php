@@ -112,7 +112,7 @@
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Field mapping</h2>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Enter the JotForm question unique name for each LBS field. Values come from the form submission — no fixed defaults.</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Map only the fields on your JotForm. Leave a row blank if that field is not on the form — LBS will leave the matching column empty.</p>
                 </div>
                 <div class="grid gap-5 p-5 sm:grid-cols-2">
                     <div>
@@ -151,29 +151,18 @@
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     </div>
                     <div>
-                        <label for="map_assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Staff Initials (Assigned to)</label>
-                        <input type="text" id="map_assigned_to" name="map_assigned_to" value="{{ old('map_assigned_to', $config?->map_assigned_to ?? 'staffInitials') }}" placeholder="e.g. staffInitials"
+                        <label for="map_assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Staff Initials <span class="font-normal text-slate-400">(optional)</span></label>
+                        <input type="text" id="map_assigned_to" name="map_assigned_to" value="{{ old('map_assigned_to', $config?->map_assigned_to ?? '') }}" placeholder="e.g. staffInitials — leave blank if not on form"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     </div>
                     <div>
-                        <label for="map_checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checker Initials</label>
-                        <input type="text" id="map_checked_by" name="map_checked_by" value="{{ old('map_checked_by', $config?->map_checked_by ?? 'checkerInitials') }}" placeholder="e.g. checkerInitials"
+                        <label for="map_checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checker Initials <span class="font-normal text-slate-400">(optional)</span></label>
+                        <input type="text" id="map_checked_by" name="map_checked_by" value="{{ old('map_checked_by', $config?->map_checked_by ?? '') }}" placeholder="e.g. checkerInitials — leave blank if not on form"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     </div>
                     <div>
-                        <label for="default_assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Default Staff Initials (if not on form)</label>
-                        <input type="text" id="default_assigned_to" name="default_assigned_to" value="{{ old('default_assigned_to', $config?->default_assigned_to ?? 'AJS') }}" placeholder="e.g. AJS"
-                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                    </div>
-                    <div>
-                        <label for="default_checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Default Checker Initials (if not on form)</label>
-                        <input type="text" id="default_checked_by" name="default_checked_by" value="{{ old('default_checked_by', $config?->default_checked_by ?? 'GM') }}" placeholder="e.g. GM"
-                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Your JotForm does not include Staff/Checker fields — these defaults are used instead.</p>
-                    </div>
-                    <div>
-                        <label for="map_job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status</label>
-                        <input type="text" id="map_job_status" name="map_job_status" value="{{ old('map_job_status', $config?->map_job_status ?? 'jobStatus') }}" placeholder="e.g. jobStatus"
+                        <label for="map_job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status <span class="font-normal text-slate-400">(optional)</span></label>
+                        <input type="text" id="map_job_status" name="map_job_status" value="{{ old('map_job_status', $config?->map_job_status ?? '') }}" placeholder="e.g. jobStatus — leave blank if not on form"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     </div>
                     <div class="sm:col-span-2">
