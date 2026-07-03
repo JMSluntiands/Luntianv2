@@ -42,13 +42,19 @@
             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Jobs land in <strong>Forms Submitted Jobs</strong> on the LBS list (same as the public add form) unless you choose direct main list below.</p>
         </div>
 
-        @if($config && \App\Models\RolePermission::userMayAccessRoute('settings.jotform_config.toggle'))
-            <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">JotForm integration</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Status: <span class="font-medium">{{ $isActive ? 'ON' : 'OFF' }}</span></p>
-                    </div>
+        @if(!$isActive)
+            <div class="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-100" role="alert">
+                <strong>Integration is OFF.</strong> JotForm submissions will not enter LUNTIAN until you check <strong>Enable JotForm integration</strong> below and save.
+            </div>
+        @endif
+
+        <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">JotForm integration</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Status: <span class="font-semibold {{ $isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">{{ $isActive ? 'ON — accepting webhooks' : 'OFF — webhooks rejected' }}</span></p>
+                </div>
+                @if($config && \App\Models\RolePermission::userMayAccessRoute('settings.jotform_config.toggle'))
                     <form action="{{ route('settings.jotform_config.toggle') }}" method="POST">
                         @csrf
                         <input type="hidden" name="is_active" value="{{ $isActive ? '0' : '1' }}">
@@ -56,19 +62,23 @@
                             {{ $isActive ? 'Turn OFF' : 'Turn ON' }}
                         </button>
                     </form>
-                </div>
+                @endif
             </div>
-        @endif
+        </div>
 
         <form id="jotformConfigForm" action="{{ route('settings.jotform_config.store') }}" method="POST" autocomplete="off" class="space-y-6">
             @csrf
-            <input type="hidden" name="is_active" value="{{ old('is_active', $isActive ? '1' : '0') }}" id="jotform_is_active_hidden">
 
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Webhook</h2>
                 </div>
                 <div class="space-y-5 p-5">
+                    <label class="inline-flex cursor-pointer items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-900/20">
+                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', $isActive) ? 'checked' : '' }}
+                            class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-500 dark:bg-slate-700">
+                        <span class="text-sm font-medium text-slate-800 dark:text-slate-100">Enable JotForm integration (required for submissions to enter LBS)</span>
+                    </label>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Webhook URL (paste in JotForm)</label>
                         <div class="flex gap-2">

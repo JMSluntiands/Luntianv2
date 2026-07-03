@@ -72,7 +72,9 @@ class JotformConfigController extends Controller
 
         return redirect()
             ->route('settings.jotform_config')
-            ->with('success', 'Jot Form configuration saved successfully.');
+            ->with('success', $data['is_active']
+                ? 'Jot Form configuration saved. Integration is ON.'
+                : 'Jot Form configuration saved. Integration is OFF — enable it to accept JotForm submissions.');
     }
 
     public function toggleActive(Request $request)

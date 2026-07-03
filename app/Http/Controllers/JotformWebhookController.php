@@ -48,6 +48,7 @@ class JotformWebhookController extends Controller
             Log::warning('JotForm webhook failed', [
                 'message' => $e->getMessage(),
                 'form_id' => $formId,
+                'field_keys' => array_keys($fields),
             ]);
 
             return response()->json([

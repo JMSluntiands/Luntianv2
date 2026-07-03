@@ -7,8 +7,6 @@ use App\Models\ClientAccount;
 use App\Models\Compliance;
 use App\Models\JotformConfig;
 use App\Models\JobRequest;
-use App\Models\Priority;
-use App\Models\User;
 use App\Support\JobUploadFolder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -140,15 +138,22 @@ class JotformSubmissionService
             'units' => 0,
         ]);
 
-        ActivityLog::create([
-            'job_id' => (int) $jobId,
-            'activity_date' => $now->format('Y-m-d H:i:s'),
-            'activity_type' => 'JotForm submission',
-            'activity_description' => $updatedBy === 'FORMS'
-                ? 'Job created from JotForm into Forms Submitted Jobs.'
-                : 'Job created from JotForm into main LBS list.',
-            'updated_by' => 'JotForm',
-        ]);
+        try {
+            ActivityLog::create([
+                'job_id' => (int) $jobId,
+                'activity_date' => $now->format('Y-m-d H:i:s'),
+                'activity_type' => 'JotForm submission',
+                'activity_description' => $updatedBy === 'FORMS'
+                    ? 'Job created from JotForm into Forms Submitted Jobs.'
+                    : 'Job created from JotForm into main LBS list.',
+                'updated_by' => 'JotForm',
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('JotForm activity log skipped', [
+                'job_id' => $jobId,
+                'message' => $e->getMessage(),
+            ]);
+        }
 
         return [
             'job_id' => (int) $jobId,
@@ -277,10 +282,9 @@ class JotformSubmissionService
         $urls = [];
 
         foreach ($submission as $key => $value) {
-            if (strcasecmp((string) $key, $jotformKey) !== 0) {
-                continue;
+            if ($this->fieldKeyMatches((string) $key, $jotformKey)) {
+                $urls = array_merge($urls, $this->collectUrls($value));
             }
-            $urls = array_merge($urls, $this->collectUrls($value));
         }
 
         return array_values(array_unique($urls));
@@ -374,8 +378,10 @@ class JotformSubmissionService
             return '';
         }
 
-        if (array_key_exists($jotformKey, $submission)) {
-            $value = $submission[$jotformKey];
+        foreach ($submission as $key => $value) {
+            if (! $this->fieldKeyMatches((string) $key, $jotformKey)) {
+                continue;
+            }
             if (is_array($value)) {
                 return trim(implode(', ', array_map('strval', $value)));
             }
@@ -383,17 +389,18 @@ class JotformSubmissionService
             return trim((string) $value);
         }
 
-        foreach ($submission as $key => $value) {
-            if (strcasecmp((string) $key, $jotformKey) === 0) {
-                if (is_array($value)) {
-                    return trim(implode(', ', array_map('strval', $value)));
-                }
+        return '';
+    }
 
-                return trim((string) $value);
-            }
+    private function fieldKeyMatches(string $fieldKey, string $jotformKey): bool
+    {
+        if (strcasecmp($fieldKey, $jotformKey) === 0) {
+            return true;
         }
 
-        return '';
+        $fieldKey = preg_replace('/\[\d*\]$/', '', $fieldKey) ?? $fieldKey;
+
+        return (bool) preg_match('/(^|_)'.preg_quote($jotformKey, '/').'$/i', $fieldKey);
     }
 
     private function resolveJobsClientCode(string $fromAccount, string $fromJobRequest): string
