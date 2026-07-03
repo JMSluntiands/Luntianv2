@@ -60,6 +60,18 @@ final class JobUploadFolder
         return null;
     }
 
+    public static function gaStoragePath(object $job, int $jobId, string $fileName): ?string
+    {
+        foreach (self::lbsFolderCandidates($job, $jobId) as $folder) {
+            $path = 'ga-documents/' . $folder . '/' . $fileName;
+            if (Storage::disk('local')->exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
     public static function bphFolderName(object $job, int $jobId): string
     {
         $reference = trim((string) ($job->reference ?? ''));

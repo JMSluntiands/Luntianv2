@@ -8,177 +8,24 @@
     <div class="w-full max-w-full px-0">
         <div class="mb-8">
             <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (Fyrs Energy Wise)</h1>
-            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new Fyrs Energy Wise job.</p>
+            <p class="text-slate-500 dark:text-slate-400">NatHERS and BASIX assessor workflow — fields match the Luntian Assessor spreadsheet.</p>
         </div>
 
-        <form id="fyrsAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
+        <form id="fyrsAddForm" action="#" method="POST" autocomplete="off" class="space-y-6">
             @csrf
 
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
-                <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                    <span id="fyrsJobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">JOB0903-001</span>
-                </div>
-                <div class="p-5">
-                    <div class="space-y-5">
-                        @php
-                            $selCompliance = $defaultComplianceId ?? null;
-                            $selJobRequest = $defaultJobRequestId ?? null;
-                            $selectedContactEmail = old('contact_email', request('contact_email'));
-                            $selectedUrgent = old('urgent_job', request('urgent_job'));
-                        @endphp
-                        <div class="flex items-center gap-3">
-                            <label class="inline-flex cursor-pointer items-center gap-2.5">
-                                <input type="checkbox" id="urgent_job" name="urgent_job" value="1" autocomplete="off" {{ (string) $selectedUrgent === '1' ? 'checked' : '' }}
-                                    class="h-4 w-4 shrink-0 rounded border-2 border-slate-300 bg-white text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-slate-500 dark:bg-slate-700 dark:focus:ring-offset-slate-800 dark:checked:border-emerald-500 dark:checked:bg-emerald-500">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Urgent Job (YES)</span>
-                            </label>
-                        </div>
-                        <div class="grid gap-5 sm:grid-cols-2">
-                            <div>
-                                <label for="ncc_compliance" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">NCC Compliance</label>
-                                <select id="ncc_compliance" name="ncc_compliance" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                    <option value="">Select compliance</option>
-                                    @foreach($compliances ?? [] as $c)
-                                        <option value="{{ $c->id }}" {{ $selCompliance !== null && (int) $selCompliance === (int) $c->id ? 'selected' : '' }}>{{ $c->column ?? '' }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label for="job_type_request" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type Request</label>
-                                <select id="job_type_request" name="job_type_request" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                    <option value="">Select job type</option>
-                                    @foreach($jobRequests ?? [] as $jr)
-                                        <option value="{{ $jr->id }}" {{ $selJobRequest !== null && (int) $selJobRequest === (int) $jr->id ? 'selected' : '' }}>{{ $jr->job_request_type ?? '' }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label for="job_number" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Number <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="text" id="job_number" name="job_number" required placeholder="e.g. 12345B" autocomplete="off" maxlength="6" value="{{ old('job_number', request('job_number')) }}"
-                                    class="fyrs-job-number-input w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
-                                <span id="job_number_error_icon" class="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-red-100 p-1 text-red-600 dark:bg-red-900/40 dark:text-red-400" aria-hidden="true">
-                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                                </span>
-                            </div>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">5 digits + letter B only, max 6 characters (e.g. 12345B)</p>
-                            <p id="job_number_error_msg" class="mt-1 hidden text-xs font-medium text-red-600 dark:text-red-400">Job number must end with letter B</p>
-                        </div>
-                        <div class="grid gap-5 sm:grid-cols-2">
-                            <div>
-                                <label for="client_name" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Name <span class="text-red-500">*</span></label>
-                                <input type="text" id="client_name" name="client_name" required placeholder="Enter client name" autocomplete="off" value="{{ old('client_name', request('client_name')) }}"
-                                    class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
-                            </div>
-                            <div>
-                                <label for="contact_email" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Email <span class="text-red-500">*</span></label>
-                                <select id="contact_email" name="contact_email" required class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off" data-placeholder="Enter contact email">
-                                    <option value=""></option>
-                                    @if(!empty($selectedContactEmail) && !collect($bphClientEmails ?? [])->pluck('email')->contains($selectedContactEmail))
-                                        <option value="{{ $selectedContactEmail }}" selected>{{ $selectedContactEmail }}</option>
-                                    @endif
-                                    @foreach($bphClientEmails ?? [] as $row)
-                                        <option value="{{ $row->email }}" {{ (string) $selectedContactEmail === (string) $row->email ? 'selected' : '' }}>{{ $row->email }}</option>
-                                    @endforeach
-                                </select>
-                                @if(($bphClientEmails ?? collect())->isEmpty())
-                                    <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">No emails in <span class="font-mono">client_email_bph</span> yet. Add addresses under <a href="{{ route('bph_client_email.index') }}" class="font-medium underline hover:no-underline">BPH Email</a>.</p>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Job Details</h2>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">NatHERS &amp; BASIX Workflow</h2>
                 </div>
                 <div class="p-5">
-                    <div>
-                        <label for="fyrs-notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes (Fyrs Energy Wise)</label>
-                        <input type="hidden" name="notes" id="fyrs_notes" autocomplete="off">
-                        <div class="overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
-                            <div class="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800/80">
-                                <button type="button" class="fyrs-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="bold" title="Bold"><span class="font-bold">B</span></button>
-                                <button type="button" class="fyrs-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="italic" title="Italic"><span class="italic">I</span></button>
-                                <button type="button" class="fyrs-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="underline" title="Underline"><span class="underline">U</span></button>
-                                <span class="mx-1 h-5 w-px bg-slate-300 dark:bg-slate-600"></span>
-                                <button type="button" class="fyrs-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="insertOrderedList" title="Numbered list">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h12M9 12h12M9 19h12M3 5h.01M3 12h.01M3 19h.01"/></svg>
-                                </button>
-                                <button type="button" class="fyrs-notes-btn rounded p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700" data-cmd="insertUnorderedList" title="Bullets">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16M2 6h.01M2 12h.01M2 18h.01"/></svg>
-                                </button>
-                            </div>
-                            <div id="fyrs-notes-body" contenteditable="true" data-placeholder="Write notes here"
-                                class="min-h-[120px] bg-white px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none dark:bg-slate-800 dark:text-slate-100 [&:empty::before]:content-[attr(data-placeholder)] [&:empty::before]:text-slate-400 dark:[&:empty::before]:text-slate-500"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
-                <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Attachments</h2>
-                </div>
-                <div class="p-5">
-                    <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Plans</label>
-                            <label for="fyrs_upload_plans" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
-                                <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
-                                <span class="mt-0.5 text-xs text-slate-500 dark:text-slate-500">or</span>
-                                <span class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">browse</span>
-                                <input type="file" id="fyrs_upload_plans" name="upload_plans[]" class="hidden" multiple tabindex="-1">
-                            </label>
-                            <div id="fyrs-plans-file-list" class="mt-2 min-h-0 space-y-1 text-xs text-slate-600 dark:text-slate-400"></div>
-                            <button type="button" id="fyrs-plans-clear" class="mt-1 hidden text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear</button>
-                        </div>
-                        <div>
-                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Document</label>
-                            <label for="fyrs_upload_document" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
-                                <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
-                                <span class="mt-0.5 text-xs text-slate-500 dark:text-slate-500">or</span>
-                                <span class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">browse</span>
-                                <input type="file" id="fyrs_upload_document" name="upload_document[]" class="hidden" multiple tabindex="-1">
-                            </label>
-                            <div id="fyrs-docs-file-list" class="mt-2 min-h-0 space-y-1 text-xs text-slate-600 dark:text-slate-400"></div>
-                            <button type="button" id="fyrs-docs-clear" class="mt-1 hidden text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
-                <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Assignment</h2>
-                </div>
-                <div class="p-5">
-                    <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label for="assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Assigned To</label>
-                            <select id="assigned_to" name="assigned_to" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                                @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentStaffUsers ?? [], 'selected' => '', 'includeSelectPlaceholder' => true, 'includeGm' => false])
-                            </select>
-                        </div>
-                        <div>
-                            <label for="checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checked By</label>
-                            <select id="checked_by" name="checked_by" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                                @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentCheckerUsers ?? [], 'selected' => '', 'includeSelectPlaceholder' => true, 'includeGm' => false])
-                            </select>
-                        </div>
-                    </div>
+                    @include('fyrs.partials.assessor-workflow-fields', ['idPrefix' => 'fyrs_'])
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
                 <button type="button" id="submitBluinqBtn"
-                    class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
+                    class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Save Job
                 </button>
@@ -196,36 +43,11 @@
     transform: scale(0.9);
     opacity: 0;
 }
-.lbs-modal-step-slack,
-.lbs-modal-step-sending {
-    opacity: 0;
-    transform: translateY(8px);
-}
-.lbs-modal-step-slack.lbs-step-animate-in,
-.lbs-modal-step-sending.lbs-sending-animate-in {
-    animation: lbsSendingStepIn 0.4s ease forwards;
-}
-.lbs-slack-spinner,
-.lbs-send-spinner {
-    animation: lbsSpinner 0.8s linear infinite;
-}
-.lbs-email-sent-animate {
-    animation: lbsEmailSentFadeIn 0.5s ease 0.3s forwards;
-    opacity: 0;
-}
 @keyframes lbsOverlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes lbsDialogScaleIn {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
-@keyframes lbsSendingStepIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes lbsSpinner {
-    to { transform: rotate(360deg); }
-}
-@keyframes lbsEmailSentFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 @endpush
 
@@ -259,108 +81,27 @@
                 });
             });
 
-            notesBody.addEventListener('focus', updateNotesActiveState);
-            notesBody.addEventListener('keyup', updateNotesActiveState);
-            notesBody.addEventListener('mouseup', updateNotesActiveState);
-
-            function initBluinqSelect2() {
-                $('#fyrsAddForm select:not(.assignment-user-select)').each(function() {
-                    var $el = $(this);
-                    if ($el.hasClass('select2-hidden-accessible')) {
-                        $el.select2('destroy');
-                    }
-                    var ph = $el.data('placeholder');
-                    var opts = { width: '100%', allowClear: false };
-                    if (ph) {
-                        opts.placeholder = ph;
-                        opts.allowClear = true;
-                        opts.minimumResultsForSearch = 0;
-                    }
-                    $el.select2(opts);
-                });
-            }
-            initBluinqSelect2();
-            initAssignmentUserSelect2($('#fyrsAddForm'));
-
-            var jobNumberInput = document.getElementById('job_number');
-            var jobNumberErrorIcon = document.getElementById('job_number_error_icon');
-            var jobNumberErrorMsg = document.getElementById('job_number_error_msg');
-
-            function validateJobNumber() {
-                var val = (jobNumberInput.value || '').trim();
-                var isValid = val === '' || /^\d{5}B$/i.test(val);
-                if (val.length > 0 && !isValid) {
-                    jobNumberInput.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/25', 'dark:border-red-500');
-                    jobNumberInput.classList.remove('border-slate-300', 'focus:border-emerald-500', 'focus:ring-emerald-500/25', 'dark:border-slate-600');
-                    if (jobNumberErrorIcon) jobNumberErrorIcon.classList.remove('hidden');
-                    if (jobNumberErrorMsg) jobNumberErrorMsg.classList.remove('hidden');
-                } else {
-                    jobNumberInput.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/25', 'dark:border-red-500');
-                    jobNumberInput.classList.add('border-slate-300', 'focus:border-emerald-500', 'focus:ring-emerald-500/25', 'dark:border-slate-600');
-                    if (jobNumberErrorIcon) jobNumberErrorIcon.classList.add('hidden');
-                    if (jobNumberErrorMsg) jobNumberErrorMsg.classList.add('hidden');
-                }
-                return isValid;
+            if (notesBody) {
+                notesBody.addEventListener('focus', updateNotesActiveState);
+                notesBody.addEventListener('keyup', updateNotesActiveState);
+                notesBody.addEventListener('mouseup', updateNotesActiveState);
             }
 
-            if (jobNumberInput) {
-                jobNumberInput.addEventListener('input', validateJobNumber);
-                jobNumberInput.addEventListener('blur', validateJobNumber);
-            }
-
-            function renderFileList(inputId, listId, clearBtnId) {
-                var input = document.getElementById(inputId);
-                var listEl = document.getElementById(listId);
-                var clearBtn = document.getElementById(clearBtnId);
-                if (!input || !listEl) return;
-                function update() {
-                    var files = input.files || [];
-                    listEl.innerHTML = '';
-                    if (files.length === 0) {
-                        listEl.innerHTML = '<span class="text-slate-400 dark:text-slate-500">No file chosen</span>';
-                        if (clearBtn) clearBtn.classList.add('hidden');
-                    } else {
-                        for (var i = 0; i < files.length; i++) {
-                            var li = document.createElement('div');
-                            li.className = 'flex items-center gap-2 truncate rounded bg-slate-100 dark:bg-slate-700/50 px-2 py-1';
-                            li.innerHTML = '<svg class="h-3.5 w-3.5 flex-shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="truncate" title="' + (files[i].name || '').replace(/"/g, '&quot;') + '">' + (files[i].name || '') + '</span>';
-                            listEl.appendChild(li);
-                        }
-                        if (clearBtn) clearBtn.classList.remove('hidden');
-                    }
-                }
-                input.addEventListener('change', update);
-                if (clearBtn) {
-                    clearBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        input.value = '';
-                        update();
-                    });
-                }
-                update();
-            }
-
-            renderFileList('fyrs_upload_plans', 'fyrs-plans-file-list', 'fyrs-plans-clear');
-            renderFileList('fyrs_upload_document', 'fyrs-docs-file-list', 'fyrs-docs-clear');
+            $('#fyrsAddForm select.select2-single').each(function() {
+                $(this).select2({ width: '100%', allowClear: true });
+            });
 
             var $btn = $('#submitBluinqBtn');
             var originalBtnHtml = $btn.html();
 
             $btn.on('click', function(e) {
                 e.preventDefault();
-                document.getElementById('fyrs_notes').value = notesBody.innerHTML;
-
-                if (!validateJobNumber()) {
-                    jobNumberInput.focus();
-                    return;
+                if (notesBody) {
+                    document.getElementById('fyrs_notes').value = notesBody.innerHTML;
                 }
 
                 var formEl = document.getElementById('fyrsAddForm');
                 var formData = new FormData(formEl);
-                var headerRef = ($('#fyrsJobReferenceContent').text() || '').trim();
-                if (headerRef) {
-                    formData.append('header_reference', headerRef);
-                }
 
                 $.ajax({
                     url: '{{ route("fyrs.store") }}',
@@ -377,10 +118,8 @@
                         if (resp && resp.status === 'success') {
                             if (window.showSuccessToast) showSuccessToast(resp.message || 'Job saved.');
                             formEl.reset();
-                            notesBody.innerHTML = '';
-                            document.getElementById('fyrs_upload_plans') && document.getElementById('fyrs_upload_plans').dispatchEvent(new Event('change'));
-                            document.getElementById('fyrs_upload_document') && document.getElementById('fyrs_upload_document').dispatchEvent(new Event('change'));
-                            initBluinqSelect2();
+                            if (notesBody) notesBody.innerHTML = '';
+                            $('#fyrsAddForm select.select2-single').val('').trigger('change');
                             showFyrsAfterSavePrompt(resp.job_id);
                         } else {
                             if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Failed to save job.');
@@ -389,6 +128,10 @@
                     error: function(xhr) {
                         var msg = 'Unexpected error while saving.';
                         if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            var first = Object.values(xhr.responseJSON.errors)[0];
+                            if (Array.isArray(first) && first[0]) msg = first[0];
+                        }
                         if (window.showSuccessToast) showSuccessToast(msg);
                     },
                     complete: function() {
@@ -403,21 +146,17 @@
 
                 var $overlay = $(
                     '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay">' +
-                        '<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 overflow-hidden lbs-after-save-dialog">' +
-                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-question">' +
+                        '<div class="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 lbs-after-save-dialog">' +
+                            '<div class="p-6 text-center">' +
                                 '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">' +
                                     '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
                                 '</div>' +
                                 '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
                                 '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Fyrs Energy Wise job?</p>' +
                                 '<div class="mt-6 flex gap-3">' +
-                                    '<button type="button" data-fyrs-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to Fyrs Energy Wise list</button>' +
-                                    '<button type="button" data-fyrs-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
+                                    '<button type="button" data-fyrs-go-list class="flex-1 cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to list</button>' +
+                                    '<button type="button" data-fyrs-new-job class="flex-1 cursor-pointer rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another</button>' +
                                 '</div>' +
-                            '</div>' +
-                            '<div class="p-6 text-center lbs-modal-step lbs-modal-step-updating" style="display:none;">' +
-                                '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Updating status...</h3>' +
-                                '<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Please wait.</p>' +
                             '</div>' +
                         '</div>' +
                     '</div>'
@@ -430,47 +169,23 @@
                 });
 
                 function proceedAfterSlack(action) {
-                    var $question = $overlay.find('.lbs-modal-step-question');
-                    var $updating = $overlay.find('.lbs-modal-step-updating');
-                    var $goListBtn = $overlay.find('[data-fyrs-go-list]');
-                    var $newJobBtn = $overlay.find('[data-fyrs-new-job]');
-
-                    $question.hide();
-                    $updating.show();
-                    $goListBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
-                    $newJobBtn.prop('disabled', true).addClass('opacity-60 pointer-events-none');
-
                     $.ajax({
                         url: sendSlackUrl,
                         method: 'POST',
                         data: { _token: '{{ csrf_token() }}' },
                         dataType: 'json'
-                    }).done(function() {
-                        setTimeout(function() {
-                            $overlay.remove();
-                            if (action === 'list') {
-                                window.location.href = listUrl;
-                            } else if (action === 'stay') {
-                                window.location.reload();
-                            }
-                        }, 600);
-                    }).fail(function() {
+                    }).always(function() {
                         $overlay.remove();
                         if (action === 'list') {
                             window.location.href = listUrl;
-                        } else if (action === 'stay') {
+                        } else {
                             window.location.reload();
                         }
                     });
                 }
 
-                $overlay.find('[data-fyrs-new-job]').on('click', function() {
-                    proceedAfterSlack('stay');
-                });
-
-                $overlay.find('[data-fyrs-go-list]').on('click', function() {
-                    proceedAfterSlack('list');
-                });
+                $overlay.find('[data-fyrs-new-job]').on('click', function() { proceedAfterSlack('stay'); });
+                $overlay.find('[data-fyrs-go-list]').on('click', function() { proceedAfterSlack('list'); });
             }
         });
     </script>

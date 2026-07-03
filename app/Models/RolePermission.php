@@ -164,7 +164,7 @@ class RolePermission extends Model
      */
     public static function dashboardStatCardLabels(): array
     {
-        return ['LBS', 'LUNTIAN', 'BPH', 'BLUINQ', 'A&M', 'FYRS ENERGY WISE', 'CSP', 'NH', 'LC HOME BUILDER', 'EFFICIENT LIVING', 'LEADING ENERGY'];
+        return ['LBS', 'GENERAL ASSEMBLY', 'LUNTIAN', 'BPH', 'BLUINQ', 'A&M', 'FYRS ENERGY WISE', 'CSP', 'NH', 'LC HOME BUILDER', 'EFFICIENT LIVING', 'LEADING ENERGY'];
     }
 
     /**
@@ -179,6 +179,8 @@ class RolePermission extends Model
 
         $aliases = [
             'lbs' => 'LBS',
+            'general assembly' => 'GENERAL ASSEMBLY',
+            'general_assembly' => 'GENERAL ASSEMBLY',
             'luntian' => 'LUNTIAN',
             'bph' => 'BPH',
             'bluinq' => 'BLUINQ',
@@ -246,6 +248,9 @@ class RolePermission extends Model
         $allowed = [];
         if ($anyMay(['lbs.add', 'lbs.list', 'lbs.completed', 'lbs.review', 'lbs.mailbox', 'lbs.trash'])) {
             $allowed['LBS'] = true;
+        }
+        if ($anyMay(['general_assembly.add', 'general_assembly.list', 'general_assembly.completed', 'general_assembly.review', 'general_assembly.mailbox', 'general_assembly.trash'])) {
+            $allowed['GENERAL ASSEMBLY'] = true;
         }
         if ($anyMay(['luntian.add', 'luntian.list', 'luntian.completed', 'luntian.review', 'luntian.mailbox', 'luntian.trash'])) {
             $allowed['LUNTIAN'] = true;

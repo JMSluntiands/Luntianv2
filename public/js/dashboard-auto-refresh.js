@@ -9,7 +9,21 @@
     return;
   }
 
-  var statsUrl = (root.dataset.statsApiBase || '/dashboard/stats').replace(/\/$/, '');
+  function resolveApiUrl(raw, fallback) {
+    var fb = fallback || '/dashboard/stats';
+    var value = String(raw || fb).trim() || fb;
+    try {
+      if (value.charAt(0) === '/') {
+        return value.replace(/\/$/, '') || fb;
+      }
+      var parsed = new URL(value, window.location.origin);
+      return (parsed.pathname + parsed.search).replace(/\/$/, '') || fb;
+    } catch (e) {
+      return fb;
+    }
+  }
+
+  var statsUrl = resolveApiUrl(root.dataset.statsApiBase, '/dashboard/stats');
   var branchFilter = (root.dataset.dashboardBranchFilter || '').trim();
   var secondsLeft = REFRESH_SEC;
   var fetching = false;

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class FyrsJobController extends Controller
 {
@@ -25,6 +26,98 @@ class FyrsJobController extends Controller
     private const STORAGE_BASE = 'fyrs-documents';
 
     private const JOB_TABLE = 'job_fyrs';
+
+    private const ASSESSOR_TABLE = 'fyrs_assessor_jobs';
+
+    private const ASSESSOR_TASK_KEYS = ['base_file', 'optimization', 'basix'];
+
+    private const ASSESSOR_TASK_LABELS = [
+        'base_file' => 'Base file',
+        'optimization' => 'Optimization',
+        'basix' => 'BASIX',
+    ];
+
+    private function assessorJobForFyrsId(int $jobFyrsId): ?object
+    {
+        if (! Schema::hasTable(self::ASSESSOR_TABLE)) {
+            return null;
+        }
+
+        return DB::table(self::ASSESSOR_TABLE)
+            ->where('job_fyrs_id', $jobFyrsId)
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function legacyJobNumberStub(string $jobNumber, int $nextId): string
+    {
+        $digits = preg_replace('/\D/', '', $jobNumber);
+        if (strlen($digits) >= 5) {
+            return substr($digits, -5).'B';
+        }
+
+        return str_pad((string) ($nextId % 100000), 5, '0', STR_PAD_LEFT).'B';
+    }
+
+    private function assessorWorkflowValidationRules(): array
+    {
+        return [
+            'estate' => ['nullable', 'string', 'max:255'],
+            'house_type' => ['nullable', 'string', 'max:255'],
+            'facade' => ['nullable', 'string', 'max:255'],
+            'garage' => ['nullable', 'string', 'max:50'],
+            'tasks' => ['nullable', 'array'],
+            'tasks.*' => ['string', Rule::in(self::ASSESSOR_TASK_KEYS)],
+            'stage' => ['nullable', 'string', 'max:100'],
+            'climate_zone' => ['nullable', 'string', 'max:100'],
+            'basix_number' => ['nullable', 'string', 'max:100'],
+            'storeys' => ['nullable', 'string', 'max:20'],
+            'due_date' => ['nullable', 'date'],
+            'est_completion_certification' => ['nullable', 'date'],
+            'est_completion_basix' => ['nullable', 'date'],
+            'feedback_bers' => ['nullable', 'string', 'max:500'],
+            'feedback_basix' => ['nullable', 'string', 'max:500'],
+            'feedback_commitments_form' => ['nullable', 'string', 'max:500'],
+            'basix_note' => ['nullable', 'string'],
+        ];
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function assessorWorkflowRowFromValidated(array $data): array
+    {
+        $tasks = array_values(array_filter(
+            (array) ($data['tasks'] ?? []),
+            fn ($task) => is_string($task) && in_array($task, self::ASSESSOR_TASK_KEYS, true)
+        ));
+
+        $row = [];
+
+        foreach ([
+            'estate',
+            'house_type',
+            'facade',
+            'garage',
+            'stage',
+            'climate_zone',
+            'basix_number',
+            'storeys',
+            'feedback_bers',
+            'feedback_basix',
+            'feedback_commitments_form',
+            'basix_note',
+        ] as $column) {
+            $value = $data[$column] ?? null;
+            $row[$column] = $value === null || $value === '' ? null : $value;
+        }
+
+        $row['tasks'] = $tasks === [] ? null : json_encode($tasks);
+
+        foreach (['due_date', 'est_completion_certification', 'est_completion_basix'] as $dateColumn) {
+            $row[$dateColumn] = ! empty($data[$dateColumn]) ? $data[$dateColumn] : null;
+        }
+
+        return $row;
+    }
 
     private function assertFyrsJob(int $id): object
     {
@@ -40,39 +133,47 @@ class FyrsJobController extends Controller
     }
 
     /**
-     * Add Fyrs Energy Wise job form — same dropdown sources as BPH / Bluinq.
+     * Add Fyrs Energy Wise job form — NatHERS & BASIX assessor workflow (Excel columns only).
      */
     public function addForm()
     {
-        $compliances = Compliance::orderBy('column')->get();
-        $jobRequests = JobRequest::orderBy('job_request_type')->get();
-        $assignmentStaffUsers = User::assignmentUsersForSelect('fyrs', 'staff');
-        $assignmentCheckerUsers = User::assignmentUsersForSelect('fyrs', 'checker');
-
-        $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
-
-        $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2019') !== false)
-            ?? $compliances->first();
-        $defaultJobRequest = $jobRequests->first(fn ($jr) => $jr->job_request_type && stripos((string) $jr->job_request_type, 'fyrs') !== false)
-            ?? $jobRequests->first(fn ($jr) => $jr->job_request_type && stripos((string) $jr->job_request_type, 'energy wise') !== false)
-            ?? $jobRequests->first(fn ($jr) => $jr->job_request_type && stripos((string) $jr->job_request_type, 'query') !== false)
-            ?? $jobRequests->first();
-
         return view('fyrs.add', [
             'sidebar_active' => 'fyrs.add',
-            'compliances' => $compliances,
-            'jobRequests' => $jobRequests,
-            'assignmentStaffUsers' => $assignmentStaffUsers,
-            'assignmentCheckerUsers' => $assignmentCheckerUsers,
-            'bphClientEmails' => $bphClientEmails,
-            'defaultComplianceId' => $defaultCompliance?->id,
-            'defaultJobRequestId' => $defaultJobRequest?->id,
         ]);
     }
 
     public function list()
     {
-        return view('fyrs.list', array_merge(['sidebar_active' => 'fyrs.list'], User::assignmentInitialsViewData('fyrs')));
+        $excludedStatuses = [
+            'completed',
+            'for review',
+            'for email confirmation',
+            'archived',
+            'archive',
+        ];
+
+        $rows = collect();
+        if (Schema::hasTable(self::ASSESSOR_TABLE) && Schema::hasTable(self::JOB_TABLE)) {
+            $q = DB::table(self::ASSESSOR_TABLE.' as a')
+                ->join(self::JOB_TABLE.' as j', 'j.id', '=', 'a.job_fyrs_id')
+                ->whereRaw('LOWER(TRIM(j.client_code)) = ?', [strtolower(self::FYRS_CLIENT_CODE)])
+                ->whereRaw(
+                    '(j.status IS NULL OR LOWER(TRIM(j.status)) NOT IN ('.implode(',', array_fill(0, count($excludedStatuses), '?')).'))',
+                    $excludedStatuses
+                )
+                ->select('a.*', 'j.id as job_id');
+
+            JobCountsScope::applyJobBphAssignment($q);
+            JobCountsScope::applyJobBphBranchVerticalScope($q);
+
+            $rows = $q->orderByDesc('a.created_at')->limit(300)->get();
+        }
+
+        return view('fyrs.list', [
+            'sidebar_active' => 'fyrs.list',
+            'rows' => $rows,
+            'taskLabels' => self::ASSESSOR_TASK_LABELS,
+        ]);
     }
 
     /**
@@ -81,13 +182,14 @@ class FyrsJobController extends Controller
     public function show(int $id)
     {
         $job = $this->assertFyrsJob($id);
+        $assessor = $this->assessorJobForFyrsId($id);
 
         $viewJob = (object) [
             'job_id' => (int) $job->id,
             'reference' => $job->reference,
             'log_date' => $job->created_at,
             'client_code' => $job->client_code,
-            'job_reference_no' => $job->job_number,
+            'job_reference_no' => $assessor->job_number ?? $job->job_number,
             'client_reference_no' => null,
             'staff_id' => $job->assigned,
             'checker_id' => $job->checked,
@@ -99,7 +201,7 @@ class FyrsJobController extends Controller
             'plan_complexity' => (int) ($job->units ?? 0),
             'job_status' => $job->status,
             'completion_date' => $job->date,
-            'notes' => $job->notes,
+            'notes' => $assessor->notes ?? $job->notes,
             'upload_files' => $job->plans_files,
             'upload_project_files' => $job->docs_files,
             'client_account_id' => null,
@@ -356,17 +458,10 @@ class FyrsJobController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'ncc_compliance'   => ['nullable', 'integer'],
-            'job_type_request' => ['nullable', 'integer'],
-            'job_number'       => ['required', 'string', 'max:6', 'regex:/^\d{5}B$/i'],
-            'client_name'      => ['required', 'string', 'max:255'],
-            'contact_email'    => ['required', 'email', 'max:255'],
-            'notes'            => ['nullable', 'string'],
-            'assigned_to'      => ['required', 'string', 'max:50'],
-            'checked_by'       => ['required', 'string', 'max:50'],
-            'urgent_job'       => ['nullable'],
-        ]);
+        $data = $request->validate(array_merge([
+            'job_number' => ['required', 'string', 'max:100'],
+            'notes'      => ['nullable', 'string'],
+        ], $this->assessorWorkflowValidationRules()));
 
         if (! Schema::hasTable(self::JOB_TABLE)) {
             return response()->json([
@@ -375,92 +470,81 @@ class FyrsJobController extends Controller
             ], 500);
         }
 
-        $compliance = !empty($data['ncc_compliance']) ? Compliance::find($data['ncc_compliance']) : null;
-        $jobRequest = !empty($data['job_type_request']) ? JobRequest::find($data['job_type_request']) : null;
+        if (! Schema::hasTable(self::ASSESSOR_TABLE)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Database table '.self::ASSESSOR_TABLE.' is not available. Run: php artisan migrate',
+            ], 500);
+        }
 
-        $nccText = $compliance->column ?? '2019';
-        $jobTypeText = $jobRequest->job_request_type ?? '—';
-
-        $headerRef = trim((string) $request->input('header_reference', ''));
-        $reference = $headerRef !== '' ? $headerRef : ('FYRS-' . now('Asia/Manila')->format('YmdHis'));
+        $reference = 'FYRS-'.now('Asia/Manila')->format('YmdHis');
         $reference = substr($reference, 0, 50);
 
         $now = now('Asia/Manila');
-        $urgent = $request->boolean('urgent_job') ? 'YES' : 'NO';
-        $jobNum = strtoupper(substr($data['job_number'], 0, 6));
-
-        $folderSeg = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $reference) ?: 'fyrs_upload';
-
-        $base = self::STORAGE_BASE . '/' . $folderSeg;
-
-        $planNames = [];
-        foreach ((array) $request->file('upload_plans', []) as $file) {
-            if (!$file || !$file->isValid()) {
-                continue;
-            }
-            $original = $file->getClientOriginalName() ?: $file->hashName();
-            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $path = $base . '/' . $safeName;
-            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
-            $planNames[] = $safeName;
-        }
-
-        $docNames = [];
-        foreach ((array) $request->file('upload_document', []) as $file) {
-            if (!$file || !$file->isValid()) {
-                continue;
-            }
-            $original = $file->getClientOriginalName() ?: $file->hashName();
-            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
-            $path = $base . '/' . $safeName;
-            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
-            $docNames[] = $safeName;
-        }
+        $jobNum = trim($data['job_number']);
+        $clientName = $jobNum !== '' ? $jobNum : 'Fyrs Job';
 
         try {
-            $nextId = (int) DB::table(self::JOB_TABLE)->max('id') + 1;
+            $id = DB::transaction(function () use ($data, $reference, $now, $jobNum, $clientName) {
+                $nextId = (int) DB::table(self::JOB_TABLE)->max('id') + 1;
+                $legacyJobNum = $this->legacyJobNumberStub($jobNum, $nextId);
 
-            $row = [
-                'id'                  => $nextId,
-                'reference'           => $reference,
-                'client_code'         => self::FYRS_CLIENT_CODE,
-                'urgent'              => $urgent,
-                'job_type'            => substr($jobTypeText, 0, 100),
-                'ncc'                 => substr((string) $nccText, 0, 255),
-                'job_number'          => $jobNum,
-                'client_name'         => $data['client_name'],
-                'contact_email'       => $data['contact_email'],
-                'notes'               => $data['notes'] ?? null,
-                'created_at'          => $now,
-                'updated_at'          => $now,
-                'assigned'            => $data['assigned_to'],
-                'checked'             => $data['checked_by'],
-                'plans_files'         => json_encode($planNames),
-                'docs_files'          => json_encode($docNames),
-                'status'              => 'Allocated',
-                'date'                => $now->toDateString(),
-                'address'             => null,
-                'climate_zone'        => null,
-                'compliance_summary_description' => null,
-                'spec_client_no'      => null,
-                'spec_lbs_no'         => null,
-                'spec_plans'          => null,
-                'spec_insulation'     => null,
-                'spec_glazing'        => null,
-                'spec_sealing'        => null,
-                'spec_services'       => null,
-                'spec_additional'     => null,
-                'units'               => 0,
-            ];
-            if (Schema::hasColumn(self::JOB_TABLE, 'spec_print_merge_file')) {
-                $row['spec_print_merge_file'] = null;
-            }
-            DB::table(self::JOB_TABLE)->insert($row);
-            $id = $nextId;
+                $jobRow = [
+                    'id'                  => $nextId,
+                    'reference'           => $reference,
+                    'client_code'         => self::FYRS_CLIENT_CODE,
+                    'urgent'              => 'NO',
+                    'job_type'            => 'Fyrs Energy Wise',
+                    'ncc'                 => '2019',
+                    'job_number'          => $legacyJobNum,
+                    'client_name'         => substr($clientName, 0, 255),
+                    'contact_email'       => 'fyrs@luntian.local',
+                    'notes'               => $data['notes'] ?? null,
+                    'created_at'          => $now,
+                    'updated_at'          => $now,
+                    'assigned'            => null,
+                    'checked'             => null,
+                    'plans_files'         => json_encode([]),
+                    'docs_files'          => json_encode([]),
+                    'status'              => 'Allocated',
+                    'date'                => $now->toDateString(),
+                    'address'             => null,
+                    'climate_zone'        => isset($data['climate_zone']) ? substr((string) $data['climate_zone'], 0, 100) : null,
+                    'compliance_summary_description' => null,
+                    'spec_client_no'      => null,
+                    'spec_lbs_no'         => null,
+                    'spec_plans'          => null,
+                    'spec_insulation'     => null,
+                    'spec_glazing'        => null,
+                    'spec_sealing'        => null,
+                    'spec_services'       => null,
+                    'spec_additional'     => null,
+                    'units'               => 0,
+                ];
+                if (Schema::hasColumn(self::JOB_TABLE, 'spec_print_merge_file')) {
+                    $jobRow['spec_print_merge_file'] = null;
+                }
+                DB::table(self::JOB_TABLE)->insert($jobRow);
+
+                $assessorRow = array_merge([
+                    'job_fyrs_id' => $nextId,
+                    'reference'   => $reference,
+                    'job_date'    => $now->toDateString(),
+                    'job_number'  => $jobNum,
+                    'notes'       => $data['notes'] ?? null,
+                    'status'      => 'Allocated',
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ], $this->assessorWorkflowRowFromValidated($data));
+
+                DB::table(self::ASSESSOR_TABLE)->insert($assessorRow);
+
+                return $nextId;
+            });
         } catch (\Throwable $e) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Database error: ' . $e->getMessage(),
+                'message' => 'Database error: '.$e->getMessage(),
             ], 500);
         }
 
@@ -474,6 +558,7 @@ class FyrsJobController extends Controller
     public function sendSlackNotification(int $id)
     {
         $job = $this->assertFyrsJob($id);
+        $assessor = $this->assessorJobForFyrsId($id);
 
         $slackWebhook = SlackWebhookResolver::newJobWebhook();
 
@@ -482,8 +567,8 @@ class FyrsJobController extends Controller
         }
 
         $reference = $job->reference ?? '';
-        $jobNum = $job->job_number ?? '';
-        $clientName = $job->client_name ?? '';
+        $jobNum = $assessor->job_number ?? $job->job_number ?? '';
+        $clientName = $assessor->estate ?? $job->client_name ?? '';
         $status = $job->status ?? '';
         $ncc = $job->ncc ?? '';
         $jobType = $job->job_type ?? '';

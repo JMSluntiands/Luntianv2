@@ -7,6 +7,7 @@ use App\Services\JobCountsScope;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -81,6 +82,27 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('luntian_list_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->allocated_count ?? 0)));
                 $view->with('luntian_review_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->review_count ?? 0)));
                 $view->with('luntian_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->mailbox_count ?? 0)));
+
+                $gaBase = Schema::hasTable('job_general_assembly')
+                    ? DB::table('job_general_assembly')->where('reference', 'like', 'JOBS%')
+                    : null;
+                if ($gaBase !== null) {
+                    JobCountsScope::applyJobsTableAssignment($gaBase);
+                    $gaCounts = $gaBase
+                        ->selectRaw("
+                            SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                            SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                            SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                        ")
+                        ->first();
+                    $view->with('ga_list_count', JobCountsScope::sidebarCountForBranchVertical('GENERAL ASSEMBLY', (int) ($gaCounts->allocated_count ?? 0)));
+                    $view->with('ga_review_count', JobCountsScope::sidebarCountForBranchVertical('GENERAL ASSEMBLY', (int) ($gaCounts->review_count ?? 0)));
+                    $view->with('ga_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('GENERAL ASSEMBLY', (int) ($gaCounts->mailbox_count ?? 0)));
+                } else {
+                    $view->with('ga_list_count', 0);
+                    $view->with('ga_review_count', 0);
+                    $view->with('ga_mailbox_count', 0);
+                }
 
                 // BPH sidebar badges from `job_bph`
                 $bphBase = DB::table('job_bph')

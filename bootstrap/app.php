@@ -13,6 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/jotform',
+        ]);
+
         $middleware->alias([
             'auth.session' => \App\Http\Middleware\EnsureAuthenticated::class,
             'check.permission' => \App\Http\Middleware\CheckPagePermission::class,

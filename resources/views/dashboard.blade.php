@@ -1,6 +1,7 @@
 @php
     $sidebar_active = 'dashboard';
     $dashboardStats = $dashboardStats ?? \App\Services\DashboardJobStatsService::fetch();
+    $dashboardStatusChart = $dashboardStatusChart ?? \App\Services\DashboardJobStatsService::fetchStatusChart();
     $dashboardBranchFilter = \App\Models\RolePermission::dashboardStatCardsBranchFilter();
     $labelOrder = \App\Models\RolePermission::dashboardStatCardLabels();
     $dashOrderBucket = static function (array $bucket) use ($labelOrder): array {
@@ -69,88 +70,6 @@
             background: #d4c9b8 !important;
             color: #1e293b !important;
         }
-
-        .dashboard-refresh-widget {
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 0.375rem;
-            width: fit-content;
-            margin: 0;
-            padding: 0.25rem 0.625rem;
-            border-radius: 9999px;
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
-            font-size: 0.6875rem;
-            font-weight: 600;
-            color: #64748b;
-        }
-        .dashboard-layout {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: start;
-            column-gap: 1rem;
-            width: 100%;
-        }
-        .dashboard-layout__refresh {
-            grid-column: 2;
-            grid-row: 1;
-            z-index: 2;
-            margin-top: 0.125rem;
-        }
-        .dashboard-layout__main {
-            grid-column: 1 / -1;
-            grid-row: 1;
-            min-width: 0;
-        }
-        [data-theme="dark"] .dashboard-refresh-widget {
-            border-color: #475569;
-            background: #1e293b;
-            color: #e2e8f0;
-            box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
-        }
-        .dashboard-refresh-widget--active {
-            border-color: #10b981;
-            background: #ecfdf5;
-        }
-        [data-theme="dark"] .dashboard-refresh-widget--active {
-            border-color: #059669;
-            background: #064e3b;
-        }
-        .dashboard-refresh-widget__count {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 1.25rem;
-            height: 1.25rem;
-            padding: 0 0.25rem;
-            border-radius: 0.25rem;
-            background: #059669;
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 700;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-        }
-        .dashboard-refresh-widget__count--tick {
-            animation: dashboard-refresh-tick 0.35s ease-out;
-        }
-        @keyframes dashboard-refresh-tick {
-            0% { transform: scale(1.25); }
-            100% { transform: scale(1); }
-        }
-        .dashboard-refresh-widget__dot {
-            width: 0.375rem;
-            height: 0.375rem;
-            border-radius: 9999px;
-            background: #10b981;
-            animation: dashboard-refresh-pulse 1.2s ease-in-out infinite;
-        }
-        @keyframes dashboard-refresh-pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.45; transform: scale(0.85); }
-        }
     </style>
 @endpush
 
@@ -187,22 +106,16 @@
         }
     @endphp
     <script type="application/json" id="dashboard-stats-json">@json($dashboardStats)</script>
+    <script type="application/json" id="dashboard-chart-json">@json($dashboardStatusChart)</script>
     <script type="application/json" id="dashboard-holidays-initial" data-year="{{ $dashboardPublicHolidaysYear }}">@json($dashboardPublicHolidays)</script>
-    <div class="dashboard-layout">
-        <div class="dashboard-layout__refresh">
-            <div id="dashboard-refresh-widget" class="dashboard-refresh-widget" aria-live="polite" aria-atomic="true">
-                <span class="dashboard-refresh-widget__dot" aria-hidden="true"></span>
-                <span data-refresh-label>Refresh in</span>
-                <strong id="dashboard-refresh-count" class="dashboard-refresh-widget__count">5</strong>
-                <span>sec</span>
-            </div>
-        </div>
+    <div class="dashboard-layout w-full min-w-0">
         <div
             id="dashboard-root"
             class="dashboard-layout__main w-full min-w-0"
             data-dashboard-branch-filter="{{ $dashboardBranchFilter }}"
-            data-holidays-api-base="{{ url('/dashboard/holidays') }}"
-            data-stats-api-base="{{ url('/dashboard/stats') }}"
+            data-holidays-api-base="/dashboard/holidays"
+            data-stats-api-base="{{ route('dashboard.stats', [], false) }}"
+            data-chart-api-base="{{ route('dashboard.chart', [], false) }}"
         >
         {{-- Fallback: visible if React has not mounted yet or JS fails --}}
         <div class="dashboard-page" data-dashboard-fallback>
@@ -292,6 +205,7 @@
                     </div>
                 </div>
             </section>
+            @include('layouts.partials.dashboard-status-chart-fallback')
             <section class="dashboard-section">
                 <div class="dashboard-panel">
                     <h2 class="dashboard-panel__header">
@@ -358,5 +272,4 @@
 
 @push('scripts')
     @vite(['resources/js/dashboard.tsx'])
-    <script src="{{ asset('js/dashboard-auto-refresh.js') }}"></script>
 @endpush

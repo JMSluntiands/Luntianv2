@@ -1,0 +1,2832 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ClientAccount;
+use App\Models\Compliance;
+use App\Models\JobRequest;
+use App\Models\ActivityLog;
+use App\Models\Priority;
+use App\Models\Status;
+use App\Models\User;
+use App\Models\RolePermission;
+use App\Models\EmailConfig;
+use App\Services\JobCountsScope;
+use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackWebhookResolver;
+use App\Support\FecUnitsValidation;
+use App\Support\JobUploadFolder;
+use App\Support\LbsJobStatusFlow;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+
+class GeneralAssemblyJobController extends Controller
+{
+    public function show(int $id)
+    {
+        $job = DB::table('job_general_assembly as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id)
+            ->first();
+
+        if (!$job) {
+            abort(404);
+        }
+
+        return $this->renderJobDetailView($job, 'general_assembly.list', 'general_assembly');
+    }
+
+    /**
+     * @return array{statusColors: array<string, string|null>, statusFontColors: array<string, string>}
+     */
+    private function statusBadgeColorMaps(): array
+    {
+        return [
+            'statusColors' => Status::backgroundColorsByName(),
+            'statusFontColors' => Status::fontColorsByName(),
+        ];
+    }
+
+    /**
+     * LBS job detail vs Efficient Living / Luntian (same `jobs` row shape; vertical limits job type dropdown).
+     */
+    private function renderJobDetailView(object $job, string $sidebarActive, string $product = 'general_assembly')
+    {
+        $isEfficientLiving = $product === 'efficient_living';
+        $isLuntian = $product === 'luntian';
+        $isGeneralAssembly = $product === 'general_assembly';
+        $priorityColor = !empty($job->priority)
+            ? Priority::where('name', $job->priority)->value('color')
+            : null;
+
+        $statusColor = !empty($job->job_status)
+            ? Status::where('name', $job->job_status)->value('color')
+            : null;
+
+        $priorities = Priority::orderBy('id')->get();
+        $statuses = Status::orderBy('name')->get();
+        $compliances = Compliance::orderBy('column')->get();
+        $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+        $clientCodeFilter = match ($product) {
+            'efficient_living' => 'EL01',
+            'luntian' => 'LT01',
+            'general_assembly' => 'GA01',
+            default => 'GA01',
+        };
+        $jobRequests = $clientCodeFilter
+            ? $this->jobRequestsForVerticalClient($clientCodeFilter)
+            : JobRequest::orderBy('job_request_type')->get();
+
+        $activityLogs = ActivityLog::where('job_id', (int) $job->job_id)
+            ->orderByDesc('activity_date')
+            ->limit(50)
+            ->get();
+
+        $userRoleMap = [];
+        $updatedByNames = $activityLogs->pluck('updated_by')->unique()->filter();
+        if ($updatedByNames->isNotEmpty()) {
+            $users = User::whereIn('fullname', $updatedByNames)
+                ->orWhereIn('unique_code', $updatedByNames)
+                ->get(['fullname', 'unique_code', 'role']);
+            foreach ($users as $u) {
+                $role = ucfirst((string) ($u->role ?? ''));
+                if ($u->fullname) {
+                    $userRoleMap[$u->fullname] = $role;
+                }
+                if ($u->unique_code) {
+                    $userRoleMap[$u->unique_code] = $role;
+                }
+            }
+        }
+
+        $checkerUploadsQuery = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('uploaded_at');
+
+        $isBranchRole = strtolower(trim((string) session('user_role', ''))) === 'branch';
+        if ($isBranchRole && $product === 'general_assembly') {
+            $checkerUploadsQuery->limit(1);
+        }
+
+        $checkerUploads = $checkerUploadsQuery->get();
+
+        $assignmentSelect = User::assignmentSelectLists($this->assignmentModuleForJob($job));
+
+        $runComments = DB::table('run_comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('run_comment_id')
+            ->limit(50)
+            ->get();
+
+        $jobComments = DB::table('comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('comment_id')
+            ->limit(50)
+            ->get();
+
+        $viewName = match ($product) {
+            'efficient_living' => 'efficient_living.view',
+            'luntian' => 'luntian.view',
+            default => 'general-assembly.view',
+        };
+
+        return view($viewName, [
+            'sidebar_active'   => $sidebarActive,
+            'isEfficientLiving' => $isEfficientLiving,
+            'isLuntian'        => $isLuntian,
+            'isGeneralAssembly' => $isGeneralAssembly,
+            'jobId'            => $job->job_id,
+            'job'              => $job,
+            'priorityColor'    => $priorityColor,
+            'statusColor'      => $statusColor,
+            'statusFontColor'  => ! empty($job->job_status)
+                ? Status::resolveFontColor(Status::where('name', $job->job_status)->value('font_color'))
+                : Status::DEFAULT_FONT_COLOR,
+            'priorities'       => $priorities,
+            'statuses'         => $statuses,
+            'compliances'      => $compliances,
+            'clientAccounts'   => $clientAccounts,
+            'jobRequests'      => $jobRequests,
+            'activityLogs'     => $activityLogs,
+            'userRoleMap'      => $userRoleMap,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers'  => $assignmentSelect['assignmentStaffUsers'],
+            'checkerUploads'   => $checkerUploads,
+            'runComments'      => $runComments,
+            'jobComments'      => $jobComments,
+        ]);
+    }
+
+    public function efficientLivingShow(int $id)
+    {
+        $job = DB::table('job_general_assembly as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id)
+            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->first();
+
+        if ($job) {
+            return $this->renderJobDetailView($job, 'efficient_living.list', 'efficient_living');
+        }
+
+        $row = DB::table('job_el')->where('id', $id)->first();
+        if (!$row) {
+            abort(404);
+        }
+
+        $legacyJob = (object) [
+            'job_id' => (int) $row->id,
+            'reference' => $row->reference,
+            'log_date' => $row->created_at,
+            'client_code' => $row->client_code,
+            'job_reference_no' => $row->job_number,
+            'client_reference_no' => null,
+            'staff_id' => $row->assigned,
+            'checker_id' => $row->checked,
+            'ncc_compliance' => $row->ncc,
+            'job_request_id' => null,
+            'address_client' => $row->address,
+            'job_type' => $row->job_type,
+            'priority' => null,
+            'plan_complexity' => (int) ($row->units ?? 0),
+            'job_status' => $row->status,
+            'completion_date' => $row->date,
+            'notes' => $row->notes,
+            'upload_files' => $row->plans_files,
+            'upload_project_files' => $row->docs_files,
+            'client_account_id' => null,
+            'client_account_name' => $row->client_name,
+        ];
+
+        $priorityColor = !empty($legacyJob->priority) ? Priority::where('name', $legacyJob->priority)->value('color') : null;
+        $statusColor = !empty($legacyJob->job_status) ? Status::where('name', $legacyJob->job_status)->value('color') : null;
+        $assignmentSelect = User::assignmentSelectLists('efficient_living');
+
+        return view('efficient_living.view', [
+            'sidebar_active' => 'efficient_living.list',
+            'isEfficientLiving' => true,
+            'jobId' => $legacyJob->job_id,
+            'job' => $legacyJob,
+            'priorityColor' => $priorityColor,
+            'statusColor' => $statusColor,
+            'priorities' => Priority::orderBy('id')->get(),
+            'statuses' => Status::orderBy('name')->get(),
+            'compliances' => Compliance::orderBy('column')->get(),
+            'clientAccounts' => collect(),
+            'jobRequests' => JobRequest::where('client_code', 'EL01')->orderBy('job_request_type')->get(),
+            'activityLogs' => collect(),
+            'userRoleMap' => [],
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'checkerUploads' => collect(),
+            'runComments' => collect(),
+            'jobComments' => collect(),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildJobViewData(int $id): array
+    {
+        $job = DB::table('job_general_assembly as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id)
+            ->first();
+
+        if (!$job) {
+            abort(404);
+        }
+
+        $priorityColor = !empty($job->priority)
+            ? Priority::where('name', $job->priority)->value('color')
+            : null;
+
+        $statusColor = !empty($job->job_status)
+            ? Status::where('name', $job->job_status)->value('color')
+            : null;
+
+        $priorities    = Priority::orderBy('id')->get();
+        $statuses      = Status::orderBy('name')->get();
+        $compliances   = Compliance::orderBy('column')->get();
+        $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+        $jobRequests   = JobRequest::orderBy('job_request_type')->get();
+
+        $activityLogs = ActivityLog::where('job_id', (int) $job->job_id)
+            ->orderByDesc('activity_date')
+            ->limit(50)
+            ->get();
+
+        $userRoleMap = [];
+        $updatedByNames = $activityLogs->pluck('updated_by')->unique()->filter();
+        if ($updatedByNames->isNotEmpty()) {
+            $users = User::whereIn('fullname', $updatedByNames)
+                ->orWhereIn('unique_code', $updatedByNames)
+                ->get(['fullname', 'unique_code', 'role']);
+            foreach ($users as $u) {
+                $role = ucfirst((string) ($u->role ?? ''));
+                if ($u->fullname) {
+                    $userRoleMap[$u->fullname] = $role;
+                }
+                if ($u->unique_code) {
+                    $userRoleMap[$u->unique_code] = $role;
+                }
+            }
+        }
+
+        $checkerUploads = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('uploaded_at')
+            ->get();
+
+        $assignmentSelect = User::assignmentSelectLists($this->assignmentModuleForJob($job));
+
+        $runComments = DB::table('run_comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('run_comment_id')
+            ->limit(50)
+            ->get();
+
+        $jobComments = DB::table('comments')
+            ->where('job_id', (int) $job->job_id)
+            ->orderByDesc('comment_id')
+            ->limit(50)
+            ->get();
+
+        return [
+            'jobId'            => $job->job_id,
+            'job'              => $job,
+            'priorityColor'    => $priorityColor,
+            'statusColor'      => $statusColor,
+            'priorities'       => $priorities,
+            'statuses'         => $statuses,
+            'compliances'      => $compliances,
+            'clientAccounts'   => $clientAccounts,
+            'jobRequests'      => $jobRequests,
+            'activityLogs'     => $activityLogs,
+            'userRoleMap'      => $userRoleMap,
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'assignmentCheckerUsers' => $assignmentSelect['assignmentCheckerUsers'],
+            'assignmentUsers'  => $assignmentSelect['assignmentStaffUsers'],
+            'checkerUploads'   => $checkerUploads,
+            'runComments'      => $runComments,
+            'jobComments'      => $jobComments,
+        ];
+    }
+
+    public function addRunComment(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $data = $request->validate([
+            'message' => ['required', 'string'],
+        ]);
+
+        $now = now('Asia/Manila');
+        $createdAt = $now->format('M d, Y h:i A');
+        $name = session('user_name') ?? 'LUNTIAN';
+
+        // Handle environments where AUTO_INCREMENT might not be configured correctly
+        $nextId = (int) DB::table('run_comments')->max('run_comment_id') + 1;
+
+        DB::table('run_comments')->insert([
+            'run_comment_id' => $nextId,
+            'job_id'         => (int) $id,
+            'name'           => $name,
+            'message'        => $data['message'],
+            'created_at'     => $createdAt,
+        ]);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Run comment',
+            'activity_description' => $data['message'],
+            'updated_by'           => $name,
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Run comment added.',
+            'comment' => [
+                'run_comment_id'      => $nextId,
+                'job_id'              => (int) $id,
+                'name'                => $name,
+                'message'             => $data['message'],
+                'created_at'           => $createdAt,
+                'profile_image_url'   => session('user_profile_image') ? route('account.settings.image') : null,
+            ],
+        ]);
+    }
+
+    public function addJobComment(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $data = $request->validate([
+            'message' => ['required', 'string'],
+        ]);
+
+        $now = now('Asia/Manila');
+        $createdAt = $now->format('M d, Y h:i A');
+        $name = session('user_name') ?? 'LUNTIAN';
+        $nextId = (int) DB::table('comments')->max('comment_id') + 1;
+
+        DB::table('comments')->insert([
+            'comment_id' => $nextId,
+            'job_id'     => (int) $id,
+            'username'   => $name,
+            'message'    => $data['message'],
+            'created_at' => $createdAt,
+        ]);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Comment',
+            'activity_description' => $data['message'],
+            'updated_by'           => $name,
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Comment added.',
+            'comment' => [
+                'comment_id'         => $nextId,
+                'job_id'             => (int) $id,
+                'username'           => $name,
+                'message'            => $data['message'],
+                'created_at'          => $createdAt,
+                'profile_image_url'   => session('user_profile_image') ? route('account.settings.image') : null,
+            ],
+        ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Job not found.',
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'job_status'        => ['nullable', 'string', 'max:50'],
+            'job_address'       => ['nullable', 'string', 'max:1000'],
+            'priority'          => ['nullable', 'string', 'max:255'],
+            'job_type'          => ['nullable', 'string', 'max:255'],
+            'notes'             => ['nullable', 'string', 'max:65535'],
+            'client_reference'  => ['nullable', 'string', 'max:255'],
+            'job_reference_no'  => ['nullable', 'string', 'max:255'],
+            'compliance'        => ['nullable', 'string', 'max:255'],
+            'client_id'         => ['nullable', 'integer'],
+            'staff_id'          => ['nullable', 'string', 'max:50'],
+            'checker_id'        => ['nullable', 'string', 'max:50'],
+            'plan_complexity'   => ['nullable', 'integer', 'between:1,5'],
+            'units'             => ['nullable', 'integer', 'min:0', 'max:9999'],
+        ]);
+
+        $jvProduct = match ($request->route()?->getName()) {
+            'efficient_living.job.update' => 'efficient_living',
+            'luntian.job.update' => 'luntian',
+            default => 'general_assembly',
+        };
+
+        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.client_details')) {
+            unset(
+                $data['client_reference'],
+                $data['job_reference_no'],
+                $data['compliance'],
+                $data['client_id']
+            );
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.job_details')) {
+            unset(
+                $data['job_address'],
+                $data['priority'],
+                $data['job_type']
+            );
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.notes')) {
+            unset($data['notes']);
+        }
+        if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.complexity')) {
+            unset($data['plan_complexity']);
+        }
+
+        if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
+            $candidateStatus = trim((string) $data['job_status']);
+            if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidateStatus, 'units')) {
+                return $fecErr;
+            }
+        }
+
+        $update = [];
+        $changes = [];
+        $oldClient = null;
+        if (!empty($job->client_account_id)) {
+            $oldClient = ClientAccount::find($job->client_account_id);
+        }
+
+        if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
+            $new = trim((string) $data['job_status']);
+            if ($new !== $job->job_status) {
+                if (! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid status change. Jobs advance one step at a time: ' . LbsJobStatusFlow::describeFlow() . '.',
+                    ], 422);
+                }
+                $update['job_status'] = $new;
+                $changes[] = [
+                    'field' => 'Job Status',
+                    'old'   => $job->job_status,
+                    'new'   => $new,
+                ];
+                if (strcasecmp($new, 'Completed') === 0) {
+                    $update['completion_date'] = now('Asia/Manila')->format('Y-m-d H:i:s');
+                } elseif (strcasecmp((string) ($job->job_status ?? ''), 'Completed') === 0) {
+                    $update['completion_date'] = null;
+                }
+            }
+        }
+        if (array_key_exists('job_address', $data)) {
+            $new = $data['job_address'];
+            if ($new !== $job->address_client) {
+                $update['address_client'] = $new;
+                $changes[] = [
+                    'field' => 'Job Address',
+                    'old'   => $job->address_client,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('priority', $data)) {
+            $new = $data['priority'];
+            if ($new !== $job->priority) {
+                $update['priority'] = $new;
+                $changes[] = [
+                    'field' => 'Priority',
+                    'old'   => $job->priority,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('job_type', $data)) {
+            $new = $data['job_type'];
+            if ($new !== $job->job_type) {
+                $update['job_type'] = $new;
+                $changes[] = [
+                    'field' => 'Job Type',
+                    'old'   => $job->job_type,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('notes', $data)) {
+            $new = $data['notes'] ?? '';
+            $old = $job->notes ?? '';
+            if ((string) $new !== (string) $old) {
+                $update['notes'] = $new;
+                $oldPreview = trim(preg_replace('/\s+/', ' ', strip_tags($old ?? '')));
+                $newPreview = trim(preg_replace('/\s+/', ' ', strip_tags($new ?? '')));
+                $maxLen = 120;
+                if (mb_strlen($oldPreview) > $maxLen) {
+                    $oldPreview = mb_substr($oldPreview, 0, $maxLen) . '…';
+                }
+                if (mb_strlen($newPreview) > $maxLen) {
+                    $newPreview = mb_substr($newPreview, 0, $maxLen) . '…';
+                }
+                $changes[] = [
+                    'field' => 'Notes',
+                    'old'   => $oldPreview !== '' ? $oldPreview : '(empty)',
+                    'new'   => $newPreview !== '' ? $newPreview : '(empty)',
+                ];
+            }
+        }
+        if (array_key_exists('client_reference', $data)) {
+            $new = $data['client_reference'];
+            if ($new !== $job->client_reference_no) {
+                $update['client_reference_no'] = $new;
+                $changes[] = [
+                    'field' => 'Client Reference',
+                    'old'   => $job->client_reference_no,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('job_reference_no', $data)) {
+            $new = trim((string) ($data['job_reference_no'] ?? ''));
+            if ($new === '') {
+                $new = trim((string) ($job->job_reference_no ?? ''));
+            }
+            if ($new === '') {
+                $new = trim((string) ($job->reference ?? ''));
+                $new = preg_replace('/-1$/', '', $new);
+            }
+            $old = trim((string) ($job->job_reference_no ?? ''));
+            if ($new !== $old) {
+                $update['job_reference_no'] = $new;
+                $changes[] = [
+                    'field' => 'Job Number',
+                    'old'   => $job->job_reference_no,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('compliance', $data)) {
+            $new = $data['compliance'];
+            if ($new !== $job->ncc_compliance) {
+                $update['ncc_compliance'] = $new;
+                $changes[] = [
+                    'field' => 'Compliance',
+                    'old'   => $job->ncc_compliance,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('client_id', $data) && $data['client_id']) {
+            $newId = (int) $data['client_id'];
+            if ($newId !== (int) $job->client_account_id) {
+                $newClient = ClientAccount::find($newId);
+                if ($newClient) {
+                    $jobRequestRow = JobRequest::where('job_request_id', $job->job_request_id)->first();
+                    $jrCode = trim((string) ($jobRequestRow->client_code ?? ''));
+                    $rawAccountCode = trim((string) ($newClient->client_code ?? ''));
+                    if ($this->isLuntianJob($job)) {
+                        $resolvedCode = $this->resolveJobsClientCodeForClientsTable('', $jrCode);
+                    } else {
+                        $resolvedCode = $this->resolveJobsClientCodeForClientsTable($rawAccountCode, $jrCode);
+                    }
+                    if ($resolvedCode === '') {
+                        return response()->json([
+                            'status'  => 'error',
+                            'message' => 'Cannot change client: no client_code in the clients table matches this account or the job’s job type.',
+                        ], 422);
+                    }
+                    $update['client_account_id'] = $newId;
+                    $update['client_code'] = $resolvedCode;
+
+                    $oldName = $oldClient?->client_account_name ?? $job->client_code;
+                    $newName = $newClient->client_account_name ?? $newClient->client_code ?? ('ID ' . $newId);
+
+                    $changes[] = [
+                        'field' => 'Client',
+                        'old'   => $oldName,
+                        'new'   => $newName,
+                    ];
+                }
+            }
+        }
+        if (array_key_exists('staff_id', $data) && RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.edit_assigned')) {
+            $new = $data['staff_id'] ? trim($data['staff_id']) : null;
+            $old = $job->staff_id ? trim($job->staff_id) : null;
+            if ((string) $new !== (string) $old) {
+                $update['staff_id'] = $new;
+                $changes[] = [
+                    'field' => 'Staff',
+                    'old'   => $old ?? '—',
+                    'new'   => $new ?? '—',
+                ];
+            }
+        }
+        if (array_key_exists('checker_id', $data) && RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.edit_assigned')) {
+            $new = $data['checker_id'] ? trim($data['checker_id']) : null;
+            $old = $job->checker_id ? trim($job->checker_id) : null;
+            if ((string) $new !== (string) $old) {
+                $update['checker_id'] = $new;
+                $changes[] = [
+                    'field' => 'Checker',
+                    'old'   => $old ?? '—',
+                    'new'   => $new ?? '—',
+                ];
+            }
+        }
+        if (array_key_exists('plan_complexity', $data) && $data['plan_complexity'] !== null) {
+            $new = (int) $data['plan_complexity'];
+            $old = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
+            if ($new !== $old) {
+                $update['plan_complexity'] = $new;
+                $changes[] = [
+                    'field' => 'Complexity',
+                    'old'   => $old ?: 0,
+                    'new'   => $new,
+                ];
+            }
+        }
+        if (array_key_exists('units', $data) && $data['units'] !== null) {
+            $new = (int) $data['units'];
+            $old = (int) ($job->units ?? 0);
+            if ($new !== $old) {
+                $update['units'] = $new;
+                $changes[] = [
+                    'field' => 'Units',
+                    'old'   => $old,
+                    'new'   => $new,
+                ];
+            }
+        }
+
+        if (empty($update)) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'No changes to update.',
+            ]);
+        }
+
+        try {
+            DB::table('job_general_assembly')->where('job_id', $id)->update($update);
+
+            // Create a single activity log entry summarising all field changes
+            $now = now('Asia/Manila');
+            $lines = [];
+            foreach ($changes as $change) {
+                $old = $change['old'] ?? '—';
+                $new = $change['new'] ?? '—';
+                $lines[] = sprintf('%s: %s → %s', $change['field'], (string) $old, (string) $new);
+            }
+
+            $description = implode("\n", $lines);
+            if ($description === '') {
+                $description = 'Details updated';
+            }
+
+            $log = ActivityLog::create([
+                'job_id'               => (int) $id,
+                'activity_date'        => $now->format('Y-m-d H:i:s'),
+                'activity_type'        => 'Job updated',
+                'activity_description' => $description,
+                'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            ]);
+
+            $assignmentSlack = false;
+            foreach ($changes as $c) {
+                if (in_array($c['field'] ?? '', ['Staff', 'Checker'], true)) {
+                    $assignmentSlack = true;
+                    break;
+                }
+            }
+            if ($assignmentSlack) {
+                $finalStaff = array_key_exists('staff_id', $update)
+                    ? ($update['staff_id'] !== null && $update['staff_id'] !== '' ? trim((string) $update['staff_id']) : null)
+                    : ($job->staff_id ? trim((string) $job->staff_id) : null);
+                $finalChecker = array_key_exists('checker_id', $update)
+                    ? ($update['checker_id'] !== null && $update['checker_id'] !== '' ? trim((string) $update['checker_id']) : null)
+                    : ($job->checker_id ? trim((string) $job->checker_id) : null);
+                $product = match ($jvProduct) {
+                    'efficient_living' => 'Efficient Living',
+                    'luntian' => 'Luntian',
+                    default => 'General Assembly',
+                };
+                $ref = trim((string) ($job->reference ?? $job->job_reference_no ?? ''));
+                $jobStatus = (string) (array_key_exists('job_status', $update) ? $update['job_status'] : ($job->job_status ?? ''));
+                $viewRoute = match ($jvProduct) {
+                    'efficient_living' => 'efficient_living.job.view',
+                    'luntian' => 'luntian.job.view',
+                    default => 'general_assembly.job.view',
+                };
+                $jobUrl = route($viewRoute, ['id' => $id]);
+                SlackAssignmentNotifier::notifyAssignment(
+                    $product,
+                    $id,
+                    $ref,
+                    SlackAssignmentNotifier::normalizeCode($finalStaff) !== '' ? SlackAssignmentNotifier::normalizeCode($finalStaff) : null,
+                    SlackAssignmentNotifier::normalizeCode($finalChecker) !== '' ? SlackAssignmentNotifier::normalizeCode($finalChecker) : null,
+                    $jobStatus,
+                    $jobUrl
+                );
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Job updated successfully.',
+                'logs'    => [$log],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Database error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function archiveJob(int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $currentStatus = $job->job_status ?? '';
+        if (strtolower($currentStatus) === 'archived') {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Job is already archived.',
+                'redirect' => route('general_assembly.trash'),
+            ]);
+        }
+
+        try {
+            DB::table('job_general_assembly')->where('job_id', $id)->update(['job_status' => 'Archived']);
+
+            $now = now('Asia/Manila');
+            ActivityLog::create([
+                'job_id'               => (int) $id,
+                'activity_date'        => $now->format('Y-m-d H:i:s'),
+                'activity_type'        => 'Job archived',
+                'activity_description' => 'Job status changed to Archived.',
+                'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            ]);
+
+            return response()->json([
+                'status'   => 'success',
+                'message'  => 'Job archived successfully.',
+                'redirect' => route('general_assembly.trash'),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to archive: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function acceptFormJob(int $id)
+    {
+        if (! RolePermission::userMayAccessroute('general_assembly.job.acceptForm')) {
+            return redirect()->route('general_assembly.list')->with('error', 'You do not have permission to accept forms jobs.');
+        }
+
+        $job = DB::table('job_general_assembly')
+            ->where('job_id', $id)
+            ->where('updated_by', 'FORMS')
+            ->first();
+
+        if (!$job) {
+            return redirect()->route('general_assembly.list')->with('error', 'Forms job not found or already accepted.');
+        }
+
+        DB::table('job_general_assembly')
+            ->where('job_id', $id)
+            ->update(['updated_by' => null]);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Forms job accepted',
+            'activity_description' => 'Job accepted from Forms Submitted Jobs into main LBS list.',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+        ]);
+
+        return redirect()->route('general_assembly.list')->with('success', 'Forms job accepted and moved to main list.');
+    }
+
+    public function uploadFiles(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $request->validate([
+            'section' => ['required', 'string', 'in:plans,documents'],
+            'files'   => ['required', 'array'],
+            'files.*' => ['file', 'max:51200'],
+        ]);
+
+        $section = $request->input('section');
+        $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
+        $current = $job->{$column};
+        $list = is_string($current) ? (json_decode($current, true) ?? []) : [];
+        if (!is_array($list)) {
+            $list = [];
+        }
+
+        $uploaded = [];
+        foreach ($request->file('files', []) as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            $original = $file->getClientOriginalName() ?: $file->hashName();
+            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+            $folderName = JobUploadFolder::lbsFolderName($job, $id);
+            $path = 'ga-documents/' . $folderName . '/' . $safeName;
+            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
+            $list[] = $safeName;
+            $uploaded[] = $safeName;
+        }
+
+        if (empty($uploaded)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No valid files to upload.',
+            ], 422);
+        }
+
+        DB::table('job_general_assembly')->where('job_id', $id)->update([$column => json_encode($list)]);
+
+        $sectionLabel = $section === 'plans' ? 'Plans' : 'Documents';
+        $description = $sectionLabel . ': ' . implode(', ', $uploaded);
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Files uploaded',
+            'activity_description' => $description,
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Files added successfully.',
+            'files'   => $list,
+        ]);
+    }
+
+    public function deleteFile(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $request->validate([
+            'section'   => ['required', 'string', 'in:plans,documents'],
+            'file_name' => ['required', 'string', 'max:500'],
+        ]);
+
+        $section = $request->input('section');
+        $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
+        $current = $job->{$column};
+        $list = is_string($current) ? (json_decode($current, true) ?? []) : [];
+        if (!is_array($list)) {
+            $list = [];
+        }
+
+        $fileName = $request->input('file_name');
+        $list = array_values(array_filter($list, function ($name) use ($fileName) {
+            return (string) $name !== (string) $fileName;
+        }));
+
+        DB::table('job_general_assembly')->where('job_id', $id)->update([$column => json_encode($list)]);
+
+        $storagePath = JobUploadFolder::gaStoragePath($job, $id, $fileName);
+        if ($storagePath) {
+            Storage::disk('local')->delete($storagePath);
+        }
+
+        $sectionLabel = $section === 'plans' ? 'Plans' : 'Documents';
+        $now = now('Asia/Manila');
+        $log = ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'File deleted',
+            'activity_description' => $sectionLabel . ': ' . $fileName,
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'File removed.',
+            'files'   => $list,
+            'log'     => [
+                'activity_date'        => $log->activity_date,
+                'activity_type'        => $log->activity_type,
+                'activity_description' => $log->activity_description,
+                'updated_by'           => $log->updated_by,
+            ],
+        ]);
+    }
+
+    public function uploadCheckerFiles(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $request->validate([
+            'files'   => ['required', 'array'],
+            'files.*' => ['file', 'max:51200'],
+            'notes'   => ['nullable', 'string'],
+        ]);
+
+        $now = now('Asia/Manila');
+        $fileNames = [];
+        foreach ($request->file('files', []) as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            $original = $file->getClientOriginalName() ?: $file->hashName();
+            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+            $folderName = JobUploadFolder::lbsFolderName($job, $id);
+            $path = 'ga-documents/' . $folderName . '/' . $safeName;
+            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
+            $fileNames[] = $safeName;
+        }
+
+        if (empty($fileNames)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No valid files to upload.',
+            ], 422);
+        }
+
+        $notesHtml = $request->input('notes') ?? '';
+
+        // Some environments may not have AUTO_INCREMENT correctly configured for file_id,
+        // so we compute the next ID manually to avoid SQL errors.
+        $nextId = (int) DB::table('staff_uploaded_files')->max('file_id') + 1;
+
+        DB::table('staff_uploaded_files')->insert([
+            'file_id'     => $nextId,
+            'job_id'      => (int) $id,
+            'files_json'  => json_encode($fileNames),
+            'comment'     => $notesHtml,
+            'uploaded_at' => $now->format('Y-m-d H:i:s'),
+            'uploaded_by' => session('user_name') ?? 'LUNTIAN',
+        ]);
+
+        $descriptionLines = [];
+        $descriptionLines[] = 'Checker upload files: ' . implode(', ', $fileNames);
+        if (trim(strip_tags($notesHtml)) !== '') {
+            $preview = trim(preg_replace('/\s+/', ' ', strip_tags($notesHtml)));
+            if (mb_strlen($preview) > 160) {
+                $preview = mb_substr($preview, 0, 160) . '…';
+            }
+            $descriptionLines[] = 'Notes: ' . $preview;
+        }
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Checker upload',
+            'activity_description' => implode("\n", $descriptionLines),
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Checker upload saved.',
+        ]);
+    }
+
+    /** Jobs + badge colors for the LBS list main/forms tables (full page or AJAX fragment). */
+    private function buildLbsListJobsPayload(): array
+    {
+        if (JobCountsScope::branchBlocksGeneralAssemblyList()) {
+            $jobs = collect();
+            $formsJobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
+                ->where(function ($query) {
+                    $query->whereNull('j.updated_by')
+                        ->orWhere('j.updated_by', '!=', 'FORMS');
+                });
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+
+            $formsJobs = collect();
+            if (RolePermission::userMayAccessroute('general_assembly.list.formsSubmitted')) {
+                $formsQuery = DB::table('job_general_assembly as j')
+                    ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                    ->where('j.reference', 'like', 'JOBS%')
+                    ->where('j.updated_by', '=', 'FORMS')
+                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+                JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
+                $formsJobs = $formsQuery
+                    ->select(
+                        'j.job_id',
+                        'j.reference',
+                        'j.log_date',
+                        'j.client_code',
+                        'j.job_reference_no',
+                        'j.client_reference_no',
+                        'j.staff_id',
+                        'j.checker_id',
+                        'j.ncc_compliance',
+                        'j.job_request_id',
+                        'j.address_client',
+                        'j.job_type',
+                        'j.priority',
+                        'j.plan_complexity',
+                        'j.units',
+                        'j.job_status',
+                        'j.completion_date',
+                        'ca.client_account_name'
+                    )
+                    ->orderByDesc('j.log_date')
+                    ->limit(200)
+                    ->get();
+            }
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return array_merge([
+            'jobs' => $jobs,
+            'formsJobs' => $formsJobs,
+            'priorityColors' => $priorityColors,
+            'statuses' => Status::orderBy('name')->get(),
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly'));
+    }
+
+    public function index()
+    {
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return view('general-assembly.list', array_merge($this->buildLbsListJobsPayload(), [
+            'sidebar_active' => 'general_assembly.list',
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
+        ]));
+    }
+
+    /**
+     * HTML fragment for the LBS list tables (main list + optional forms block), for in-place refresh.
+     */
+    public function indexTablesFragment()
+    {
+        return response()
+            ->view('general-assembly.partials.list-tables-body', $this->buildLbsListJobsPayload())
+            ->header('Cache-Control', 'no-store, must-revalidate');
+    }
+
+    public function efficientLivingList()
+    {
+        if (JobCountsScope::branchBlocksEfficientLivingList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+                ->where('j.reference', 'like', 'JOBS%')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statuses = Status::orderBy('name')->get();
+
+        return view('efficient_living.list', array_merge([
+            'sidebar_active' => 'efficient_living.list',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statuses' => $statuses,
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function efficientLivingCompleted()
+    {
+        $jobs = $this->queryEfficientLivingJobsByStatus('Completed', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return view('general-assembly.completed', array_merge([
+            'sidebar_active' => 'efficient_living.completed',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isEfficientLiving' => true,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
+            'statuses' => Status::orderBy('name')->get(),
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function efficientLivingReview()
+    {
+        $jobs = $this->queryEfficientLivingJobsByStatus('For Review', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statuses = Status::orderBy('name')->get();
+
+        return view('general-assembly.review', array_merge([
+            'sidebar_active' => 'efficient_living.review',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isEfficientLiving' => true,
+            'statuses' => $statuses,
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function efficientLivingTrash()
+    {
+        $jobs = $this->queryEfficientLivingJobsByStatus('Archived', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+
+        return view('general-assembly.trash', array_merge([
+            'sidebar_active' => 'efficient_living.trash',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isEfficientLiving' => true,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function efficientLivingMailbox()
+    {
+        if (JobCountsScope::branchBlocksEfficientLivingList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+                ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+                ->where('j.job_status', '=', 'For Email Confirmation');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.upload_files',
+                    'j.upload_project_files',
+                    'j.units',
+                    'ca.client_account_name',
+                    'cl.client_email as to_email'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
+
+        $jobs = $this->attachLatestCheckerUploads($jobs);
+
+        return view('general-assembly.mailbox', [
+            'sidebar_active' => 'efficient_living.mailbox',
+            'jobs' => $jobs,
+            'isEfficientLiving' => true,
+        ]);
+    }
+
+    public function luntianList()
+    {
+        if (JobCountsScope::branchBlocksLuntianList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+            $this->applyLuntianJobRequestScope($q, 'j');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
+                    'j.job_status',
+                    'j.completion_date',
+                    'j.address_client',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statuses = Status::orderBy('name')->get();
+
+        return view('luntian.list', array_merge([
+            'sidebar_active' => 'luntian.list',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'statuses' => $statuses,
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function luntianCompleted()
+    {
+        $jobs = $this->queryLuntianJobsByStatus('Completed', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return view('general-assembly.completed', array_merge([
+            'sidebar_active' => 'luntian.completed',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isLuntian' => true,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
+            'statuses' => Status::orderBy('name')->get(),
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function luntianReview()
+    {
+        $jobs = $this->queryLuntianJobsByStatus('For Review', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+        $statuses = Status::orderBy('name')->get();
+
+        return view('general-assembly.review', array_merge([
+            'sidebar_active' => 'luntian.review',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isLuntian' => true,
+            'statuses' => $statuses,
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function luntianTrash()
+    {
+        $jobs = $this->queryLuntianJobsByStatus('Archived', 500);
+        $priorityColors = Priority::query()->whereNotNull('name')->pluck('color', 'name')->toArray();
+
+        return view('general-assembly.trash', array_merge([
+            'sidebar_active' => 'luntian.trash',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'isLuntian' => true,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function luntianMailbox()
+    {
+        if (JobCountsScope::branchBlocksLuntianList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+                ->where('j.job_status', '=', 'For Email Confirmation');
+            $this->applyLuntianJobRequestScope($q, 'j');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.upload_files',
+                    'j.upload_project_files',
+                    'j.units',
+                    'ca.client_account_name',
+                    'cl.client_email as to_email'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
+
+        $jobs = $this->attachLatestCheckerUploads($jobs);
+
+        return view('general-assembly.mailbox', [
+            'sidebar_active' => 'luntian.mailbox',
+            'jobs' => $jobs,
+            'isLuntian' => true,
+        ]);
+    }
+
+    public function luntianShow(int $id)
+    {
+        $q = DB::table('job_general_assembly as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.job_status',
+                'j.completion_date',
+                'j.notes',
+                'j.upload_files',
+                'j.upload_project_files',
+                'j.client_account_id',
+                'ca.client_account_name'
+            )
+            ->where('j.job_id', $id);
+        $this->applyLuntianJobRequestScope($q, 'j');
+        $job = $q->first();
+
+        if (! $job) {
+            abort(404);
+        }
+
+        return $this->renderJobDetailView($job, 'luntian.list', 'luntian');
+    }
+
+    private function queryEfficientLivingJobsByStatus(string $status, int $limit = 200)
+    {
+        if (JobCountsScope::branchBlocksEfficientLivingList()) {
+            return collect();
+        }
+        $q = DB::table('job_general_assembly as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', $status);
+        JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+
+        return $q
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.units',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc($status === 'Completed' ? 'j.completion_date' : 'j.log_date')
+            ->when($status === 'Completed', fn ($q) => $q->orderByDesc('j.log_date'))
+            ->limit($limit)
+            ->get();
+    }
+
+    private function queryLuntianJobsByStatus(string $status, int $limit = 200)
+    {
+        if (JobCountsScope::branchBlocksLuntianList()) {
+            return collect();
+        }
+        $q = DB::table('job_general_assembly as j')
+            ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.job_status', '=', $status);
+        $this->applyLuntianJobRequestScope($q, 'j');
+        JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+
+        return $q
+            ->select(
+                'j.job_id',
+                'j.reference',
+                'j.log_date',
+                'j.client_code',
+                'j.job_reference_no',
+                'j.client_reference_no',
+                'j.staff_id',
+                'j.checker_id',
+                'j.ncc_compliance',
+                'j.job_request_id',
+                'j.address_client',
+                'j.job_type',
+                'j.priority',
+                'j.plan_complexity',
+                'j.units',
+                'j.job_status',
+                'j.completion_date',
+                'ca.client_account_name'
+            )
+            ->orderByDesc($status === 'Completed' ? 'j.completion_date' : 'j.log_date')
+            ->when($status === 'Completed', fn ($q) => $q->orderByDesc('j.log_date'))
+            ->limit($limit)
+            ->get();
+    }
+
+    public function trash()
+    {
+        if (JobCountsScope::branchBlocksGeneralAssemblyList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'Archived');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return view('general-assembly.trash', array_merge([
+            'sidebar_active' => 'general_assembly.trash',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    public function restoreJob(int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return redirect()->route('general_assembly.trash')->with('error', 'Job not found.');
+        }
+        if (($job->job_status ?? '') !== 'Archived') {
+            return redirect()->route('general_assembly.trash')->with('message', 'Job is not archived.');
+        }
+        $now = now('Asia/Manila');
+        DB::table('job_general_assembly')->where('job_id', $id)->update([
+            'job_status' => 'Allocated',
+            'log_date'   => $now->format('Y-m-d H:i:s'),
+        ]);
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => $now->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Job restored',
+            'activity_description' => 'Job restored from archive to Allocated. Log date updated to restore time.',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+        ]);
+        return redirect()->route('general_assembly.trash')->with('success', 'Job restored to list.');
+    }
+
+    public function completed()
+    {
+        if (JobCountsScope::branchBlocksGeneralAssemblyList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'Completed');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.completion_date')
+                ->orderByDesc('j.log_date')
+                ->limit(500)
+                ->get();
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $filterBuilders = ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->orderBy('client_account_name')
+            ->pluck('client_account_name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+        $filterPriorities = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return view('general-assembly.completed', array_merge([
+            'sidebar_active' => 'general_assembly.completed',
+            'jobs' => $jobs,
+            'priorityColors' => $priorityColors,
+            'filterBuilders' => $filterBuilders,
+            'filterPriorities' => $filterPriorities,
+            'statuses' => Status::orderBy('name')->get(),
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function review()
+    {
+        if (JobCountsScope::branchBlocksGeneralAssemblyList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'For Review');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        $statuses = Status::orderBy('name')->get();
+
+        return view('general-assembly.review', array_merge([
+            'sidebar_active' => 'general_assembly.review',
+            'jobs'           => $jobs,
+            'priorityColors' => $priorityColors,
+            'statuses'       => $statuses,
+        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly')));
+    }
+
+    public function mailbox()
+    {
+        if (JobCountsScope::branchBlocksGeneralAssemblyList()) {
+            $jobs = collect();
+        } else {
+            $q = DB::table('job_general_assembly as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', '=', 'For Email Confirmation');
+            JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
+            $jobs = $q
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.upload_files',
+                    'j.upload_project_files',
+                    'j.units',
+                    'ca.client_account_name',
+                    'cl.client_email as to_email'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
+        }
+
+        $jobs = $this->attachLatestCheckerUploads($jobs);
+
+        $priorityColors = Priority::query()
+            ->whereNotNull('name')
+            ->pluck('color', 'name')
+            ->toArray();
+
+        return view('general-assembly.mailbox', array_merge([
+            'sidebar_active' => 'general_assembly.mailbox',
+            'jobs'           => $jobs,
+            'priorityColors' => $priorityColors,
+        ], $this->statusBadgeColorMaps()));
+    }
+
+    private function attachLatestCheckerUploads($jobs)
+    {
+        if (! $jobs || $jobs->isEmpty()) {
+            return $jobs;
+        }
+
+        $jobIds = $jobs->pluck('job_id')->filter()->map(fn ($id) => (int) $id)->values();
+        if ($jobIds->isEmpty()) {
+            return $jobs;
+        }
+
+        $latestRows = DB::table('staff_uploaded_files')
+            ->select('job_id', 'files_json', 'uploaded_at')
+            ->whereIn('job_id', $jobIds->all())
+            ->orderByDesc('uploaded_at')
+            ->orderByDesc('file_id')
+            ->get();
+
+        $latestByJob = [];
+        foreach ($latestRows as $row) {
+            $jid = (int) ($row->job_id ?? 0);
+            if ($jid <= 0 || array_key_exists($jid, $latestByJob)) {
+                continue;
+            }
+            $latestByJob[$jid] = $row;
+        }
+
+        return $jobs->map(function ($job) use ($latestByJob) {
+            $jid = (int) ($job->job_id ?? 0);
+            $latest = $latestByJob[$jid] ?? null;
+            $job->latest_checker_files_json = $latest->files_json ?? null;
+            $job->latest_checker_uploaded_at = $latest->uploaded_at ?? null;
+
+            return $job;
+        });
+    }
+
+    /**
+     * Get email preview data for a job (for mailbox Preview modal).
+     */
+    public function emailPreview(int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $assessorEmail = null;
+        if (!empty($job->staff_id)) {
+            $user = User::where('unique_code', $job->staff_id)->first();
+            $assessorEmail = $user ? $user->email : null;
+        }
+
+        return response()->json([
+            'status'          => 'success',
+            'job_reference_no' => $job->job_reference_no ?? $job->reference ?? '',
+            'job_status'      => 'COMPLETED',
+            'assessor'        => $job->staff_id ?? '',
+            'assessor_email'  => $assessorEmail,
+            'notes'           => $job->notes ?? '',
+        ]);
+    }
+
+    /**
+     * Send mailbox email: same design as preview, attachments = latest checker upload files.
+     * Uses SMTP config from database (e.g. SMTP2Go).
+     */
+    public function sendMailboxEmail(Request $request, int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $completedDate = now('Asia/Manila')->format('Y-m-d H:i:s');
+
+        $emailConfig = EmailConfig::where('is_active', true)->first();
+        if (!$emailConfig) {
+            DB::table('job_general_assembly')->where('job_id', $id)->update([
+                'job_status' => 'Completed',
+                'completion_date' => $completedDate,
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Email sending is disabled. Status updated to Completed.',
+                'email_skipped' => true,
+            ]);
+        }
+
+        $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
+        if (empty($toEmail)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No recipient email found for this job (client not found or no client_email).',
+            ], 422);
+        }
+
+        $assessorEmail = null;
+        if (!empty($job->staff_id)) {
+            $user = User::where('unique_code', $job->staff_id)->first();
+            $assessorEmail = $user ? $user->email : '';
+        }
+
+        $clientAccountName = null;
+        if (!empty($job->client_account_id)) {
+            $clientAccount = ClientAccount::find($job->client_account_id);
+            $clientAccountName = $clientAccount?->client_account_name;
+        }
+
+        $jobReferenceNo = $job->job_reference_no ?? $job->reference ?? '';
+        $jobStatus = $job->job_status ?? 'For Email Confirmation';
+        $assessor = $job->staff_id ?? '';
+        $notes = $job->notes ?? '';
+
+        $reference = $job->reference ?? '';
+        $clientReferenceNo = $job->client_reference_no ?? '';
+        $subjectParts = [];
+        if (!empty($clientAccountName)) {
+            $subjectParts[] = $clientAccountName;
+        }
+        if (!empty($reference)) {
+            $subjectParts[] = $reference;
+        }
+        if (!empty($clientReferenceNo)) {
+            $subjectParts[] = $clientReferenceNo;
+        }
+        $emailSubject = 'Job Update';
+        if (!empty($subjectParts)) {
+            $emailSubject .= ' : ' . implode(' ', $subjectParts);
+        } elseif (!empty($jobReferenceNo)) {
+            $emailSubject .= ' : ' . $jobReferenceNo;
+        }
+
+        $logoUrl = $this->getLogoDataUriForEmail();
+
+        $viewData = [
+            'logoUrl'         => $logoUrl,
+            'jobReferenceNo'  => $jobReferenceNo,
+            'jobStatus'       => $jobStatus,
+            'assessor'        => $assessor,
+            'assessorEmail'   => $assessorEmail,
+            'notes'           => $notes,
+        ];
+
+        $attachments = [];
+        $latestCheckerUpload = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $id)
+            ->orderByDesc('uploaded_at')
+            ->first();
+
+        if ($latestCheckerUpload && !empty($latestCheckerUpload->files_json)) {
+            $files = json_decode($latestCheckerUpload->files_json, true);
+            if (is_array($files)) {
+                foreach ($files as $fileName) {
+                    $storagePath = JobUploadFolder::gaStoragePath($job, $id, (string) $fileName);
+                    if ($storagePath) {
+                        $attachments[] = [
+                            'path' => Storage::disk('local')->path($storagePath),
+                            'name' => $fileName,
+                        ];
+                    }
+                }
+            }
+        }
+
+        try {
+            Mail::send('emails.lbs-status-update', $viewData, function ($message) use ($toEmail, $emailSubject, $attachments) {
+                $message->to($toEmail);
+                $message->subject($emailSubject);
+                foreach ($attachments as $att) {
+                    $message->attach($att['path'], ['as' => $att['name']]);
+                }
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        DB::table('job_general_assembly')->where('job_id', $id)->update([
+            'job_status' => 'Completed',
+            'completion_date' => $completedDate,
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Email sent successfully. Status updated to Completed.',
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'reference_no'     => ['nullable', 'string', 'max:255'],
+            'client_reference' => ['nullable', 'string', 'max:255'],
+            'compliance'       => ['required', 'integer'],
+            'client'           => ['required', 'integer'],
+            'job_address'      => ['required', 'string', 'max:1000'],
+            'priority'         => ['required', 'integer'],
+            'job_type'         => ['required', 'integer'],
+            'assigned_to'      => ['required', 'string', 'max:10'],
+            'checked_by'       => ['required', 'string', 'max:10'],
+            'notes'            => ['nullable', 'string'],
+        ]);
+
+        $compliance = Compliance::find($data['compliance']);
+        $jobRequest = JobRequest::find($data['job_type']);
+        $client     = ClientAccount::find($data['client']);
+
+        if (!$compliance || !$jobRequest || !$client) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid compliance, job type, or client.',
+            ], 422);
+        }
+
+        $headerRef = $request->input('header_reference');
+        $now = now('Asia/Manila');
+        $isLuntianStore = $request->route()?->getName() === 'luntian.store';
+
+        // Ensure reference column starts with JOBS so the job appears in LBS list; append -1
+        $referenceValue = $headerRef ?: ($data['reference_no'] ?? '');
+        if ($referenceValue !== '' && stripos($referenceValue, 'JOBS') !== 0) {
+            $referenceValue = 'JOBS-' . $referenceValue;
+        }
+        if ($referenceValue !== '') {
+            $referenceValue = $referenceValue . '-1';
+        } elseif ($isLuntianStore) {
+            $referenceValue = 'JOBS' . $now->format('YmdHis') . '-1';
+        }
+
+        $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
+        $isLuntianVertical = $isLuntianStore || $this->isLuntianJobRequestClientCode($jobRequestClientCode);
+
+        // `jobs.client_code` references `clients.client_code`. `client_accounts` may store codes
+        // that are not in `clients` (e.g. internal labels); fall back to the job type’s code.
+        $clientCodeForJob = trim((string) ($client->client_code ?? ''));
+        if ($clientCodeForJob === '' && ! $isLuntianVertical && session('user_id')) {
+            $currentUser = User::find(session('user_id'));
+            $clientCodeForJob = trim((string) ($currentUser?->unique_code ?? ''));
+        }
+        $clientCodeForJob = $this->resolveJobsClientCodeForClientsTable($clientCodeForJob, $jobRequestClientCode);
+        if ($clientCodeForJob === '') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No valid client code for this job: the account code is not in the clients table, and the job type code is missing or not registered there either. Add matching rows to clients or fix client_accounts / job_requests.',
+            ], 422);
+        }
+
+        // Map priority ID -> name string (e.g. "High 1 day") if available
+        $priorityText = (string) $data['priority'];
+        try {
+            $priorityModel = \App\Models\Priority::find($data['priority']);
+            if ($priorityModel && $priorityModel->name) {
+                $priorityText = $priorityModel->name;
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            // Handle file uploads (plans & docs) similar to legacy flow, but store securely in storage
+            $referenceNo = trim((string) ($data['reference_no'] ?? ''));
+            $clientReference = trim((string) ($data['client_reference'] ?? ''));
+            $uploadFolderName = JobUploadFolder::lbsFolderName((object) [
+                'job_reference_no'    => $referenceNo,
+                'client_reference_no' => $clientReference,
+                'reference'           => $referenceValue,
+            ], 0);
+            if ($uploadFolderName === 'job_0') {
+                $uploadFolderName = preg_replace('/-1$/', '', $referenceValue) ?: ('AUTO_' . $now->format('YmdHis'));
+            }
+
+            $planNames = [];
+            foreach ((array) $request->file('plans', []) as $file) {
+                if (!$file) {
+                    continue;
+                }
+                $original = $file->getClientOriginalName() ?: $file->hashName();
+                $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+                $path = 'ga-documents/' . $uploadFolderName . '/' . $safeName;
+                Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
+                $planNames[] = $safeName;
+            }
+
+            $docNames = [];
+            foreach ((array) $request->file('docs', []) as $file) {
+                if (!$file) {
+                    continue;
+                }
+                $original = $file->getClientOriginalName() ?: $file->hashName();
+                $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+                $path = 'ga-documents/' . $uploadFolderName . '/' . $safeName;
+                Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
+                $docNames[] = $safeName;
+            }
+
+            $jobReferenceNo = trim((string) ($data['reference_no'] ?? ''));
+            if ($jobReferenceNo === '' && $referenceValue !== '') {
+                $jobReferenceNo = preg_replace('/-1$/', '', $referenceValue);
+            }
+
+            $jobId = DB::table('job_general_assembly')->insertGetId([
+                'reference'           => $referenceValue,
+                'log_date'            => $now->format('Y-m-d H:i:s'),
+                'client_code'         => $clientCodeForJob,
+                'job_reference_no'    => $jobReferenceNo,
+                'client_reference_no' => $data['client_reference'] ?? null,
+                'staff_id'            => $data['assigned_to'] ?? null,
+                'checker_id'          => $data['checked_by'] ?? null,
+                'ncc_compliance'      => $compliance->column ?? null,
+                'job_request_id'      => $jobRequest->job_request_id ?? (string) $data['job_type'],
+                'address_client'      => $data['job_address'] ?? null,
+                'job_type'            => $jobRequest->job_request_type ?? null,
+                'priority'            => $priorityText,
+                'plan_complexity'     => null,
+                'notes'               => $data['notes'] ?? null,
+                'upload_files'        => json_encode($planNames),
+                'upload_project_files'=> json_encode($docNames),
+                // last_update has default CURRENT_TIMESTAMP
+                'updated_by'          => $request->route()?->getName() === 'general_assembly.public.store' ? 'FORMS' : null,
+                'job_status'          => 'Allocated',
+                'dwelling'            => '',
+                'client_account_id'   => $client->client_account_id,
+                'completion_date'     => null,
+                'units'               => 0,
+            ]);
+
+            $clientCode = (string) ($jobRequest->client_code ?? '');
+            $successMessage = 'General Assembly job created successfully.';
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => $successMessage,
+                'job_id'  => $jobId,
+                'submission_email_enabled' => EmailConfig::where('is_active', true)->exists(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Database error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Send Slack notification for an LBS job (called after modal is shown so modal appears first).
+     */
+    public function sendJobSlackNotification(int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $slackWebhook = SlackWebhookResolver::newJobWebhook();
+
+        if (!$slackWebhook) {
+            return response()->json(['status' => 'success', 'message' => 'Slack not configured.']);
+        }
+
+        $client = $job->client_account_id ? ClientAccount::find($job->client_account_id) : null;
+        $reference = $job->reference ?? '';
+        $client_ref = trim($job->client_reference_no ?? '') ?: '—';
+        $client_account_name = $client ? ($client->client_account_name ?? '') : '';
+        $status = $job->job_status ?? '';
+        $complianceLabel = $job->ncc_compliance ?? '';
+        $job_request_type = $job->job_type ?? '';
+        $priorityLabel = $job->priority ?? '';
+        $address = $job->address_client ?? '';
+        $assigned = $job->staff_id ?? '';
+        $checked = $job->checker_id ?? '';
+
+        $jobProduct = $this->resolveLbsJobProduct($job);
+        $slackHeadline = '🆕 New General Assembly Job Submitted';
+        $refFieldTitle = 'GA Ref #';
+        $slackFooter = match ($jobProduct) {
+            'efficient_living' => 'Luntian Efficient Living Job Management',
+            'luntian' => 'Luntian Job Management',
+            default => 'Luntian LBS Job Management',
+        };
+
+        try {
+            $slackMessage = [
+                'text' => $slackHeadline,
+                'attachments' => [
+                    [
+                        'color' => '#f57c00',
+                        'fields' => [
+                            ['title' => $refFieldTitle, 'value' => $reference, 'short' => true],
+                            ['title' => 'Client Ref #', 'value' => $client_ref, 'short' => true],
+                            ['title' => 'Account Client', 'value' => $client_account_name, 'short' => true],
+                            ['title' => 'Status', 'value' => $status, 'short' => true],
+                            ['title' => 'NCC Compliance', 'value' => $complianceLabel, 'short' => true],
+                            ['title' => 'Job Type', 'value' => $job_request_type, 'short' => true],
+                            ['title' => 'Priority', 'value' => $priorityLabel, 'short' => true],
+                            ['title' => 'Address', 'value' => $address, 'short' => false],
+                            ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
+                            ['title' => 'Checked By', 'value' => $checked, 'short' => true],
+                        ],
+                        'footer' => $slackFooter,
+                        'ts' => time(),
+                    ],
+                ],
+            ];
+
+            $ch = curl_init($slackWebhook);
+            curl_setopt_array($ch, [
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => json_encode($slackMessage),
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+            ]);
+            curl_exec($ch);
+            $slackError = curl_error($ch);
+            curl_close($ch);
+
+            if ($slackError) {
+                \Log::warning('LBS Slack notification failed', ['error' => $slackError, 'job_id' => $id]);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('LBS Slack exception', ['message' => $e->getMessage(), 'job_id' => $id]);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Send job submission email (after user chooses "Create another job" or "Go to LBS list").
+     */
+    public function sendJobSubmissionEmail(int $id)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
+        }
+
+        $emailConfig = EmailConfig::where('is_active', true)->first();
+        if (!$emailConfig) {
+            return response()->json([
+                'status' => 'disabled',
+                'message' => 'Email sending is disabled.',
+            ]);
+        }
+
+        $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
+
+        // Fallback: some job rows (e.g. Efficient Living) may not have `jobs.client_code`
+        // aligned with `clients.client_code`, but `job_requests.client_code` is consistent.
+        if (empty($toEmail)) {
+            $jobRequest = null;
+            if (!empty($job->job_request_id)) {
+                $jobRequest = DB::table('job_requests')
+                    ->where('job_request_id', $job->job_request_id)
+                    ->first();
+                if (!$jobRequest && is_numeric($job->job_request_id)) {
+                    $jobRequest = DB::table('job_requests')
+                        ->where('id', (int) $job->job_request_id)
+                        ->first();
+                }
+            }
+
+            $fallbackClientCode = $jobRequest->client_code ?? null;
+            if (!empty($fallbackClientCode)) {
+                $toEmail = DB::table('clients')->where('client_code', $fallbackClientCode)->value('client_email');
+            }
+        }
+
+        if (empty($toEmail)) {
+            \Log::warning('Job submission email: recipient not found', [
+                'job_id' => (int) $id,
+                'jobs_client_code' => $job->client_code ?? null,
+                'job_request_id' => $job->job_request_id ?? null,
+                'client_code_fallback' => $fallbackClientCode ?? null,
+            ]);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No recipient email found for this job.',
+            ], 422);
+        }
+
+        $client = $job->client_account_id ? ClientAccount::find($job->client_account_id) : null;
+        $accountClient = $client ? $client->client_account_name : '';
+        $lbsRef = trim($job->job_reference_no ?? '') ?: ($job->reference ?? '');
+        $clientRef = trim($job->client_reference_no ?? '') ?: '—';
+        $nccCompliance = $job->ncc_compliance ?? '';
+        $jobTypeLabel = $job->job_type ?? '';
+        $priorityText = $job->priority ?? '';
+
+        $jobTypeShort = (stripos($jobTypeLabel, 'base') !== false)
+            ? 'BASE'
+            : strtoupper(\Illuminate\Support\Str::limit(str_replace('-', '_', \Illuminate\Support\Str::slug($jobTypeLabel)), 12, ''));
+        $headerTitle = $lbsRef . '_' . $jobTypeShort . '_' . $clientRef;
+
+        $clientRefSubj = trim($job->client_reference_no ?? '') ?: '';
+        $jobProduct = $this->resolveLbsJobProduct($job);
+        $subjectLead = match ($jobProduct) {
+            'efficient_living' => 'LUNTIAN Efficient Living Job Submission: ',
+            'luntian' => 'LUNTIAN Luntian Job Submission: ',
+            default => 'LUNTIAN Job Submission: ',
+        };
+        $refLabel = match ($jobProduct) {
+            'efficient_living' => 'EL Ref #',
+            'luntian' => 'Luntian Ref #',
+            default => 'LBS Ref #',
+        };
+        $emailSubject = $subjectLead . trim($accountClient) . ' LUNTIAN' . $lbsRef
+            . ($clientRefSubj !== '' ? '-' . $clientRefSubj : '') . '-' . $nccCompliance;
+
+        $planNames = json_decode($job->upload_files ?? '[]', true) ?: [];
+        $docNames = json_decode($job->upload_project_files ?? '[]', true) ?: [];
+        $attachments = [];
+        foreach (array_merge($planNames, $docNames) as $fileName) {
+            $storagePath = JobUploadFolder::gaStoragePath($job, $id, (string) $fileName);
+            if ($storagePath) {
+                $attachments[] = [
+                    'path' => Storage::disk('local')->path($storagePath),
+                    'name' => $fileName,
+                ];
+            }
+        }
+
+        try {
+            Mail::send('emails.lbs-job-submission', [
+                'headerTitle'    => $headerTitle,
+                'lbsRef'         => $lbsRef,
+                'refLabel'       => $refLabel,
+                'clientRef'      => $clientRef,
+                'accountClient'  => $accountClient,
+                'nccCompliance'  => $nccCompliance,
+                'jobType'        => $jobTypeLabel,
+                'priority'       => $priorityText,
+                'hasAttachment'  => count($attachments) > 0,
+            ], function ($message) use ($toEmail, $emailSubject, $attachments) {
+                $message->to($toEmail);
+                $message->subject($emailSubject);
+                foreach ($attachments as $att) {
+                    $message->attach($att['path'], ['as' => $att['name']]);
+                }
+            });
+        } catch (\Throwable $e) {
+            \Log::error('Job submission email: Mail::send failed', [
+                'job_id' => (int) $id,
+                'error'  => $e->getMessage(),
+            ]);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Submission email sent.',
+        ]);
+    }
+
+    public function downloadFile(int $id, string $file)
+    {
+        $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
+        if (!$job) {
+            abort(404);
+        }
+
+        $fileName = $file;
+
+        $planFiles = [];
+        if (is_string($job->upload_files)) {
+            $planFiles = json_decode($job->upload_files, true) ?: [];
+        }
+
+        $docFiles = [];
+        if (is_string($job->upload_project_files)) {
+            $docFiles = json_decode($job->upload_project_files, true) ?: [];
+        }
+
+        $checkerUploads = DB::table('staff_uploaded_files')
+            ->where('job_id', (int) $job->job_id)
+            ->get();
+        $checkerFiles = [];
+        foreach ($checkerUploads as $upload) {
+            $files = json_decode($upload->files_json ?? '[]', true) ?: [];
+            foreach ($files as $name) {
+                $checkerFiles[] = (string) $name;
+            }
+        }
+
+        $allowed = in_array($fileName, $planFiles, true)
+            || in_array($fileName, $docFiles, true)
+            || in_array($fileName, $checkerFiles, true);
+
+        if (!$allowed) {
+            abort(404);
+        }
+
+        $storagePath = JobUploadFolder::gaStoragePath($job, $id, $fileName);
+        if (!$storagePath) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($storagePath, $fileName);
+    }
+
+    /**
+     * Show the Add New Job form, optionally pre-filled from a job to duplicate.
+     * When duplicating, reference_no and client_reference get suffix -1, -2, etc.
+     */
+    public function addForm(Request $request)
+    {
+        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, 'GA01'), [
+            'sidebar_active' => 'general_assembly.add',
+        ]));
+    }
+
+    /**
+     * Public LBS add form (no login required), same fields/process as dashboard add.
+     */
+    public function publicAddForm(Request $request)
+    {
+        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, 'GA01'), [
+            'layoutView' => 'layouts.public-form',
+            'storeRoute' => route('general_assembly.public.store'),
+            'sendSlackBaseUrl' => url('/lbs/add-new/job'),
+            'sendSubmissionBaseUrl' => url('/lbs/add-new/job'),
+            'listUrl' => route('general_assembly.public.add'),
+            'cancelUrl' => route('general_assembly.public.add'),
+        ]));
+    }
+
+    /**
+     * Same form/data as LBS add, for Efficient Living (shared job pipeline).
+     */
+    public function efficientLivingAddForm(Request $request)
+    {
+        return view('efficient_living.add', array_merge($this->buildAddJobFormData($request, 'EL01'), [
+            'sidebar_active' => 'efficient_living.add',
+        ]));
+    }
+
+    public function luntianAddForm(Request $request)
+    {
+        $data = $this->buildAddJobFormData($request, 'LT01');
+        $luntianClient = $this->defaultLuntianClientAccount();
+        if ($luntianClient) {
+            $data['defaultClientAccountId'] = $luntianClient->client_account_id;
+        }
+
+        return view('luntian.add', array_merge($data, [
+            'sidebar_active' => 'luntian.add',
+        ]));
+    }
+
+    private function defaultLuntianClientAccount(): ?ClientAccount
+    {
+        return ClientAccount::where('client_account_name', 'Luntian Pty Ltd')->first()
+            ?? ClientAccount::where('client_account_name', 'like', 'Luntian Pty%')->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Luntian%')
+                ->orderBy('client_account_name')
+                ->first();
+    }
+
+    private function assignmentModuleForClientCode(string $jobRequestClientCode): string
+    {
+        return match (strtoupper(trim($jobRequestClientCode))) {
+            'EL01' => 'efficient_living',
+            'LT01' => 'luntian',
+            'GA01' => 'general_assembly',
+            default => 'general_assembly',
+        };
+    }
+
+    private function assignmentModuleForJob(object $job): string
+    {
+        return 'general_assembly';
+    }
+
+    /**
+     * Jobs created from Efficient Living add use EA_EL_* job_request_id values (client EL01).
+     */
+    private function isEfficientLivingJob(object $job): bool
+    {
+        $jid = (string) ($job->job_request_id ?? '');
+
+        return str_starts_with($jid, 'EA_EL_');
+    }
+
+    /**
+     * Jobs created from Luntian add use EA_LT_* job_request_id values and/or Luntian client codes.
+     */
+    private function isLuntianJob(object $job): bool
+    {
+        $jid = (string) ($job->job_request_id ?? '');
+        if (str_starts_with($jid, 'EA_LT_')) {
+            return true;
+        }
+        if ($jid === '') {
+            return false;
+        }
+
+        $jobRequest = JobRequest::query()
+            ->where('job_request_id', $jid)
+            ->first();
+
+        return $jobRequest !== null && $this->isLuntianJobRequestClientCode($jobRequest->client_code);
+    }
+
+    private function resolveLbsJobProduct(object $job): string
+    {
+        return 'general_assembly';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildAddJobFormData(Request $request, string $jobRequestClientCode): array
+    {
+        $compliances = Compliance::orderBy('column')->get();
+        $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos($c->column, '2022') !== false)
+            ?? $compliances->first(fn ($c) => $c->column && stripos($c->column, 'WOH') !== false)
+            ?? $compliances->first();
+
+        $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
+        $defaultClient = ClientAccount::where('client_account_name', 'like', '%Summit Homes Group%')->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Summit%')
+                ->where('client_account_name', 'like', '%Homes%')
+                ->first()
+            ?? ClientAccount::where('client_account_name', 'like', '%Summit%')->first();
+        if ($defaultClient) {
+            $clientAccounts = $clientAccounts
+                ->reject(fn ($c) => (int) $c->client_account_id === (int) $defaultClient->client_account_id)
+                ->prepend($defaultClient)
+                ->values();
+        }
+
+        $priorities = Priority::orderBy('id')->get();
+        $defaultPriority = Priority::where('name', 'like', '%Top (COB)%')->first()
+            ?? $priorities->first();
+
+        $jobRequests = $this->jobRequestsForVerticalClient($jobRequestClientCode);
+        $defaultJobRequest = $jobRequests->first(fn ($jr) => $jr->job_request_type
+            && str_contains((string) $jr->job_request_type, '1S DB Base Model- 1S Design Builder Model'))
+            ?? $jobRequests->first();
+
+        $assignmentModule = $this->assignmentModuleForClientCode($jobRequestClientCode);
+        $assignmentStaffUsers = User::assignmentUsersForSelect($assignmentModule, 'staff');
+        $assignmentCheckerUsers = User::assignmentUsersForSelect($assignmentModule, 'checker');
+
+        $duplicateJob = null;
+        $duplicateId = $request->query('duplicate');
+        if ($duplicateId && is_numeric($duplicateId)) {
+            $job = DB::table('job_general_assembly')->where('job_id', (int) $duplicateId)->first();
+            if ($job) {
+                $nextSuffix = $this->getNextDuplicateSuffix(
+                    (string) ($job->job_reference_no ?? $job->reference ?? '')
+                );
+                $baseRef = trim((string) ($job->job_reference_no ?? $job->reference ?? ''));
+                $baseClientRef = trim((string) ($job->client_reference_no ?? ''));
+                $suggestedRef = $baseRef !== '' ? $baseRef . '-' . $nextSuffix : '';
+                $suggestedClientRef = $baseClientRef !== '' ? $baseClientRef . '-' . $nextSuffix : '';
+
+                $complianceId = null;
+                if (!empty($job->ncc_compliance)) {
+                    $comp = Compliance::where('column', $job->ncc_compliance)->first();
+                    $complianceId = $comp?->id;
+                }
+                $priorityId = null;
+                if (!empty($job->priority)) {
+                    $pri = Priority::where('name', $job->priority)->first();
+                    $priorityId = $pri?->id;
+                }
+                $jobRequestId = null;
+                if (!empty($job->job_request_id)) {
+                    $jr = $this->jobRequestsForVerticalClient($jobRequestClientCode)
+                        ->firstWhere('job_request_id', $job->job_request_id);
+                    $jobRequestId = $jr?->id;
+                }
+                if ($jobRequestId === null && !empty($job->job_type)) {
+                    $jr = $this->jobRequestsForVerticalClient($jobRequestClientCode)
+                        ->firstWhere('job_request_type', $job->job_type);
+                    $jobRequestId = $jr?->id;
+                }
+
+                $duplicateJob = (object) [
+                    'reference_no'      => $suggestedRef,
+                    'client_reference'   => $suggestedClientRef,
+                    'compliance_id'      => $complianceId,
+                    'client_account_id'  => $job->client_account_id ?? null,
+                    'job_address'       => $job->address_client ?? '',
+                    'priority_id'       => $priorityId,
+                    'job_request_id'    => $jobRequestId,
+                    'notes'              => $job->notes ?? '',
+                    'staff_id'           => $job->staff_id ?? '',
+                    'checker_id'        => $job->checker_id ?? '',
+                ];
+            }
+        }
+
+        return [
+            'compliances'          => $compliances,
+            'defaultComplianceId'  => $defaultCompliance?->id,
+            'clientAccounts'        => $clientAccounts,
+            'defaultClientAccountId' => $defaultClient?->client_account_id,
+            'priorities'           => $priorities,
+            'defaultPriorityId'     => $defaultPriority?->id,
+            'jobRequests'          => $jobRequests,
+            'defaultJobRequestId'   => $defaultJobRequest?->id,
+            'assignmentStaffUsers' => $assignmentStaffUsers,
+            'assignmentCheckerUsers' => $assignmentCheckerUsers,
+            'assignmentUsers'      => $assignmentStaffUsers,
+            'duplicateJob'         => $duplicateJob,
+        ];
+    }
+
+    /**
+     * Get next duplicate suffix (1, 2, 3...) for a base reference.
+     * Counts existing job_reference_no that are baseRef or baseRef-N.
+     */
+    private function getNextDuplicateSuffix(string $baseRef): int
+    {
+        if ($baseRef === '') {
+            return 1;
+        }
+        $pattern = $baseRef . '-%';
+        $refs = DB::table('job_general_assembly')
+            ->where('job_reference_no', 'like', $pattern)
+            ->pluck('job_reference_no');
+        $max = 0;
+        foreach ($refs as $ref) {
+            $suffix = substr((string) $ref, strlen($baseRef) + 1);
+            if (preg_match('/^\d+$/', $suffix)) {
+                $n = (int) $suffix;
+                if ($n > $max) {
+                    $max = $n;
+                }
+            }
+        }
+        return $max + 1;
+    }
+
+    /**
+     * Logo for email: embed as base64 in HTML so it displays in body and never as attachment.
+     * Prefers logo-email.png (small, under 40KB) if present; else resizes logo-light.png via GD or embeds raw if small.
+     */
+    private function getLogoDataUriForEmail(): string
+    {
+        $smallPath = storage_path('app/public/logo-email.png');
+        if ($smallPath && is_file($smallPath) && filesize($smallPath) <= 40000) {
+            $raw = @file_get_contents($smallPath);
+            if ($raw !== false && $raw !== '') {
+                return 'data:image/png;base64,' . base64_encode($raw);
+            }
+        }
+
+        $path = storage_path('app/public/logo-light.png');
+        if (!$path || !is_file($path)) {
+            return config('app.url') . '/storage/logo-light.png';
+        }
+
+        $maxEmbedBytes = 35000; // ~47KB base64; keep email from being clipped
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return config('app.url') . '/storage/logo-light.png';
+        }
+
+        if (function_exists('imagecreatefromstring') && function_exists('imagepng') && function_exists('imagesx')) {
+            $img = @imagecreatefromstring($raw);
+            if ($img) {
+                $w = imagesx($img);
+                $h = imagesy($img);
+                $maxW = 180;
+                $newW = min($w, $maxW);
+                $newH = (int) round($h * ($newW / $w));
+                $out = @imagecreatetruecolor($newW, $newH);
+                if ($out) {
+                    imagealphablending($out, false);
+                    imagesavealpha($out, true);
+                    $trans = imagecolorallocatealpha($out, 255, 255, 255, 127);
+                    imagefill($out, 0, 0, $trans);
+                    imagecopyresampled($out, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                    imagedestroy($img);
+                    ob_start();
+                    imagepng($out, null, 6);
+                    $bin = ob_get_clean();
+                    imagedestroy($out);
+                    if ($bin !== false && $bin !== '') {
+                        return 'data:image/png;base64,' . base64_encode($bin);
+                    }
+                } else {
+                    imagedestroy($img);
+                }
+            }
+        }
+
+        if (strlen($raw) <= $maxEmbedBytes) {
+            return 'data:image/png;base64,' . base64_encode($raw);
+        }
+
+        return config('app.url') . '/storage/logo-light.png';
+    }
+
+    /**
+     * Resolve a valid `clients.client_code` for `jobs.client_code` (FK).
+     */
+    private function resolveJobsClientCodeForClientsTable(string $fromAccount, string $fromJobRequest): string
+    {
+        $fromAccount = trim($fromAccount);
+        $fromJobRequest = trim($fromJobRequest);
+
+        if ($fromAccount !== '' && DB::table('clients')->where('client_code', $fromAccount)->exists()) {
+            return $fromAccount;
+        }
+        if ($fromJobRequest !== '' && DB::table('clients')->where('client_code', $fromJobRequest)->exists()) {
+            return $fromJobRequest;
+        }
+
+        return '';
+    }
+
+    /** @return list<string> */
+    private function luntianJobRequestClientCodes(): array
+    {
+        return JobCountsScope::luntianJobRequestClientCodes();
+    }
+
+    private function isLuntianJobRequestClientCode(?string $clientCode): bool
+    {
+        $clientCode = trim((string) $clientCode);
+        if ($clientCode === '') {
+            return false;
+        }
+
+        foreach ($this->luntianJobRequestClientCodes() as $code) {
+            if (strcasecmp($clientCode, $code) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function jobRequestsForVerticalClient(string $clientCode)
+    {
+        if ($this->isLuntianJobRequestClientCode($clientCode)) {
+            JobRequest::seedLuntianTypesFromLbsIfMissing();
+
+            return JobRequest::query()
+                ->forLuntianVertical()
+                ->orderBy('job_request_type')
+                ->get();
+        }
+
+        return JobRequest::where('client_code', $clientCode)
+            ->orderBy('job_request_type')
+            ->get();
+    }
+
+    /** @param \Illuminate\Database\Query\Builder $query */
+    private function applyLuntianJobRequestScope($query, string $jobAlias = 'j'): void
+    {
+        JobCountsScope::applyLuntianJobsScope($query, $jobAlias);
+    }
+}
+

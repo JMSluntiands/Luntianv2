@@ -2360,6 +2360,29 @@ html:not([data-theme="dark"]) .page-lbs-list .lbs-data-row:hover .lbs-td {
     background: #f1f5f9;
 }
 
+/* FYRS list — match NatHERS/BASIX spreadsheet column headers */
+.page-fyrs-list .fyrs-list-th {
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: normal;
+    line-height: 1.35;
+}
+.page-fyrs-list .fyrs-list-table .lbs-td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.page-fyrs-list .fyrs-list-table .lbs-td.whitespace-normal {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+}
+.page-fyrs-list .fyrs-list-table .fyrs-feedback-cell {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    vertical-align: top;
+}
+
 /* ========== Luntian List page styling ========== */
 .page-luntian-list .luntian-list-page,
 .page-luntian-review .luntian-list-page,

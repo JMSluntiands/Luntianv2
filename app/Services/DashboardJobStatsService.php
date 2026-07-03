@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RolePermission;
+use App\Models\Status;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -10,23 +11,26 @@ use Throwable;
 
 /**
  * Dashboard job counts (Philippine calendar):
- * - total: **completed + processing + pending** (sum of the three cards).
+ * - total: **completed + processing + pending + encoded today** (non-Processing, non-Completed).
  * - completed: **completed today** (completion_date).
  * - processing: status **Processing** (any date).
- * - pending: **non-completed backlog** from **previous dates**, excluding **Processing** status.
+ * - pending: **non-completed backlog** from **previous dates** (before today's reset), excluding **Processing**.
+ * - encoded today (in total only): **log_date today**, status not Processing or Completed.
  */
 class DashboardJobStatsService
 {
     private const TZ = 'Asia/Manila';
 
     /** @return array{0:string,1:string,2:string} start, end, Y-m-d */
-    private static function dayBoundsManila(): array
+    private static function dayBoundsManila(?string $date = null): array
     {
-        $start = Carbon::now(self::TZ)->startOfDay()->format('Y-m-d H:i:s');
-        $end = Carbon::now(self::TZ)->endOfDay()->format('Y-m-d H:i:s');
-        $date = Carbon::now(self::TZ)->toDateString();
+        $day = $date
+            ? Carbon::parse($date, self::TZ)->startOfDay()
+            : Carbon::now(self::TZ)->startOfDay();
+        $start = $day->format('Y-m-d H:i:s');
+        $end = $day->copy()->endOfDay()->format('Y-m-d H:i:s');
 
-        return [$start, $end, $date];
+        return [$start, $end, $day->toDateString()];
     }
 
     /** jobs.log_date calendar day = today (Manila); varchar/datetime safe. */
@@ -39,6 +43,39 @@ class DashboardJobStatsService
     private static function whereJobsLogDateNotToday($q, string $date): void
     {
         $q->whereRaw("(NULLIF(TRIM(log_date), '') IS NULL OR LEFT(NULLIF(TRIM(log_date), ''), 10) != ?)", [$date]);
+    }
+
+    /**
+     * Same reference logged today already has Processing — do not also count older status rows in encoded_today.
+     */
+    private static function applyExcludeStaleEncodedTodayWhenProcessingSibling(
+        $q,
+        string $table,
+        string $date,
+        string $refColumn = 'reference',
+        string $statusColumn = 'job_status',
+        string $logDateColumn = 'log_date'
+    ): void {
+        $q->whereNotExists(function ($sub) use ($table, $date, $refColumn, $statusColumn, $logDateColumn) {
+            $sub->from("{$table} as __proc_sibling")
+                ->whereColumn("__proc_sibling.{$refColumn}", "{$table}.{$refColumn}")
+                ->whereRaw("LEFT(NULLIF(TRIM(__proc_sibling.{$logDateColumn}), ''), 10) = ?", [$date])
+                ->whereRaw('LOWER(TRIM(__proc_sibling.'.$statusColumn.')) = ?', ['processing']);
+        });
+    }
+
+    private static function applyExcludeStaleEncodedTodayWhenProcessingSiblingBph(
+        $q,
+        string $table,
+        string $start,
+        string $end
+    ): void {
+        $q->whereNotExists(function ($sub) use ($table, $start, $end) {
+            $sub->from("{$table} as __proc_sibling")
+                ->whereColumn('__proc_sibling.reference', "{$table}.reference")
+                ->whereBetween('__proc_sibling.created_at', [$start, $end])
+                ->whereRaw('LOWER(TRIM(__proc_sibling.status)) = ?', ['processing']);
+        });
     }
 
     private static function applyLbsPipelineExclusions($q, string $productLine): void
@@ -75,6 +112,12 @@ class DashboardJobStatsService
 
         if ($bucket === 'pending') {
             self::whereJobsLogDateNotToday($q, $date);
+
+            return;
+        }
+
+        if ($bucket === 'encoded_today') {
+            self::whereJobsLogDateToday($q, $date);
 
             return;
         }
@@ -129,6 +172,12 @@ class DashboardJobStatsService
             return;
         }
 
+        if ($bucket === 'encoded_today') {
+            self::whereJobBphLoggedToday($q, $start, $end);
+
+            return;
+        }
+
         if ($bucket === 'processing') {
             return;
         }
@@ -160,9 +209,11 @@ class DashboardJobStatsService
                 $out['completed'][$label] = self::countJobsBranchBucket($label, 'completed');
                 $out['processing'][$label] = self::countJobsBranchBucket($label, 'processing');
                 $out['pending'][$label] = self::countJobsBranchBucket($label, 'pending');
+                $encodedToday = self::countJobsBranchBucket($label, 'encoded_today');
                 $out['total'][$label] = $out['completed'][$label]
                     + $out['processing'][$label]
-                    + $out['pending'][$label];
+                    + $out['pending'][$label]
+                    + $encodedToday;
             }
         } catch (Throwable) {
             foreach ($labels as $label) {
@@ -174,6 +225,235 @@ class DashboardJobStatsService
         }
 
         return $out;
+    }
+
+    /**
+     * Job status chart: per dashboard stat branch (LBS, LUNTIAN, …) with status breakdown.
+     * Uses the same totals as the Total Jobs card (completed + processing + pending + encoded today).
+     *
+     * @return array{
+     *   date: string,
+     *   scope: string,
+     *   branches: list<array{label: string, total: int, statuses: list<array{label: string, count: int, color: string|null, fontColor: string}>}>
+     * }
+     */
+    public static function fetchStatusChart(?string $date = null): array
+    {
+        try {
+            [, , $dateStr] = self::dayBoundsManila($date);
+
+            $statusMeta = Schema::hasTable('statuses')
+                ? DB::table('statuses')->orderBy('id')->get(['name', 'color', 'font_color'])
+                : collect();
+
+            if ($statusMeta->isEmpty()) {
+                $statusMeta = collect([
+                    (object) ['name' => 'Pending', 'color' => null, 'font_color' => null],
+                    (object) ['name' => 'Allocated', 'color' => null, 'font_color' => null],
+                    (object) ['name' => 'Processing', 'color' => null, 'font_color' => null],
+                    (object) ['name' => 'For Checking', 'color' => null, 'font_color' => null],
+                ]);
+            }
+
+            $only = self::branchStatLabelExclusive();
+            $branchLabels = $only ? [$only] : RolePermission::dashboardStatCardLabels();
+
+            $branches = [];
+            foreach ($branchLabels as $branchLabel) {
+                $branchTotal = self::countBranchDashboardTotal($branchLabel, $dateStr);
+                if ($branchTotal <= 0) {
+                    continue;
+                }
+
+                $statusRows = [];
+                foreach ($statusMeta as $status) {
+                    $name = (string) ($status->name ?? '');
+                    if ($name === '' || self::isChartExcludedStatus($name)) {
+                        continue;
+                    }
+                    $count = self::countBranchStatusDashboardTotal($branchLabel, $name, $dateStr);
+                    if ($count <= 0) {
+                        continue;
+                    }
+                    $statusRows[] = [
+                        'label' => $name,
+                        'count' => $count,
+                        'color' => $status->color !== null && trim((string) $status->color) !== ''
+                            ? trim((string) $status->color)
+                            : null,
+                        'fontColor' => Status::resolveFontColor($status->font_color ?? null),
+                    ];
+                }
+
+                $branches[] = [
+                    'label' => $branchLabel,
+                    'total' => $branchTotal,
+                    'statuses' => $statusRows,
+                ];
+            }
+
+            usort($branches, static fn (array $a, array $b): int => ($b['total'] <=> $a['total']) ?: strcasecmp((string) $a['label'], (string) $b['label']));
+
+            $allStatuses = [];
+            $allTotal = 0;
+            foreach ($statusMeta as $status) {
+                $name = (string) ($status->name ?? '');
+                if ($name === '' || self::isChartExcludedStatus($name)) {
+                    continue;
+                }
+                $count = 0;
+                foreach ($branchLabels as $branchLabel) {
+                    $count += self::countBranchStatusDashboardTotal($branchLabel, $name, $dateStr);
+                }
+                if ($count <= 0) {
+                    continue;
+                }
+                $allTotal += $count;
+                $allStatuses[] = [
+                    'label' => $name,
+                    'count' => $count,
+                    'color' => $status->color !== null && trim((string) $status->color) !== ''
+                        ? trim((string) $status->color)
+                        : null,
+                    'fontColor' => Status::resolveFontColor($status->font_color ?? null),
+                ];
+            }
+            if ($allTotal > 0) {
+                array_unshift($branches, [
+                    'label' => 'All',
+                    'total' => $allTotal,
+                    'statuses' => $allStatuses,
+                ]);
+            }
+
+            return ['date' => $dateStr, 'scope' => 'dashboard_total_by_branch', 'branches' => $branches];
+        } catch (Throwable) {
+            return [
+                'date' => $date ?? Carbon::now(self::TZ)->toDateString(),
+                'scope' => 'dashboard_total_by_branch',
+                'branches' => [],
+            ];
+        }
+    }
+
+    private static function isChartExcludedStatus(string $name): bool
+    {
+        return in_array(mb_strtolower(trim($name)), ['archived', 'cancelled'], true);
+    }
+
+    /** Same branch total as the Total Jobs dashboard card. */
+    private static function countBranchDashboardTotal(string $branchLabel, ?string $date = null): int
+    {
+        return self::countJobsBranchBucket($branchLabel, 'completed', $date)
+            + self::countJobsBranchBucket($branchLabel, 'processing', $date)
+            + self::countJobsBranchBucket($branchLabel, 'pending', $date)
+            + self::countJobsBranchBucket($branchLabel, 'encoded_today', $date);
+    }
+
+    /** Per-status count within the Total Jobs card buckets for one branch. */
+    private static function countBranchStatusDashboardTotal(string $branchLabel, string $statusName, ?string $date = null): int
+    {
+        $only = self::branchStatLabelExclusive();
+        if ($only !== null && strcasecmp((string) $branchLabel, (string) $only) !== 0) {
+            return 0;
+        }
+
+        $total = 0;
+        foreach (['completed', 'processing', 'pending', 'encoded_today'] as $bucket) {
+            $total += self::countJobsBranchBucket($branchLabel, $bucket, $date, $statusName);
+        }
+
+        return $total;
+    }
+
+    /** Live per-status count for one Job Management vertical (matches sidebar/list queries). */
+    private static function countBranchStatusJobManagement(string $branchLabel, string $statusName): int
+    {
+        $only = self::branchStatLabelExclusive();
+        if ($only !== null && strcasecmp((string) $branchLabel, (string) $only) !== 0) {
+            return 0;
+        }
+
+        return match ($branchLabel) {
+            'LBS' => self::countJobsTableLiveStatus($statusName, 'lbs'),
+            'GENERAL ASSEMBLY' => self::countGeneralAssemblyLiveStatus($statusName),
+            'LUNTIAN' => self::countJobsTableLiveStatus($statusName, 'luntian'),
+            'EFFICIENT LIVING' => self::countJobsTableLiveStatus($statusName, 'efficient_living'),
+            'BPH' => self::countJobBphLiveStatus($statusName, 'bph'),
+            'BLUINQ' => self::countJobBphLiveStatus($statusName, 'bluinq'),
+            'A&M' => self::countJobBphLiveStatus($statusName, 'amt'),
+            'FYRS ENERGY WISE' => self::countJobBphLiveStatus($statusName, 'fyrs'),
+            default => 0,
+        };
+    }
+
+    private static function countJobsTableLiveStatus(string $statusName, string $productLine): int
+    {
+        if (! Schema::hasTable('jobs')) {
+            return 0;
+        }
+
+        $q = DB::table('jobs')->where('reference', 'like', 'JOBS%');
+
+        if ($productLine === 'efficient_living') {
+            $q->whereRaw("job_request_id LIKE 'EA\_EL\_%'");
+        } elseif ($productLine === 'luntian') {
+            JobCountsScope::applyLuntianJobsScope($q, '');
+        } else {
+            JobCountsScope::applyLbsStandardJobsScope($q, '');
+        }
+
+        self::applyLbsPipelineExclusions($q, $productLine);
+        $q->whereRaw('LOWER(TRIM(job_status)) = ?', [mb_strtolower(trim($statusName))]);
+        JobCountsScope::applyJobsTableAssignment($q);
+
+        return (int) $q->count();
+    }
+
+    private static function countGeneralAssemblyLiveStatus(string $statusName): int
+    {
+        if (! Schema::hasTable('job_general_assembly')) {
+            return 0;
+        }
+
+        $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOBS%');
+        self::applyLbsPipelineExclusions($q, 'lbs');
+        $q->whereRaw('LOWER(TRIM(job_status)) = ?', [mb_strtolower(trim($statusName))]);
+        JobCountsScope::applyJobsTableAssignment($q);
+
+        return (int) $q->count();
+    }
+
+    private static function countJobBphLiveStatus(string $statusName, string $which): int
+    {
+        $table = 'job_bph';
+        if ($which === 'amt' && Schema::hasTable('job_amt')) {
+            $table = 'job_amt';
+        } elseif ($which === 'fyrs' && Schema::hasTable('job_fyrs')) {
+            $table = 'job_fyrs';
+        }
+
+        if (! Schema::hasTable($table)) {
+            return 0;
+        }
+
+        $q = DB::table($table);
+
+        if ($which === 'bluinq') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
+        } elseif ($which === 'amt' && $table === 'job_bph') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
+        } elseif ($which === 'fyrs' && $table === 'job_bph') {
+            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
+        } elseif ($which === 'bph') {
+            $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
+        }
+
+        JobCountsScope::applyJobBphBranchVerticalScope($q);
+        $q->whereRaw('LOWER(TRIM(status)) = ?', [mb_strtolower(trim($statusName))]);
+        JobCountsScope::applyJobBphAssignment($q);
+
+        return (int) $q->count();
     }
 
     /**
@@ -193,7 +473,7 @@ class DashboardJobStatsService
         return RolePermission::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
     }
 
-    private static function countJobsBranchBucket(string $branchLabel, string $bucket): int
+    private static function countJobsBranchBucket(string $branchLabel, string $bucket, ?string $date = null, ?string $statusName = null): int
     {
         $only = self::branchStatLabelExclusive();
         if ($only !== null && strcasecmp((string) $branchLabel, (string) $only) !== 0) {
@@ -201,24 +481,25 @@ class DashboardJobStatsService
         }
 
         return match ($branchLabel) {
-            'LBS' => self::countJobsTable($bucket, 'lbs'),
-            'LUNTIAN' => self::countJobsTable($bucket, 'luntian'),
-            'EFFICIENT LIVING' => self::countJobsTable($bucket, 'efficient_living'),
-            'BPH' => self::countJobBph($bucket, 'bph'),
-            'BLUINQ' => self::countJobBph($bucket, 'bluinq'),
-            'A&M' => self::countJobBph($bucket, 'amt'),
-            'FYRS ENERGY WISE' => self::countJobBph($bucket, 'fyrs'),
+            'LBS' => self::countJobsTable($bucket, 'lbs', $date, $statusName),
+            'GENERAL ASSEMBLY' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
+            'LUNTIAN' => self::countJobsTable($bucket, 'luntian', $date, $statusName),
+            'EFFICIENT LIVING' => self::countJobsTable($bucket, 'efficient_living', $date, $statusName),
+            'BPH' => self::countJobBph($bucket, 'bph', $date, $statusName),
+            'BLUINQ' => self::countJobBph($bucket, 'bluinq', $date, $statusName),
+            'A&M' => self::countJobBph($bucket, 'amt', $date, $statusName),
+            'FYRS ENERGY WISE' => self::countJobBph($bucket, 'fyrs', $date, $statusName),
             default => 0,
         };
     }
 
-    private static function countJobsTable(string $bucket, string $productLine = 'lbs'): int
+    private static function countJobsTable(string $bucket, string $productLine = 'lbs', ?string $date = null, ?string $statusName = null): int
     {
         if (! Schema::hasTable('jobs')) {
             return 0;
         }
 
-        [$start, $end, $date] = self::dayBoundsManila();
+        [$start, $end, $dateStr] = self::dayBoundsManila($date);
 
         $q = DB::table('jobs')->where('reference', 'like', 'JOBS%');
 
@@ -232,7 +513,7 @@ class DashboardJobStatsService
 
         self::applyLbsPipelineExclusions($q, $productLine);
 
-        self::applyJobsTableDayFilter($q, $bucket, $start, $end, $date);
+        self::applyJobsTableDayFilter($q, $bucket, $start, $end, $dateStr);
 
         $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
 
@@ -250,12 +531,63 @@ class DashboardJobStatsService
             case 'pending':
                 $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('completed', 'processing')");
                 break;
+            case 'encoded_today':
+                $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('completed', 'processing')");
+                self::applyExcludeStaleEncodedTodayWhenProcessingSibling($q, 'jobs', $dateStr);
+                break;
+        }
+
+        if ($statusName !== null && $statusName !== '') {
+            $q->whereRaw('LOWER(TRIM(job_status)) = ?', [mb_strtolower(trim($statusName))]);
         }
 
         return (int) $q->count();
     }
 
-    private static function countJobBph(string $bucket, string $which): int
+    private static function countGeneralAssemblyTable(string $bucket, ?string $date = null, ?string $statusName = null): int
+    {
+        if (! Schema::hasTable('job_general_assembly')) {
+            return 0;
+        }
+
+        [$start, $end, $dateStr] = self::dayBoundsManila($date);
+
+        $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOBS%');
+
+        self::applyLbsPipelineExclusions($q, 'lbs');
+
+        self::applyJobsTableDayFilter($q, $bucket, $start, $end, $dateStr);
+
+        $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
+
+        JobCountsScope::applyJobsTableAssignment($q);
+
+        switch ($bucket) {
+            case 'total':
+                break;
+            case 'completed':
+                $q->whereRaw('LOWER(TRIM(job_status)) = ?', ['completed']);
+                break;
+            case 'processing':
+                $q->whereRaw('LOWER(TRIM(job_status)) = ?', ['processing']);
+                break;
+            case 'pending':
+                $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('completed', 'processing')");
+                break;
+            case 'encoded_today':
+                $q->whereRaw("LOWER(TRIM(job_status)) NOT IN ('completed', 'processing')");
+                self::applyExcludeStaleEncodedTodayWhenProcessingSibling($q, 'job_general_assembly', $dateStr);
+                break;
+        }
+
+        if ($statusName !== null && $statusName !== '') {
+            $q->whereRaw('LOWER(TRIM(job_status)) = ?', [mb_strtolower(trim($statusName))]);
+        }
+
+        return (int) $q->count();
+    }
+
+    private static function countJobBph(string $bucket, string $which, ?string $date = null, ?string $statusName = null): int
     {
         $table = 'job_bph';
         if ($which === 'amt' && Schema::hasTable('job_amt')) {
@@ -268,7 +600,7 @@ class DashboardJobStatsService
             return 0;
         }
 
-        [$start, $end, $date] = self::dayBoundsManila();
+        [$start, $end, $dateStr] = self::dayBoundsManila($date);
 
         $q = DB::table($table);
 
@@ -282,7 +614,7 @@ class DashboardJobStatsService
             $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
         }
 
-        self::applyJobBphDayFilter($q, $bucket, $start, $end, $date);
+        self::applyJobBphDayFilter($q, $bucket, $start, $end, $dateStr);
 
         $q->whereRaw("LOWER(TRIM(status)) != ?", ['archived']);
 
@@ -300,6 +632,14 @@ class DashboardJobStatsService
             case 'pending':
                 $q->whereRaw("LOWER(TRIM(status)) NOT IN ('completed', 'processing')");
                 break;
+            case 'encoded_today':
+                $q->whereRaw("LOWER(TRIM(status)) NOT IN ('completed', 'processing')");
+                self::applyExcludeStaleEncodedTodayWhenProcessingSiblingBph($q, $table, $start, $end);
+                break;
+        }
+
+        if ($statusName !== null && $statusName !== '') {
+            $q->whereRaw('LOWER(TRIM(status)) = ?', [mb_strtolower(trim($statusName))]);
         }
 
         return (int) $q->count();

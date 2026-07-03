@@ -19,7 +19,10 @@ use App\Models\User;
 use App\Http\Controllers\DashboardHolidayController;
 use App\Http\Controllers\DashboardStatsController;
 use App\Http\Controllers\EmailConfigController;
+use App\Http\Controllers\JotformConfigController;
+use App\Http\Controllers\JotformWebhookController;
 use App\Http\Controllers\JobRequestController;
+use App\Http\Controllers\GeneralAssemblyJobController;
 use App\Http\Controllers\LbsJobController;
 use App\Http\Controllers\LcHomeBuilderJobController;
 use App\Http\Controllers\LeadingEnergyJobController;
@@ -36,6 +39,8 @@ use App\Support\LoginReturnPath;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ReportsController;
+
+Route::post('/webhooks/jotform', JotformWebhookController::class)->name('webhooks.jotform');
 
 Route::get('/', function () {
     $lbsPublicHost = trim((string) config('app.lbs_public_form_domain', ''));
@@ -101,6 +106,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
 
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/stats', DashboardStatsController::class)->name('dashboard.stats');
+    Route::get('/dashboard/chart', [DashboardStatsController::class, 'chart'])->name('dashboard.chart');
     Route::get('/dashboard/holidays/{year}', DashboardHolidayController::class)->name('dashboard.holidays');
     Route::get('/dashboard/lbs/add', [LbsJobController::class, 'addForm'])->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
@@ -125,6 +131,29 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/lbs/job/{id}/send-mailbox-email', [LbsJobController::class, 'sendMailboxEmail'])->name('lbs.job.sendMailboxEmail');
     Route::get('/dashboard/lbs/review', [LbsJobController::class, 'review'])->name('lbs.review');
     Route::get('/dashboard/lbs/trash', [LbsJobController::class, 'trash'])->name('lbs.trash');
+    Route::get('/dashboard/general-assembly/add', [GeneralAssemblyJobController::class, 'addForm'])->name('general_assembly.add');
+    Route::post('/dashboard/general-assembly', [GeneralAssemblyJobController::class, 'store'])->name('general_assembly.store');
+    Route::post('/dashboard/general-assembly/job/{id}/send-slack', [GeneralAssemblyJobController::class, 'sendJobSlackNotification'])->name('general_assembly.job.sendSlack');
+    Route::post('/dashboard/general-assembly/job/{id}/send-submission-email', [GeneralAssemblyJobController::class, 'sendJobSubmissionEmail'])->name('general_assembly.job.sendSubmissionEmail');
+    Route::get('/dashboard/general-assembly/list', [GeneralAssemblyJobController::class, 'index'])->name('general_assembly.list');
+    Route::get('/dashboard/general-assembly/list/tables', [GeneralAssemblyJobController::class, 'indexTablesFragment'])->name('general_assembly.list.tablesFragment');
+    Route::get('/dashboard/general-assembly/job/{id}', [GeneralAssemblyJobController::class, 'show'])->name('general_assembly.job.view');
+    Route::post('/dashboard/general-assembly/job/{id}/accept-form', [GeneralAssemblyJobController::class, 'acceptFormJob'])->name('general_assembly.job.acceptForm');
+    Route::put('/dashboard/general-assembly/job/{id}', [GeneralAssemblyJobController::class, 'update'])->name('general_assembly.job.update');
+    Route::post('/dashboard/general-assembly/job/{id}/files', [GeneralAssemblyJobController::class, 'uploadFiles'])->name('general_assembly.job.uploadFiles');
+    Route::post('/dashboard/general-assembly/job/{id}/file/delete', [GeneralAssemblyJobController::class, 'deleteFile'])->name('general_assembly.job.deleteFile');
+    Route::post('/dashboard/general-assembly/job/{id}/archive', [GeneralAssemblyJobController::class, 'archiveJob'])->name('general_assembly.job.archive');
+    Route::get('/dashboard/general-assembly/job/{id}/restore', [GeneralAssemblyJobController::class, 'restoreJob'])->name('general_assembly.job.restore');
+    Route::get('/dashboard/general-assembly/job/{id}/file/{file}', [GeneralAssemblyJobController::class, 'downloadFile'])->name('general_assembly.job.file');
+    Route::post('/dashboard/general-assembly/job/{id}/checker-uploads', [GeneralAssemblyJobController::class, 'uploadCheckerFiles'])->name('general_assembly.job.checkerUploads');
+    Route::post('/dashboard/general-assembly/job/{id}/run-comment', [GeneralAssemblyJobController::class, 'addRunComment'])->name('general_assembly.job.runComment');
+    Route::post('/dashboard/general-assembly/job/{id}/comment', [GeneralAssemblyJobController::class, 'addJobComment'])->name('general_assembly.job.comment');
+    Route::get('/dashboard/general-assembly/completed', [GeneralAssemblyJobController::class, 'completed'])->name('general_assembly.completed');
+    Route::get('/dashboard/general-assembly/mailbox', [GeneralAssemblyJobController::class, 'mailbox'])->name('general_assembly.mailbox');
+    Route::get('/dashboard/general-assembly/job/{id}/email-preview', [GeneralAssemblyJobController::class, 'emailPreview'])->name('general_assembly.job.emailPreview');
+    Route::post('/dashboard/general-assembly/job/{id}/send-mailbox-email', [GeneralAssemblyJobController::class, 'sendMailboxEmail'])->name('general_assembly.job.sendMailboxEmail');
+    Route::get('/dashboard/general-assembly/review', [GeneralAssemblyJobController::class, 'review'])->name('general_assembly.review');
+    Route::get('/dashboard/general-assembly/trash', [GeneralAssemblyJobController::class, 'trash'])->name('general_assembly.trash');
     Route::get('/dashboard/bph/add', [BphJobController::class, 'addForm'])->name('bph.add');
     Route::get('/dashboard/bph/list', [BphJobController::class, 'list'])->name('bph.list');
     Route::get('/dashboard/bph/completed', [BphJobController::class, 'completed'])->name('bph.completed');
@@ -329,6 +358,9 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
 
     Route::get('/dashboard/reports', [ReportsController::class, 'index'])->name('reports');
 
+    Route::get('/dashboard/settings/jotform-config', [JotformConfigController::class, 'index'])->name('settings.jotform_config');
+    Route::post('/dashboard/settings/jotform-config', [JotformConfigController::class, 'store'])->name('settings.jotform_config.store');
+    Route::post('/dashboard/settings/jotform-config/toggle', [JotformConfigController::class, 'toggleActive'])->name('settings.jotform_config.toggle');
     Route::get('/dashboard/settings/email-config', [EmailConfigController::class, 'index'])->name('settings.email_config');
     Route::post('/dashboard/settings/email-config', [EmailConfigController::class, 'store'])->name('settings.email_config.store');
     Route::post('/dashboard/settings/email-config/toggle', [EmailConfigController::class, 'toggleActive'])->name('settings.email_config.toggle');

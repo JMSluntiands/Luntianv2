@@ -72,11 +72,7 @@
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-status">Job Status</label>
                     @php
                         $currentStatus = trim($job->job_status ?? '');
-                        if (($jobViewModuleKey ?? '') === 'fyrs') {
-                            $editModalNextStatuses = \App\Support\FyrsJobStatusFlow::allowedLabels($currentStatus, $statuses ?? []);
-                        } else {
-                            $editModalNextStatuses = \App\Support\LbsJobStatusFlow::nextAllowedLabels($currentStatus, $statuses ?? []);
-                        }
+                        $editModalNextStatuses = \App\Support\LbsJobStatusFlow::nextAllowedLabels($currentStatus, $statuses ?? []);
                     @endphp
                     <select id="edit-job-status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
                         <option value="{{ $currentStatus }}" selected @if(count($editModalNextStatuses) > 0) disabled @endif>{{ $currentStatus !== '' ? $currentStatus : '—' }}</option>
@@ -121,7 +117,7 @@
             </div>
             <div class="job-view-edit-form job-view-edit-form-assignment space-y-4" id="jobViewEditFormAssignment" hidden>
                 @php
-                    $jobUpdateRouteForAssigned = $jobUpdateRouteName ?? (($isLuntian ?? false) ? 'luntian.job.update' : (($isEfficientLiving ?? false) ? 'efficient_living.job.update' : 'lbs.job.update'));
+                    $jobUpdateRouteForAssigned = $jobUpdateRouteName ?? (($isLuntian ?? false) ? 'luntian.job.update' : (($isEfficientLiving ?? false) ? 'efficient_living.job.update' : 'general_assembly.job.update'));
                     $jvModal = 'job_view.' . ($jobViewModuleKey ?? 'lbs');
                     $permEditAssignedInModal = \App\Models\RolePermission::userMayAccessRoute($jobUpdateRouteForAssigned)
                         && \App\Models\RolePermission::userMayAccessRoute($jvModal . '.edit_assigned');

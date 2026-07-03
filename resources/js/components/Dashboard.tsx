@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Calendar, { type HolidaySource } from './Calendar';
+import JobStatusChart from './JobStatusChart';
 
 type CardVariant = 'total' | 'completed' | 'processing' | 'pending';
 
@@ -26,13 +27,24 @@ type HolidayItem = {
 };
 
 /** Laravel may run in a subdirectory; root-relative `/dashboard/...` would 404. */
+function resolveApiBase(raw: string | undefined, fallback: string): string {
+  const fb = (fallback || '').trim() || '/dashboard/holidays';
+  const value = (raw || fb).trim() || fb;
+  try {
+    if (value.startsWith('/')) {
+      return value.replace(/\/$/, '') || fb;
+    }
+    const parsed = new URL(value, window.location.origin);
+    return (parsed.pathname + parsed.search).replace(/\/$/, '') || fb;
+  } catch {
+    return fb;
+  }
+}
+
 function holidaysApiUrl(year: number): string {
   const el = document.getElementById('dashboard-root');
-  const base = el?.dataset.holidaysApiBase?.trim().replace(/\/$/, '');
-  if (base) {
-    return `${base}/${year}`;
-  }
-  return `/dashboard/holidays/${year}`;
+  const base = resolveApiBase(el?.dataset.holidaysApiBase, '/dashboard/holidays');
+  return `${base}/${year}`;
 }
 
 function parseInitialHolidaysFromDom(year: number): { ph: HolidayItem[]; au: HolidayItem[] } | null {
@@ -70,6 +82,7 @@ function parseInitialHolidaysFromDom(year: number): { ph: HolidayItem[]; au: Hol
 
 const BRANCH_ORDER = [
   'LBS',
+  'GENERAL ASSEMBLY',
   'LUNTIAN',
   'BPH',
   'BLUINQ',
@@ -135,6 +148,7 @@ type StatCardData = CardTemplate & { value: number; items: { label: string; valu
 
 const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   LBS: 'lbs',
+  'GENERAL ASSEMBLY': 'general-assembly',
   LUNTIAN: 'luntian',
   BPH: 'bph',
   BLUINQ: 'bluinq',
@@ -577,6 +591,8 @@ export default function Dashboard() {
           />
         ))}
       </section>
+
+      <JobStatusChart />
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
         <div className="animate-dashboard-panel dashboard-panel-animate-delay-0 min-w-0 overflow-visible rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90 lg:col-span-2">

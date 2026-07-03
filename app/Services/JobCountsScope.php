@@ -255,6 +255,21 @@ class JobCountsScope
         });
     }
 
+    public static function branchBlocksGeneralAssemblyList(): bool
+    {
+        if (self::normalizeRole() !== 'branch' || self::isGlobalAdmin()) {
+            return false;
+        }
+        $ub = RolePermission::normalizeBranch((string) session('user_branch', ''));
+        if ($ub === '') {
+            return false;
+        }
+        $mapped = RolePermission::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
+        $label = strtoupper(preg_replace('/\s+/u', ' ', trim((string) $mapped)));
+
+        return $label !== '' && $label !== 'GENERAL ASSEMBLY';
+    }
+
     /** Main LBS pipeline: shared `jobs` table rows that are not EL or Luntian verticals. */
     public static function applyLbsStandardJobsScope(Builder $q, string $alias = 'j'): void
     {

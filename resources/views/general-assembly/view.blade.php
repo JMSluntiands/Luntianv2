@@ -2,23 +2,23 @@
 
 @section('title', 'Job Details')
 
-@section('body_class', 'page-lbs-view')
+@section('body_class', 'page-ga-view')
 
 @section('content')
     @php
         $isLuntianView = (bool) ($isLuntian ?? false);
         $isEfficientLivingView = (bool) ($isEfficientLiving ?? false);
         $isBphView = (bool) ($isBphView ?? false);
-        $listRouteName = $listRouteName ?? ($isLuntianView ? 'luntian.list' : ($isEfficientLivingView ? 'efficient_living.list' : 'lbs.list'));
-        $trashRouteName = $trashRouteName ?? ($isLuntianView ? 'luntian.trash' : ($isEfficientLivingView ? 'efficient_living.trash' : 'lbs.trash'));
-        $jobUpdateRouteName = $jobUpdateRouteName ?? ($isLuntianView ? 'luntian.job.update' : ($isEfficientLivingView ? 'efficient_living.job.update' : 'lbs.job.update'));
-        $jobUploadFilesRouteName = $jobUploadFilesRouteName ?? 'lbs.job.uploadFiles';
-        $jobDeleteFileRouteName = $jobDeleteFileRouteName ?? 'lbs.job.deleteFile';
-        $jobArchiveRouteName = $jobArchiveRouteName ?? 'lbs.job.archive';
-        $jobCheckerUploadsRouteName = $jobCheckerUploadsRouteName ?? 'lbs.job.checkerUploads';
-        $jobRunCommentRouteName = $jobRunCommentRouteName ?? 'lbs.job.runComment';
-        $jobCommentRouteName = $jobCommentRouteName ?? 'lbs.job.comment';
-        $jobFileRouteName = $jobFileRouteName ?? 'lbs.job.file';
+        $listRouteName = $listRouteName ?? ($isLuntianView ? 'luntian.list' : ($isEfficientLivingView ? 'efficient_living.list' : 'general_assembly.list'));
+        $trashRouteName = $trashRouteName ?? ($isLuntianView ? 'luntian.trash' : ($isEfficientLivingView ? 'efficient_living.trash' : 'general_assembly.trash'));
+        $jobUpdateRouteName = $jobUpdateRouteName ?? ($isLuntianView ? 'luntian.job.update' : ($isEfficientLivingView ? 'efficient_living.job.update' : 'general_assembly.job.update'));
+        $jobUploadFilesRouteName = $jobUploadFilesRouteName ?? 'general_assembly.job.uploadFiles';
+        $jobDeleteFileRouteName = $jobDeleteFileRouteName ?? 'general_assembly.job.deleteFile';
+        $jobArchiveRouteName = $jobArchiveRouteName ?? 'general_assembly.job.archive';
+        $jobCheckerUploadsRouteName = $jobCheckerUploadsRouteName ?? 'general_assembly.job.checkerUploads';
+        $jobRunCommentRouteName = $jobRunCommentRouteName ?? 'general_assembly.job.runComment';
+        $jobCommentRouteName = $jobCommentRouteName ?? 'general_assembly.job.comment';
+        $jobFileRouteName = $jobFileRouteName ?? 'general_assembly.job.file';
         $jobPrintComplianceRouteName = $jobPrintComplianceRouteName ?? 'bph.job.printCompliance';
         $jobMergeFileRouteName = $jobMergeFileRouteName ?? 'bph.job.mergeFile';
         $jobCompliancePdfFilenamePrefix = $jobCompliancePdfFilenamePrefix ?? 'BPH';
@@ -35,7 +35,7 @@
         $permBphPrintCompliance = \App\Models\RolePermission::userMayAccessRoute($jobPrintComplianceRouteName);
         $permBphMergeFile = \App\Models\RolePermission::userMayAccessRoute($jobMergeFileRouteName);
 
-        $jobViewModuleKey = $jobViewModuleKey ?? ($isBphView ? 'bph' : ($isLuntianView ? 'luntian' : ($isEfficientLivingView ? 'efficient_living' : 'lbs')));
+        $jobViewModuleKey = $jobViewModuleKey ?? ($isBphView ? 'bph' : ($isLuntianView ? 'luntian' : ($isEfficientLivingView ? 'efficient_living' : 'general_assembly')));
         $jobViewCardModuleKey = $jobViewCardModuleKey ?? $jobViewModuleKey;
         $jv = 'job_view.' . $jobViewModuleKey;
         $jvCard = 'job_view.' . $jobViewCardModuleKey;
@@ -145,14 +145,10 @@
             $priorityBg = $priorityColor ?? null;
             // Disable Edit (Client/Job/Notes) when status is Completed, For Review, or For Email Confirmation (status still advances via inline flow or modal when Edit is available)
             $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
-            // One-step status flow (LBS); Fyrs: Processing / Completed from Allocated; Efficient Living: inline status only from Allocated
-            if (($jobViewModuleKey ?? '') === 'fyrs') {
-                $inlineStatusOptions = \App\Support\FyrsJobStatusFlow::allowedLabels($rawStatus, $statuses ?? []);
-            } else {
-                $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
-                if (($isEfficientLivingView || $isLuntianView) && $lowerStatus !== 'allocated') {
-                    $inlineStatusOptions = [];
-                }
+            // One-step status flow (LBS); Efficient Living: inline status only from Allocated
+            $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
+            if (($isEfficientLivingView || $isLuntianView) && $lowerStatus !== 'allocated') {
+                $inlineStatusOptions = [];
             }
             $canEditStatusInline = count($inlineStatusOptions) > 0;
 
@@ -341,7 +337,7 @@
                                     @endfor
                                 </button>
                             @else
-                                <span class="lbs-stars mx-auto inline-flex items-center justify-center gap-0.5" data-rating="{{ $notesSectionComplexity }}" aria-label="{{ $notesSectionComplexity }} out of 5">@include('lbs.partials.stars', ['rating' => $notesSectionComplexity])</span>
+                                <span class="lbs-stars mx-auto inline-flex items-center justify-center gap-0.5" data-rating="{{ $notesSectionComplexity }}" aria-label="{{ $notesSectionComplexity }} out of 5">@include('general-assembly.partials.stars', ['rating' => $notesSectionComplexity])</span>
                             @endif
                         </div>
                     </section>
@@ -765,8 +761,8 @@
 
         </div>
 
-        @include('lbs.modals.edit-modal')
-        @include('lbs.modals.add-files-modal')
+        @include('general-assembly.modals.edit-modal')
+        @include('general-assembly.modals.add-files-modal')
         {{-- Delete file modal --}}
         <div class="job-view-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200" id="jobViewDeleteFileModalOverlay" aria-hidden="true">
             <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800" role="dialog" aria-modal="true" aria-labelledby="jobViewDeleteFileModalTitle">
@@ -845,7 +841,7 @@
 @endsection
 
 @push('styles')
-    @include('lbs.modals.styles')
+    @include('general-assembly.modals.styles')
 <style>
 /* Job Details cards: label/value rows with dividers */
 .job-details-dl { margin: 0; }

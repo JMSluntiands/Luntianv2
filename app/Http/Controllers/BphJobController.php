@@ -14,6 +14,7 @@ use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
+use App\Support\FyrsJobStatusFlow;
 use App\Support\JobUploadFolder;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -871,6 +872,20 @@ class BphJobController extends Controller
 
         if (array_key_exists('job_status', $data) || array_key_exists('status', $data)) {
             $newStatus = (string) ($data['job_status'] ?? $data['status'] ?? $job->status ?? '');
+            if ($this->pipelineJobTable() === 'job_fyrs') {
+                $currentStatus = (string) ($job->status ?? '');
+                if ($newStatus !== '' && ! FyrsJobStatusFlow::isValidTransition($currentStatus, $newStatus)) {
+                    $message = 'Invalid status change for Fyrs Energy Wise. Allowed: Allocated → Processing or Completed; Processing → Completed.';
+                    if ($request->expectsJson() || $request->ajax()) {
+                        return response()->json(['status' => 'error', 'message' => $message], 422);
+                    }
+
+                    return redirect()
+                        ->back()
+                        ->withErrors(['job_status' => $message])
+                        ->withInput();
+                }
+            }
             if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $newStatus)) {
                 if ($request->expectsJson() || $request->ajax()) {
                     return $fecErr;
