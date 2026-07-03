@@ -41,6 +41,8 @@ class JotformConfigController extends Controller
             'map_notes' => ['nullable', 'string', 'max:120'],
             'map_upload_plans' => ['nullable', 'string', 'max:120'],
             'map_upload_documents' => ['nullable', 'string', 'max:120'],
+            'default_assigned_to' => ['nullable', 'string', 'max:50'],
+            'default_checked_by' => ['nullable', 'string', 'max:50'],
             'regenerate_secret' => ['nullable', 'boolean'],
         ];
 

@@ -37,6 +37,13 @@ class JotformSubmissionService
         $checkedBy = $this->mappedValue($submissionFields, (string) ($config->map_checked_by ?? 'checkerInitials'));
         $jobStatus = $this->mappedValue($submissionFields, (string) ($config->map_job_status ?? 'jobStatus'));
 
+        if ($assignedTo === '' && trim((string) ($config->default_assigned_to ?? '')) !== '') {
+            $assignedTo = trim((string) $config->default_assigned_to);
+        }
+        if ($checkedBy === '' && trim((string) ($config->default_checked_by ?? '')) !== '') {
+            $checkedBy = trim((string) $config->default_checked_by);
+        }
+
         $compliance = $this->resolveCompliance($complianceText);
         if (! $compliance) {
             throw new \InvalidArgumentException('Compliance from JotForm is missing or not recognized: '.($complianceText ?: '(empty)'));
@@ -57,11 +64,11 @@ class JotformSubmissionService
         }
 
         if ($assignedTo === '') {
-            throw new \InvalidArgumentException('Assigned to (staff initials) from JotForm is missing.');
+            throw new \InvalidArgumentException('Assigned to (staff initials) from JotForm is missing. Add a Staff Initials field to the JotForm, or set a default in Jot Form Configuration.');
         }
 
         if ($checkedBy === '') {
-            throw new \InvalidArgumentException('Checked by (checker initials) from JotForm is missing.');
+            throw new \InvalidArgumentException('Checked by (checker initials) from JotForm is missing. Add a Checker Initials field to the JotForm, or set a default in Jot Form Configuration.');
         }
 
         $assignedTo = strtoupper(trim($assignedTo));

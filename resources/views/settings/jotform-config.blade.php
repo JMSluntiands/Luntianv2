@@ -161,6 +161,17 @@
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     </div>
                     <div>
+                        <label for="default_assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Default Staff Initials (if not on form)</label>
+                        <input type="text" id="default_assigned_to" name="default_assigned_to" value="{{ old('default_assigned_to', $config?->default_assigned_to ?? 'AJS') }}" placeholder="e.g. AJS"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label for="default_checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Default Checker Initials (if not on form)</label>
+                        <input type="text" id="default_checked_by" name="default_checked_by" value="{{ old('default_checked_by', $config?->default_checked_by ?? 'GM') }}" placeholder="e.g. GM"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Your JotForm does not include Staff/Checker fields — these defaults are used instead.</p>
+                    </div>
+                    <div>
                         <label for="map_job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status</label>
                         <input type="text" id="map_job_status" name="map_job_status" value="{{ old('map_job_status', $config?->map_job_status ?? 'jobStatus') }}" placeholder="e.g. jobStatus"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
