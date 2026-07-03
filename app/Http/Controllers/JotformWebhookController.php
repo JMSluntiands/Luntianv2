@@ -6,19 +6,35 @@ use App\Models\JotformConfig;
 use App\Services\JotformSubmissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class JotformWebhookController extends Controller
 {
     public function __invoke(Request $request, JotformSubmissionService $service)
     {
-        Log::info('JotForm webhook received', [
+        $submissionId = $request->input('submissionID') ?? $request->input('submissionId');
+        $formId = $request->input('formID') ?? $request->input('formId') ?? $request->input('form_id');
+
+        $this->logJotform('info', 'Webhook hit', [
             'ip' => $request->ip(),
-            'form_id' => $request->input('formID') ?? $request->input('formId'),
-            'submission_id' => $request->input('submissionID'),
+            'method' => $request->method(),
+            'content_type' => $request->header('Content-Type'),
+            'form_id' => $formId,
+            'submission_id' => $submissionId,
+            'has_query_secret' => $request->query('secret') !== null,
+            'payload_keys' => array_keys($request->all()),
+            'raw_body_length' => strlen($request->getContent()),
         ]);
 
         $config = JotformConfig::current();
         if (! $config || ! $config->is_active) {
+            $this->logJotform('warning', 'Rejected — integration inactive', [
+                'form_id' => $formId,
+                'submission_id' => $submissionId,
+                'config_exists' => (bool) $config,
+                'is_active' => (bool) ($config?->is_active ?? false),
+            ]);
+
             return response()->json(['status' => 'error', 'message' => 'JotForm integration is not active.'], 503);
         }
 
@@ -28,6 +44,16 @@ class JotformWebhookController extends Controller
             ?: $request->input('secret', ''));
 
         if ($secret === '' || ! hash_equals($secret, $provided)) {
+            $this->logJotform('warning', 'Rejected — invalid webhook secret', [
+                'form_id' => $formId,
+                'submission_id' => $submissionId,
+                'secret_configured' => $secret !== '',
+                'secret_provided' => $provided !== '',
+                'secret_source' => $request->query('secret') !== null
+                    ? 'query'
+                    : ($request->header('X-Luntian-Jotform-Secret') ? 'header' : ($request->input('secret') ? 'body' : 'none')),
+            ]);
+
             return response()->json(['status' => 'error', 'message' => 'Invalid webhook secret.'], 403);
         }
 
@@ -40,15 +66,27 @@ class JotformWebhookController extends Controller
         }
 
         $fields = $service->parseSubmissionPayload($payload);
-        $formId = $payload['formID'] ?? $payload['formId'] ?? $payload['form_id'] ?? null;
+        $formId = $payload['formID'] ?? $payload['formId'] ?? $payload['form_id'] ?? $formId;
+
+        $this->logJotform('info', 'Payload parsed', [
+            'form_id' => $formId,
+            'submission_id' => $submissionId,
+            'field_count' => count($fields),
+            'field_keys' => array_keys($fields),
+            'field_preview' => $this->fieldPreview($fields),
+            'has_raw_request' => isset($payload['rawRequest']) && $payload['rawRequest'] !== '',
+        ]);
 
         try {
             $result = $service->createLbsJobFromSubmission($config, $fields, is_scalar($formId) ? (string) $formId : null);
         } catch (\Throwable $e) {
-            Log::warning('JotForm webhook failed', [
-                'message' => $e->getMessage(),
+            $this->logJotform('error', 'Job create failed', [
                 'form_id' => $formId,
+                'submission_id' => $submissionId,
+                'message' => $e->getMessage(),
+                'exception' => $e::class,
                 'field_keys' => array_keys($fields),
+                'field_preview' => $this->fieldPreview($fields),
             ]);
 
             return response()->json([
@@ -57,11 +95,55 @@ class JotformWebhookController extends Controller
             ], 422);
         }
 
+        $this->logJotform('info', 'Job created', [
+            'form_id' => $formId,
+            'submission_id' => $submissionId,
+            'job_id' => $result['job_id'],
+            'reference' => $result['reference'],
+            'queued_as_forms' => (bool) $config->queue_in_forms_submitted,
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'LBS job created from JotForm submission.',
             'job_id' => $result['job_id'],
             'reference' => $result['reference'],
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     * @return array<string, string>
+     */
+    private function fieldPreview(array $fields): array
+    {
+        $preview = [];
+
+        foreach ($fields as $key => $value) {
+            if (is_array($value)) {
+                $text = json_encode($value);
+            } else {
+                $text = (string) $value;
+            }
+
+            $text = preg_replace('/\s+/', ' ', trim($text)) ?? '';
+            if (strlen($text) > 120) {
+                $text = Str::limit($text, 120, '…');
+            }
+
+            $preview[(string) $key] = $text;
+        }
+
+        ksort($preview);
+
+        return $preview;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function logJotform(string $level, string $message, array $context = []): void
+    {
+        Log::log($level, '[JotForm] '.$message, $context);
     }
 }
