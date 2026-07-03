@@ -169,7 +169,20 @@ class JotformSubmissionService
         $fields = [];
 
         if (! empty($submission['rawRequest']) && is_string($submission['rawRequest'])) {
-            parse_str($submission['rawRequest'], $parsed);
+            $raw = trim($submission['rawRequest']);
+            $parsed = [];
+
+            if (str_starts_with($raw, '{') || str_starts_with($raw, '[')) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $parsed = $decoded;
+                }
+            }
+
+            if ($parsed === []) {
+                parse_str($raw, $parsed);
+            }
+
             if (is_array($parsed)) {
                 $fields = array_merge($fields, $parsed);
             }

@@ -75,6 +75,7 @@
                 </div>
                 <div class="space-y-5 p-5">
                     <label class="inline-flex cursor-pointer items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-900/20">
+                        <input type="hidden" name="is_active" value="0">
                         <input type="checkbox" name="is_active" value="1" {{ old('is_active', $isActive) ? 'checked' : '' }}
                             class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-500 dark:bg-slate-700">
                         <span class="text-sm font-medium text-slate-800 dark:text-slate-100">Enable JotForm integration (required for submissions to enter LBS)</span>

@@ -53,10 +53,16 @@ class JotformConfigController extends Controller
         }
 
         $data = $validator->validated();
-        $data['is_active'] = $request->boolean('is_active');
+        $config = JotformConfig::current();
+        if ($request->has('is_active')) {
+            $data['is_active'] = $request->boolean('is_active');
+        } elseif ($config) {
+            $data['is_active'] = (bool) $config->is_active;
+        } else {
+            $data['is_active'] = false;
+        }
         $data['queue_in_forms_submitted'] = $request->boolean('queue_in_forms_submitted', true);
 
-        $config = JotformConfig::current();
         if (! $config) {
             $config = new JotformConfig;
             $config->webhook_secret = Str::random(40);
