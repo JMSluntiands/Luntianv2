@@ -11,7 +11,11 @@
         $branchLabel = $isLuntianPage ? 'Luntian' : ($isEfficientLivingPage ? 'Efficient Living' : 'GA');
         $viewRoute = $isLuntianPage ? 'luntian.job.view' : ($isEfficientLivingPage ? 'efficient_living.job.view' : 'general_assembly.job.view');
         $updateRoute = $isLuntianPage ? 'luntian.job.update' : ($isEfficientLivingPage ? 'efficient_living.job.update' : 'general_assembly.job.update');
-        $jobBaseUrl = $isLuntianPage ? url('/dashboard/luntian/job') : ($isEfficientLivingPage ? url('/dashboard/efficient-living/job') : url('/dashboard/lbs/job'));
+        $jobBaseUrl = $isLuntianPage
+            ? url('/dashboard/luntian/job')
+            : ($isEfficientLivingPage
+                ? url('/dashboard/efficient-living/job')
+                : url('/dashboard/general-assembly/job'));
     @endphp
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">

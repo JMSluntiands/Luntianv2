@@ -16,6 +16,7 @@ use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
 use App\Support\JobUploadFolder;
+use App\Support\LegacyDbJoin;
 use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1334,9 +1335,9 @@ class GeneralAssemblyJobController extends Controller
             $jobs = collect();
         } else {
             $q = DB::table('job_general_assembly as j')
-                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
-                ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id');
+            LegacyDbJoin::leftJoinClientsByClientCode($q);
+            $q->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
                 ->where('j.job_status', '=', 'For Email Confirmation');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1484,9 +1485,9 @@ class GeneralAssemblyJobController extends Controller
             $jobs = collect();
         } else {
             $q = DB::table('job_general_assembly as j')
-                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
-                ->where('j.job_status', '=', 'For Email Confirmation');
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id');
+            LegacyDbJoin::leftJoinClientsByClientCode($q);
+            $q->where('j.job_status', '=', 'For Email Confirmation');
             $this->applyLuntianJobRequestScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1828,9 +1829,9 @@ class GeneralAssemblyJobController extends Controller
             $jobs = collect();
         } else {
             $q = DB::table('job_general_assembly as j')
-                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->leftJoin('clients as cl', 'cl.client_code', '=', 'j.client_code')
-                ->where('j.reference', 'like', 'JOBS%')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id');
+            LegacyDbJoin::leftJoinClientsByClientCode($q);
+            $q->where('j.reference', 'like', 'JOBS%')
                 ->where('j.job_status', '=', 'For Email Confirmation');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1955,7 +1956,9 @@ class GeneralAssemblyJobController extends Controller
             ]);
         }
 
-        $toEmail = DB::table('clients')->where('client_code', $job->client_code)->value('client_email');
+        $toEmail = DB::table('clients as cl')
+            ->whereRaw('cl.client_code COLLATE utf8mb4_general_ci = ? COLLATE utf8mb4_general_ci', [$job->client_code])
+            ->value('client_email');
         if (empty($toEmail)) {
             return response()->json([
                 'status'  => 'error',
