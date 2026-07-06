@@ -127,7 +127,7 @@ class JotformSubmissionService
             'upload_files' => json_encode($planNames),
             'upload_project_files' => json_encode($docNames),
             'updated_by' => $updatedBy,
-            'job_status' => $jobStatus !== '' ? $jobStatus : '',
+            'job_status' => $jobStatus !== '' ? $jobStatus : 'Allocated',
             'dwelling' => '',
             'client_account_id' => $client->client_account_id ?? null,
             'completion_date' => null,
