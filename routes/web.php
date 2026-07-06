@@ -40,7 +40,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ReportsController;
 
-Route::post('/webhooks/jotform', JotformWebhookController::class)->name('webhooks.jotform');
+Route::match(['get', 'post'], '/webhooks/jotform', JotformWebhookController::class)->name('webhooks.jotform');
 
 Route::get('/', function () {
     $lbsPublicHost = trim((string) config('app.lbs_public_form_domain', ''));

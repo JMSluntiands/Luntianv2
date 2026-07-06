@@ -164,28 +164,39 @@ class JotformSubmissionService
     {
         $fields = [];
 
-        if (! empty($submission['rawRequest']) && is_string($submission['rawRequest'])) {
-            $raw = trim($submission['rawRequest']);
+        if (! empty($submission['rawRequest'])) {
+            $rawRequest = $submission['rawRequest'];
             $parsed = [];
 
-            if (str_starts_with($raw, '{') || str_starts_with($raw, '[')) {
-                $decoded = json_decode($raw, true);
-                if (is_array($decoded)) {
-                    $parsed = $decoded;
+            if (is_array($rawRequest)) {
+                $parsed = $rawRequest;
+            } elseif (is_string($rawRequest)) {
+                $raw = trim($rawRequest);
+
+                if (str_starts_with($raw, '{') || str_starts_with($raw, '[')) {
+                    $decoded = json_decode($raw, true);
+                    if (is_array($decoded)) {
+                        $parsed = $decoded;
+                    }
+                }
+
+                if ($parsed === []) {
+                    parse_str($raw, $parsed);
                 }
             }
 
-            if ($parsed === []) {
-                parse_str($raw, $parsed);
-            }
-
-            if (is_array($parsed)) {
+            if (is_array($parsed) && $parsed !== []) {
                 $fields = array_merge($fields, $parsed);
             }
         }
 
+        $skipKeys = [
+            'rawRequest', 'formID', 'formId', 'form_id', 'submissionID', 'submissionId', 'submission_id',
+            'ip', 'secret', 'temp_upload', 'temp_upload_folder', 'event', 'documentID',
+        ];
+
         foreach ($submission as $key => $value) {
-            if (in_array($key, ['rawRequest', 'formID', 'submissionID', 'ip', 'secret'], true)) {
+            if (in_array($key, $skipKeys, true)) {
                 continue;
             }
             if (is_array($value)) {

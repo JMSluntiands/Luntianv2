@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\JotformConfig;
 use App\Services\JotformSubmissionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class JotformWebhookController extends Controller
 {
-    public function __invoke(Request $request, JotformSubmissionService $service)
+    public function __invoke(Request $request, JotformSubmissionService $service): JsonResponse
     {
         $submissionId = $request->input('submissionID') ?? $request->input('submissionId');
         $formId = $request->input('formID') ?? $request->input('formId') ?? $request->input('form_id');
@@ -57,6 +58,20 @@ class JotformWebhookController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Invalid webhook secret.'], 403);
         }
 
+        if ($request->isMethod('GET')) {
+            $this->logJotform('info', 'Browser ping OK', [
+                'form_id' => $config->jotform_form_id,
+                'is_active' => true,
+            ]);
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'LUNTIAN JotForm webhook is active. POST submissions here from JotForm Integrations → Webhooks.',
+                'form_id' => $config->jotform_form_id,
+                'log_file' => 'storage/logs/jotform.log',
+            ]);
+        }
+
         $payload = $request->all();
         if ($payload === [] && $request->getContent() !== '') {
             $decoded = json_decode($request->getContent(), true);
@@ -68,6 +83,20 @@ class JotformWebhookController extends Controller
         $fields = $service->parseSubmissionPayload($payload);
         $formId = $payload['formID'] ?? $payload['formId'] ?? $payload['form_id'] ?? $formId;
 
+        if ($submissionId === null || $submissionId === '') {
+            if ($fields === []) {
+                $this->logJotform('info', 'Empty POST ping — endpoint ready', [
+                    'form_id' => $formId,
+                    'payload_keys' => array_keys($payload),
+                ]);
+
+                return response()->json([
+                    'status' => 'ok',
+                    'message' => 'Webhook endpoint ready. Waiting for JotForm submission.',
+                ]);
+            }
+        }
+
         $this->logJotform('info', 'Payload parsed', [
             'form_id' => $formId,
             'submission_id' => $submissionId,
@@ -75,6 +104,7 @@ class JotformWebhookController extends Controller
             'field_keys' => array_keys($fields),
             'field_preview' => $this->fieldPreview($fields),
             'has_raw_request' => isset($payload['rawRequest']) && $payload['rawRequest'] !== '',
+            'raw_request_type' => isset($payload['rawRequest']) ? gettype($payload['rawRequest']) : null,
         ]);
 
         try {
