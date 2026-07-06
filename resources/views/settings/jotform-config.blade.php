@@ -153,13 +153,14 @@
                     </div>
                     <div>
                         <label for="map_assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Staff Initials <span class="font-normal text-slate-400">(optional)</span></label>
-                        <input type="text" id="map_assigned_to" name="map_assigned_to" value="{{ old('map_assigned_to', $config?->map_assigned_to ?? '') }}" placeholder="e.g. staffInitials — leave blank if not on form"
+                        <input type="text" id="map_assigned_to" name="map_assigned_to" value="{{ old('map_assigned_to', $config?->map_assigned_to ?? 'staffInitials') }}" placeholder="e.g. staffInitials"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     </div>
                     <div>
                         <label for="map_checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checker Initials <span class="font-normal text-slate-400">(optional)</span></label>
-                        <input type="text" id="map_checked_by" name="map_checked_by" value="{{ old('map_checked_by', $config?->map_checked_by ?? '') }}" placeholder="e.g. checkerInitials — leave blank if not on form"
+                        <input type="text" id="map_checked_by" name="map_checked_by" value="{{ old('map_checked_by', $config?->map_checked_by ?? '') }}" placeholder="Leave blank to use Staff Initials for checker too"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">If your JotForm only has Staff, leave this empty — checker will copy staff automatically.</p>
                     </div>
                     <div>
                         <label for="map_job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status <span class="font-normal text-slate-400">(optional)</span></label>

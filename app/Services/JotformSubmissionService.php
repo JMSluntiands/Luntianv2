@@ -52,6 +52,10 @@ class JotformSubmissionService
         $assignedTo = $assignedTo !== '' ? strtoupper(trim($assignedTo)) : null;
         $checkedBy = $checkedBy !== '' ? strtoupper(trim($checkedBy)) : null;
 
+        if ($checkedBy === null && $assignedTo !== null) {
+            $checkedBy = $assignedTo;
+        }
+
         if ($jobAddress === '') {
             $jobAddress = null;
         }
