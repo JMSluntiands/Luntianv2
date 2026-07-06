@@ -4,7 +4,7 @@
     "name": "index"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CYUtgGV5.css",
+    "file": "assets/app-CZnE9Xwd.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -22,7 +22,7 @@
     ]
   },
   "resources/js/dashboard.tsx": {
-    "file": "assets/dashboard-BZ3QLJa0.js",
+    "file": "assets/dashboard-DyApWWFg.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.tsx",
     "isEntry": true,

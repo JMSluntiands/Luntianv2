@@ -255,75 +255,25 @@ class DashboardJobStatsService
                 ]);
             }
 
+            $metaByKey = self::chartStatusMetaByKey($statusMeta);
+            $statusOrder = self::chartStatusNameOrder($statusMeta);
+
             $only = self::branchStatLabelExclusive();
             $branchLabels = $only ? [$only] : RolePermission::dashboardStatCardLabels();
 
             $branches = [];
             foreach ($branchLabels as $branchLabel) {
-                $branchTotal = self::countBranchDashboardTotal($branchLabel, $dateStr);
-                if ($branchTotal <= 0) {
-                    continue;
+                $row = self::buildBranchChartRow($branchLabel, $dateStr, $statusOrder, $metaByKey);
+                if ($row !== null) {
+                    $branches[] = $row;
                 }
-
-                $statusRows = [];
-                foreach ($statusMeta as $status) {
-                    $name = (string) ($status->name ?? '');
-                    if ($name === '' || self::isChartExcludedStatus($name)) {
-                        continue;
-                    }
-                    $count = self::countBranchStatusDashboardTotal($branchLabel, $name, $dateStr);
-                    if ($count <= 0) {
-                        continue;
-                    }
-                    $statusRows[] = [
-                        'label' => $name,
-                        'count' => $count,
-                        'color' => $status->color !== null && trim((string) $status->color) !== ''
-                            ? trim((string) $status->color)
-                            : null,
-                        'fontColor' => Status::resolveFontColor($status->font_color ?? null),
-                    ];
-                }
-
-                $branches[] = [
-                    'label' => $branchLabel,
-                    'total' => $branchTotal,
-                    'statuses' => $statusRows,
-                ];
             }
 
             usort($branches, static fn (array $a, array $b): int => ($b['total'] <=> $a['total']) ?: strcasecmp((string) $a['label'], (string) $b['label']));
 
-            $allStatuses = [];
-            $allTotal = 0;
-            foreach ($statusMeta as $status) {
-                $name = (string) ($status->name ?? '');
-                if ($name === '' || self::isChartExcludedStatus($name)) {
-                    continue;
-                }
-                $count = 0;
-                foreach ($branchLabels as $branchLabel) {
-                    $count += self::countBranchStatusDashboardTotal($branchLabel, $name, $dateStr);
-                }
-                if ($count <= 0) {
-                    continue;
-                }
-                $allTotal += $count;
-                $allStatuses[] = [
-                    'label' => $name,
-                    'count' => $count,
-                    'color' => $status->color !== null && trim((string) $status->color) !== ''
-                        ? trim((string) $status->color)
-                        : null,
-                    'fontColor' => Status::resolveFontColor($status->font_color ?? null),
-                ];
-            }
-            if ($allTotal > 0) {
-                array_unshift($branches, [
-                    'label' => 'All',
-                    'total' => $allTotal,
-                    'statuses' => $allStatuses,
-                ]);
+            $allRow = self::buildAllBranchChartRow($branchLabels, $dateStr, $statusOrder, $metaByKey);
+            if ($allRow !== null) {
+                array_unshift($branches, $allRow);
             }
 
             return ['date' => $dateStr, 'scope' => 'dashboard_total_by_branch', 'branches' => $branches];
@@ -334,6 +284,205 @@ class DashboardJobStatsService
                 'branches' => [],
             ];
         }
+    }
+
+    /** @param \Illuminate\Support\Collection<int, object> $statusMeta */
+    private static function chartStatusMetaByKey($statusMeta): array
+    {
+        $byKey = [];
+        foreach ($statusMeta as $status) {
+            $name = trim((string) ($status->name ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $byKey[mb_strtolower($name)] = $status;
+        }
+
+        return $byKey;
+    }
+
+    /**
+     * Statuses table order first, then any pipeline status seen in job tables (live DB may be missing rows in statuses).
+     *
+     * @param \Illuminate\Support\Collection<int, object> $statusMeta
+     * @return list<string>
+     */
+    private static function chartStatusNameOrder($statusMeta): array
+    {
+        $names = [];
+        $seen = [];
+
+        foreach ($statusMeta as $status) {
+            $name = trim((string) ($status->name ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $key = mb_strtolower($name);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $names[] = $name;
+        }
+
+        foreach (self::distinctPipelineStatusNames() as $name) {
+            $key = mb_strtolower($name);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $names[] = $name;
+        }
+
+        return $names;
+    }
+
+    /** @return list<string> */
+    private static function distinctPipelineStatusNames(): array
+    {
+        $names = [];
+
+        $collect = static function (string $table, string $column) use (&$names): void {
+            if (! Schema::hasTable($table)) {
+                return;
+            }
+            $rows = DB::table($table)
+                ->whereNotNull($column)
+                ->whereRaw("TRIM({$column}) != ''")
+                ->distinct()
+                ->pluck($column);
+            foreach ($rows as $value) {
+                $value = trim((string) $value);
+                if ($value !== '') {
+                    $names[] = $value;
+                }
+            }
+        };
+
+        $collect('jobs', 'job_status');
+        $collect('job_general_assembly', 'job_status');
+        foreach (['job_bph', 'job_amt', 'job_fyrs', 'job_csp', 'job_nh', 'job_lc_home_builder', 'job_leading_energy'] as $table) {
+            $collect($table, 'status');
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * @param  array<string, object>  $metaByKey
+     * @return list<array{label: string, count: int, color: string|null, fontColor: string}>
+     */
+    private static function chartStatusRowsForBranch(
+        string $branchLabel,
+        string $dateStr,
+        array $statusOrder,
+        array $metaByKey
+    ): array {
+        $rows = [];
+
+        foreach ($statusOrder as $name) {
+            if (self::isChartExcludedStatus($name)) {
+                continue;
+            }
+            $count = self::countBranchStatusDashboardTotal($branchLabel, $name, $dateStr);
+            if ($count <= 0) {
+                continue;
+            }
+            $rows[] = self::formatChartStatusRow($name, $count, $metaByKey[mb_strtolower($name)] ?? null);
+        }
+
+        $cardTotal = self::countBranchDashboardTotal($branchLabel, $dateStr);
+        $statusSum = array_sum(array_column($rows, 'count'));
+        if ($cardTotal > $statusSum) {
+            $rows[] = self::formatChartStatusRow('Other', $cardTotal - $statusSum, null);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, object>  $metaByKey
+     * @return array{label: string, total: int, statuses: list<array{label: string, count: int, color: string|null, fontColor: string}>}|null
+     */
+    private static function buildBranchChartRow(
+        string $branchLabel,
+        string $dateStr,
+        array $statusOrder,
+        array $metaByKey
+    ): ?array {
+        $cardTotal = self::countBranchDashboardTotal($branchLabel, $dateStr);
+        if ($cardTotal <= 0) {
+            return null;
+        }
+
+        $statusRows = self::chartStatusRowsForBranch($branchLabel, $dateStr, $statusOrder, $metaByKey);
+        if ($statusRows === []) {
+            return null;
+        }
+
+        return [
+            'label' => $branchLabel,
+            'total' => $cardTotal,
+            'statuses' => $statusRows,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $branchLabels
+     * @param  array<string, object>  $metaByKey
+     * @return array{label: string, total: int, statuses: list<array{label: string, count: int, color: string|null, fontColor: string}>}|null
+     */
+    private static function buildAllBranchChartRow(
+        array $branchLabels,
+        string $dateStr,
+        array $statusOrder,
+        array $metaByKey
+    ): ?array {
+        $cardTotal = 0;
+        foreach ($branchLabels as $branchLabel) {
+            $cardTotal += self::countBranchDashboardTotal($branchLabel, $dateStr);
+        }
+        if ($cardTotal <= 0) {
+            return null;
+        }
+
+        $statusRows = [];
+        foreach ($statusOrder as $name) {
+            if (self::isChartExcludedStatus($name)) {
+                continue;
+            }
+            $count = 0;
+            foreach ($branchLabels as $branchLabel) {
+                $count += self::countBranchStatusDashboardTotal($branchLabel, $name, $dateStr);
+            }
+            if ($count <= 0) {
+                continue;
+            }
+            $statusRows[] = self::formatChartStatusRow($name, $count, $metaByKey[mb_strtolower($name)] ?? null);
+        }
+
+        $statusSum = array_sum(array_column($statusRows, 'count'));
+        if ($cardTotal > $statusSum) {
+            $statusRows[] = self::formatChartStatusRow('Other', $cardTotal - $statusSum, null);
+        }
+
+        return [
+            'label' => 'All',
+            'total' => $cardTotal,
+            'statuses' => $statusRows,
+        ];
+    }
+
+    private static function formatChartStatusRow(string $name, int $count, ?object $meta): array
+    {
+        return [
+            'label' => $name,
+            'count' => $count,
+            'color' => $meta !== null && $meta->color !== null && trim((string) $meta->color) !== ''
+                ? trim((string) $meta->color)
+                : null,
+            'fontColor' => Status::resolveFontColor($meta->font_color ?? null),
+        ];
     }
 
     private static function isChartExcludedStatus(string $name): bool

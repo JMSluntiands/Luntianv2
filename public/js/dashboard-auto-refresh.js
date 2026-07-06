@@ -24,6 +24,10 @@
   }
 
   var statsUrl = resolveApiUrl(root.dataset.statsApiBase, '/dashboard/stats');
+  var chartUrl = resolveApiUrl(root.dataset.chartApiBase, '/dashboard/chart');
+  if (!root.dataset.chartApiBase && root.dataset.statsApiBase) {
+    chartUrl = statsUrl.replace(/\/stats\/?$/, '/chart');
+  }
   var branchFilter = (root.dataset.dashboardBranchFilter || '').trim();
   var secondsLeft = REFRESH_SEC;
   var fetching = false;
@@ -130,6 +134,19 @@
     document.dispatchEvent(new CustomEvent('dashboard:statsUpdated', { detail: stats }));
   }
 
+  function updateChartDom(chart) {
+    if (!chart || typeof chart !== 'object') {
+      return;
+    }
+
+    var jsonEl = document.getElementById('dashboard-chart-json');
+    if (jsonEl) {
+      jsonEl.textContent = JSON.stringify(chart);
+    }
+
+    document.dispatchEvent(new CustomEvent('dashboard:chartUpdated', { detail: chart }));
+  }
+
   function fetchStats() {
     if (fetching) {
       return;
@@ -155,6 +172,28 @@
       })
       .then(function (data) {
         updateDom(data);
+        return fetch(chartUrl, {
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          credentials: 'same-origin',
+        });
+      })
+      .then(function (res) {
+        if (!res || !res.ok) {
+          return null;
+        }
+        var ct = res.headers.get('content-type') || '';
+        if (ct.indexOf('application/json') === -1) {
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (chart) {
+        if (chart) {
+          updateChartDom(chart);
+        }
       })
       .catch(function () {
         /* keep last values */

@@ -106,6 +106,18 @@ export default function JobStatusChart() {
     if (!parseInitialChart()?.branches?.length) {
       void loadChart();
     }
+
+    const onChartUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<StatusChartPayload>).detail;
+      if (detail && Array.isArray(detail.branches)) {
+        setBranches(detail.branches);
+      }
+    };
+    document.addEventListener('dashboard:chartUpdated', onChartUpdated);
+
+    return () => {
+      document.removeEventListener('dashboard:chartUpdated', onChartUpdated);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, []);
 
