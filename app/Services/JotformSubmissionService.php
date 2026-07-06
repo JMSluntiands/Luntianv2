@@ -451,7 +451,8 @@ class JotformSubmissionService
 
         $fieldKey = preg_replace('/\[\d*\]$/', '', $fieldKey) ?? $fieldKey;
 
-        return (bool) preg_match('/(^|_)'.preg_quote($jotformKey, '/').'$/i', $fieldKey);
+        // JotForm often sends q116_lbsRef116 / q113_clientRef113 (unique name + question id suffix).
+        return (bool) preg_match('/(^|_)'.preg_quote($jotformKey, '/').'(\d*)$/i', $fieldKey);
     }
 
     private function resolveJobsClientCode(string $fromAccount, string $fromJobRequest): string

@@ -144,6 +144,8 @@ class JotformWebhookController extends Controller
      */
     private function logJotform(string $level, string $message, array $context = []): void
     {
-        Log::log($level, '[JotForm] '.$message, $context);
+        $full = '[JotForm] '.$message;
+        Log::channel('jotform')->log($level, $full, $context);
+        Log::log($level, $full, $context);
     }
 }

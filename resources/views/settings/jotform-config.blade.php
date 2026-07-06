@@ -40,6 +40,7 @@
                 <li>Turn integration <strong>ON</strong> when ready.</li>
             </ol>
             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Jobs land in <strong>Forms Submitted Jobs</strong> on the LBS list (same as the public add form) unless you choose direct main list below.</p>
+            <p class="mt-2 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"><strong>Important:</strong> Paste the Webhook URL in JotForm → <strong>Settings → Integrations → Webhooks</strong>. The <em>Publish / Share link</em> (<code class="text-xs">form.jotform.com/…</code>) is not the webhook. After each submit, check <code class="text-xs">storage/logs/jotform.log</code> on the server.</p>
         </div>
 
         @if(!$isActive)
