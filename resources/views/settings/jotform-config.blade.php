@@ -114,6 +114,22 @@
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Field mapping</h2>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Map only the fields on your JotForm. Leave a row blank if that field is not on the form — LBS will leave the matching column empty.</p>
+                    <p class="mt-2 rounded-lg border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs text-sky-900 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-100">
+                        <strong>Form 252677783982477 — use these unique names:</strong>
+                        LBS Ref = <code class="text-xs">lbsRef116</code> (not lbsRef118),
+                        Client Ref = <code class="text-xs">clientRef113</code>,
+                        Account Client = <code class="text-xs">accountClient</code>,
+                        NCC = <code class="text-xs">nccCompliance</code>,
+                        Address = <code class="text-xs">jobAddress</code>,
+                        Job Type = <code class="text-xs">jobType</code>,
+                        Priority = <code class="text-xs">priority</code>,
+                        Staff = <code class="text-xs">staffInitials</code>,
+                        Status = <code class="text-xs">jobStatus</code>,
+                        Notes = <code class="text-xs">notes</code>,
+                        Plans = <code class="text-xs">uploadPlans</code>,
+                        Docs = <code class="text-xs">uploadDocuments</code>.
+                        Short names like <code class="text-xs">lbsRef</code> also work.
+                    </p>
                 </div>
                 <div class="grid gap-5 p-5 sm:grid-cols-2">
                     <div>
