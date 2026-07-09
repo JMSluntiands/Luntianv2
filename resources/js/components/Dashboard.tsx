@@ -82,7 +82,7 @@ function parseInitialHolidaysFromDom(year: number): { ph: HolidayItem[]; au: Hol
 
 const BRANCH_ORDER = [
   'LBS',
-  'GENERAL ASSEMBLY',
+  'GENERIC ASSESSMENT',
   'LUNTIAN',
   'BPH',
   'BLUINQ',
@@ -148,7 +148,7 @@ type StatCardData = CardTemplate & { value: number; items: { label: string; valu
 
 const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   LBS: 'lbs',
-  'GENERAL ASSEMBLY': 'general-assembly',
+  'GENERIC ASSESSMENT': 'general-assembly',
   LUNTIAN: 'luntian',
   BPH: 'bph',
   BLUINQ: 'bluinq',

@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Archive' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Archive' : 'General Assembly Archive'))
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Archive' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Archive' : 'Generic Assessment Archive'))
 
 @section('body_class', 'page-ga-trash')
 

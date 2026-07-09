@@ -267,7 +267,7 @@ class JobCountsScope
         $mapped = RolePermission::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
         $label = strtoupper(preg_replace('/\s+/u', ' ', trim((string) $mapped)));
 
-        return $label !== '' && $label !== 'GENERAL ASSEMBLY';
+        return $label !== '' && $label !== RolePermission::GENERIC_ASSESSMENT_STAT_LABEL;
     }
 
     /** Main LBS pipeline: shared `jobs` table rows that are not EL or Luntian verticals. */

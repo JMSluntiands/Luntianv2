@@ -130,7 +130,7 @@ class JotformWebhookController extends Controller
             'submission_id' => $submissionId,
             'job_id' => $result['job_id'],
             'reference' => $result['reference'],
-            'queued_as_forms' => (bool) $config->queue_in_forms_submitted,
+            'queued_as_forms' => false,
         ]);
 
         return response()->json([

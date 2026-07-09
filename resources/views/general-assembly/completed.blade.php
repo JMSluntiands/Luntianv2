@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Completed' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Completed' : 'General Assembly Completed'))
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Completed' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Completed' : 'Generic Assessment Completed'))
 
 @section('body_class', 'page-ga-completed')
 

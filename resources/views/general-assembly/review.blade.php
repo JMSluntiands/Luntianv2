@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian For Review' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living For Review' : 'General Assembly For Review'))
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian For Review' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living For Review' : 'Generic Assessment For Review'))
 
 @section('body_class', 'page-ga-review')
 
@@ -73,7 +73,7 @@
                                 $logDate1 = $log ? $log->format('F j, Y') : '—';
                                 $logDate2 = $log ? $log->format('g:i A') : '';
 
-                                // Same due-date logic as main General Assembly List
+                                // Same due-date logic as main Generic Assessment List
                                 $priorityText = $job->priority ?? '';
                                 $priorityLower = strtolower($priorityText);
 

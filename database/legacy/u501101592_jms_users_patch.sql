@@ -3,6 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `unique_code` varchar(50) DEFAULT NULL,
   `username` varchar(255) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `fullname` varchar(255) DEFAULT NULL,
@@ -18,7 +19,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `users_email_unique` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `username` varchar(255) DEFAULT NULL AFTER `id`;
+ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `unique_code` varchar(50) DEFAULT NULL AFTER `id`;
+ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `username` varchar(255) DEFAULT NULL AFTER `unique_code`;
 ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `email` varchar(255) DEFAULT NULL AFTER `username`;
 ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `fullname` varchar(255) DEFAULT NULL AFTER `email`;
 ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `role` varchar(255) NOT NULL DEFAULT 'user' AFTER `fullname`;

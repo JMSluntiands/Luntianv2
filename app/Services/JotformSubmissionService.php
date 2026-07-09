@@ -103,7 +103,6 @@ class JotformSubmissionService
             $uploadFolderName
         );
 
-        $updatedBy = $config->queue_in_forms_submitted ? 'FORMS' : null;
         $jobRequestId = (string) ($jobRequest->job_request_id ?? $jobRequest->id ?? '');
         if ($jobRequestId === '') {
             $jobRequestId = 'EA_LBS_1SDB';
@@ -126,7 +125,7 @@ class JotformSubmissionService
             'notes' => $notes !== '' ? $notes : null,
             'upload_files' => json_encode($planNames),
             'upload_project_files' => json_encode($docNames),
-            'updated_by' => $updatedBy,
+            'updated_by' => null,
             'job_status' => $jobStatus !== '' ? $jobStatus : 'Allocated',
             'dwelling' => '',
             'client_account_id' => $client->client_account_id ?? null,
@@ -139,9 +138,7 @@ class JotformSubmissionService
                 'job_id' => (int) $jobId,
                 'activity_date' => $now->format('Y-m-d H:i:s'),
                 'activity_type' => 'JotForm submission',
-                'activity_description' => $updatedBy === 'FORMS'
-                    ? 'Job created from JotForm into Forms Submitted Jobs.'
-                    : 'Job created from JotForm into main LBS list.',
+                'activity_description' => 'Job created from JotForm into main LBS list.',
                 'updated_by' => 'JotForm',
             ]);
         } catch (\Throwable $e) {

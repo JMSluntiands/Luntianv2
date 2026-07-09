@@ -487,7 +487,14 @@ class DashboardJobStatsService
 
     private static function isChartExcludedStatus(string $name): bool
     {
-        return in_array(mb_strtolower(trim($name)), ['archived', 'cancelled'], true);
+        return in_array(mb_strtolower(trim($name)), ['archived', 'archive', 'cancelled', 'deleted'], true);
+    }
+
+    private static function applyExcludeDashboardTerminalStatuses($q, string $column): void
+    {
+        $q->whereRaw(
+            "LOWER(TRIM({$column})) NOT IN ('archived', 'archive', 'cancelled', 'deleted')"
+        );
     }
 
     /** Same branch total as the Total Jobs dashboard card. */
@@ -525,7 +532,7 @@ class DashboardJobStatsService
 
         return match ($branchLabel) {
             'LBS' => self::countJobsTableLiveStatus($statusName, 'lbs'),
-            'GENERAL ASSEMBLY' => self::countGeneralAssemblyLiveStatus($statusName),
+            'GENERIC ASSESSMENT' => self::countGeneralAssemblyLiveStatus($statusName),
             'LUNTIAN' => self::countJobsTableLiveStatus($statusName, 'luntian'),
             'EFFICIENT LIVING' => self::countJobsTableLiveStatus($statusName, 'efficient_living'),
             'BPH' => self::countJobBphLiveStatus($statusName, 'bph'),
@@ -631,7 +638,7 @@ class DashboardJobStatsService
 
         return match ($branchLabel) {
             'LBS' => self::countJobsTable($bucket, 'lbs', $date, $statusName),
-            'GENERAL ASSEMBLY' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
+            'GENERIC ASSESSMENT' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
             'LUNTIAN' => self::countJobsTable($bucket, 'luntian', $date, $statusName),
             'EFFICIENT LIVING' => self::countJobsTable($bucket, 'efficient_living', $date, $statusName),
             'BPH' => self::countJobBph($bucket, 'bph', $date, $statusName),
@@ -664,7 +671,7 @@ class DashboardJobStatsService
 
         self::applyJobsTableDayFilter($q, $bucket, $start, $end, $dateStr);
 
-        $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
+        self::applyExcludeDashboardTerminalStatuses($q, 'job_status');
 
         JobCountsScope::applyJobsTableAssignment($q);
 
@@ -707,7 +714,7 @@ class DashboardJobStatsService
 
         self::applyJobsTableDayFilter($q, $bucket, $start, $end, $dateStr);
 
-        $q->whereRaw("LOWER(TRIM(job_status)) != ?", ['archived']);
+        self::applyExcludeDashboardTerminalStatuses($q, 'job_status');
 
         JobCountsScope::applyJobsTableAssignment($q);
 
@@ -765,7 +772,7 @@ class DashboardJobStatsService
 
         self::applyJobBphDayFilter($q, $bucket, $start, $end, $dateStr);
 
-        $q->whereRaw("LOWER(TRIM(status)) != ?", ['archived']);
+        self::applyExcludeDashboardTerminalStatuses($q, 'status');
 
         JobCountsScope::applyJobBphAssignment($q);
 

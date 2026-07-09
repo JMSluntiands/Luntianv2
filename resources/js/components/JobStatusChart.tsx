@@ -60,7 +60,7 @@ function parseInitialChart(): StatusChartPayload | null {
 
 function shortBranchLabel(label: string): string {
   const map: Record<string, string> = {
-    'GENERAL ASSEMBLY': 'GA',
+    'GENERIC ASSESSMENT': 'GA',
     'EFFICIENT LIVING': 'EL',
     'FYRS ENERGY WISE': 'FYRS',
     'LC HOME BUILDER': 'LC HB',
@@ -120,11 +120,6 @@ export default function JobStatusChart() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, []);
-
-  const maxTotal = useMemo(
-    () => branches.reduce((max, b) => Math.max(max, Number(b.total) || 0), 0),
-    [branches]
-  );
 
   const legendStatuses = useMemo(() => {
     const seen = new Map<string, StatusChartRow>();
@@ -189,22 +184,23 @@ export default function JobStatusChart() {
                       const labelColor = resolveHexColor(status.fontColor, '#1e293b');
                       const hoverKey = `${branch.label}::${status.label}`;
                       const isHover = hovered === hoverKey;
-                      const widthPct =
-                        maxTotal > 0 && count > 0 ? (count / maxTotal) * 100 : 0;
-                      const showLabel = widthPct >= 6;
+                      const segmentPct =
+                        total > 0 && count > 0 ? (count / total) * 100 : 0;
                       return (
                         <div
                           key={status.label}
-                          className="relative h-full shrink-0"
+                          className="relative flex h-full min-w-0 items-center justify-center"
                           style={{
-                            width: `${widthPct}%`,
-                            minWidth: count > 0 ? '2px' : 0,
+                            flexGrow: count,
+                            flexShrink: 1,
+                            flexBasis: 0,
+                            minWidth: count > 0 ? '1.125rem' : 0,
                           }}
                           onMouseEnter={() => setHovered(hoverKey)}
                           onMouseLeave={() => setHovered(null)}
                         >
                           <div
-                            className="h-full w-full transition-opacity"
+                            className="absolute inset-0 transition-opacity"
                             style={{
                               backgroundColor: barColor,
                               opacity: isHover ? 0.92 : 1,
@@ -212,10 +208,13 @@ export default function JobStatusChart() {
                             role="img"
                             aria-label={`${branch.label} ${status.label}: ${count}`}
                           />
-                          {count > 0 && showLabel ? (
+                          {count > 0 ? (
                             <span
-                              className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[9px] font-bold tabular-nums sm:text-[10px]"
-                              style={{ color: labelColor }}
+                              className="pointer-events-none relative z-10 whitespace-nowrap font-bold tabular-nums drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]"
+                              style={{
+                                color: labelColor,
+                                fontSize: segmentPct < 10 ? '8px' : segmentPct < 16 ? '9px' : '10px',
+                              }}
                             >
                               {count}
                             </span>

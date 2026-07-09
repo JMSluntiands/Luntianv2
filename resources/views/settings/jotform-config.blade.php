@@ -95,12 +95,7 @@
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Leave empty to accept any form. Set to restrict webhook to one form only.</p>
                     </div>
-                    <label class="inline-flex cursor-pointer items-center gap-2.5">
-                        <input type="checkbox" name="queue_in_forms_submitted" value="1" {{ old('queue_in_forms_submitted', $config?->queue_in_forms_submitted ?? true) ? 'checked' : '' }}
-                            class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-500 dark:bg-slate-700">
-                        <span class="text-sm text-slate-700 dark:text-slate-300">Queue in <strong>Forms Submitted Jobs</strong> first (recommended)</span>
-                    </label>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Uncheck to add submissions directly to the main LBS list without accept step.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Submissions are added directly to the main LBS job list.</p>
                     @if($config)
                         <label class="inline-flex cursor-pointer items-center gap-2.5">
                             <input type="checkbox" name="regenerate_secret" value="1" class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 dark:border-slate-500 dark:bg-slate-700">

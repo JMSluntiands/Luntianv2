@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\EmailConfig;
+use App\Models\RolePermission;
 use App\Services\JobCountsScope;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
@@ -95,9 +96,9 @@ class AppServiceProvider extends ServiceProvider
                             SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
                         ")
                         ->first();
-                    $view->with('ga_list_count', JobCountsScope::sidebarCountForBranchVertical('GENERAL ASSEMBLY', (int) ($gaCounts->allocated_count ?? 0)));
-                    $view->with('ga_review_count', JobCountsScope::sidebarCountForBranchVertical('GENERAL ASSEMBLY', (int) ($gaCounts->review_count ?? 0)));
-                    $view->with('ga_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('GENERAL ASSEMBLY', (int) ($gaCounts->mailbox_count ?? 0)));
+                    $view->with('ga_list_count', JobCountsScope::sidebarCountForBranchVertical(RolePermission::GENERIC_ASSESSMENT_STAT_LABEL, (int) ($gaCounts->allocated_count ?? 0)));
+                    $view->with('ga_review_count', JobCountsScope::sidebarCountForBranchVertical(RolePermission::GENERIC_ASSESSMENT_STAT_LABEL, (int) ($gaCounts->review_count ?? 0)));
+                    $view->with('ga_mailbox_count', JobCountsScope::sidebarCountForBranchVertical(RolePermission::GENERIC_ASSESSMENT_STAT_LABEL, (int) ($gaCounts->mailbox_count ?? 0)));
                 } else {
                     $view->with('ga_list_count', 0);
                     $view->with('ga_review_count', 0);

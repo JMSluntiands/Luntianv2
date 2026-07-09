@@ -27,7 +27,6 @@ class JotformConfigController extends Controller
         $rules = [
             'is_active' => ['nullable', 'boolean'],
             'jotform_form_id' => ['nullable', 'string', 'max:50'],
-            'queue_in_forms_submitted' => ['nullable', 'boolean'],
             'map_reference_no' => ['nullable', 'string', 'max:120'],
             'map_client_reference' => ['nullable', 'string', 'max:120'],
             'map_compliance' => ['nullable', 'string', 'max:120'],
@@ -63,7 +62,7 @@ class JotformConfigController extends Controller
         } else {
             $data['is_active'] = false;
         }
-        $data['queue_in_forms_submitted'] = $request->boolean('queue_in_forms_submitted', true);
+        $data['queue_in_forms_submitted'] = false;
 
         if (! $config) {
             $config = new JotformConfig;

@@ -1,7 +1,6 @@
 @php
     $chartPayload = $dashboardStatusChart ?? ['date' => now('Asia/Manila')->toDateString(), 'branches' => []];
     $chartBranches = collect($chartPayload['branches'] ?? [])->filter(fn ($b) => (int) ($b['total'] ?? 0) > 0)->values();
-    $chartMaxTotal = (int) $chartBranches->max(fn ($b) => (int) ($b['total'] ?? 0));
     $legend = [];
     foreach ($chartBranches as $branch) {
         foreach ($branch['statuses'] ?? [] as $s) {
@@ -10,7 +9,7 @@
     }
     $shortBranch = static function (string $label): string {
         return match (strtoupper(trim($label))) {
-            'GENERAL ASSEMBLY' => 'GA',
+            'GENERIC ASSESSMENT' => 'GA',
             'EFFICIENT LIVING' => 'EL',
             'FYRS ENERGY WISE' => 'FYRS',
             default => $label,
@@ -47,11 +46,18 @@
                         @foreach ($branch['statuses'] ?? [] as $status)
                             @php
                                 $count = (int) ($status['count'] ?? 0);
-                                $widthPct = $chartMaxTotal > 0 && $count > 0 ? ($count / $chartMaxTotal) * 100 : 0;
+                                $segmentPct = $total > 0 && $count > 0 ? ($count / $total) * 100 : 0;
+                                $fontSize = $segmentPct < 10 ? '8px' : ($segmentPct < 16 ? '9px' : '10px');
                                 $bg = ! empty($status['color']) ? trim((string) $status['color']) : '#3b82f6';
                                 if ($bg !== '' && $bg[0] !== '#') { $bg = '#'.$bg; }
+                                $fg = \App\Models\Status::resolveFontColor($status['fontColor'] ?? null);
                             @endphp
-                            <div class="h-full shrink-0" style="width: {{ $widthPct }}%; min-width: {{ $count > 0 ? '2px' : '0' }}; background-color: {{ $bg }}" title="{{ $status['label'] ?? '' }}: {{ $count }}"></div>
+                            <div class="relative flex h-full min-w-0 items-center justify-center" style="flex: {{ $count }} 1 0; min-width: {{ $count > 0 ? '1.125rem' : '0' }};" title="{{ $status['label'] ?? '' }}: {{ $count }}">
+                                <div class="absolute inset-0" style="background-color: {{ $bg }}"></div>
+                                @if ($count > 0)
+                                    <span class="pointer-events-none relative z-10 font-bold tabular-nums" style="color: {{ $fg }}; font-size: {{ $fontSize }}; text-shadow: 0 1px 1px rgba(0,0,0,0.6);">{{ $count }}</span>
+                                @endif
+                            </div>
                         @endforeach
                     </div>
                 </div>

@@ -16,7 +16,7 @@ return new class extends Migration
             if (! $exists) {
                 DB::table('clients')->insert([
                     'client_code' => 'GA01',
-                    'client_name' => 'General Assembly Account',
+                    'client_name' => 'Generic Assessment Account',
                     'client_email' => 'admin@generalassembly.com',
                 ]);
             }
