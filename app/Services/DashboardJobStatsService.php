@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\RolePermission;
 use App\Models\Status;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -20,6 +21,9 @@ use Throwable;
 class DashboardJobStatsService
 {
     private const TZ = 'Asia/Manila';
+
+    /** @var array{client?: string, status?: string, staff?: string} */
+    private static array $chartFilters = [];
 
     /** @return array{0:string,1:string,2:string} start, end, Y-m-d */
     private static function dayBoundsManila(?string $date = null): array
@@ -234,11 +238,19 @@ class DashboardJobStatsService
      * @return array{
      *   date: string,
      *   scope: string,
-     *   branches: list<array{label: string, total: int, statuses: list<array{label: string, count: int, color: string|null, fontColor: string}>}>
+     *   branches: list<array{label: string, total: int, statuses: list<array{label: string, count: int, color: string|null, fontColor: string}>}>,
+     *   filterOptions?: array{clients: list<array{value: string, label: string}>, statuses: list<array{value: string, label: string}>, staff: list<array{value: string, label: string}>},
+     *   filters?: array{client: string, status: string, staff: string}
      * }
      */
-    public static function fetchStatusChart(?string $date = null): array
+    public static function fetchStatusChart(?string $date = null, array $filters = []): array
     {
+        self::$chartFilters = [
+            'client' => trim((string) ($filters['client'] ?? '')),
+            'status' => trim((string) ($filters['status'] ?? '')),
+            'staff' => trim((string) ($filters['staff'] ?? '')),
+        ];
+
         try {
             [, , $dateStr] = self::dayBoundsManila($date);
 
@@ -257,9 +269,7 @@ class DashboardJobStatsService
 
             $metaByKey = self::chartStatusMetaByKey($statusMeta);
             $statusOrder = self::chartStatusNameOrder($statusMeta);
-
-            $only = self::branchStatLabelExclusive();
-            $branchLabels = $only ? [$only] : RolePermission::dashboardStatCardLabels();
+            $branchLabels = self::chartBranchLabels();
 
             $branches = [];
             foreach ($branchLabels as $branchLabel) {
@@ -271,19 +281,163 @@ class DashboardJobStatsService
 
             usort($branches, static fn (array $a, array $b): int => ($b['total'] <=> $a['total']) ?: strcasecmp((string) $a['label'], (string) $b['label']));
 
-            $allRow = self::buildAllBranchChartRow($branchLabels, $dateStr, $statusOrder, $metaByKey);
-            if ($allRow !== null) {
-                array_unshift($branches, $allRow);
+            if (self::chartClientFilter() === '' && count($branchLabels) > 1) {
+                $allRow = self::buildAllBranchChartRow($branchLabels, $dateStr, $statusOrder, $metaByKey);
+                if ($allRow !== null) {
+                    array_unshift($branches, $allRow);
+                }
             }
 
-            return ['date' => $dateStr, 'scope' => 'dashboard_total_by_branch', 'branches' => $branches];
+            return [
+                'date' => $dateStr,
+                'scope' => 'dashboard_total_by_branch',
+                'branches' => $branches,
+                'filterOptions' => self::chartFilterOptions($statusOrder),
+                'filters' => [
+                    'client' => self::chartClientFilter(),
+                    'status' => self::chartStatusFilter(),
+                    'staff' => self::chartStaffFilter(),
+                ],
+            ];
         } catch (Throwable) {
             return [
                 'date' => $date ?? Carbon::now(self::TZ)->toDateString(),
                 'scope' => 'dashboard_total_by_branch',
                 'branches' => [],
+                'filterOptions' => ['clients' => [], 'statuses' => [], 'staff' => []],
+                'filters' => ['client' => '', 'status' => '', 'staff' => ''],
             ];
+        } finally {
+            self::$chartFilters = [];
         }
+    }
+
+    private static function chartClientFilter(): string
+    {
+        return trim((string) (self::$chartFilters['client'] ?? ''));
+    }
+
+    private static function chartStatusFilter(): string
+    {
+        return trim((string) (self::$chartFilters['status'] ?? ''));
+    }
+
+    private static function chartStaffFilter(): string
+    {
+        return trim((string) (self::$chartFilters['staff'] ?? ''));
+    }
+
+    /** @return list<string> */
+    private static function chartBranchLabels(): array
+    {
+        $only = self::branchStatLabelExclusive();
+        $labels = $only ? [$only] : RolePermission::dashboardStatCardLabels();
+        $client = self::chartClientFilter();
+        if ($client === '') {
+            return $labels;
+        }
+
+        return array_values(array_filter(
+            $labels,
+            static fn (string $label): bool => strcasecmp($label, $client) === 0
+        ));
+    }
+
+    /**
+     * @return array{clients: list<array{value: string, label: string}>, statuses: list<array{value: string, label: string}>, staff: list<array{value: string, label: string}>}
+     */
+    private static function chartFilterOptions(array $statusOrder): array
+    {
+        $only = self::branchStatLabelExclusive();
+        $clientLabels = $only ? [$only] : RolePermission::dashboardStatCardLabels();
+
+        $clients = [];
+        foreach ($clientLabels as $label) {
+            $clients[] = ['value' => $label, 'label' => $label];
+        }
+
+        $statuses = [];
+        foreach ($statusOrder as $name) {
+            if (self::isChartExcludedStatus($name)) {
+                continue;
+            }
+            $statuses[] = ['value' => $name, 'label' => $name];
+        }
+
+        $staff = self::chartStaffFilterOptions();
+
+        return ['clients' => $clients, 'statuses' => $statuses, 'staff' => $staff];
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    private static function chartStaffFilterOptions(): array
+    {
+        $staffByCode = [];
+
+        foreach (self::chartBranchLabels() as $branchLabel) {
+            $module = self::chartAssignmentModuleForBranchLabel($branchLabel);
+            if ($module === null) {
+                continue;
+            }
+
+            foreach (User::assignmentUsersForSelect($module, 'staff') as $user) {
+                $code = strtoupper(trim((string) $user->unique_code));
+                if ($code === '' || isset($staffByCode[$code])) {
+                    continue;
+                }
+
+                $name = trim((string) ($user->fullname ?? $user->username ?? ''));
+                $staffByCode[$code] = [
+                    'value' => $code,
+                    'label' => $name !== '' ? "{$code} — {$name}" : $code,
+                ];
+            }
+        }
+
+        ksort($staffByCode);
+
+        return array_values($staffByCode);
+    }
+
+    private static function chartAssignmentModuleForBranchLabel(string $branchLabel): ?string
+    {
+        return match (strtoupper(trim($branchLabel))) {
+            'LBS' => 'lbs',
+            'GENERIC ASSESSMENT' => 'general_assembly',
+            'LUNTIAN' => 'luntian',
+            'EFFICIENT LIVING' => 'efficient_living',
+            'BPH' => 'bph',
+            'BLUINQ' => 'bluinq',
+            'A&M' => 'amt',
+            'FYRS ENERGY WISE' => 'fyrs',
+            'CSP' => 'csp',
+            'NH' => 'nh',
+            'LC HOME BUILDER' => 'lc_home_builder',
+            'LEADING ENERGY' => 'leading_energy',
+            default => null,
+        };
+    }
+
+    private static function applyChartStaffFilter($q, string $tableKind): void
+    {
+        $staff = strtoupper(trim(self::chartStaffFilter()));
+        if ($staff === '') {
+            return;
+        }
+
+        if (in_array($tableKind, ['jobs', 'job_general_assembly'], true)) {
+            $q->where(function ($w) use ($staff) {
+                $w->whereRaw("UPPER(TRIM(COALESCE(staff_id, ''))) = ?", [$staff])
+                    ->orWhereRaw("UPPER(TRIM(COALESCE(checker_id, ''))) = ?", [$staff]);
+            });
+
+            return;
+        }
+
+        $q->where(function ($w) use ($staff) {
+            $w->whereRaw("UPPER(TRIM(COALESCE(assigned, ''))) = ?", [$staff])
+                ->orWhereRaw("UPPER(TRIM(COALESCE(checked, ''))) = ?", [$staff]);
+        });
     }
 
     /** @param \Illuminate\Support\Collection<int, object> $statusMeta */
@@ -380,7 +534,13 @@ class DashboardJobStatsService
     ): array {
         $rows = [];
 
-        foreach ($statusOrder as $name) {
+        $statusNames = $statusOrder;
+        $statusFilter = self::chartStatusFilter();
+        if ($statusFilter !== '') {
+            $statusNames = [$statusFilter];
+        }
+
+        foreach ($statusNames as $name) {
             if (self::isChartExcludedStatus($name)) {
                 continue;
             }
@@ -447,7 +607,12 @@ class DashboardJobStatsService
         }
 
         $statusRows = [];
-        foreach ($statusOrder as $name) {
+        $statusNames = $statusOrder;
+        $statusFilter = self::chartStatusFilter();
+        if ($statusFilter !== '') {
+            $statusNames = [$statusFilter];
+        }
+        foreach ($statusNames as $name) {
             if (self::isChartExcludedStatus($name)) {
                 continue;
             }
@@ -500,6 +665,11 @@ class DashboardJobStatsService
     /** Same branch total as the Total Jobs dashboard card. */
     private static function countBranchDashboardTotal(string $branchLabel, ?string $date = null): int
     {
+        $statusFilter = self::chartStatusFilter();
+        if ($statusFilter !== '') {
+            return self::countBranchStatusDashboardTotal($branchLabel, $statusFilter, $date);
+        }
+
         return self::countJobsBranchBucket($branchLabel, 'completed', $date)
             + self::countJobsBranchBucket($branchLabel, 'processing', $date)
             + self::countJobsBranchBucket($branchLabel, 'pending', $date)
@@ -675,6 +845,8 @@ class DashboardJobStatsService
 
         JobCountsScope::applyJobsTableAssignment($q);
 
+        self::applyChartStaffFilter($q, 'jobs');
+
         switch ($bucket) {
             case 'total':
                 break;
@@ -717,6 +889,8 @@ class DashboardJobStatsService
         self::applyExcludeDashboardTerminalStatuses($q, 'job_status');
 
         JobCountsScope::applyJobsTableAssignment($q);
+
+        self::applyChartStaffFilter($q, 'job_general_assembly');
 
         switch ($bucket) {
             case 'total':
@@ -775,6 +949,8 @@ class DashboardJobStatsService
         self::applyExcludeDashboardTerminalStatuses($q, 'status');
 
         JobCountsScope::applyJobBphAssignment($q);
+
+        self::applyChartStaffFilter($q, 'job_bph');
 
         switch ($bucket) {
             case 'total':

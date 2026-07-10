@@ -20,6 +20,13 @@ class DashboardStatsController extends Controller
             return response()->json(['message' => 'Invalid date. Use YYYY-MM-DD.'], 422);
         }
 
-        return response()->json(DashboardJobStatsService::fetchStatusChart(is_string($date) && $date !== '' ? $date : null));
+        return response()->json(DashboardJobStatsService::fetchStatusChart(
+            is_string($date) && $date !== '' ? $date : null,
+            [
+                'client' => trim((string) $request->query('client', '')),
+                'status' => trim((string) $request->query('status', '')),
+                'staff' => trim((string) $request->query('staff', '')),
+            ]
+        ));
     }
 }

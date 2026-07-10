@@ -458,21 +458,143 @@ body.sidebar-open #sidebarNav {
 .dashboard-card-animate-delay-3 { animation-delay: 0.26s; }
 .dashboard-panel-animate-delay-0 { animation-delay: 0.15s; }
 .dashboard-panel-animate-delay-1 { animation-delay: 0.25s; }
+.dashboard-panel-animate-delay-2 { animation-delay: 0.35s; }
+
+/* Job Status Chart — filter swap + row/bar entrance */
+@keyframes dashboard-chart-body-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes dashboard-chart-row-in {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes dashboard-chart-bar-in {
+    from {
+        transform: scaleX(0);
+        opacity: 0.55;
+    }
+    to {
+        transform: scaleX(1);
+        opacity: 1;
+    }
+}
+@keyframes dashboard-chart-legend-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.dashboard-chart-body-enter {
+    animation: dashboard-chart-body-in 0.38s ease-out both;
+}
+@keyframes dashboard-chart-body-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+.dashboard-chart-body-exit {
+    animation: dashboard-chart-body-out 0.22s ease-in both;
+    pointer-events: none;
+}
+.dashboard-chart-updating {
+    opacity: 0.45;
+    filter: blur(0.4px);
+    transition: opacity 0.18s ease, filter 0.18s ease;
+    pointer-events: none;
+}
+@keyframes dashboard-chart-filter-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45);
+    }
+    100% {
+        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+    }
+}
+.dashboard-chart-filter-select--pulse {
+    animation: dashboard-chart-filter-pulse 0.45s ease-out;
+}
+.dashboard-chart-row-enter {
+    animation: dashboard-chart-row-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dashboard-chart-bar-segment {
+    transform-origin: left center;
+    animation: dashboard-chart-bar-in 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dashboard-chart-legend-enter {
+    animation: dashboard-chart-legend-in 0.4s ease-out both;
+}
+.dashboard-chart-filter-select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.dashboard-chart-filter-select:not(:disabled):hover {
+    transform: translateY(-1px);
+}
+.dashboard-chart-filter-select:focus {
+    transform: translateY(-1px);
+}
+
+.dashboard-chart-filters {
+    animation: dashboard-chart-body-in 0.38s ease-out both;
+}
+.dashboard-chart-filter-field__label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
 
 /* Without this, “reduce motion” can leave panels/cards at opacity:0 (animation never fills). */
 @media (prefers-reduced-motion: reduce) {
     .animate-dashboard-card,
-    .animate-dashboard-panel {
+    .animate-dashboard-panel,
+    .dashboard-chart-body-enter,
+    .dashboard-chart-body-exit,
+    .dashboard-chart-row-enter,
+    .dashboard-chart-bar-segment,
+    .dashboard-chart-legend-enter {
         animation: none !important;
         opacity: 1 !important;
         transform: none !important;
+    }
+    .dashboard-chart-filter-select {
+        transition: none !important;
+    }
+    .dashboard-chart-updating {
+        opacity: 1 !important;
+        filter: none !important;
     }
     .dashboard-card-animate-delay-0,
     .dashboard-card-animate-delay-1,
     .dashboard-card-animate-delay-2,
     .dashboard-card-animate-delay-3,
     .dashboard-panel-animate-delay-0,
-    .dashboard-panel-animate-delay-1 {
+    .dashboard-panel-animate-delay-1,
+    .dashboard-panel-animate-delay-2 {
         animation-delay: 0s !important;
         opacity: 1 !important;
     }
