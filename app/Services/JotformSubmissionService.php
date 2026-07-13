@@ -42,6 +42,11 @@ class JotformSubmissionService
         $jobRequest = $jobTypeText !== '' ? $this->resolveJobRequest($jobTypeText) : null;
 
         if (! $jobRequest) {
+            if ($jobTypeText !== '') {
+                Log::channel('jotform')->warning('[JotForm] Job type not matched — falling back to default', [
+                    'job_type_text' => $jobTypeText,
+                ]);
+            }
             $jobRequest = $this->resolveDefaultJobRequest($config);
         }
 
@@ -102,6 +107,8 @@ class JotformSubmissionService
             'uploadDocuments',
             $uploadFolderName
         );
+
+        $this->logJotformResolvedJobType($jobTypeText, $jobRequest);
 
         $jobRequestId = (string) ($jobRequest->job_request_id ?? $jobRequest->id ?? '');
         if ($jobRequestId === '') {
@@ -206,17 +213,34 @@ class JotformSubmissionService
         return $fields;
     }
 
+    private function logJotformResolvedJobType(string $jobTypeText, ?JobRequest $jobRequest): void
+    {
+        Log::channel('jotform')->info('[JotForm] Job type resolved', [
+            'from_form' => $jobTypeText,
+            'job_request_id' => $jobRequest->job_request_id ?? null,
+            'job_request_type' => $jobRequest->job_request_type ?? null,
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $submission
      */
     private function mappedValue(JotformConfig $config, array $submission, string $configKey, string $fallbackKey): string
     {
         $mapKey = trim((string) ($config->{$configKey} ?? ''));
-        if ($mapKey === '') {
+        if ($mapKey !== '') {
+            $fromMap = $this->valueFromSubmission($submission, $mapKey);
+            if ($fromMap !== '') {
+                return $fromMap;
+            }
+        }
+
+        $fallbackKey = trim($fallbackKey);
+        if ($fallbackKey === '' || strcasecmp($fallbackKey, $mapKey) === 0) {
             return '';
         }
 
-        return $this->valueFromSubmission($submission, $mapKey !== '' ? $mapKey : $fallbackKey);
+        return $this->valueFromSubmission($submission, $fallbackKey);
     }
 
     /**
@@ -232,14 +256,29 @@ class JotformSubmissionService
             if (! $this->fieldKeyMatches((string) $key, $jotformKey)) {
                 continue;
             }
-            if (is_array($value)) {
-                return trim(implode(', ', array_map('strval', $value)));
-            }
 
-            return trim((string) $value);
+            return $this->normalizeSubmissionScalar($value);
         }
 
         return '';
+    }
+
+    private function normalizeSubmissionScalar(mixed $value): string
+    {
+        if (is_array($value)) {
+            // JotForm dropdown/radio often sends ["Selected Label"] or nested answer arrays.
+            $parts = [];
+            foreach ($value as $item) {
+                $normalized = $this->normalizeSubmissionScalar($item);
+                if ($normalized !== '' && strcasecmp($normalized, 'other') !== 0) {
+                    $parts[] = $normalized;
+                }
+            }
+
+            return trim(implode(' ', $parts));
+        }
+
+        return trim((string) $value);
     }
 
     private function resolveDefaultJobRequest(JotformConfig $config): ?JobRequest
@@ -314,19 +353,69 @@ class JotformSubmissionService
 
     private function resolveJobRequest(string $text): ?JobRequest
     {
-        $text = trim($text);
+        $text = trim(preg_replace('/\s+/', ' ', $text) ?? $text);
         if ($text === '') {
             return null;
         }
 
-        return JobRequest::query()
-            ->where('client_code', 'LBS01')
+        $base = JobRequest::query()->where('client_code', 'LBS01');
+
+        // Prefer exact / case-insensitive matches on type or job_request_id (FK-safe).
+        $exact = (clone $base)
             ->where(function ($query) use ($text) {
                 $query->where('job_request_type', $text)
-                    ->orWhere('job_request_type', 'like', $text.'%')
-                    ->orWhere('job_request_type', 'like', '%'.$text.'%');
+                    ->orWhere('job_request_id', $text);
             })
-            ->orderByRaw('LENGTH(job_request_type) ASC')
+            ->first();
+        if ($exact) {
+            return $exact;
+        }
+
+        $ciExact = (clone $base)
+            ->where(function ($query) use ($text) {
+                $query->whereRaw('LOWER(TRIM(job_request_type)) = ?', [mb_strtolower($text)])
+                    ->orWhereRaw('LOWER(TRIM(job_request_id)) = ?', [mb_strtolower($text)]);
+            })
+            ->first();
+        if ($ciExact) {
+            return $ciExact;
+        }
+
+        // Prefix match: pick the closest-length type, not the shortest (old bug).
+        $prefixMatches = (clone $base)
+            ->where('job_request_type', 'like', $text.'%')
+            ->get();
+        $bestPrefix = $this->bestJobRequestMatch($prefixMatches, $text);
+        if ($bestPrefix) {
+            return $bestPrefix;
+        }
+
+        // Last resort: contains match with closest length.
+        $containsMatches = (clone $base)
+            ->where('job_request_type', 'like', '%'.$text.'%')
+            ->get();
+
+        return $this->bestJobRequestMatch($containsMatches, $text);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, JobRequest>  $matches
+     */
+    private function bestJobRequestMatch($matches, string $text): ?JobRequest
+    {
+        if ($matches->isEmpty()) {
+            return null;
+        }
+
+        $needleLen = mb_strlen($text);
+
+        return $matches
+            ->sortBy(function (JobRequest $row) use ($needleLen) {
+                $type = trim((string) ($row->job_request_type ?? ''));
+
+                return abs(mb_strlen($type) - $needleLen);
+            })
+            ->values()
             ->first();
     }
 
