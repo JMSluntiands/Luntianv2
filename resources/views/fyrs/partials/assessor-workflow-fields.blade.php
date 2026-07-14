@@ -23,7 +23,16 @@
         'base_file' => 'Base file',
         'optimization' => 'Optimization',
         'basix' => 'BASIX',
+        'duplicate' => 'Duplicate',
+        'amendment' => 'Amendment',
     ];
+    $staffUsers = $assignmentStaffUsers ?? collect();
+    $selectedStaff = strtoupper(trim((string) old('assigned', $g('assigned') ?? $g('staff') ?? '')));
+    $builderOptions = \App\Http\Controllers\FyrsJobController::BUILDERS;
+    $savedBuilder = trim((string) old('builder', $g('builder') ?? $g('estate') ?? ''));
+    $builderIsOther = $savedBuilder !== '' && ! in_array($savedBuilder, $builderOptions, true);
+    $builderSelectValue = old('builder', $builderIsOther ? '__other__' : $savedBuilder);
+    $builderOtherValue = old('builder_other', $builderIsOther ? $savedBuilder : '');
     $inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100';
     $labelClass = 'mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300';
 @endphp
@@ -42,33 +51,31 @@
     </div>
   </div>
 
-  <div class="grid gap-5 sm:grid-cols-2">
+  <div class="grid gap-5 sm:grid-cols-3">
     <div>
-      <label for="{{ $p }}estate" class="{{ $labelClass }}">Estate</label>
-      <input type="text" id="{{ $p }}estate" name="estate" value="{{ old('estate', $g('estate')) }}" placeholder="Enter estate"
-        class="{{ $inputClass }}">
-    </div>
-    <div>
-      <label for="{{ $p }}house_type" class="{{ $labelClass }}">House type</label>
-      <input type="text" id="{{ $p }}house_type" name="house_type" value="{{ old('house_type', $g('house_type')) }}" placeholder="e.g. Como 33 (Guest suite + Personal ensuite)"
-        class="{{ $inputClass }}">
-    </div>
-  </div>
-
-  <div class="grid gap-5 sm:grid-cols-2">
-    <div>
-      <label for="{{ $p }}facade" class="{{ $labelClass }}">Façade</label>
-      <input type="text" id="{{ $p }}facade" name="facade" value="{{ old('facade', $g('facade')) }}" placeholder="e.g. Belfield, West Hampton"
-        class="{{ $inputClass }}">
-    </div>
-    <div>
-      <label for="{{ $p }}garage" class="{{ $labelClass }}">Garage</label>
-      <select id="{{ $p }}garage" name="garage" class="select2-single {{ $inputClass }}">
-        <option value="">Select garage side</option>
-        @foreach (['LHS' => 'LHS', 'RHS' => 'RHS'] as $val => $label)
-          <option value="{{ $val }}" {{ (string) old('garage', $g('garage')) === $val ? 'selected' : '' }}>{{ $label }}</option>
+      <label for="{{ $p }}builder" class="{{ $labelClass }}">Builder</label>
+      <select id="{{ $p }}builder" name="builder" class="select2-single fyrs-builder-select {{ $inputClass }}" data-fyrs-builder-select>
+        <option value="">Select builder</option>
+        @foreach ($builderOptions as $builderName)
+          <option value="{{ $builderName }}" {{ (string) $builderSelectValue === $builderName ? 'selected' : '' }}>{{ $builderName }}</option>
         @endforeach
+        <option value="__other__" {{ (string) $builderSelectValue === '__other__' ? 'selected' : '' }}>Other (add another builder)</option>
       </select>
+      <div class="fyrs-builder-other mt-2 {{ (string) $builderSelectValue === '__other__' ? '' : 'hidden' }}" data-fyrs-builder-other>
+        <label for="{{ $p }}builder_other" class="{{ $labelClass }}">Other builder name</label>
+        <input type="text" id="{{ $p }}builder_other" name="builder_other" value="{{ $builderOtherValue }}" placeholder="Enter builder name"
+          class="{{ $inputClass }}" autocomplete="off" maxlength="255">
+      </div>
+    </div>
+    <div>
+      <label for="{{ $p }}storeys" class="{{ $labelClass }}">Storeys</label>
+      <input type="text" id="{{ $p }}storeys" name="storeys" value="{{ old('storeys', $g('storeys')) }}" placeholder="e.g. 1 or 2"
+        class="{{ $inputClass }}">
+    </div>
+    <div>
+      <label for="{{ $p }}climate_zone" class="{{ $labelClass }}">Climate zone</label>
+      <input type="text" id="{{ $p }}climate_zone" name="climate_zone" value="{{ old('climate_zone', $g('climate_zone')) }}" placeholder="e.g. 28"
+        class="{{ $inputClass }}">
     </div>
   </div>
 
@@ -101,26 +108,28 @@
 
   <div class="grid gap-5 sm:grid-cols-2">
     <div>
+      <label for="{{ $p }}assigned" class="{{ $labelClass }}">Staff</label>
+      <select id="{{ $p }}assigned" name="assigned" class="select2-single {{ $inputClass }}">
+        <option value="">Select staff</option>
+        @foreach ($staffUsers as $staffUser)
+          @php $code = strtoupper(trim((string) ($staffUser->unique_code ?? ''))); @endphp
+          @if ($code !== '')
+            <option value="{{ $code }}" {{ $selectedStaff === $code ? 'selected' : '' }}>{{ $staffUser->assignmentOptionLabel() }}</option>
+          @endif
+        @endforeach
+      </select>
+    </div>
+    <div>
       <label for="{{ $p }}stage" class="{{ $labelClass }}">Stage</label>
       <input type="text" id="{{ $p }}stage" name="stage" value="{{ old('stage', $g('stage')) }}" placeholder="e.g. for BASIX"
         class="{{ $inputClass }}">
     </div>
-    <div>
-      <label for="{{ $p }}climate_zone" class="{{ $labelClass }}">Climate zone</label>
-      <input type="text" id="{{ $p }}climate_zone" name="climate_zone" value="{{ old('climate_zone', $g('climate_zone')) }}" placeholder="e.g. 28"
-        class="{{ $inputClass }}">
-    </div>
   </div>
 
-  <div class="grid gap-5 sm:grid-cols-3">
+  <div class="grid gap-5 sm:grid-cols-2">
     <div>
       <label for="{{ $p }}basix_number" class="{{ $labelClass }}">BASIX #</label>
       <input type="text" id="{{ $p }}basix_number" name="basix_number" value="{{ old('basix_number', $g('basix_number')) }}" placeholder="BASIX number"
-        class="{{ $inputClass }}">
-    </div>
-    <div>
-      <label for="{{ $p }}storeys" class="{{ $labelClass }}">Storeys</label>
-      <input type="text" id="{{ $p }}storeys" name="storeys" value="{{ old('storeys', $g('storeys')) }}" placeholder="e.g. 1 or 2"
         class="{{ $inputClass }}">
     </div>
     <div>
@@ -143,32 +152,5 @@
         value="{{ old('est_completion_basix', $g('est_completion_basix') ? \Illuminate\Support\Carbon::parse($g('est_completion_basix'))->format('Y-m-d') : '') }}"
         class="{{ $inputClass }}">
     </div>
-  </div>
-
-  <div class="space-y-3">
-    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Feedback</h3>
-    <div class="grid gap-5 sm:grid-cols-3">
-      <div>
-        <label for="{{ $p }}feedback_bers" class="{{ $labelClass }}">BERS</label>
-        <input type="text" id="{{ $p }}feedback_bers" name="feedback_bers" value="{{ old('feedback_bers', $g('feedback_bers')) }}" placeholder="BERS feedback"
-          class="{{ $inputClass }}">
-      </div>
-      <div>
-        <label for="{{ $p }}feedback_basix" class="{{ $labelClass }}">BASIX</label>
-        <input type="text" id="{{ $p }}feedback_basix" name="feedback_basix" value="{{ old('feedback_basix', $g('feedback_basix')) }}" placeholder="BASIX feedback"
-          class="{{ $inputClass }}">
-      </div>
-      <div>
-        <label for="{{ $p }}feedback_commitments_form" class="{{ $labelClass }}">Commitments form</label>
-        <input type="text" id="{{ $p }}feedback_commitments_form" name="feedback_commitments_form" value="{{ old('feedback_commitments_form', $g('feedback_commitments_form')) }}" placeholder="Commitments form"
-          class="{{ $inputClass }}">
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <label for="{{ $p }}basix_note" class="{{ $labelClass }}">Basix note</label>
-    <textarea id="{{ $p }}basix_note" name="basix_note" rows="3" placeholder="Additional BASIX notes"
-      class="{{ $inputClass }}">{{ old('basix_note', $g('basix_note')) }}</textarea>
   </div>
 </div>

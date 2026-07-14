@@ -77,6 +77,7 @@ function parseInitialChart(): StatusChartPayload | null {
 
 function shortBranchLabel(label: string): string {
   const map: Record<string, string> = {
+    'GENERAL ASSEMBLY': 'GA',
     'GENERIC ASSESSMENT': 'GA',
     'EFFICIENT LIVING': 'EL',
     'FYRS ENERGY WISE': 'FYRS',

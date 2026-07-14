@@ -779,7 +779,7 @@ class GeneralAssemblyJobController extends Controller
                 'activity_date'        => $now->format('Y-m-d H:i:s'),
                 'activity_type'        => 'Job updated',
                 'activity_description' => $description,
-                'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+                'updated_by'           => session('user_name') ?? 'General Assembly Account',
             ]);
 
             $assignmentSlack = false;
@@ -799,7 +799,7 @@ class GeneralAssemblyJobController extends Controller
                 $product = match ($jvProduct) {
                     'efficient_living' => 'Efficient Living',
                     'luntian' => 'Luntian',
-                    default => 'Generic Assessment',
+                    default => 'General Assembly',
                 };
                 $ref = trim((string) ($job->reference ?? $job->job_reference_no ?? ''));
                 $jobStatus = (string) (array_key_exists('job_status', $update) ? $update['job_status'] : ($job->job_status ?? ''));
@@ -858,7 +858,7 @@ class GeneralAssemblyJobController extends Controller
                 'activity_date'        => $now->format('Y-m-d H:i:s'),
                 'activity_type'        => 'Job archived',
                 'activity_description' => 'Job status changed to Archived.',
-                'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+                'updated_by'           => session('user_name') ?? 'General Assembly Account',
             ]);
 
             return response()->json([
@@ -898,7 +898,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
             'activity_type'        => 'Forms job accepted',
             'activity_description' => 'Job accepted from Forms Submitted Jobs into main LBS list.',
-            'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
         ]);
 
         return redirect()->route('general_assembly.list')->with('success', 'Forms job accepted and moved to main list.');
@@ -955,7 +955,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
             'activity_type'        => 'Files uploaded',
             'activity_description' => $description,
-            'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
         ]);
 
         return response()->json([
@@ -1004,7 +1004,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => $now->format('Y-m-d H:i:s'),
             'activity_type'        => 'File deleted',
             'activity_description' => $sectionLabel . ': ' . $fileName,
-            'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
         ]);
 
         return response()->json([
@@ -1084,7 +1084,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => $now->format('Y-m-d H:i:s'),
             'activity_type'        => 'Checker upload',
             'activity_description' => implode("\n", $descriptionLines),
-            'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
         ]);
 
         return response()->json([
@@ -1699,7 +1699,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => $now->format('Y-m-d H:i:s'),
             'activity_type'        => 'Job restored',
             'activity_description' => 'Job restored from archive to Allocated. Log date updated to restore time.',
-            'updated_by'           => session('user_name') ?? 'Generic Assessment Account',
+            'updated_by'           => session('user_name') ?? 'General Assembly Account',
         ]);
         return redirect()->route('general_assembly.trash')->with('success', 'Job restored to list.');
     }
@@ -2198,7 +2198,7 @@ class GeneralAssemblyJobController extends Controller
             ]);
 
             $clientCode = (string) ($jobRequest->client_code ?? '');
-            $successMessage = 'Generic Assessment job created successfully.';
+            $successMessage = 'General Assembly job created successfully.';
 
             return response()->json([
                 'status'  => 'success',
@@ -2243,7 +2243,7 @@ class GeneralAssemblyJobController extends Controller
         $checked = $job->checker_id ?? '';
 
         $jobProduct = $this->resolveLbsJobProduct($job);
-        $slackHeadline = '🆕 New Generic Assessment Job Submitted';
+        $slackHeadline = '🆕 New General Assembly Job Submitted';
         $refFieldTitle = 'GA Ref #';
         $slackFooter = match ($jobProduct) {
             'efficient_living' => 'Luntian Efficient Living Job Management',

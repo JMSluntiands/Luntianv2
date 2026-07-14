@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Generic Assessment List')
+@section('title', 'General Assembly List')
 
 @section('body_class', 'page-ga-list')
 
@@ -13,8 +13,8 @@
     @endphp
     <div class="flex max-w-full flex-col pb-0">
         <div class="mb-5">
-            <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">Generic Assessment List</h1>
-            <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View and manage all Generic Assessment jobs.</p>
+            <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">General Assembly List</h1>
+            <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View and manage all General Assembly jobs.</p>
         </div>
 
         <div class="mb-6 rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
@@ -23,7 +23,7 @@
                     <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                     <div class="relative flex items-center">
                         <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                        <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search Generic Assessment jobs">
+                        <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search General Assembly jobs">
                     </div>
                 </div>
                 <div>
@@ -59,7 +59,7 @@
             <div class="mb-3 flex flex-col gap-3 border-b border-slate-200 pb-3 dark:border-slate-700 sm:flex-row sm:items-end sm:justify-between">
                 <div class="min-w-0">
                     <h2 class="m-0 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Job tables</h2>
-                    <p class="m-0 mt-0.5 max-w-xl text-sm leading-snug text-slate-600 dark:text-slate-400">Active Generic Assessment rows and form submissions. Use refresh to reload data without leaving this page.</p>
+                    <p class="m-0 mt-0.5 max-w-xl text-sm leading-snug text-slate-600 dark:text-slate-400">Active General Assembly rows and form submissions. Use refresh to reload data without leaving this page.</p>
                 </div>
                 <button type="button" id="lbsListRefreshBtn" class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:self-auto" title="Refresh tables" aria-label="Refresh job tables">
                     <svg class="ga-list-refresh-icon h-4 w-4 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>

@@ -29,12 +29,22 @@ class FyrsJobController extends Controller
 
     private const ASSESSOR_TABLE = 'fyrs_assessor_jobs';
 
-    private const ASSESSOR_TASK_KEYS = ['base_file', 'optimization', 'basix'];
+    private const ASSESSOR_TASK_KEYS = ['base_file', 'optimization', 'basix', 'duplicate', 'amendment'];
 
     private const ASSESSOR_TASK_LABELS = [
         'base_file' => 'Base file',
         'optimization' => 'Optimization',
         'basix' => 'BASIX',
+        'duplicate' => 'Duplicate',
+        'amendment' => 'Amendment',
+    ];
+
+    /** @var list<string> */
+    public const BUILDERS = [
+        'McDonald Jones (Complete Homes)',
+        'Practical Homes',
+        'Eden Brae Homes',
+        'Masterton Homes',
     ];
 
     private function assessorJobForFyrsId(int $jobFyrsId): ?object
@@ -62,10 +72,9 @@ class FyrsJobController extends Controller
     private function assessorWorkflowValidationRules(): array
     {
         return [
-            'estate' => ['nullable', 'string', 'max:255'],
-            'house_type' => ['nullable', 'string', 'max:255'],
-            'facade' => ['nullable', 'string', 'max:255'],
-            'garage' => ['nullable', 'string', 'max:50'],
+            'builder' => ['nullable', 'string', 'max:255'],
+            'builder_other' => ['nullable', 'string', 'max:255'],
+            'assigned' => ['nullable', 'string', 'max:50'],
             'tasks' => ['nullable', 'array'],
             'tasks.*' => ['string', Rule::in(self::ASSESSOR_TASK_KEYS)],
             'stage' => ['nullable', 'string', 'max:100'],
@@ -75,10 +84,6 @@ class FyrsJobController extends Controller
             'due_date' => ['nullable', 'date'],
             'est_completion_certification' => ['nullable', 'date'],
             'est_completion_basix' => ['nullable', 'date'],
-            'feedback_bers' => ['nullable', 'string', 'max:500'],
-            'feedback_basix' => ['nullable', 'string', 'max:500'],
-            'feedback_commitments_form' => ['nullable', 'string', 'max:500'],
-            'basix_note' => ['nullable', 'string'],
         ];
     }
 
@@ -93,22 +98,20 @@ class FyrsJobController extends Controller
         $row = [];
 
         foreach ([
-            'estate',
-            'house_type',
-            'facade',
-            'garage',
             'stage',
             'climate_zone',
             'basix_number',
             'storeys',
-            'feedback_bers',
-            'feedback_basix',
-            'feedback_commitments_form',
-            'basix_note',
         ] as $column) {
             $value = $data[$column] ?? null;
             $row[$column] = $value === null || $value === '' ? null : $value;
         }
+
+        $builderChoice = trim((string) ($data['builder'] ?? ''));
+        if ($builderChoice === '__other__') {
+            $builderChoice = trim((string) ($data['builder_other'] ?? ''));
+        }
+        $row['builder'] = $builderChoice !== '' ? $builderChoice : null;
 
         $row['tasks'] = $tasks === [] ? null : json_encode($tasks);
 
@@ -137,8 +140,11 @@ class FyrsJobController extends Controller
      */
     public function addForm()
     {
+        $assignmentSelect = User::assignmentSelectLists('fyrs');
+
         return view('fyrs.add', [
             'sidebar_active' => 'fyrs.add',
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
         ]);
     }
 
@@ -161,7 +167,7 @@ class FyrsJobController extends Controller
                     '(j.status IS NULL OR LOWER(TRIM(j.status)) NOT IN ('.implode(',', array_fill(0, count($excludedStatuses), '?')).'))',
                     $excludedStatuses
                 )
-                ->select('a.*', 'j.id as job_id');
+                ->select('a.*', 'j.id as job_id', 'j.assigned as assigned');
 
             JobCountsScope::applyJobBphAssignment($q);
             JobCountsScope::applyJobBphBranchVerticalScope($q);
@@ -463,6 +469,14 @@ class FyrsJobController extends Controller
             'notes'      => ['nullable', 'string'],
         ], $this->assessorWorkflowValidationRules()));
 
+        if (($data['builder'] ?? '') === '__other__' && trim((string) ($data['builder_other'] ?? '')) === '') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Please enter the other builder name.',
+                'errors' => ['builder_other' => ['Please enter the other builder name.']],
+            ], 422);
+        }
+
         if (! Schema::hasTable(self::JOB_TABLE)) {
             return response()->json([
                 'status'  => 'error',
@@ -502,7 +516,9 @@ class FyrsJobController extends Controller
                     'notes'               => $data['notes'] ?? null,
                     'created_at'          => $now,
                     'updated_at'          => $now,
-                    'assigned'            => null,
+                    'assigned'            => isset($data['assigned']) && trim((string) $data['assigned']) !== ''
+                        ? strtoupper(trim((string) $data['assigned']))
+                        : null,
                     'checked'             => null,
                     'plans_files'         => json_encode([]),
                     'docs_files'          => json_encode([]),
@@ -568,7 +584,7 @@ class FyrsJobController extends Controller
 
         $reference = $job->reference ?? '';
         $jobNum = $assessor->job_number ?? $job->job_number ?? '';
-        $clientName = $assessor->estate ?? $job->client_name ?? '';
+        $clientName = $assessor->builder ?? $job->client_name ?? '';
         $status = $job->status ?? '';
         $ncc = $job->ncc ?? '';
         $jobType = $job->job_type ?? '';

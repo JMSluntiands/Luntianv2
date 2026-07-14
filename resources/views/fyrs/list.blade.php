@@ -36,32 +36,21 @@
             }
             return \Illuminate\Support\Str::limit($plain, 80);
         };
-        $fmtFeedback = function ($bers, $basix, $commitments) {
-            return [
-                'bers' => trim((string) ($bers ?? '')),
-                'basix' => trim((string) ($basix ?? '')),
-                'commitments' => trim((string) ($commitments ?? '')),
-            ];
-        };
         $columns = [
             ['key' => 'row_num', 'label' => '#', 'width' => '52px', 'cellClass' => 'text-center tabular-nums'],
             ['key' => 'job_date', 'label' => 'Date', 'width' => '96px'],
             ['key' => 'job_number', 'label' => 'Job Ref #', 'width' => '140px'],
-            ['key' => 'estate', 'label' => 'Estate', 'width' => '120px'],
-            ['key' => 'house_type', 'label' => 'House type', 'width' => '220px'],
-            ['key' => 'facade', 'label' => 'Façade', 'width' => '120px'],
-            ['key' => 'garage', 'label' => 'Garage', 'width' => '72px', 'cellClass' => 'text-center'],
-            ['key' => 'tasks', 'label' => 'Tasks', 'width' => '160px'],
-            ['key' => 'notes', 'label' => 'Notes', 'width' => '280px', 'cellClass' => 'whitespace-normal'],
-            ['key' => 'stage', 'label' => 'Stage', 'width' => '110px'],
-            ['key' => 'climate_zone', 'label' => 'Climate zone', 'width' => '96px', 'cellClass' => 'text-center'],
-            ['key' => 'basix_number', 'label' => 'BASIX #', 'width' => '100px'],
+            ['key' => 'builder', 'label' => 'Builder', 'width' => '180px'],
             ['key' => 'storeys', 'label' => 'Storeys', 'width' => '72px', 'cellClass' => 'text-center'],
+            ['key' => 'climate_zone', 'label' => 'Climate zone', 'width' => '96px', 'cellClass' => 'text-center'],
+            ['key' => 'tasks', 'label' => 'Tasks', 'width' => '180px'],
+            ['key' => 'notes', 'label' => 'Notes', 'width' => '280px', 'cellClass' => 'whitespace-normal'],
+            ['key' => 'assigned', 'label' => 'Staff', 'width' => '90px', 'cellClass' => 'text-center'],
+            ['key' => 'stage', 'label' => 'Stage', 'width' => '110px'],
+            ['key' => 'basix_number', 'label' => 'BASIX #', 'width' => '100px'],
             ['key' => 'due_date', 'label' => 'Due date', 'width' => '96px'],
             ['key' => 'est_completion_certification', 'label' => 'Estimated Completion Certification', 'width' => '180px', 'headerClass' => 'text-red-600 dark:text-red-400'],
             ['key' => 'est_completion_basix', 'label' => 'Estimated Completion BASIX', 'width' => '170px', 'headerClass' => 'text-red-600 dark:text-red-400'],
-            ['key' => 'feedback', 'label' => 'Feedback', 'width' => '180px', 'cellClass' => 'fyrs-feedback-cell align-top'],
-            ['key' => 'basix_note', 'label' => 'Basix Note', 'width' => '160px', 'cellClass' => 'whitespace-normal'],
         ];
         $colCount = count($columns) + 1;
     @endphp
@@ -76,14 +65,14 @@
                 <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                 <div class="relative flex min-w-[260px] items-center">
                     <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search job ref #, estate, stage..." autocomplete="off" aria-label="Search Fyrs Energy Wise jobs">
+                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search job ref #, builder, stage..." autocomplete="off" aria-label="Search Fyrs Energy Wise jobs">
                 </div>
             </div>
         </div>
 
         <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
-                <table class="lbs-table fyrs-list-table w-full min-w-[2280px] table-fixed border-collapse text-sm" id="lbsTable">
+                <table class="lbs-table fyrs-list-table w-full min-w-[1600px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
                         <col style="width: 90px">
                         @foreach ($columns as $col)
@@ -108,25 +97,17 @@
                                     'row_num' => $row->id ?? '—',
                                     'job_date' => $fmtDate($row->job_date ?? null),
                                     'job_number' => $fmtText($row->job_number ?? null),
-                                    'estate' => $fmtText($row->estate ?? null),
-                                    'house_type' => $fmtText($row->house_type ?? null),
-                                    'facade' => $fmtText($row->facade ?? null),
-                                    'garage' => $fmtText($row->garage ?? null),
+                                    'builder' => $fmtText($row->builder ?? $row->estate ?? null),
+                                    'storeys' => $fmtText($row->storeys ?? null),
+                                    'climate_zone' => $fmtText($row->climate_zone ?? null),
                                     'tasks' => $fmtTasks($row->tasks ?? null),
                                     'notes' => $fmtNotes($row->notes ?? null),
+                                    'assigned' => $fmtText($row->assigned ?? null),
                                     'stage' => $fmtText($row->stage ?? null),
-                                    'climate_zone' => $fmtText($row->climate_zone ?? null),
                                     'basix_number' => $fmtText($row->basix_number ?? null),
-                                    'storeys' => $fmtText($row->storeys ?? null),
                                     'due_date' => $fmtDate($row->due_date ?? null),
                                     'est_completion_certification' => $fmtDate($row->est_completion_certification ?? null),
                                     'est_completion_basix' => $fmtDate($row->est_completion_basix ?? null),
-                                    'feedback' => $fmtFeedback(
-                                        $row->feedback_bers ?? null,
-                                        $row->feedback_basix ?? null,
-                                        $row->feedback_commitments_form ?? null
-                                    ),
-                                    'basix_note' => $fmtText($row->basix_note ?? null),
                                 ];
                             @endphp
                             <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
@@ -143,35 +124,21 @@
                                 @foreach ($columns as $col)
                                     @php
                                         $val = $cellValues[$col['key']] ?? '—';
-                                        $sortVal = ($col['key'] === 'feedback' && is_array($val))
-                                            ? collect($val)->filter()->implode(' ')
-                                            : $val;
+                                        $sortVal = $val;
                                     @endphp
                                     <td class="lbs-td border-b border-slate-200 px-3 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}">
-                                        @if ($col['key'] === 'feedback' && is_array($val))
-                                            <div class="space-y-1.5 text-xs leading-snug">
-                                                <div><span class="font-medium text-slate-600 dark:text-slate-400">BERS:</span> {{ $val['bers'] !== '' ? $val['bers'] : '—' }}</div>
-                                                <div><span class="font-medium text-slate-600 dark:text-slate-400">BASIX:</span> {{ $val['basix'] !== '' ? $val['basix'] : '—' }}</div>
-                                                <div><span class="font-medium text-slate-600 dark:text-slate-400">Commitments Form:</span> {{ $val['commitments'] !== '' ? $val['commitments'] : '—' }}</div>
-                                            </div>
-                                        @else
-                                            {{ $val }}
-                                        @endif
+                                        {{ $val }}
                                     </td>
                                 @endforeach
                             </tr>
                             <tr class="lbs-row-detail border-b border-slate-200 dark:border-slate-700" hidden>
                                 <td colspan="{{ $colCount }}" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
-                                    <div class="grid gap-6 px-5 py-5 lg:grid-cols-2">
+                                    <div class="grid gap-6 px-5 py-5">
                                         <div>
                                             <span class="mb-2 block text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Notes</span>
                                             <div class="prose prose-sm max-w-none text-slate-800 dark:prose-invert dark:text-slate-200">
                                                 {!! $row->notes ?: '<span class="text-slate-400">—</span>' !!}
                                             </div>
-                                        </div>
-                                        <div>
-                                            <span class="mb-2 block text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Basix Note</span>
-                                            <p class="m-0 whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">{{ $fmtText($row->basix_note ?? null) }}</p>
                                         </div>
                                     </div>
                                 </td>

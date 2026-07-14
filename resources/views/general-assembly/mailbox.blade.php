@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Mailbox' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Mailbox' : 'Generic Assessment Mailbox'))
+@section('title', (isset($isLuntian) && $isLuntian) ? 'Luntian Mailbox' : ((isset($isEfficientLiving) && $isEfficientLiving) ? 'Efficient Living Mailbox' : 'General Assembly Mailbox'))
 
 @section('body_class', 'page-ga-mailbox')
 

@@ -91,6 +91,20 @@
                 $(this).select2({ width: '100%', allowClear: true });
             });
 
+            function syncFyrsBuilderOther() {
+                var $select = $('[data-fyrs-builder-select]');
+                var $wrap = $('[data-fyrs-builder-other]');
+                if (!$select.length || !$wrap.length) return;
+                var isOther = $select.val() === '__other__';
+                $wrap.toggleClass('hidden', !isOther);
+                if (!isOther) {
+                    $wrap.find('input').val('');
+                }
+            }
+
+            $(document).on('change', '[data-fyrs-builder-select]', syncFyrsBuilderOther);
+            syncFyrsBuilderOther();
+
             var $btn = $('#submitBluinqBtn');
             var originalBtnHtml = $btn.html();
 

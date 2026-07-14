@@ -11,6 +11,7 @@
     }
     $shortBranch = static function (string $label): string {
         return match (strtoupper(trim($label))) {
+            'GENERAL ASSEMBLY' => 'GA',
             'GENERIC ASSESSMENT' => 'GA',
             'EFFICIENT LIVING' => 'EL',
             'FYRS ENERGY WISE' => 'FYRS',
@@ -151,7 +152,7 @@
 
     var fetchGen = 0;
     var shortBranch = function (label) {
-        var map = { 'GENERIC ASSESSMENT': 'GA', 'EFFICIENT LIVING': 'EL', 'FYRS ENERGY WISE': 'FYRS' };
+        var map = { 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'EFFICIENT LIVING': 'EL', 'FYRS ENERGY WISE': 'FYRS' };
         return map[label] || label;
     };
 

@@ -294,7 +294,7 @@
                         @empty
                             <tr>
                                 <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="13">
-                                    No Generic Assessment jobs found.
+                                    No General Assembly jobs found.
                                 </td>
                             </tr>
                         @endforelse
