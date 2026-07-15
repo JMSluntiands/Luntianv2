@@ -359,43 +359,67 @@ class JotformSubmissionService
         }
 
         $base = JobRequest::query()->where('client_code', 'LBS01');
+        $catalog = (clone $base)->get();
 
-        // Prefer exact / case-insensitive matches on type or job_request_id (FK-safe).
-        $exact = (clone $base)
-            ->where(function ($query) use ($text) {
-                $query->where('job_request_type', $text)
-                    ->orWhere('job_request_id', $text);
-            })
-            ->first();
+        // Prefer exact / case-insensitive matches on type or job_request_id.
+        $exact = $catalog->first(function (JobRequest $row) use ($text) {
+            return trim((string) ($row->job_request_type ?? '')) === $text
+                || trim((string) ($row->job_request_id ?? '')) === $text;
+        });
         if ($exact) {
             return $exact;
         }
 
-        $ciExact = (clone $base)
-            ->where(function ($query) use ($text) {
-                $query->whereRaw('LOWER(TRIM(job_request_type)) = ?', [mb_strtolower($text)])
-                    ->orWhereRaw('LOWER(TRIM(job_request_id)) = ?', [mb_strtolower($text)]);
-            })
-            ->first();
+        $lower = mb_strtolower($text);
+        $ciExact = $catalog->first(function (JobRequest $row) use ($lower) {
+            return mb_strtolower(trim((string) ($row->job_request_type ?? ''))) === $lower
+                || mb_strtolower(trim((string) ($row->job_request_id ?? ''))) === $lower;
+        });
         if ($ciExact) {
             return $ciExact;
         }
 
-        // Prefix match: pick the closest-length type, not the shortest (old bug).
-        $prefixMatches = (clone $base)
-            ->where('job_request_type', 'like', $text.'%')
-            ->get();
-        $bestPrefix = $this->bestJobRequestMatch($prefixMatches, $text);
-        if ($bestPrefix) {
-            return $bestPrefix;
+        // JotForm vs DB often differ only by hyphen spacing ("Model - 1S" vs "Model- 1S").
+        $normalizedNeedle = $this->normalizeJobTypeKey($text);
+        $normalizedExact = $catalog->first(function (JobRequest $row) use ($normalizedNeedle) {
+            return $this->normalizeJobTypeKey((string) ($row->job_request_type ?? '')) === $normalizedNeedle
+                || $this->normalizeJobTypeKey((string) ($row->job_request_id ?? '')) === $normalizedNeedle;
+        });
+        if ($normalizedExact) {
+            return $normalizedExact;
         }
 
-        // Last resort: contains match with closest length.
-        $containsMatches = (clone $base)
-            ->where('job_request_type', 'like', '%'.$text.'%')
-            ->get();
+        // Prefix / contains on normalized keys — closest length wins (not shortest).
+        $normalizedMatches = $catalog->filter(function (JobRequest $row) use ($normalizedNeedle) {
+            $typeKey = $this->normalizeJobTypeKey((string) ($row->job_request_type ?? ''));
+            if ($typeKey === '') {
+                return false;
+            }
 
-        return $this->bestJobRequestMatch($containsMatches, $text);
+            return str_starts_with($typeKey, $normalizedNeedle)
+                || str_contains($typeKey, $normalizedNeedle);
+        });
+
+        return $this->bestJobRequestMatch($normalizedMatches, $text);
+    }
+
+    /**
+     * Collapse whitespace and unify dashes so JotForm labels can match DB labels.
+     */
+    private function normalizeJobTypeKey(string $text): string
+    {
+        $text = mb_strtolower(trim($text));
+        if ($text === '') {
+            return '';
+        }
+
+        // en-dash / em-dash / minus → hyphen
+        $text = preg_replace('/[\x{2013}\x{2014}\x{2212}\-]+/u', '-', $text) ?? $text;
+        // "Model - 1S" and "Model- 1S" → "model-1s"
+        $text = preg_replace('/\s*-\s*/', '-', $text) ?? $text;
+        $text = preg_replace('/\s+/', ' ', $text) ?? $text;
+
+        return trim($text);
     }
 
     /**
@@ -407,13 +431,14 @@ class JotformSubmissionService
             return null;
         }
 
-        $needleLen = mb_strlen($text);
+        $needleKey = $this->normalizeJobTypeKey($text);
+        $needleLen = mb_strlen($needleKey);
 
         return $matches
             ->sortBy(function (JobRequest $row) use ($needleLen) {
-                $type = trim((string) ($row->job_request_type ?? ''));
+                $typeKey = $this->normalizeJobTypeKey((string) ($row->job_request_type ?? ''));
 
-                return abs(mb_strlen($type) - $needleLen);
+                return abs(mb_strlen($typeKey) - $needleLen);
             })
             ->values()
             ->first();
