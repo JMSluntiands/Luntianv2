@@ -154,11 +154,14 @@ class FyrsJobController extends Controller
     public function publicAddForm()
     {
         $assignmentSelect = User::assignmentSelectLists('fyrs');
+        $dedicatedDomain = trim((string) config('app.fyrs_public_form_domain', '')) !== '';
 
         return view('fyrs.add', [
             'layoutView' => 'layouts.public-form',
             'storeRoute' => route('fyrs.public.store'),
-            'sendSlackBaseUrl' => url('/fyrs/add-new/job'),
+            'sendSlackBaseUrl' => $dedicatedDomain
+                ? url('/job')
+                : url('/fyrs/add-new/job'),
             'listUrl' => route('fyrs.public.add'),
             'cancelUrl' => route('fyrs.public.add'),
             'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],

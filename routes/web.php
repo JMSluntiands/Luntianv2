@@ -50,7 +50,7 @@ Route::get('/', function () {
 
     $fyrsPublicHost = trim((string) config('app.fyrs_public_form_domain', ''));
     if ($fyrsPublicHost !== '' && strcasecmp($fyrsPublicHost, request()->getHost()) === 0) {
-        return redirect()->route('fyrs.public.add');
+        return app(FyrsJobController::class)->publicAddForm();
     }
 
     $returnTo = request()->query('return_to');
@@ -104,17 +104,19 @@ if ($lbsPublicFormDomain !== '') {
     $registerPublicLbsRoutes();
 }
 
-$registerPublicFyrsRoutes = function () {
+$fyrsPublicFormDomain = trim((string) config('app.fyrs_public_form_domain', ''));
+if ($fyrsPublicFormDomain !== '') {
+    // Dedicated domain: form lives at / (no /fyrs/add-new path).
+    Route::domain($fyrsPublicFormDomain)->group(function () {
+        Route::get('/', [FyrsJobController::class, 'publicAddForm'])->name('fyrs.public.add');
+        Route::post('/', [FyrsJobController::class, 'store'])->name('fyrs.public.store');
+        Route::post('/job/{id}/send-slack', [FyrsJobController::class, 'sendSlackNotification'])->name('fyrs.public.job.sendSlack');
+    });
+} else {
+    // Local / shared host fallback.
     Route::get('/fyrs/add-new', [FyrsJobController::class, 'publicAddForm'])->name('fyrs.public.add');
     Route::post('/fyrs/add-new', [FyrsJobController::class, 'store'])->name('fyrs.public.store');
     Route::post('/fyrs/add-new/job/{id}/send-slack', [FyrsJobController::class, 'sendSlackNotification'])->name('fyrs.public.job.sendSlack');
-};
-
-$fyrsPublicFormDomain = trim((string) config('app.fyrs_public_form_domain', ''));
-if ($fyrsPublicFormDomain !== '') {
-    Route::domain($fyrsPublicFormDomain)->group($registerPublicFyrsRoutes);
-} else {
-    $registerPublicFyrsRoutes();
 }
 Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/unauthorized', function () {
