@@ -99,6 +99,11 @@ if ($lbsPublicFormDomain !== '') {
     $registerPublicLbsRoutes();
 }
 
+// Public FYRS assessor form (no login) — same fields as dashboard Add New.
+Route::get('/fyrs/add-new', [FyrsJobController::class, 'publicAddForm'])->name('fyrs.public.add');
+Route::post('/fyrs/add-new', [FyrsJobController::class, 'store'])->name('fyrs.public.store');
+Route::post('/fyrs/add-new/job/{id}/send-slack', [FyrsJobController::class, 'sendSlackNotification'])->name('fyrs.public.job.sendSlack');
+
 Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/unauthorized', function () {
         return view('unauthorized', ['sidebar_active' => 'unauthorized']);

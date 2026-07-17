@@ -1,4 +1,4 @@
-@extends('layouts.dashboard')
+@extends($layoutView ?? 'layouts.dashboard')
 
 @section('title', 'Add New Job (Fyrs Energy Wise)')
 
@@ -29,7 +29,7 @@
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Save Job
                 </button>
-                <a href="{{ route('fyrs.list') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
+                <a href="{{ $cancelUrl ?? route('fyrs.list') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
             </div>
         </form>
     </div>
@@ -58,6 +58,7 @@
         $(function() {
             var notesBody = document.getElementById('fyrs-notes-body');
             var noteBtns = document.querySelectorAll('.fyrs-notes-btn');
+            var isPublicForm = {{ isset($layoutView) && $layoutView === 'layouts.public-form' ? 'true' : 'false' }};
 
             function updateNotesActiveState() {
                 noteBtns.forEach(function(btn) {
@@ -118,7 +119,7 @@
                 var formData = new FormData(formEl);
 
                 $.ajax({
-                    url: '{{ route("fyrs.store") }}',
+                    url: '{{ $storeRoute ?? route("fyrs.store") }}',
                     method: 'POST',
                     data: formData,
                     processData: false,
@@ -155,8 +156,10 @@
             });
 
             function showFyrsAfterSavePrompt(jobId) {
-                var sendSlackUrl = '{{ url("dashboard/fyrs/job") }}/' + jobId + '/send-slack';
-                var listUrl = '{{ route("fyrs.list") }}';
+                var sendSlackUrl = '{{ $sendSlackBaseUrl ?? url("dashboard/fyrs/job") }}/' + jobId + '/send-slack';
+                var listUrl = '{{ $listUrl ?? route("fyrs.list") }}';
+                var stayLabel = isPublicForm ? 'Submit another' : 'Create another';
+                var leaveLabel = isPublicForm ? 'Done' : 'Go to list';
 
                 var $overlay = $(
                     '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 lbs-after-save-overlay">' +
@@ -168,8 +171,8 @@
                                 '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
                                 '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Fyrs Energy Wise job?</p>' +
                                 '<div class="mt-6 flex gap-3">' +
-                                    '<button type="button" data-fyrs-go-list class="flex-1 cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to list</button>' +
-                                    '<button type="button" data-fyrs-new-job class="flex-1 cursor-pointer rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another</button>' +
+                                    '<button type="button" data-fyrs-go-list class="flex-1 cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">' + leaveLabel + '</button>' +
+                                    '<button type="button" data-fyrs-new-job class="flex-1 cursor-pointer rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">' + stayLabel + '</button>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +

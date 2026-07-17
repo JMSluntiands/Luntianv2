@@ -148,6 +148,23 @@ class FyrsJobController extends Controller
         ]);
     }
 
+    /**
+     * Public FYRS add form (no login required) — same assessor fields as dashboard add.
+     */
+    public function publicAddForm()
+    {
+        $assignmentSelect = User::assignmentSelectLists('fyrs');
+
+        return view('fyrs.add', [
+            'layoutView' => 'layouts.public-form',
+            'storeRoute' => route('fyrs.public.store'),
+            'sendSlackBaseUrl' => url('/fyrs/add-new/job'),
+            'listUrl' => route('fyrs.public.add'),
+            'cancelUrl' => route('fyrs.public.add'),
+            'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+        ]);
+    }
+
     public function list()
     {
         $excludedStatuses = [
