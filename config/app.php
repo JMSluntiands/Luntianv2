@@ -67,6 +67,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public FYRS Form Domain
+    |--------------------------------------------------------------------------
+    |
+    | Optional dedicated domain for the public FYRS assessor form routes.
+    | Example: fyrsform.luntian.com.au
+    |
+    */
+    'fyrs_public_form_domain' => env('FYRS_PUBLIC_FORM_DOMAIN', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

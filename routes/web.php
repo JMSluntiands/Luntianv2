@@ -48,6 +48,11 @@ Route::get('/', function () {
         return redirect()->route('lbs.public.add');
     }
 
+    $fyrsPublicHost = trim((string) config('app.fyrs_public_form_domain', ''));
+    if ($fyrsPublicHost !== '' && strcasecmp($fyrsPublicHost, request()->getHost()) === 0) {
+        return redirect()->route('fyrs.public.add');
+    }
+
     $returnTo = request()->query('return_to');
     $decodedReturn = null;
     if (is_string($returnTo) && $returnTo !== '') {
@@ -99,11 +104,18 @@ if ($lbsPublicFormDomain !== '') {
     $registerPublicLbsRoutes();
 }
 
-// Public FYRS assessor form (no login) — same fields as dashboard Add New.
-Route::get('/fyrs/add-new', [FyrsJobController::class, 'publicAddForm'])->name('fyrs.public.add');
-Route::post('/fyrs/add-new', [FyrsJobController::class, 'store'])->name('fyrs.public.store');
-Route::post('/fyrs/add-new/job/{id}/send-slack', [FyrsJobController::class, 'sendSlackNotification'])->name('fyrs.public.job.sendSlack');
+$registerPublicFyrsRoutes = function () {
+    Route::get('/fyrs/add-new', [FyrsJobController::class, 'publicAddForm'])->name('fyrs.public.add');
+    Route::post('/fyrs/add-new', [FyrsJobController::class, 'store'])->name('fyrs.public.store');
+    Route::post('/fyrs/add-new/job/{id}/send-slack', [FyrsJobController::class, 'sendSlackNotification'])->name('fyrs.public.job.sendSlack');
+};
 
+$fyrsPublicFormDomain = trim((string) config('app.fyrs_public_form_domain', ''));
+if ($fyrsPublicFormDomain !== '') {
+    Route::domain($fyrsPublicFormDomain)->group($registerPublicFyrsRoutes);
+} else {
+    $registerPublicFyrsRoutes();
+}
 Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/unauthorized', function () {
         return view('unauthorized', ['sidebar_active' => 'unauthorized']);
