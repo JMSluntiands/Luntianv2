@@ -93,6 +93,12 @@
   </div>
 
   <div>
+    <label for="{{ $p }}address" class="{{ $labelClass }}">Address</label>
+    <input type="text" id="{{ $p }}address" name="address" value="{{ old('address', $g('address')) }}" placeholder="Site / job address"
+      class="{{ $inputClass }}" autocomplete="off" maxlength="500">
+  </div>
+
+  <div>
     <label for="fyrs-notes-body" class="{{ $labelClass }}">Notes</label>
     <input type="hidden" name="notes" id="fyrs_notes" autocomplete="off">
     <div class="overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
@@ -128,28 +134,8 @@
 
   <div class="grid gap-5 sm:grid-cols-2">
     <div>
-      <label for="{{ $p }}basix_number" class="{{ $labelClass }}">BASIX #</label>
-      <input type="text" id="{{ $p }}basix_number" name="basix_number" value="{{ old('basix_number', $g('basix_number')) }}" placeholder="BASIX number"
-        class="{{ $inputClass }}">
-    </div>
-    <div>
       <label for="{{ $p }}due_date" class="{{ $labelClass }}">Due date</label>
       <input type="date" id="{{ $p }}due_date" name="due_date" value="{{ old('due_date', $g('due_date') ? \Illuminate\Support\Carbon::parse($g('due_date'))->format('Y-m-d') : '') }}"
-        class="{{ $inputClass }}">
-    </div>
-  </div>
-
-  <div class="grid gap-5 sm:grid-cols-2">
-    <div>
-      <label for="{{ $p }}est_completion_certification" class="{{ $labelClass }} text-red-600 dark:text-red-400">Estimated completion certification</label>
-      <input type="date" id="{{ $p }}est_completion_certification" name="est_completion_certification"
-        value="{{ old('est_completion_certification', $g('est_completion_certification') ? \Illuminate\Support\Carbon::parse($g('est_completion_certification'))->format('Y-m-d') : '') }}"
-        class="{{ $inputClass }}">
-    </div>
-    <div>
-      <label for="{{ $p }}est_completion_basix" class="{{ $labelClass }} text-red-600 dark:text-red-400">Estimated completion BASIX</label>
-      <input type="date" id="{{ $p }}est_completion_basix" name="est_completion_basix"
-        value="{{ old('est_completion_basix', $g('est_completion_basix') ? \Illuminate\Support\Carbon::parse($g('est_completion_basix'))->format('Y-m-d') : '') }}"
         class="{{ $inputClass }}">
     </div>
   </div>

@@ -15,6 +15,49 @@
                         readonly
                         autocomplete="off">
                 </div>
+                @if(($jobViewModuleKey ?? '') === 'fyrs')
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-fyrs-reference">Reference Number</label>
+                    <input
+                        type="text"
+                        id="edit-fyrs-reference"
+                        class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-mono text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                        value="{{ $job->reference ?? '' }}"
+                        readonly
+                        autocomplete="off">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-number">Client Reference Number</label>
+                    <input
+                        type="text"
+                        id="edit-job-number"
+                        class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                        value="{{ trim((string) ($job->job_reference_no ?? '')) }}"
+                        placeholder="e.g. Saric 0030261"
+                        autocomplete="off"
+                        maxlength="100">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-compliance">Compliance</label>
+                    <select
+                        id="edit-compliance"
+                        class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                        autocomplete="off">
+                        @foreach($compliances ?? [] as $c)
+                            @php
+                                $compLabel = trim((string) ($c->column ?? ''));
+                                $isWoh = stripos($compLabel, 'Whole of Home') !== false
+                                    || stripos($compLabel, '(WOH)') !== false
+                                    || (bool) preg_match('/\bWOH\b/i', $compLabel);
+                            @endphp
+                            @continue($isWoh || $compLabel === '')
+                            <option value="{{ $compLabel }}" @selected(($job->ncc_compliance ?? '') === $compLabel)>
+                                {{ $compLabel }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                @else
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-number">Job Number</label>
                     @php
@@ -66,6 +109,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
             </div>
             <div class="job-view-edit-form job-view-edit-form-job space-y-4" id="jobViewEditFormJob" hidden>
                 <div class="flex flex-col gap-1.5">
@@ -94,6 +138,7 @@
                         value="{{ $job->address_client ?? '' }}"
                         autocomplete="off">
                 </div>
+                @if(($jobViewModuleKey ?? '') !== 'fyrs')
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-priority">Priority</label>
                     <select id="edit-priority" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
@@ -102,6 +147,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-type">Job Type</label>
                     <select
@@ -118,6 +164,37 @@
                         @endforeach
                     </select>
                 </div>
+                @if(($jobViewModuleKey ?? '') === 'fyrs')
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-basix-number">BASIX #</label>
+                    <input
+                        type="text"
+                        id="edit-basix-number"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                        value="{{ $job->basix_number ?? '' }}"
+                        placeholder="BASIX number"
+                        autocomplete="off"
+                        maxlength="100">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-red-600 dark:text-red-400" for="edit-est-completion-certification">Estimated completion certification</label>
+                    <input
+                        type="date"
+                        id="edit-est-completion-certification"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                        value="{{ !empty($job->est_completion_certification) ? \Carbon\Carbon::parse($job->est_completion_certification)->format('Y-m-d') : '' }}"
+                        autocomplete="off">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-red-600 dark:text-red-400" for="edit-est-completion-basix">Estimated completion BASIX</label>
+                    <input
+                        type="date"
+                        id="edit-est-completion-basix"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                        value="{{ !empty($job->est_completion_basix) ? \Carbon\Carbon::parse($job->est_completion_basix)->format('Y-m-d') : '' }}"
+                        autocomplete="off">
+                </div>
+                @endif
             </div>
             <div class="job-view-edit-form job-view-edit-form-assignment space-y-4" id="jobViewEditFormAssignment" hidden>
                 @php

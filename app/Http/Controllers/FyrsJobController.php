@@ -84,6 +84,9 @@ class FyrsJobController extends Controller
             'due_date' => ['nullable', 'date'],
             'est_completion_certification' => ['nullable', 'date'],
             'est_completion_basix' => ['nullable', 'date'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'upload_files' => ['nullable', 'array'],
+            'upload_files.*' => ['file', 'max:51200'],
         ];
     }
 
@@ -187,7 +190,13 @@ class FyrsJobController extends Controller
                     '(j.status IS NULL OR LOWER(TRIM(j.status)) NOT IN ('.implode(',', array_fill(0, count($excludedStatuses), '?')).'))',
                     $excludedStatuses
                 )
-                ->select('a.*', 'j.id as job_id', 'j.assigned as assigned');
+                ->select(
+                    'a.*',
+                    'j.id as job_id',
+                    'j.assigned as assigned',
+                    'j.status as job_status',
+                    'j.address as address'
+                );
 
             JobCountsScope::applyJobBphAssignment($q);
             JobCountsScope::applyJobBphBranchVerticalScope($q);
@@ -195,10 +204,38 @@ class FyrsJobController extends Controller
             $rows = $q->orderByDesc('a.created_at')->limit(300)->get();
         }
 
+        $assignmentSelect = User::assignmentSelectLists('fyrs');
+        $assignmentStaffCodes = $assignmentSelect['assignmentStaffUsers']
+            ->map(fn ($u) => strtoupper(trim((string) ($u->unique_code ?? ''))))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $stagePresets = ['Allocated', 'Processing', 'for BASIX', 'BASIX', 'Completed'];
+        $stageOptions = collect($stagePresets)
+            ->merge($rows->pluck('stage')->filter())
+            ->map(fn ($s) => trim((string) $s))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $builderOptions = $rows
+            ->map(fn ($r) => trim((string) ($r->builder ?? $r->estate ?? '')))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
         return view('fyrs.list', [
             'sidebar_active' => 'fyrs.list',
             'rows' => $rows,
             'taskLabels' => self::ASSESSOR_TASK_LABELS,
+            'assignmentStaffCodes' => $assignmentStaffCodes,
+            'stageOptions' => $stageOptions,
+            'builderOptions' => $builderOptions,
         ]);
     }
 
@@ -232,6 +269,9 @@ class FyrsJobController extends Controller
             'upload_project_files' => $job->docs_files,
             'client_account_id' => null,
             'client_account_name' => $job->client_name,
+            'basix_number' => $assessor->basix_number ?? $job->basix_number ?? null,
+            'est_completion_certification' => $assessor->est_completion_certification ?? $job->est_completion_certification ?? null,
+            'est_completion_basix' => $assessor->est_completion_basix ?? $job->est_completion_basix ?? null,
         ];
 
         $priorityColor = !empty($viewJob->priority)
@@ -396,6 +436,74 @@ class FyrsJobController extends Controller
     {
         $this->assertFyrsJob($id);
 
+        $hasAssessorPatch = $request->exists('basix_number')
+            || $request->exists('est_completion_certification')
+            || $request->exists('est_completion_basix')
+            || $request->exists('stage')
+            || $request->exists('job_reference_no');
+
+        if ($hasAssessorPatch && Schema::hasTable(self::ASSESSOR_TABLE)) {
+            $assessorData = $request->validate([
+                'basix_number' => ['nullable', 'string', 'max:100'],
+                'est_completion_certification' => ['nullable', 'date'],
+                'est_completion_basix' => ['nullable', 'date'],
+                'stage' => ['nullable', 'string', 'max:100'],
+                'job_reference_no' => ['nullable', 'string', 'max:100'],
+            ]);
+
+            $assessorUpdate = [];
+            if ($request->exists('basix_number')) {
+                $value = $assessorData['basix_number'] ?? null;
+                $assessorUpdate['basix_number'] = ($value === null || $value === '') ? null : $value;
+            }
+            if ($request->exists('stage')) {
+                $value = $assessorData['stage'] ?? null;
+                $assessorUpdate['stage'] = ($value === null || $value === '') ? null : $value;
+            }
+            if ($request->exists('job_reference_no')) {
+                $jobNum = trim((string) ($assessorData['job_reference_no'] ?? ''));
+                $assessorUpdate['job_number'] = $jobNum !== '' ? $jobNum : null;
+            }
+            foreach (['est_completion_certification', 'est_completion_basix'] as $dateColumn) {
+                if ($request->exists($dateColumn)) {
+                    $assessorUpdate[$dateColumn] = ! empty($assessorData[$dateColumn]) ? $assessorData[$dateColumn] : null;
+                }
+            }
+            if ($assessorUpdate !== []) {
+                $assessorUpdate['updated_at'] = now('Asia/Manila');
+                $existing = $this->assessorJobForFyrsId($id);
+                if ($existing) {
+                    DB::table(self::ASSESSOR_TABLE)->where('id', $existing->id)->update($assessorUpdate);
+                }
+                if (Schema::hasTable(self::JOB_TABLE)) {
+                    $jobPatch = [];
+                    foreach ($assessorUpdate as $col => $val) {
+                        if ($col === 'updated_at' || $col === 'job_number') {
+                            continue;
+                        }
+                        if (Schema::hasColumn(self::JOB_TABLE, $col)) {
+                            $jobPatch[$col] = $val;
+                        }
+                    }
+                    if (array_key_exists('job_number', $assessorUpdate)) {
+                        $jobNum = (string) ($assessorUpdate['job_number'] ?? '');
+                        $jobPatch['client_name'] = $jobNum !== '' ? substr($jobNum, 0, 255) : 'Fyrs Job';
+                        $jobPatch['job_number'] = $this->legacyJobNumberStub($jobNum !== '' ? $jobNum : (string) $id, $id);
+                    }
+                    if ($jobPatch !== []) {
+                        $jobPatch['updated_at'] = now('Asia/Manila');
+                        DB::table(self::JOB_TABLE)->where('id', $id)->update($jobPatch);
+                    }
+                }
+            }
+
+            // BPH pipeline validates job_reference_no as max:6 — FYRS Job Ref # can be longer.
+            if ($request->exists('job_reference_no')) {
+                $request->request->remove('job_reference_no');
+                $request->request->remove('job_number');
+            }
+        }
+
         return BphJobController::runWithPipelineContext(self::JOB_TABLE, self::STORAGE_BASE, function () use ($request, $id) {
             return app(BphJobController::class)->update($request, $id);
         });
@@ -517,9 +625,27 @@ class FyrsJobController extends Controller
         $now = now('Asia/Manila');
         $jobNum = trim($data['job_number']);
         $clientName = $jobNum !== '' ? $jobNum : 'Fyrs Job';
+        $address = isset($data['address']) ? trim((string) $data['address']) : '';
+        $address = $address !== '' ? substr($address, 0, 500) : null;
+
+        $folderSeg = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $reference) ?: 'fyrs_upload';
+        $fileNames = [];
+        foreach ((array) $request->file('upload_files', []) as $file) {
+            if (! $file || ! $file->isValid()) {
+                continue;
+            }
+            $original = $file->getClientOriginalName() ?: $file->hashName();
+            $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original);
+            $path = self::STORAGE_BASE.'/'.$folderSeg.'/'.$safeName;
+            Storage::disk('local')->putFileAs(dirname($path), $file, $safeName);
+            $fileNames[] = $safeName;
+        }
+
+        // BASIX # and estimated completion dates are set later on Job Details edit.
+        unset($data['basix_number'], $data['est_completion_certification'], $data['est_completion_basix']);
 
         try {
-            $id = DB::transaction(function () use ($data, $reference, $now, $jobNum, $clientName) {
+            $id = DB::transaction(function () use ($data, $reference, $now, $jobNum, $clientName, $address, $fileNames) {
                 $nextId = (int) DB::table(self::JOB_TABLE)->max('id') + 1;
                 $legacyJobNum = $this->legacyJobNumberStub($jobNum, $nextId);
 
@@ -541,10 +667,10 @@ class FyrsJobController extends Controller
                         : null,
                     'checked'             => null,
                     'plans_files'         => json_encode([]),
-                    'docs_files'          => json_encode([]),
+                    'docs_files'          => json_encode($fileNames),
                     'status'              => 'Allocated',
                     'date'                => $now->toDateString(),
-                    'address'             => null,
+                    'address'             => $address,
                     'climate_zone'        => isset($data['climate_zone']) ? substr((string) $data['climate_zone'], 0, 100) : null,
                     'compliance_summary_description' => null,
                     'spec_client_no'      => null,

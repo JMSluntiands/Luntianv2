@@ -200,6 +200,12 @@
                                     <dt class="job-details-dt">Reference Number</dt>
                                     <dd class="job-details-dd font-mono">{{ $jobReferenceDisplay }}</dd>
                                 </div>
+                                @if(($jobViewModuleKey ?? '') === 'fyrs')
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">Client Reference Number</dt>
+                                    <dd class="job-details-dd font-mono">{{ trim((string) ($job->job_reference_no ?? '')) !== '' ? $job->job_reference_no : '—' }}</dd>
+                                </div>
+                                @else
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Client Reference Number</dt>
                                     <dd class="job-details-dd font-mono">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</dd>
@@ -208,6 +214,7 @@
                                     <dt class="job-details-dt">Client</dt>
                                     <dd class="job-details-dd">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</dd>
                                 </div>
+                                @endif
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Compliance</dt>
                                     <dd class="job-details-dd">{{ $job->ncc_compliance ?? '—' }}</dd>
@@ -251,6 +258,32 @@
                                     <dt class="job-details-dt">Address</dt>
                                     <dd class="job-details-dd whitespace-pre-line">{{ trim((string) ($job->address_client ?? '')) !== '' ? $job->address_client : '—' }}</dd>
                                 </div>
+                                @if(($jobViewModuleKey ?? '') === 'fyrs')
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">BASIX #</dt>
+                                    <dd class="job-details-dd">{{ trim((string) ($job->basix_number ?? '')) !== '' ? $job->basix_number : '—' }}</dd>
+                                </div>
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt text-red-600 dark:text-red-400">Est. completion certification</dt>
+                                    <dd class="job-details-dd">
+                                        @if(!empty($job->est_completion_certification))
+                                            {{ \Carbon\Carbon::parse($job->est_completion_certification)->format('n/j/Y') }}
+                                        @else
+                                            —
+                                        @endif
+                                    </dd>
+                                </div>
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt text-red-600 dark:text-red-400">Est. completion BASIX</dt>
+                                    <dd class="job-details-dd">
+                                        @if(!empty($job->est_completion_basix))
+                                            {{ \Carbon\Carbon::parse($job->est_completion_basix)->format('n/j/Y') }}
+                                        @else
+                                            —
+                                        @endif
+                                    </dd>
+                                </div>
+                                @endif
                             </dl>
                         </section>
                         @endif
@@ -941,6 +974,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
 (function() {
     var csrfToken = '{{ csrf_token() }}';
     var updateUrl = '{{ route($jobUpdateRouteName, ['id' => $jobId]) }}';
+    var isFyrsJobView = {{ ($jobViewModuleKey ?? '') === 'fyrs' ? 'true' : 'false' }};
     var uploadFilesUrl = '{{ route($jobUploadFilesRouteName, ['id' => $jobId]) }}';
     var deleteFileUrl = '{{ route($jobDeleteFileRouteName, ['id' => $jobId]) }}';
     var archiveJobUrl = '{{ route($jobArchiveRouteName, ['id' => $jobId]) }}';
@@ -1738,14 +1772,27 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             if (!formClient.hidden) {
                 payload.job_reference_no = document.getElementById('edit-job-number')?.value || '';
                 payload.compliance = document.getElementById('edit-compliance')?.value || '';
-                var clientSelect = $('#edit-client-name');
-                var clientId = clientSelect.val();
-                var clientName = clientSelect.find('option:selected').data('name') || '';
-                payload.client_id = clientId || '';
-                payload.client_name = clientName;
+                if (!isFyrsJobView) {
+                    var clientSelect = $('#edit-client-name');
+                    var clientId = clientSelect.val();
+                    var clientName = clientSelect.find('option:selected').data('name') || '';
+                    payload.client_id = clientId || '';
+                    payload.client_name = clientName;
+                } else {
+                    // Keep pipeline client_name in sync with Job Ref # for FYRS display.
+                    payload.client_name = payload.job_reference_no || '';
+                }
             } else if (!formJob.hidden) {
                 payload.job_status = $('#edit-job-status').val();
                 payload.job_type = document.getElementById('edit-job-type')?.value || '';
+                payload.job_address = document.getElementById('edit-job-address')?.value || '';
+                payload.priority = $('#edit-priority').val() || '';
+                var basixEl = document.getElementById('edit-basix-number');
+                if (basixEl) {
+                    payload.basix_number = basixEl.value || '';
+                    payload.est_completion_certification = document.getElementById('edit-est-completion-certification')?.value || '';
+                    payload.est_completion_basix = document.getElementById('edit-est-completion-basix')?.value || '';
+                }
             } else if (formAssignment && !formAssignment.hidden) {
                 var av = $('#edit-job-assigned').val();
                 payload.staff_id = av !== undefined && av !== null ? av : '';

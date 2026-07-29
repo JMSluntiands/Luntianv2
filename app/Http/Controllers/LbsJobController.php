@@ -2565,6 +2565,19 @@ class LbsJobController extends Controller
         return $this->assignmentModuleForClientCode((string) ($job->client_code ?? ''));
     }
 
+    private function isWholeOfHomeCompliance(string $label): bool
+    {
+        $label = trim($label);
+        if ($label === '') {
+            return false;
+        }
+
+        return stripos($label, 'Whole of Home') !== false
+            || stripos($label, '(WOH)') !== false
+            || (bool) preg_match('/\bWOH\b/i', $label)
+            || in_array(strtolower($label), ['2022_woh', '2023_woh'], true);
+    }
+
     /**
      * Jobs created from Efficient Living add use EA_EL_* job_request_id values (client EL01).
      */
@@ -2612,9 +2625,11 @@ class LbsJobController extends Controller
      */
     private function buildAddJobFormData(Request $request, string $jobRequestClientCode): array
     {
-        $compliances = Compliance::orderBy('column')->get();
-        $defaultCompliance = $compliances->first(fn ($c) => $c->column && stripos($c->column, '2022') !== false)
-            ?? $compliances->first(fn ($c) => $c->column && stripos($c->column, 'WOH') !== false)
+        $compliances = Compliance::orderBy('column')->get()
+            ->reject(fn ($c) => $this->isWholeOfHomeCompliance((string) ($c->column ?? '')))
+            ->values();
+        $defaultCompliance = $compliances->first(fn ($c) => strcasecmp(trim((string) ($c->column ?? '')), '2022') === 0)
+            ?? $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2022') !== false)
             ?? $compliances->first();
 
         $clientAccounts = ClientAccount::orderBy('client_account_name')->get();

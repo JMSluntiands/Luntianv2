@@ -41,7 +41,7 @@ class CspJobController extends Controller
 
         $nccText = $data['ncc_compliance'] !== null && $data['ncc_compliance'] !== ''
             ? (string) $data['ncc_compliance']
-            : '2019';
+            : '2022';
         $jobTypeText = $data['job_type_request'] !== null && $data['job_type_request'] !== ''
             ? (string) $data['job_type_request']
             : '—';

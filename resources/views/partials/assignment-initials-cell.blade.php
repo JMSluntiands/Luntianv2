@@ -1,9 +1,15 @@
 @php
     $role = (string) ($role ?? 'staff');
-    $current = strtoupper(trim((string) ($current ?? '')));
+    $normalizeUpper = in_array($role, ['staff', 'checker'], true);
+    $rawCurrent = trim((string) ($current ?? ''));
+    $current = $normalizeUpper ? strtoupper($rawCurrent) : $rawCurrent;
     $display = $current !== '' ? $current : '--';
     $options = collect($options ?? [])
-        ->map(fn ($code) => strtoupper(trim((string) (is_object($code) ? ($code->unique_code ?? '') : $code))))
+        ->map(function ($code) use ($normalizeUpper) {
+            $value = trim((string) (is_object($code) ? ($code->unique_code ?? '') : $code));
+
+            return $normalizeUpper ? strtoupper($value) : $value;
+        })
         ->filter()
         ->unique()
         ->values();

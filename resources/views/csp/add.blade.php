@@ -38,9 +38,8 @@
                                 <label for="ncc_compliance" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">NCC Compliance</label>
                                 <select id="ncc_compliance" name="ncc_compliance" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
                                     <option value="">Select compliance</option>
-                                    <option value="2019" selected>2019</option>
-                                    <option value="2022_woh">2022 Whole of Home (WOH)</option>
-                                    <option value="2023_woh">2023 Whole of Home (WOH)</option>
+                                    <option value="2019">2019</option>
+                                    <option value="2022" selected>2022</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>

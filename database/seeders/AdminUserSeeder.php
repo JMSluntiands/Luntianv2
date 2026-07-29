@@ -12,9 +12,12 @@ class AdminUserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
+                'unique_code' => 'LUNTIAN',
                 'username' => 'admin',
                 'fullname' => 'Admin',
                 'role' => 'admin',
+                'branch' => '',
+                'status' => 'Active',
                 'password' => 'admin123', // Model cast hashes it
             ]
         );

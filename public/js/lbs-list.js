@@ -412,11 +412,12 @@ $(function () {
     }
     closeAllStatusMenus();
     closeAllInitialsMenus();
+    var role = String($wrap.data('role') || '');
     var rect = this.getBoundingClientRect();
     $menu.css({
       top: rect.bottom + 4,
       left: rect.left,
-      minWidth: Math.max(rect.width, 70)
+      minWidth: Math.max(rect.width, role === 'stage' ? 120 : 70)
     });
     $menu.prop('hidden', false);
     $trigger.attr('aria-expanded', 'true');
@@ -456,6 +457,7 @@ $(function () {
     var payload = new URLSearchParams();
     payload.append('_token', csrfToken);
     if (role === 'staff') payload.append('staff_id', val);
+    else if (role === 'stage') payload.append('stage', val);
     else payload.append('checker_id', val);
 
     $.ajax({
@@ -469,7 +471,7 @@ $(function () {
       }
     })
       .done(function (res) {
-        var msg = (res && res.message) || 'Staff/Checker updated successfully.';
+        var msg = (res && res.message) || (role === 'stage' ? 'Stage updated successfully.' : 'Staff/Checker updated successfully.');
         if (window.showSuccessToast) window.showSuccessToast(msg);
         setTimeout(function () {
           window.location.reload();
