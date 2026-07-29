@@ -431,7 +431,7 @@ $(function () {
     var $trigger = $wrap.find('[data-initials-trigger]');
     var role = $wrap.data('role');
     var $row = $wrap.closest('tr.lbs-data-row');
-    var updateUrl = $row.length && $row.data('update-url');
+    var updateUrl = ($row.length && ($row.attr('data-update-url') || $row.data('updateUrl'))) || '';
     var prevVal = $trigger.text();
     var $menu = $wrap.find('.lbs-initials-menu');
     $menu.prop('hidden', true);
@@ -456,18 +456,20 @@ $(function () {
 
     var payload = new URLSearchParams();
     payload.append('_token', csrfToken);
+    payload.append('_method', 'PUT');
     if (role === 'staff') payload.append('staff_id', val);
     else if (role === 'stage') payload.append('stage', val);
     else payload.append('checker_id', val);
 
     $.ajax({
       url: updateUrl,
-      method: 'PUT',
+      method: 'POST',
       data: payload.toString(),
       headers: {
         'X-CSRF-TOKEN': csrfToken,
         Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest'
       }
     })
       .done(function (res) {
@@ -556,7 +558,7 @@ $(function () {
     var $menu = $wrap.find('.lbs-status-menu');
     var val = $option.data('status-value');
     var $row = $wrap.closest('tr.lbs-data-row');
-    var updateUrl = $row.length && $row.data('update-url');
+    var updateUrl = ($row.length && ($row.attr('data-update-url') || $row.data('updateUrl'))) || '';
     var prevText = $trigger.text();
     var prevClass = 'lbs-badge-' + String(prevText).toLowerCase().replace(/\s+/g, '-');
     $menu.prop('hidden', true);
@@ -608,17 +610,19 @@ $(function () {
 
         var payload = new URLSearchParams();
         payload.append('_token', csrfToken);
+        payload.append('_method', 'PUT');
         payload.append('job_status', val);
         if (unitsToSend !== null) payload.append('units', String(unitsToSend));
 
         $.ajax({
           url: updateUrl,
-          method: 'PUT',
+          method: 'POST',
           data: payload.toString(),
           headers: {
             'X-CSRF-TOKEN': csrfToken,
             Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
           }
         })
           .done(function (res) {

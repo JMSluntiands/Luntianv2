@@ -143,7 +143,7 @@
                             @endphp
                             <tr
                                 class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5"
-                                data-update-url="{{ route('fyrs.update', $jobId) }}"
+                                data-update-url="{{ route('fyrs.update', ['id' => $jobId]) }}"
                                 data-log-date-key="{{ $logDateKey }}"
                                 data-builder="{{ $builderVal }}"
                             >

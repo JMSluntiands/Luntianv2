@@ -288,7 +288,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/fyrs/job/{id}/email-preview', [FyrsJobController::class, 'emailPreview'])->name('fyrs.job.emailPreview');
     Route::post('/dashboard/fyrs/job/{id}/send-mailbox-email', [FyrsJobController::class, 'sendMailboxEmail'])->name('fyrs.job.sendMailboxEmail');
     Route::get('/dashboard/fyrs/job/{id}', [FyrsJobController::class, 'show'])->name('fyrs.view');
-    Route::put('/dashboard/fyrs/job/{id}', [FyrsJobController::class, 'update'])->name('fyrs.update');
+    Route::match(['put', 'post'], '/dashboard/fyrs/job/{id}', [FyrsJobController::class, 'update'])->name('fyrs.update');
     Route::post('/dashboard/fyrs/job/{id}/files', [FyrsJobController::class, 'uploadFiles'])->name('fyrs.job.uploadFiles');
     Route::post('/dashboard/fyrs/job/{id}/file/delete', [FyrsJobController::class, 'deleteFile'])->name('fyrs.job.deleteFile');
     Route::get('/dashboard/fyrs/job/{id}/file/{file}', [FyrsJobController::class, 'downloadFile'])->name('fyrs.job.file');

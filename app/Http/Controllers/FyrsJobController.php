@@ -504,6 +504,34 @@ class FyrsJobController extends Controller
             }
         }
 
+        $needsPipelineUpdate = $request->exists('job_status')
+            || $request->exists('status')
+            || $request->exists('staff_id')
+            || $request->exists('assigned')
+            || $request->exists('checker_id')
+            || $request->exists('checked')
+            || $request->exists('job_address')
+            || $request->exists('priority')
+            || $request->exists('job_type')
+            || $request->exists('notes')
+            || $request->exists('compliance')
+            || $request->exists('ncc')
+            || $request->exists('client_name')
+            || $request->exists('units')
+            || $request->boolean('bph_additional_info_save');
+
+        // Stage/BASIX-only list edits should not hit the BPH updater (it may redirect back to the list → 405 on PUT).
+        if ($hasAssessorPatch && ! $needsPipelineUpdate) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Job updated successfully.',
+                ]);
+            }
+
+            return redirect()->route('fyrs.view', $id)->with('success', 'Job updated successfully.');
+        }
+
         return BphJobController::runWithPipelineContext(self::JOB_TABLE, self::STORAGE_BASE, function () use ($request, $id) {
             return app(BphJobController::class)->update($request, $id);
         });
