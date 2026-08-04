@@ -126,9 +126,9 @@
             data-holidays-api-base="/dashboard/holidays"
             data-stats-api-base="{{ route('dashboard.stats', [], false) }}"
             data-chart-api-base="{{ route('dashboard.chart', [], false) }}"
-            data-announcement-list-url="{{ route('forum_thread', [], false) }}"
-            data-attendance-clock-in-url="{{ route('attendance.clockIn', [], false) }}"
-            data-attendance-clock-out-url="{{ route('attendance.clockOut', [], false) }}"
+            data-announcement-list-url="{{ \Illuminate\Support\Facades\Route::has('forum_thread') ? route('forum_thread', [], false) : '' }}"
+            data-attendance-clock-in-url="{{ \Illuminate\Support\Facades\Route::has('attendance.clockIn') ? route('attendance.clockIn', [], false) : '' }}"
+            data-attendance-clock-out-url="{{ \Illuminate\Support\Facades\Route::has('attendance.clockOut') ? route('attendance.clockOut', [], false) : '' }}"
         >
         {{-- Fallback: visible if React has not mounted yet or JS fails --}}
         <div class="dashboard-page" data-dashboard-fallback>
@@ -222,8 +222,8 @@
                     type="button"
                     class="inline-flex shrink-0 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors {{ $attCanAct ? 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white' : 'cursor-not-allowed bg-slate-400 dark:bg-slate-600 dark:text-slate-300' }}"
                     data-attendance-action
-                    data-clock-in-url="{{ route('attendance.clockIn') }}"
-                    data-clock-out-url="{{ route('attendance.clockOut') }}"
+                    data-clock-in-url="{{ \Illuminate\Support\Facades\Route::has('attendance.clockIn') ? route('attendance.clockIn') : '' }}"
+                    data-clock-out-url="{{ \Illuminate\Support\Facades\Route::has('attendance.clockOut') ? route('attendance.clockOut') : '' }}"
                     data-can-clock-in="{{ !empty($att['can_clock_in']) ? '1' : '0' }}"
                     data-can-clock-out="{{ !empty($att['can_clock_out']) ? '1' : '0' }}"
                     @disabled(!$attCanAct)

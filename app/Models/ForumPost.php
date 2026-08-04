@@ -56,6 +56,10 @@ class ForumPost extends Model
             return null;
         }
 
+        if (! \Illuminate\Support\Facades\Route::has('forum_thread.image')) {
+            return null;
+        }
+
         return route('forum_thread.image', ['path' => basename($path)]);
     }
 }

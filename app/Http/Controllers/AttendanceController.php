@@ -20,6 +20,13 @@ class AttendanceController extends Controller
             ], 401);
         }
 
+        if (! Attendance::tableReady()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Attendance is not set up yet. Please run migrations.',
+            ], 503);
+        }
+
         $now = Carbon::now(Attendance::TIMEZONE);
         $today = $now->toDateString();
 
@@ -63,6 +70,13 @@ class AttendanceController extends Controller
                 'status' => 'error',
                 'message' => 'Please log in first.',
             ], 401);
+        }
+
+        if (! Attendance::tableReady()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Attendance is not set up yet. Please run migrations.',
+            ], 503);
         }
 
         $now = Carbon::now(Attendance::TIMEZONE);

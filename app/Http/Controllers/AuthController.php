@@ -81,12 +81,41 @@ class AuthController extends Controller
         $holidaysYear = (int) now()->format('Y');
         $userId = (int) session('user_id', 0);
 
+        try {
+            $dashboardStats = DashboardJobStatsService::fetch();
+        } catch (\Throwable) {
+            $dashboardStats = [
+                'total' => [],
+                'completed' => [],
+                'processing' => [],
+                'pending' => [],
+            ];
+        }
+
+        try {
+            $dashboardPublicHolidays = PublicHolidayService::forYear($holidaysYear);
+        } catch (\Throwable) {
+            $dashboardPublicHolidays = [];
+        }
+
+        try {
+            $dashboardAttendance = Attendance::dashboardStatusForUser($userId > 0 ? $userId : null);
+        } catch (\Throwable) {
+            $dashboardAttendance = Attendance::dashboardStatusForUser(null);
+        }
+
+        try {
+            $dashboardAnnouncements = DashboardAnnouncementService::recentPayload(8);
+        } catch (\Throwable) {
+            $dashboardAnnouncements = [];
+        }
+
         return view('dashboard', [
-            'dashboardStats' => DashboardJobStatsService::fetch(),
-            'dashboardPublicHolidays' => PublicHolidayService::forYear($holidaysYear),
+            'dashboardStats' => $dashboardStats,
+            'dashboardPublicHolidays' => $dashboardPublicHolidays,
             'dashboardPublicHolidaysYear' => $holidaysYear,
-            'dashboardAttendance' => Attendance::dashboardStatusForUser($userId > 0 ? $userId : null),
-            'dashboardAnnouncements' => DashboardAnnouncementService::recentPayload(8),
+            'dashboardAttendance' => $dashboardAttendance,
+            'dashboardAnnouncements' => $dashboardAnnouncements,
         ]);
     }
 

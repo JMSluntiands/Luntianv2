@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class Attendance extends Model
 {
@@ -39,8 +40,21 @@ class Attendance extends Model
         return Carbon::now(self::TIMEZONE)->toDateString();
     }
 
+    public static function tableReady(): bool
+    {
+        try {
+            return Schema::hasTable('attendances');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     public static function forUserToday(int $userId): ?self
     {
+        if (! self::tableReady()) {
+            return null;
+        }
+
         return static::query()
             ->where('user_id', $userId)
             ->whereDate('attendance_date', self::todayDate())
@@ -65,27 +79,47 @@ class Attendance extends Model
     public static function dashboardStatusForUser(?int $userId): array
     {
         $now = Carbon::now(self::TIMEZONE);
-        $record = $userId ? self::forUserToday($userId) : null;
-        $clockedIn = $record !== null && ! empty($record->clocked_in_at);
-        $clockedOut = $record !== null && ! empty($record->clocked_out_at);
-
-        $clockedInAt = $clockedIn
-            ? Carbon::parse($record->clocked_in_at)->timezone(self::TIMEZONE)->format('g:i A')
-            : null;
-        $clockedOutAt = $clockedOut
-            ? Carbon::parse($record->clocked_out_at)->timezone(self::TIMEZONE)->format('g:i A')
-            : null;
-
-        return [
-            'clocked_in' => $clockedIn,
-            'clocked_out' => $clockedOut,
-            'clocked_in_at' => $clockedInAt,
-            'clocked_out_at' => $clockedOutAt,
+        $empty = [
+            'clocked_in' => false,
+            'clocked_out' => false,
+            'clocked_in_at' => null,
+            'clocked_out_at' => null,
             'local_time' => $now->format('g:i A'),
             'cutoff_label' => '8:00 AM',
             'timezone_label' => 'Philippines (PHT)',
-            'can_clock_in' => $userId !== null && $userId > 0 && ! $clockedIn,
-            'can_clock_out' => $userId !== null && $userId > 0 && $clockedIn && ! $clockedOut,
+            'can_clock_in' => false,
+            'can_clock_out' => false,
         ];
+
+        if (! self::tableReady()) {
+            return $empty;
+        }
+
+        try {
+            $record = $userId ? self::forUserToday($userId) : null;
+            $clockedIn = $record !== null && ! empty($record->clocked_in_at);
+            $clockedOut = $record !== null && ! empty($record->clocked_out_at);
+
+            $clockedInAt = $clockedIn
+                ? Carbon::parse($record->clocked_in_at)->timezone(self::TIMEZONE)->format('g:i A')
+                : null;
+            $clockedOutAt = $clockedOut
+                ? Carbon::parse($record->clocked_out_at)->timezone(self::TIMEZONE)->format('g:i A')
+                : null;
+
+            return [
+                'clocked_in' => $clockedIn,
+                'clocked_out' => $clockedOut,
+                'clocked_in_at' => $clockedInAt,
+                'clocked_out_at' => $clockedOutAt,
+                'local_time' => $now->format('g:i A'),
+                'cutoff_label' => '8:00 AM',
+                'timezone_label' => 'Philippines (PHT)',
+                'can_clock_in' => $userId !== null && $userId > 0 && ! $clockedIn,
+                'can_clock_out' => $userId !== null && $userId > 0 && $clockedIn && ! $clockedOut,
+            ];
+        } catch (\Throwable) {
+            return $empty;
+        }
     }
 }

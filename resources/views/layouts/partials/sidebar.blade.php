@@ -161,13 +161,13 @@
             Dashboard
         </a>
         @endif
-        @if($may('task_management') || $may('dashboard'))
+        @if(\Illuminate\Support\Facades\Route::has('task_management') && ($may('task_management') || $may('dashboard')))
         <a href="{{ route('task_management') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:ring-inset dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}">
             <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             Task Management
         </a>
         @endif
-        @if($may('forum_thread') || $may('dashboard'))
+        @if(\Illuminate\Support\Facades\Route::has('forum_thread') && ($may('forum_thread') || $may('dashboard')))
         <a href="{{ route('forum_thread') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:ring-inset dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['forum_thread', 'forum_thread.store'], true) || str_starts_with((string) $active, 'forum_thread.') ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}">
             <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1m0-4V6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H9l-4 4V8z"/></svg>
             Bulletin
@@ -986,7 +986,7 @@
         @endif
         @if($may('hr') || $may('reports') || $may('timesheet'))
         <div class="mt-4 mb-1 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">HR</div>
-        @if($may('timesheet') || $may('reports'))
+        @if(\Illuminate\Support\Facades\Route::has('timesheet') && ($may('timesheet') || $may('reports')))
         <a href="{{ route('timesheet') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'timesheet' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-[15px] dark:pl-[15px]' : '' }}">
             <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             Timesheet

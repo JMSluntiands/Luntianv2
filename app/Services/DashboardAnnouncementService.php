@@ -14,21 +14,29 @@ class DashboardAnnouncementService
      */
     public static function recentPayload(int $limit = 8): array
     {
-        if (! Schema::hasTable('forum_posts')) {
+        try {
+            if (! Schema::hasTable('forum_posts')) {
+                return [];
+            }
+        } catch (\Throwable) {
             return [];
         }
 
-        $query = ForumPost::query()->with('user:id,fullname,username');
+        try {
+            $query = ForumPost::query()->with('user:id,fullname,username');
 
-        if (Schema::hasColumn('forum_posts', 'post_type')) {
-            $query->where('post_type', ForumPost::TYPE_ANNOUNCEMENT);
+            if (Schema::hasColumn('forum_posts', 'post_type')) {
+                $query->where('post_type', ForumPost::TYPE_ANNOUNCEMENT);
+            }
+
+            $rows = $query
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit(max(1, min($limit, 20)))
+                ->get();
+        } catch (\Throwable) {
+            return [];
         }
-
-        $rows = $query
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->limit(max(1, min($limit, 20)))
-            ->get();
 
         return $rows->map(static function (ForumPost $post): array {
             $author = $post->user;
@@ -51,7 +59,16 @@ class DashboardAnnouncementService
             }
             $excerpt = self::excerptFromPlain($plain);
 
-            $detailUrl = route('forum_thread', [], false).'#post-'.$post->id;
+            $detailUrl = \Illuminate\Support\Facades\Route::has('forum_thread')
+                ? route('forum_thread', [], false).'#post-'.$post->id
+                : '#post-'.$post->id;
+
+            $imageUrl = null;
+            try {
+                $imageUrl = $post->imageUrl();
+            } catch (\Throwable) {
+                $imageUrl = null;
+            }
 
             return [
                 'id' => (int) $post->id,
@@ -60,7 +77,7 @@ class DashboardAnnouncementService
                 'excerpt' => $excerpt,
                 'author' => $authorName,
                 'status' => ForumPost::TYPE_ANNOUNCEMENT,
-                'image_url' => $post->imageUrl(),
+                'image_url' => $imageUrl,
                 'date_label' => $when ? $when->format('F j, Y') : null,
                 'time_label' => $when ? $when->format('g:i A') : null,
                 'meta_label' => $when
