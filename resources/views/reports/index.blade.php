@@ -97,7 +97,7 @@
         <div class="reports-data-card">
             <div class="reports-data-header">
                 <h2 class="reports-section-title">Report Data</h2>
-                <button type="button" class="reports-btn reports-btn-export">
+                <button type="button" class="reports-btn reports-btn-export" id="reportsExportBtn" data-export-url="{{ route('reports.export') }}">
                     <svg class="reports-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15l3 3 3-3"/></svg>
                     Export to Excel
                 </button>
@@ -269,26 +269,41 @@
             var clientSel = document.getElementById('reportsClient');
             var staffSel = document.getElementById('reportsStaff');
             var entriesSel = document.getElementById('reportsEntries');
+
+            function buildReportParams() {
+                var params = new URLSearchParams();
+                if (clientSel && clientSel.value) {
+                    params.set('client', clientSel.value);
+                }
+                if (staffSel && staffSel.value) {
+                    params.set('staff', staffSel.value);
+                }
+                if (fromHidden && fromHidden.value) {
+                    params.set('date_from', fromHidden.value);
+                }
+                if (toHidden && toHidden.value) {
+                    params.set('date_to', toHidden.value);
+                }
+                if (entriesSel && entriesSel.value) {
+                    params.set('entries', entriesSel.value);
+                }
+                return params;
+            }
+
             if (applyBtn) {
                 applyBtn.addEventListener('click', function () {
-                    var params = new URLSearchParams();
-                    if (clientSel && clientSel.value) {
-                        params.set('client', clientSel.value);
-                    }
-                    if (staffSel && staffSel.value) {
-                        params.set('staff', staffSel.value);
-                    }
-                    if (fromHidden && fromHidden.value) {
-                        params.set('date_from', fromHidden.value);
-                    }
-                    if (toHidden && toHidden.value) {
-                        params.set('date_to', toHidden.value);
-                    }
-                    if (entriesSel && entriesSel.value) {
-                        params.set('entries', entriesSel.value);
-                    }
-                    var qs = params.toString();
+                    var qs = buildReportParams().toString();
                     window.location.href = window.location.pathname + (qs ? ('?' + qs) : '');
+                });
+            }
+
+            var exportBtn = document.getElementById('reportsExportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function () {
+                    var exportUrl = exportBtn.getAttribute('data-export-url') || '';
+                    if (!exportUrl) return;
+                    var qs = buildReportParams().toString();
+                    window.location.href = exportUrl + (qs ? ('?' + qs) : '');
                 });
             }
         });

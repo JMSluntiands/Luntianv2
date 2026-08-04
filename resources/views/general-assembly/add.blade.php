@@ -9,13 +9,13 @@
         {{-- Page Header --}}
         <div class="mb-8">
             <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job</h1>
-            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new General Assembly job.</p>
+            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new Generic EA job.</p>
         </div>
 
         <form id="lbsAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @php
-                $preRef = isset($duplicateJob) ? ($duplicateJob->reference_no ?? '') : 'JOBS0823-003';
+                $preRef = $suggestedReference ?? 'JOB-GEA-' . now('Asia/Manila')->format('ymd') . '001';
                 $selCompliance = isset($duplicateJob) ? ($duplicateJob->compliance_id ?? null) : ($defaultComplianceId ?? null);
                 $selClient = isset($duplicateJob) ? ($duplicateJob->client_account_id ?? null) : ($defaultClientAccountId ?? null);
                 $selPriority = isset($duplicateJob) ? ($duplicateJob->priority_id ?? null) : ($defaultPriorityId ?? null);
@@ -26,14 +26,15 @@
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef ?: 'JOBS0823-003' }}</span>
+                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef }}</span>
                 </div>
                 <div class="p-5">
                     <div class="grid gap-5 sm:grid-cols-2">
                         <div>
                             <label for="reference_no" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Reference No.</label>
-                            <input type="text" id="reference_no" name="reference_no" value="{{ isset($duplicateJob) ? e($duplicateJob->reference_no ?? '') : '' }}" placeholder="Enter Reference Number" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
-                                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
+                            <input type="text" id="reference_no" value="{{ e($preRef) }}" readonly disabled autocomplete="off" aria-label="Auto-generated Generic EA reference number"
+                                class="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 font-mono text-slate-800 placeholder-slate-400 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-100">
+                            <input type="hidden" id="reference_no_hidden" name="reference_no" value="{{ e($preRef) }}">
                         </div>
                         <div>
                             <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference</label>
@@ -119,13 +120,14 @@
             {{-- Attachments Card --}}
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Attachments</h2>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Attachments <span class="text-red-500" aria-hidden="true">*</span></h2>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">At least one file (plans or documents) is required.</p>
                 </div>
                 <div class="p-5">
                     <div class="grid gap-5 sm:grid-cols-2">
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Plans</label>
-                            <label for="plans" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
+                            <label for="plans" id="plans-dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
                                 <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                                 <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
                                 <span class="mt-0.5 text-xs text-slate-500 dark:text-slate-500">or</span>
@@ -137,7 +139,7 @@
                         </div>
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Document</label>
-                            <label for="docs" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
+                            <label for="docs" id="docs-dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
                                 <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
                                 <span class="mt-0.5 text-xs text-slate-500 dark:text-slate-500">or</span>
@@ -148,6 +150,7 @@
                             <button type="button" id="docs-clear" class="mt-1 hidden text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear</button>
                         </div>
                     </div>
+                    <p id="attachments-error" class="mt-3 hidden text-sm font-medium text-red-600 dark:text-red-400" role="alert">Please upload at least one attachment before saving.</p>
                 </div>
             </div>
 
@@ -320,8 +323,49 @@
             renderFileList('plans', 'plans-file-list', 'plans-clear');
             renderFileList('docs', 'docs-file-list', 'docs-clear');
 
+            function hasAttachmentFiles() {
+                var plans = document.getElementById('plans');
+                var docs = document.getElementById('docs');
+                var plansCount = plans && plans.files ? plans.files.length : 0;
+                var docsCount = docs && docs.files ? docs.files.length : 0;
+                return plansCount > 0 || docsCount > 0;
+            }
+
+            function setAttachmentsInvalid(invalid) {
+                var $err = $('#attachments-error');
+                var dropzones = ['#plans-dropzone', '#docs-dropzone'];
+                if (invalid) {
+                    $err.removeClass('hidden');
+                    dropzones.forEach(function(sel) {
+                        $(sel).addClass('border-red-500 dark:border-red-500').removeClass('border-slate-300 dark:border-slate-600');
+                    });
+                } else {
+                    $err.addClass('hidden');
+                    dropzones.forEach(function(sel) {
+                        $(sel).removeClass('border-red-500 dark:border-red-500').addClass('border-slate-300 dark:border-slate-600');
+                    });
+                }
+            }
+
+            $('#plans, #docs').on('change', function() {
+                if (hasAttachmentFiles()) {
+                    setAttachmentsInvalid(false);
+                }
+            });
+
             $btn.on('click', function(e) {
                 e.preventDefault();
+
+                if (!hasAttachmentFiles()) {
+                    setAttachmentsInvalid(true);
+                    var errEl = document.getElementById('attachments-error');
+                    if (errEl && errEl.scrollIntoView) {
+                        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    if (window.showSuccessToast) showSuccessToast('Please upload at least one attachment before saving.');
+                    return;
+                }
+                setAttachmentsInvalid(false);
 
                 $('#notes').val($('#lbs-notes-body').html());
 
@@ -352,6 +396,13 @@
                             $('#lbsAddForm select').trigger('change');
                             document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
                             document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
+                            setAttachmentsInvalid(false);
+                            var nextRef = (resp.next_reference || '').trim();
+                            if (nextRef) {
+                                $('#jobReferenceContent').text(nextRef);
+                                $('#reference_no').val(nextRef);
+                                $('#reference_no_hidden').val(nextRef);
+                            }
                             showLbsAfterSavePrompt(resp.job_id, resp.submission_email_enabled);
                         } else {
                             if (window.showSuccessToast) showSuccessToast(resp.message || 'Failed to save job.');
@@ -382,9 +433,9 @@
                                     '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
                                 '</div>' +
                                 '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
-                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another General Assembly job?</p>' +
+                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Generic EA job?</p>' +
                                 '<div class="mt-6 flex gap-3">' +
-                                    '<button type="button" data-lbs-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to General Assembly List</button>' +
+                                    '<button type="button" data-lbs-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to Generic EA List</button>' +
                                     '<button type="button" data-lbs-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +
                                 '</div>' +
                             '</div>' +

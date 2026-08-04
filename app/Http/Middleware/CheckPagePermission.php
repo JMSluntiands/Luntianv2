@@ -73,6 +73,62 @@ class CheckPagePermission
                 'bph.job.checkerUploads' => [
                     'job_view.bph.button.checker_uploads.add',
                 ],
+                'reports.export' => [
+                    'reports',
+                ],
+                'hr' => [
+                    'hr',
+                    'reports',
+                ],
+                'timesheet' => [
+                    'timesheet',
+                    'reports',
+                ],
+                'users.status' => [
+                    'users.update',
+                    'users.index',
+                    'users.edit',
+                ],
+                'task_management' => [
+                    'dashboard',
+                ],
+                'task_management.store' => [
+                    'task_management',
+                    'dashboard',
+                ],
+                'task_management.update' => [
+                    'task_management',
+                    'dashboard',
+                ],
+                'task_management.destroy' => [
+                    'task_management',
+                    'dashboard',
+                ],
+                'forum_thread' => [
+                    'dashboard',
+                ],
+                'forum_thread.recent' => [
+                    'forum_thread',
+                    'dashboard',
+                ],
+                'forum_thread.store' => [
+                    'forum_thread.post',
+                    'forum_thread',
+                ],
+                'forum_thread.image' => [
+                    'forum_thread',
+                ],
+                'forum_thread.destroy' => [
+                    'forum_thread',
+                ],
+                'forum_thread.comment.store' => [
+                    'forum_thread.comment',
+                    'forum_thread',
+                ],
+                'forum_thread.comment.destroy' => [
+                    'forum_thread.comment',
+                    'forum_thread',
+                ],
             ];
             if (isset($routePermissionAlternates[$routeName])) {
                 foreach ($routePermissionAlternates[$routeName] as $altRoute) {

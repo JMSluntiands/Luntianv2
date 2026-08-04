@@ -779,7 +779,7 @@ class GeneralAssemblyJobController extends Controller
                 'activity_date'        => $now->format('Y-m-d H:i:s'),
                 'activity_type'        => 'Job updated',
                 'activity_description' => $description,
-                'updated_by'           => session('user_name') ?? 'General Assembly Account',
+                'updated_by'           => session('user_name') ?? 'Generic EA Account',
             ]);
 
             $assignmentSlack = false;
@@ -799,7 +799,7 @@ class GeneralAssemblyJobController extends Controller
                 $product = match ($jvProduct) {
                     'efficient_living' => 'Efficient Living',
                     'luntian' => 'Luntian',
-                    default => 'General Assembly',
+                    default => 'Generic EA',
                 };
                 $ref = trim((string) ($job->reference ?? $job->job_reference_no ?? ''));
                 $jobStatus = (string) (array_key_exists('job_status', $update) ? $update['job_status'] : ($job->job_status ?? ''));
@@ -858,7 +858,7 @@ class GeneralAssemblyJobController extends Controller
                 'activity_date'        => $now->format('Y-m-d H:i:s'),
                 'activity_type'        => 'Job archived',
                 'activity_description' => 'Job status changed to Archived.',
-                'updated_by'           => session('user_name') ?? 'General Assembly Account',
+                'updated_by'           => session('user_name') ?? 'Generic EA Account',
             ]);
 
             return response()->json([
@@ -898,7 +898,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
             'activity_type'        => 'Forms job accepted',
             'activity_description' => 'Job accepted from Forms Submitted Jobs into main LBS list.',
-            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            'updated_by'           => session('user_name') ?? 'Generic EA Account',
         ]);
 
         return redirect()->route('general_assembly.list')->with('success', 'Forms job accepted and moved to main list.');
@@ -955,7 +955,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
             'activity_type'        => 'Files uploaded',
             'activity_description' => $description,
-            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            'updated_by'           => session('user_name') ?? 'Generic EA Account',
         ]);
 
         return response()->json([
@@ -1004,7 +1004,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => $now->format('Y-m-d H:i:s'),
             'activity_type'        => 'File deleted',
             'activity_description' => $sectionLabel . ': ' . $fileName,
-            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            'updated_by'           => session('user_name') ?? 'Generic EA Account',
         ]);
 
         return response()->json([
@@ -1084,7 +1084,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => $now->format('Y-m-d H:i:s'),
             'activity_type'        => 'Checker upload',
             'activity_description' => implode("\n", $descriptionLines),
-            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            'updated_by'           => session('user_name') ?? 'Generic EA Account',
         ]);
 
         return response()->json([
@@ -1102,7 +1102,7 @@ class GeneralAssemblyJobController extends Controller
         } else {
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.reference', 'like', 'JOB%')
                 ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
                 ->where(function ($query) {
                     $query->whereNull('j.updated_by')
@@ -1138,7 +1138,7 @@ class GeneralAssemblyJobController extends Controller
             if (RolePermission::userMayAccessroute('general_assembly.list.formsSubmitted')) {
                 $formsQuery = DB::table('job_general_assembly as j')
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                    ->where('j.reference', 'like', 'JOBS%')
+                    ->where('j.reference', 'like', 'JOB%')
                     ->where('j.updated_by', '=', 'FORMS')
                     ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
                 JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
@@ -1226,7 +1226,7 @@ class GeneralAssemblyJobController extends Controller
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
-                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.reference', 'like', 'JOB%')
                 ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1374,7 +1374,7 @@ class GeneralAssemblyJobController extends Controller
         } else {
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.reference', 'like', 'JOB%')
                 ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
             $this->applyLuntianJobRequestScope($q, 'j');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
@@ -1563,7 +1563,7 @@ class GeneralAssemblyJobController extends Controller
         $q = DB::table('job_general_assembly as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
             ->whereRaw("j.job_request_id LIKE 'EA\_EL\_%'")
-            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.reference', 'like', 'JOB%')
             ->where('j.job_status', '=', $status);
         JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
 
@@ -1601,7 +1601,7 @@ class GeneralAssemblyJobController extends Controller
         }
         $q = DB::table('job_general_assembly as j')
             ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-            ->where('j.reference', 'like', 'JOBS%')
+            ->where('j.reference', 'like', 'JOB%')
             ->where('j.job_status', '=', $status);
         $this->applyLuntianJobRequestScope($q, 'j');
         JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
@@ -1640,7 +1640,7 @@ class GeneralAssemblyJobController extends Controller
         } else {
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.reference', 'like', 'JOB%')
                 ->where('j.job_status', '=', 'Archived');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1699,7 +1699,7 @@ class GeneralAssemblyJobController extends Controller
             'activity_date'        => $now->format('Y-m-d H:i:s'),
             'activity_type'        => 'Job restored',
             'activity_description' => 'Job restored from archive to Allocated. Log date updated to restore time.',
-            'updated_by'           => session('user_name') ?? 'General Assembly Account',
+            'updated_by'           => session('user_name') ?? 'Generic EA Account',
         ]);
         return redirect()->route('general_assembly.trash')->with('success', 'Job restored to list.');
     }
@@ -1711,7 +1711,7 @@ class GeneralAssemblyJobController extends Controller
         } else {
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.reference', 'like', 'JOB%')
                 ->where('j.job_status', '=', 'Completed');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1779,7 +1779,7 @@ class GeneralAssemblyJobController extends Controller
         } else {
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
-                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.reference', 'like', 'JOB%')
                 ->where('j.job_status', '=', 'For Review');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -1831,7 +1831,7 @@ class GeneralAssemblyJobController extends Controller
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id');
             LegacyDbJoin::leftJoinClientsByClientCode($q);
-            $q->where('j.reference', 'like', 'JOBS%')
+            $q->where('j.reference', 'like', 'JOB%')
                 ->where('j.job_status', '=', 'For Email Confirmation');
             JobCountsScope::applyJobsTableAssignment($q, 'j.staff_id', 'j.checker_id');
             $jobs = $q
@@ -2073,7 +2073,20 @@ class GeneralAssemblyJobController extends Controller
             'assigned_to'      => ['required', 'string', 'max:10'],
             'checked_by'       => ['required', 'string', 'max:10'],
             'notes'            => ['nullable', 'string'],
+            'plans'            => ['nullable', 'array'],
+            'plans.*'          => ['file', 'max:51200'],
+            'docs'             => ['nullable', 'array'],
+            'docs.*'           => ['file', 'max:51200'],
         ]);
+
+        $planFiles = array_values(array_filter((array) $request->file('plans', [])));
+        $docFiles = array_values(array_filter((array) $request->file('docs', [])));
+        if ($planFiles === [] && $docFiles === []) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Please upload at least one attachment (plans or documents) before saving.',
+            ], 422);
+        }
 
         $compliance = Compliance::find($data['compliance']);
         $jobRequest = JobRequest::find($data['job_type']);
@@ -2086,20 +2099,13 @@ class GeneralAssemblyJobController extends Controller
             ], 422);
         }
 
-        $headerRef = $request->input('header_reference');
         $now = now('Asia/Manila');
         $isLuntianStore = $request->route()?->getName() === 'luntian.store';
 
-        // Ensure reference column starts with JOBS so the job appears in LBS list; append -1
-        $referenceValue = $headerRef ?: ($data['reference_no'] ?? '');
-        if ($referenceValue !== '' && stripos($referenceValue, 'JOBS') !== 0) {
-            $referenceValue = 'JOBS-' . $referenceValue;
-        }
-        if ($referenceValue !== '') {
-            $referenceValue = $referenceValue . '-1';
-        } elseif ($isLuntianStore) {
-            $referenceValue = 'JOBS' . $now->format('YmdHis') . '-1';
-        }
+        // Auto-generate Generic EA reference: JOB-GEA-YYMMDDNNN
+        $geaReference = $this->nextGeaJobReference($now);
+        $referenceValue = $geaReference;
+        $data['reference_no'] = $geaReference;
 
         $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
         $isLuntianVertical = $isLuntianStore || $this->isLuntianJobRequestClientCode($jobRequestClientCode);
@@ -2198,12 +2204,14 @@ class GeneralAssemblyJobController extends Controller
             ]);
 
             $clientCode = (string) ($jobRequest->client_code ?? '');
-            $successMessage = 'General Assembly job created successfully.';
+            $successMessage = 'Generic EA job created successfully.';
 
             return response()->json([
                 'status'  => 'success',
                 'message' => $successMessage,
                 'job_id'  => $jobId,
+                'reference_no' => $geaReference,
+                'next_reference' => $this->nextGeaJobReference(now('Asia/Manila')),
                 'submission_email_enabled' => EmailConfig::where('is_active', true)->exists(),
             ]);
         } catch (\Throwable $e) {
@@ -2243,7 +2251,7 @@ class GeneralAssemblyJobController extends Controller
         $checked = $job->checker_id ?? '';
 
         $jobProduct = $this->resolveLbsJobProduct($job);
-        $slackHeadline = '🆕 New General Assembly Job Submitted';
+        $slackHeadline = '🆕 New Generic EA Job Submitted';
         $refFieldTitle = 'GA Ref #';
         $slackFooter = match ($jobProduct) {
             'efficient_living' => 'Luntian Efficient Living Job Management',
@@ -2689,7 +2697,39 @@ class GeneralAssemblyJobController extends Controller
             'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'assignmentUsers'      => $assignmentStaffUsers,
             'duplicateJob'         => $duplicateJob,
+            'suggestedReference'   => $this->nextGeaJobReference(),
         ];
+    }
+
+    /**
+     * Next Generic EA job reference: JOB-GEA-YYMMDDNNN (NNN increments per day).
+     */
+    private function nextGeaJobReference(?\DateTimeInterface $now = null): string
+    {
+        $day = $now
+            ? \Carbon\Carbon::parse($now)->timezone('Asia/Manila')
+            : now('Asia/Manila');
+        $prefix = 'JOB-GEA-' . $day->format('ymd');
+
+        $rows = DB::table('job_general_assembly')
+            ->where(function ($q) use ($prefix) {
+                $q->where('job_reference_no', 'like', $prefix . '%')
+                    ->orWhere('reference', 'like', $prefix . '%');
+            })
+            ->get(['job_reference_no', 'reference']);
+
+        $max = 0;
+        $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)/';
+        foreach ($rows as $row) {
+            foreach ([$row->job_reference_no ?? '', $row->reference ?? ''] as $val) {
+                $val = trim((string) $val);
+                if ($val !== '' && preg_match($pattern, $val, $m)) {
+                    $max = max($max, (int) $m[1]);
+                }
+            }
+        }
+
+        return $prefix . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
     }
 
     /**

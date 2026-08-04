@@ -85,7 +85,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('luntian_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->mailbox_count ?? 0)));
 
                 $gaBase = Schema::hasTable('job_general_assembly')
-                    ? DB::table('job_general_assembly')->where('reference', 'like', 'JOBS%')
+                    ? DB::table('job_general_assembly')->where('reference', 'like', 'JOB%')
                     : null;
                 if ($gaBase !== null) {
                     JobCountsScope::applyJobsTableAssignment($gaBase);

@@ -44,6 +44,7 @@ class UserAccountController extends Controller
             'role'        => ['required', 'string', 'max:255', 'in:Branch,Admin,Staff,Checker,User'],
             'branch'      => ['nullable', 'string', 'max:255', 'required_if:role,Branch'],
             'password'    => ['nullable', 'string', 'min:6', 'max:255'],
+            'is_employee' => ['nullable', 'boolean'],
             'add_job_staff_modules' => ['nullable', 'array'],
             'add_job_staff_modules.*' => ['string', Rule::in(AddJobModules::keys())],
             'add_job_checker_modules' => ['nullable', 'array'],
@@ -62,6 +63,7 @@ class UserAccountController extends Controller
         $data['task']   = 'Active';
         $data['status'] = 'Active';
         $data['branch'] = $data['branch'] ?? '';
+        $data['is_employee'] = $request->boolean('is_employee');
         $data['add_job_staff_modules'] = array_values($data['add_job_staff_modules'] ?? []);
         $data['add_job_checker_modules'] = array_values($data['add_job_checker_modules'] ?? []);
 
@@ -103,6 +105,8 @@ class UserAccountController extends Controller
             'role'        => ['required', 'string', 'max:255', 'in:Branch,Admin,Staff,Checker,User'],
             'branch'      => ['nullable', 'string', 'max:255', 'required_if:role,Branch'],
             'password'    => ['nullable', 'string', 'min:6', 'max:255'],
+            'status'      => ['nullable', 'string', 'in:Active,Inactive'],
+            'is_employee' => ['nullable', 'boolean'],
             'add_job_staff_modules' => ['nullable', 'array'],
             'add_job_staff_modules.*' => ['string', Rule::in(AddJobModules::keys())],
             'add_job_checker_modules' => ['nullable', 'array'],
@@ -119,6 +123,13 @@ class UserAccountController extends Controller
         $data = $validator->validated();
 
         $data['branch'] = $data['branch'] ?? '';
+        $data['is_employee'] = $request->boolean('is_employee');
+        if (isset($data['status'])) {
+            $data['status'] = $data['status'];
+            if (strtolower(trim((string) ($user->task ?? ''))) !== 'archived') {
+                $data['task'] = $data['status'];
+            }
+        }
         $data['add_job_staff_modules'] = array_values($data['add_job_staff_modules'] ?? []);
         $data['add_job_checker_modules'] = array_values($data['add_job_checker_modules'] ?? []);
 
@@ -131,6 +142,37 @@ class UserAccountController extends Controller
         return redirect()
             ->route('users.index')
             ->with('success', 'User account updated successfully.');
+    }
+
+    public function updateStatus(Request $request, User $user)
+    {
+        if (strtolower(trim((string) $user->role)) === 'admin') {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'status' => ['required', 'string', 'in:Active,Inactive'],
+        ]);
+
+        $status = $data['status'];
+        $user->status = $status;
+        // Keep task in sync for list/archive/timesheet filters (Archive stays separate)
+        if (strtolower(trim((string) ($user->task ?? ''))) !== 'archived') {
+            $user->task = $status;
+        }
+        $user->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Status updated.',
+                'user_status' => $status,
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'User status updated to '.$status.'.');
     }
 
     public function destroy(User $user)

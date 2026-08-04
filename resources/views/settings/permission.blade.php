@@ -136,10 +136,10 @@
 
             <div
                 id="permissionFloatingActions"
-                class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95"
-                style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; background: rgba(15, 23, 42, 0.96); border-top: 1px solid rgba(148, 163, 184, 0.35); box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.22);">
+                class="fixed inset-x-0 bottom-0 z-[9999] border-t border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95 dark:shadow-[0_-6px_20px_rgba(15,23,42,0.22)]"
+            >
                 <div class="mx-auto flex w-full max-w-7xl justify-end gap-3">
-                    <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
+                    <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
                     <button type="submit" id="permissionSubmitBtn" @if(!empty($noUsers)) disabled @endif
                         class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-900">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

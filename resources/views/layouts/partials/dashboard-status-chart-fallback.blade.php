@@ -11,6 +11,8 @@
     }
     $shortBranch = static function (string $label): string {
         return match (strtoupper(trim($label))) {
+            'GENERIC EA' => 'GA',
+            'GENERAL EA' => 'GA',
             'GENERAL ASSEMBLY' => 'GA',
             'GENERIC ASSESSMENT' => 'GA',
             'EFFICIENT LIVING' => 'EL',
@@ -21,7 +23,7 @@
 @endphp
 <section
     id="dashboard-status-chart-fallback"
-    class="dashboard-status-chart mb-6 mt-6 min-w-0 overflow-hidden rounded-xl border border-slate-700/60 bg-[#0f172a] shadow-lg"
+    class="dashboard-status-chart h-full min-w-0 overflow-hidden rounded-xl border border-slate-700/60 bg-[#0f172a] shadow-lg"
     data-chart-api="{{ route('dashboard.chart', [], false) }}"
     data-branch-filter="{{ $chartBranchFilterLocked }}"
 >
@@ -36,15 +38,15 @@
         </h2>
     </div>
 
-    <div class="flex flex-col lg:flex-row">
-        <aside class="dashboard-chart-filters border-b border-slate-700/60 bg-slate-900/40 px-4 py-4 lg:w-56 lg:shrink-0 lg:border-b-0 lg:border-r xl:w-60">
-            <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+    <div class="flex flex-col">
+        <aside class="dashboard-chart-filters border-b border-slate-700/60 bg-slate-900/40 px-4 py-3">
+            <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
                 </svg>
                 Filters
             </div>
-            <div class="space-y-3">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <label class="dashboard-chart-filter-field block">
                     <span class="dashboard-chart-filter-field__label">Client</span>
                     <select id="dashboardChartClientFilter" aria-label="Filter by client" @disabled($chartBranchFilterLocked !== '') class="dashboard-chart-filter-select w-full rounded-lg border border-slate-600 bg-slate-900/80 px-2.5 py-2 text-xs font-medium text-slate-100">
@@ -75,7 +77,7 @@
                     </select>
                 </label>
             </div>
-            <button type="button" id="dashboardChartClearFilters" class="mt-4 hidden w-full rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-500 hover:bg-slate-800 hover:text-slate-100">
+            <button type="button" id="dashboardChartClearFilters" class="mt-3 hidden w-full rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-500 hover:bg-slate-800 hover:text-slate-100 sm:w-auto">
                 Clear filters
             </button>
         </aside>
@@ -152,7 +154,7 @@
 
     var fetchGen = 0;
     var shortBranch = function (label) {
-        var map = { 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'EFFICIENT LIVING': 'EL', 'FYRS ENERGY WISE': 'FYRS' };
+        var map = { 'GENERIC EA': 'GA', 'GENERAL EA': 'GA', 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'EFFICIENT LIVING': 'EL', 'FYRS ENERGY WISE': 'FYRS' };
         return map[label] || label;
     };
 

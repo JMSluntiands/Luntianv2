@@ -79,6 +79,7 @@
                                 Branch is <strong>required</strong> only when role is set to <strong>Branch</strong>.
                             </p>
                         </div>
+                        @include('users.partials.account-type-field', ['user' => new \App\Models\User(['is_employee' => true])])
                         @include('users.partials.add-job-modules-field', ['user' => new \App\Models\User()])
                     </div>
                 </div>
@@ -121,6 +122,17 @@
                                 {{ old('branch', 'LBS') ?: '—' }}
                             </p>
                         </div>
+                        <div class="col-span-2">
+                            <p class="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Account type</p>
+                            @php
+                                $previewEmployee = old('is_employee') !== null
+                                    ? in_array((string) old('is_employee'), ['1', 'true', 'on'], true)
+                                    : true;
+                            @endphp
+                            <p id="previewAccountType" class="rounded-full bg-slate-900/5 px-2 py-1 text-[0.72rem] font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:ring-slate-600">
+                                {{ $previewEmployee ? 'Employee' : 'Dummy account' }}
+                            </p>
+                        </div>
                     </div>
                     <p class="mt-3 text-[0.75rem] leading-snug text-slate-500 dark:text-slate-400">
                         This is how the user will appear in tables and selectors across the dashboard.
@@ -156,6 +168,8 @@
             var previewRole = document.getElementById('previewRole');
             var previewBranch = document.getElementById('previewBranch');
             var previewInitials = document.getElementById('previewInitials');
+            var previewAccountType = document.getElementById('previewAccountType');
+            var accountTypeRadios = document.querySelectorAll('.account-type-radio');
 
             if (typeof $ !== 'undefined' && $.fn.select2) {
                 $('.select2-single').select2({ width: '100%', allowClear: false });
@@ -191,6 +205,10 @@
                 if (branchSelect && previewBranch) {
                     previewBranch.textContent = branchSelect.value || 'LBS';
                 }
+                if (previewAccountType) {
+                    var emp = document.querySelector('.account-type-radio:checked');
+                    previewAccountType.textContent = (emp && emp.value === '1') ? 'Employee' : 'Dummy account';
+                }
             }
 
             updatePreview();
@@ -208,6 +226,9 @@
             if (fullnameInput) {
                 fullnameInput.addEventListener('input', updatePreview);
             }
+            accountTypeRadios.forEach(function (radio) {
+                radio.addEventListener('change', updatePreview);
+            });
             if (emailInput) {
                 emailInput.addEventListener('input', updatePreview);
             }

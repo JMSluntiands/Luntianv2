@@ -77,6 +77,8 @@ function parseInitialChart(): StatusChartPayload | null {
 
 function shortBranchLabel(label: string): string {
   const map: Record<string, string> = {
+    'GENERIC EA': 'GA',
+    'GENERAL EA': 'GA',
     'GENERAL ASSEMBLY': 'GA',
     'GENERIC ASSESSMENT': 'GA',
     'EFFICIENT LIVING': 'EL',
@@ -370,7 +372,7 @@ export default function JobStatusChart() {
         : '';
 
   return (
-    <section className="animate-dashboard-panel dashboard-panel-animate-delay-2 mb-6 mt-6 min-w-0 overflow-hidden rounded-xl border border-slate-700/60 bg-[#0f172a] shadow-lg">
+    <section className="animate-dashboard-panel dashboard-panel-animate-delay-2 h-full min-w-0 overflow-hidden rounded-xl border border-slate-700/60 bg-[#0f172a] shadow-lg">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 px-4 py-3 sm:px-5">
         <h2 className="flex items-center gap-2.5 text-sm font-semibold text-slate-100 sm:text-base">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400">
@@ -390,15 +392,15 @@ export default function JobStatusChart() {
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row">
-        <aside className="dashboard-chart-filters border-b border-slate-700/60 bg-slate-900/40 px-4 py-4 lg:w-56 lg:shrink-0 lg:border-b-0 lg:border-r xl:w-60">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <div className="flex flex-col">
+        <aside className="dashboard-chart-filters border-b border-slate-700/60 bg-slate-900/40 px-4 py-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
             <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             Filters
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <FilterField
               label="Client"
               value={branchFilterLocked || clientFilter}
@@ -426,7 +428,7 @@ export default function JobStatusChart() {
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-4 w-full rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800 hover:text-slate-100"
+              className="mt-3 w-full rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800 hover:text-slate-100 sm:w-auto"
             >
               Clear filters
             </button>

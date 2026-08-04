@@ -50,7 +50,7 @@ class DashboardJobStatsService
     }
 
     /**
-     * Same reference logged today already has Processing  do not also count older status rows in encoded_today.
+     * Same reference logged today already has Processing ? do not also count older status rows in encoded_today.
      */
     private static function applyExcludeStaleEncodedTodayWhenProcessingSibling(
         $q,
@@ -232,7 +232,7 @@ class DashboardJobStatsService
     }
 
     /**
-     * Job status chart: per dashboard stat branch (LBS, LUNTIAN, ) with status breakdown.
+     * Job status chart: per dashboard stat branch (LBS, LUNTIAN, ?) with status breakdown.
      * Uses the same totals as the Total Jobs card (completed + processing + pending + encoded today).
      *
      * @return array{
@@ -389,7 +389,7 @@ class DashboardJobStatsService
                 $name = trim((string) ($user->fullname ?? $user->username ?? ''));
                 $staffByCode[$code] = [
                     'value' => $code,
-                    'label' => $name !== '' ? "{$code}  {$name}" : $code,
+                    'label' => $name !== '' ? "{$code} ? {$name}" : $code,
                 ];
             }
         }
@@ -403,6 +403,8 @@ class DashboardJobStatsService
     {
         return match (strtoupper(trim($branchLabel))) {
             'LBS' => 'lbs',
+            'GENERIC EA' => 'general_assembly',
+            'GENERAL EA' => 'general_assembly',
             'GENERAL ASSEMBLY' => 'general_assembly',
             'GENERIC ASSESSMENT' => 'general_assembly',
             'LUNTIAN' => 'luntian',
@@ -703,6 +705,8 @@ class DashboardJobStatsService
 
         return match ($branchLabel) {
             'LBS' => self::countJobsTableLiveStatus($statusName, 'lbs'),
+            'GENERIC EA' => self::countGeneralAssemblyLiveStatus($statusName),
+            'GENERAL EA' => self::countGeneralAssemblyLiveStatus($statusName),
             'GENERAL ASSEMBLY' => self::countGeneralAssemblyLiveStatus($statusName),
             'GENERIC ASSESSMENT' => self::countGeneralAssemblyLiveStatus($statusName),
             'LUNTIAN' => self::countJobsTableLiveStatus($statusName, 'luntian'),
@@ -744,7 +748,7 @@ class DashboardJobStatsService
             return 0;
         }
 
-        $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOBS%');
+        $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOB%');
         self::applyLbsPipelineExclusions($q, 'lbs');
         $q->whereRaw('LOWER(TRIM(job_status)) = ?', [mb_strtolower(trim($statusName))]);
         JobCountsScope::applyJobsTableAssignment($q);
@@ -810,6 +814,8 @@ class DashboardJobStatsService
 
         return match ($branchLabel) {
             'LBS' => self::countJobsTable($bucket, 'lbs', $date, $statusName),
+            'GENERIC EA' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
+            'GENERAL EA' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
             'GENERAL ASSEMBLY' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
             'GENERIC ASSESSMENT' => self::countGeneralAssemblyTable($bucket, $date, $statusName),
             'LUNTIAN' => self::countJobsTable($bucket, 'luntian', $date, $statusName),
@@ -883,7 +889,7 @@ class DashboardJobStatsService
 
         [$start, $end, $dateStr] = self::dayBoundsManila($date);
 
-        $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOBS%');
+        $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOB%');
 
         self::applyLbsPipelineExclusions($q, 'lbs');
 

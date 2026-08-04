@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Mirrors existing LBS grants to General Assembly (general_assembly.* / job_view.general_assembly.*).
+ * Mirrors existing LBS grants to Generic EA (general_assembly.* / job_view.general_assembly.*).
  */
 return new class extends Migration
 {

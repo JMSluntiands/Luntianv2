@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Legacy tables (clients, jobs, client_accounts) use utf8mb4_general_ci.
      * job_general_assembly was created with Laravel's default utf8mb4_unicode_ci,
-     * which breaks JOINs (e.g. General Assembly mailbox).
+     * which breaks JOINs (e.g. Generic EA mailbox).
      */
     public function up(): void
     {

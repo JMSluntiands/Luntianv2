@@ -82,6 +82,33 @@
                                 Branch is <strong>required</strong> only when role is set to <strong>Branch</strong>.
                             </p>
                         </div>
+                        @include('users.partials.account-type-field', ['user' => $user])
+                        <div class="md:col-span-2">
+                            <p class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</p>
+                            @php
+                                $rawStatus = strtolower(trim((string) old('status', $user->status ?: $user->task ?: 'Active')));
+                                $editStatus = in_array($rawStatus, ['inactive', 'archived'], true) ? 'Inactive' : 'Active';
+                            @endphp
+                            <div class="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-600 dark:bg-slate-900/40" role="group" aria-label="User status">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="status" value="Active" class="peer sr-only" @checked($editStatus === 'Active')>
+                                    <span class="inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold text-slate-600 transition-colors peer-checked:bg-white peer-checked:text-emerald-700 peer-checked:shadow-sm dark:text-slate-300 dark:peer-checked:bg-slate-700 dark:peer-checked:text-emerald-300">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                        Active
+                                    </span>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="status" value="Inactive" class="peer sr-only" @checked($editStatus === 'Inactive')>
+                                    <span class="inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold text-slate-600 transition-colors peer-checked:bg-white peer-checked:text-slate-800 peer-checked:shadow-sm dark:text-slate-300 dark:peer-checked:bg-slate-700 dark:peer-checked:text-slate-100">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                        Inactive
+                                    </span>
+                                </label>
+                            </div>
+                            <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                Inactive users are hidden from the Timesheet leave overview.
+                            </p>
+                        </div>
                         @include('users.partials.add-job-modules-field', ['user' => $user])
                     </div>
                 </div>
@@ -124,6 +151,17 @@
                                 {{ old('branch', $user->branch) ?: '—' }}
                             </p>
                         </div>
+                        <div class="col-span-2">
+                            <p class="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Account type</p>
+                            @php
+                                $previewEmployee = old('is_employee') !== null
+                                    ? in_array((string) old('is_employee'), ['1', 'true', 'on'], true)
+                                    : (bool) ($user->is_employee ?? true);
+                            @endphp
+                            <p id="previewAccountType" class="rounded-full bg-slate-900/5 px-2 py-1 text-[0.72rem] font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:ring-slate-600">
+                                {{ $previewEmployee ? 'Employee' : 'Dummy account' }}
+                            </p>
+                        </div>
                     </div>
                     <p class="mt-3 text-[0.75rem] leading-snug text-slate-500 dark:text-slate-400">
                         This is how the user will appear in tables and selectors across the dashboard.
@@ -159,6 +197,8 @@
             var previewRole = document.getElementById('previewRole');
             var previewBranch = document.getElementById('previewBranch');
             var previewInitials = document.getElementById('previewInitials');
+            var previewAccountType = document.getElementById('previewAccountType');
+            var accountTypeRadios = document.querySelectorAll('.account-type-radio');
 
             if (typeof $ !== 'undefined' && $.fn.select2) {
                 $('.select2-single').select2({ width: '100%', allowClear: false });
@@ -194,6 +234,10 @@
                 if (branchSelect && previewBranch) {
                     previewBranch.textContent = branchSelect.value || '—';
                 }
+                if (previewAccountType) {
+                    var emp = document.querySelector('.account-type-radio:checked');
+                    previewAccountType.textContent = (emp && emp.value === '1') ? 'Employee' : 'Dummy account';
+                }
             }
 
             updatePreview();
@@ -210,6 +254,12 @@
             }
             if (fullnameInput) {
                 fullnameInput.addEventListener('input', updatePreview);
+            }
+            accountTypeRadios.forEach(function (radio) {
+                radio.addEventListener('change', updatePreview);
+            });
+            if (emailInput) {
+                emailInput.addEventListener('input', updatePreview);
             }
             if (emailInput) {
                 emailInput.addEventListener('input', updatePreview);

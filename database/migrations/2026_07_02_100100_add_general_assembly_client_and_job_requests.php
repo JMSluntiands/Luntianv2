@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * General Assembly vertical (GA01): client row + job request types mirrored from LBS01 (EA_GA_*).
+     * Generic EA vertical (GA01): client row + job request types mirrored from LBS01 (EA_GA_*).
      */
     public function up(): void
     {

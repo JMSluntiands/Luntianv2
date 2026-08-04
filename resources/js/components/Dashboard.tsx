@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Calendar, { type HolidaySource } from './Calendar';
+import DashboardAnnouncementCard from './DashboardAnnouncementCard';
 import JobStatusChart from './JobStatusChart';
+
+declare global {
+  interface Window {
+    showSuccessToast?: (message: string) => void;
+  }
+}
 
 type CardVariant = 'total' | 'completed' | 'processing' | 'pending';
 
@@ -25,6 +32,208 @@ type HolidayItem = {
   name: string;
   source: HolidaySource;
 };
+
+type AttendanceStatus = {
+  clocked_in: boolean;
+  clocked_out: boolean;
+  clocked_in_at: string | null;
+  clocked_out_at: string | null;
+  local_time: string;
+  cutoff_label: string;
+  timezone_label: string;
+  can_clock_in: boolean;
+  can_clock_out: boolean;
+};
+
+function parseAttendanceFromDom(): AttendanceStatus | null {
+  const el = document.getElementById('dashboard-attendance-json');
+  const raw = el?.textContent?.trim();
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<AttendanceStatus>;
+    return {
+      ...defaultAttendanceStatus(),
+      ...parsed,
+      clocked_out: Boolean(parsed.clocked_out),
+      clocked_out_at: parsed.clocked_out_at ?? null,
+      can_clock_out: Boolean(parsed.can_clock_out),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function defaultAttendanceStatus(): AttendanceStatus {
+  return {
+    clocked_in: false,
+    clocked_out: false,
+    clocked_in_at: null,
+    clocked_out_at: null,
+    local_time: '',
+    cutoff_label: '8:00 AM',
+    timezone_label: 'Philippines (PHT)',
+    can_clock_in: true,
+    can_clock_out: false,
+  };
+}
+
+function csrfToken(): string {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta?.getAttribute('content')?.trim() || '';
+}
+
+function AttendanceBanner({
+  attendance,
+  clockInUrl,
+  clockOutUrl,
+  onAttendanceChange,
+}: {
+  attendance: AttendanceStatus;
+  clockInUrl: string;
+  clockOutUrl: string;
+  onAttendanceChange: (next: AttendanceStatus) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [localTime, setLocalTime] = useState(attendance.local_time);
+
+  useEffect(() => {
+    setLocalTime(attendance.local_time);
+  }, [attendance.local_time]);
+
+  useEffect(() => {
+    const tick = () => {
+      try {
+        setLocalTime(
+          new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Manila',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }).format(new Date())
+        );
+      } catch {
+        // keep last known time
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 30000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const postAttendance = async (url: string, failMessage: string, successFallback: string) => {
+    if (!url || busy) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': csrfToken(),
+        },
+        credentials: 'same-origin',
+      });
+      const body = (await res.json().catch(() => null)) as
+        | { status?: string; message?: string; attendance?: AttendanceStatus }
+        | null;
+      if (!res.ok || body?.status !== 'success' || !body.attendance) {
+        if (window.showSuccessToast) {
+          window.showSuccessToast(body?.message || failMessage);
+        }
+        return;
+      }
+      onAttendanceChange(body.attendance);
+      if (window.showSuccessToast) {
+        window.showSuccessToast(body.message || successFallback);
+      }
+    } catch {
+      if (window.showSuccessToast) {
+        window.showSuccessToast(failMessage);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleClockIn = () => {
+    if (!attendance.can_clock_in) {
+      return;
+    }
+    void postAttendance(clockInUrl, 'Could not clock in.', 'Clocked in successfully.');
+  };
+
+  const handleClockOut = () => {
+    if (!attendance.can_clock_out) {
+      return;
+    }
+    void postAttendance(clockOutUrl, 'Could not clock out.', 'Clocked out successfully.');
+  };
+
+  const actionEnabled =
+    (attendance.can_clock_in || attendance.can_clock_out) && !busy;
+
+  let buttonLabel = 'CLOCK IN';
+  if (busy) {
+    buttonLabel = 'Saving…';
+  } else if (attendance.clocked_out) {
+    buttonLabel = 'CLOCKED OUT';
+  } else if (attendance.can_clock_out) {
+    buttonLabel = 'CLOCK OUT';
+  } else if (attendance.clocked_in) {
+    buttonLabel = 'CLOCKED IN';
+  }
+
+  return (
+    <section className="mb-5 flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-white px-4 py-3.5 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/90 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">Daily attendance</h2>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700/80 dark:text-slate-300">
+            <span aria-hidden className="text-[0.8125rem] leading-none">🇵🇭</span>
+            {attendance.timezone_label}
+          </span>
+        </div>
+        <p className="mt-1.5 text-sm leading-snug text-slate-500 dark:text-slate-400">
+          {attendance.clocked_out ? (
+            <>
+              You clocked in at <span className="font-medium text-slate-700 dark:text-slate-200">{attendance.clocked_in_at}</span>
+              {' '}and clocked out at <span className="font-medium text-slate-700 dark:text-slate-200">{attendance.clocked_out_at}</span>
+              {' '}({attendance.timezone_label}). Local time now:{' '}
+              <span className="font-medium text-slate-700 dark:text-slate-200">{localTime || '—'}</span>
+            </>
+          ) : attendance.clocked_in ? (
+            <>
+              You clocked in at <span className="font-medium text-slate-700 dark:text-slate-200">{attendance.clocked_in_at}</span>
+              {' '}({attendance.timezone_label}). Local time now:{' '}
+              <span className="font-medium text-slate-700 dark:text-slate-200">{localTime || '—'}</span>
+            </>
+          ) : (
+            <>
+              Staff who have not clocked in by {attendance.cutoff_label} ({attendance.timezone_label}) will appear as absent.
+              Local time now: <span className="font-medium text-slate-700 dark:text-slate-200">{localTime || '—'}</span>
+            </>
+          )}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={attendance.can_clock_out ? handleClockOut : handleClockIn}
+        disabled={!actionEnabled}
+        className={`inline-flex shrink-0 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
+          actionEnabled
+            ? 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+            : 'cursor-not-allowed bg-slate-400 dark:bg-slate-600 dark:text-slate-300'
+        }`}
+      >
+        {buttonLabel}
+      </button>
+    </section>
+  );
+}
 
 /** Laravel may run in a subdirectory; root-relative `/dashboard/...` would 404. */
 function resolveApiBase(raw: string | undefined, fallback: string): string {
@@ -82,7 +291,7 @@ function parseInitialHolidaysFromDom(year: number): { ph: HolidayItem[]; au: Hol
 
 const BRANCH_ORDER = [
   'LBS',
-  'GENERAL ASSEMBLY',
+  'GENERIC EA',
   'LUNTIAN',
   'BPH',
   'BLUINQ',
@@ -148,7 +357,10 @@ type StatCardData = CardTemplate & { value: number; items: { label: string; valu
 
 const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   LBS: 'lbs',
+  'GENERIC EA': 'general-assembly',
+  'GENERAL EA': 'general-assembly',
   'GENERAL ASSEMBLY': 'general-assembly',
+  'GENERIC ASSESSMENT': 'general-assembly',
   LUNTIAN: 'luntian',
   BPH: 'bph',
   BLUINQ: 'bluinq',
@@ -161,13 +373,17 @@ const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   'LEADING ENERGY': 'leading-energy',
 };
 
+const CARD_BG = 'bg-[#F0C48A] dark:bg-[#A67C3A]';
+const CARD_ICON = 'text-amber-900/55 dark:text-amber-50/50';
+const CARD_PILL = 'bg-amber-950/10 text-amber-950 dark:bg-black/25 dark:text-amber-50';
+
 const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'total',
     title: 'Total Jobs',
-    bgClass: 'bg-[#6b4a38] dark:bg-[#6b4a38]',
-    iconColor: 'text-white',
-    pillClass: 'bg-black/25 text-white',
+    bgClass: CARD_BG,
+    iconColor: CARD_ICON,
+    pillClass: CARD_PILL,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="h-full w-full">
         <path d="M12 12h.01" />
@@ -180,9 +396,9 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'completed',
     title: 'Completed Jobs',
-    bgClass: 'bg-[#a8622a] dark:bg-[#a8622a]',
-    iconColor: 'text-white',
-    pillClass: 'bg-black/20 text-white',
+    bgClass: CARD_BG,
+    iconColor: CARD_ICON,
+    pillClass: CARD_PILL,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="h-full w-full">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -193,9 +409,9 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'processing',
     title: 'Processing',
-    bgClass: 'bg-[#8f6f32] dark:bg-[#8f6f32]',
-    iconColor: 'text-white',
-    pillClass: 'bg-black/20 text-white',
+    bgClass: CARD_BG,
+    iconColor: CARD_ICON,
+    pillClass: CARD_PILL,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="h-full w-full">
         <circle cx={12} cy={12} r={10} />
@@ -206,9 +422,9 @@ const CARD_TEMPLATES: CardTemplate[] = [
   {
     key: 'pending',
     title: 'Pending',
-    bgClass: 'bg-[#d4c9b8] dark:bg-[#d4c9b8]',
-    iconColor: 'text-slate-700',
-    pillClass: 'bg-slate-600/25 text-slate-800',
+    bgClass: CARD_BG,
+    iconColor: CARD_ICON,
+    pillClass: CARD_PILL,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} className="h-full w-full">
         <rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
@@ -239,6 +455,147 @@ function dashboardAsOfSubtitle(): string {
   }).format(new Date());
 
   return `As of today, ${formatted} — overview of your jobs and calendar.`;
+}
+
+const DASHBOARD_ZONES = [
+  { id: 'Asia/Manila', short: 'PHT', label: 'Philippines (PHT)' },
+  { id: 'Australia/Sydney', short: 'AEST', label: 'Australia — Sydney' },
+  { id: 'Australia/Perth', short: 'AWST', label: 'Australia — Perth' },
+  { id: 'UTC', short: 'UTC', label: 'UTC' },
+] as const;
+
+type DashboardZoneId = (typeof DASHBOARD_ZONES)[number]['id'];
+
+const TZ_STORAGE_KEY = 'dashboard_display_timezone';
+
+function readStoredZone(): DashboardZoneId {
+  try {
+    const raw = localStorage.getItem(TZ_STORAGE_KEY)?.trim();
+    if (raw && DASHBOARD_ZONES.some((z) => z.id === raw)) {
+      return raw as DashboardZoneId;
+    }
+  } catch {
+    // ignore
+  }
+  return 'Asia/Manila';
+}
+
+function formatInZone(date: Date, timeZone: string): { date: string; time: string } {
+  const dateFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timeFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  return {
+    date: dateFmt.format(date).toUpperCase(),
+    time: timeFmt.format(date).toUpperCase(),
+  };
+}
+
+function DashboardDateTimeZone() {
+  const [zoneId, setZoneId] = useState<DashboardZoneId>(() =>
+    typeof window !== 'undefined' ? readStoredZone() : 'Asia/Manila'
+  );
+  const [now, setNow] = useState(() => new Date());
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const zone = DASHBOARD_ZONES.find((z) => z.id === zoneId) ?? DASHBOARD_ZONES[0];
+  const { date, time } = formatInZone(now, zone.id);
+
+  const pickZone = (id: DashboardZoneId) => {
+    setZoneId(id);
+    setOpen(false);
+    try {
+      localStorage.setItem(TZ_STORAGE_KEY, id);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div ref={rootRef} className="relative shrink-0 self-start sm:self-center">
+      <div className="inline-flex items-center gap-0 overflow-hidden rounded-md bg-[#0b2a4a] text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm sm:text-xs">
+        <span className="px-3 py-2 tabular-nums">{date}</span>
+        <span className="self-stretch w-px bg-white/35" aria-hidden />
+        <span className="px-3 py-2 tabular-nums">{time}</span>
+        <span className="self-stretch w-px bg-white/35" aria-hidden />
+        <button
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 transition-colors hover:bg-white/10 focus:outline-none focus-visible:bg-white/15"
+          title="Change timezone"
+        >
+          <span>{zone.short}</span>
+          <svg className={`h-3 w-3 opacity-80 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {open ? (
+        <ul
+          role="listbox"
+          aria-label="Timezone"
+          className="absolute right-0 z-50 mt-1.5 min-w-[12.5rem] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800"
+        >
+          {DASHBOARD_ZONES.map((z) => {
+            const active = z.id === zone.id;
+            return (
+              <li key={z.id} role="option" aria-selected={active}>
+                <button
+                  type="button"
+                  onClick={() => pickZone(z.id)}
+                  className={`flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
+                    active
+                      ? 'bg-emerald-50 font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+                      : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60'
+                  }`}
+                >
+                  <span>{z.label}</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                    {z.short}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
 
 function normalizeBranchKey(s: string): string {
@@ -347,6 +704,8 @@ function StatCard({
   iconColor,
   pillClass,
   lightCard = false,
+  expanded,
+  onToggle,
 }: {
   index: number;
   cardKey: CardVariant;
@@ -358,72 +717,99 @@ function StatCard({
   iconColor: string;
   pillClass: string;
   lightCard?: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const delayClass = `dashboard-card-animate-delay-${index}`;
-  const textClass = lightCard ? 'text-slate-800' : 'text-white/85';
-  const borderClass = lightCard ? 'border-slate-300/40' : 'border-white/15';
+  const textClass = lightCard ? 'text-amber-950/80 dark:text-amber-50/85' : 'text-white/85';
+  const borderClass = lightCard ? 'border-amber-950/15 dark:border-amber-50/20' : 'border-white/15';
+  const panelId = `dashboard-card-panel-${cardKey}`;
+
   return (
     <div
-      className={`animate-dashboard-card ${delayClass} relative flex min-w-0 flex-col overflow-hidden rounded-xl transition-transform duration-300 ease-out hover:-translate-y-1 ${lightCard ? 'text-slate-800' : 'text-white'} ${bgClass}`}
+      className={`animate-dashboard-card ${delayClass} relative flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl transition-transform duration-300 ease-out hover:-translate-y-1 ${lightCard ? 'text-amber-950 dark:text-amber-50' : 'text-white'} ${bgClass}`}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-controls={panelId}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
     >
       {/* Large icon as card background – no border, no bg */}
       <div className={`pointer-events-none absolute -right-2 -top-2 h-[100px] w-[100px] opacity-20 ${iconColor}`} aria-hidden>
         {icon}
       </div>
       <div className="relative z-10 flex flex-1 flex-col p-3 sm:p-4">
-        <p className={`text-xs font-semibold uppercase tracking-wider ${textClass}`}>{title}</p>
-        <p className={`mt-1.5 text-2xl font-bold tracking-tight tabular-nums sm:text-3xl ${lightCard ? 'text-slate-900' : ''}`}>
-          {value}
-        </p>
-        <div className={`mt-2.5 border-t ${borderClass}`} />
-        <div className="mt-2 space-y-1">
-          {items.map((item, i) => (
-            <div
-              key={`${cardKey}-${item.label}-${i}`}
-              className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm transition-colors ${resolveCardRowUrl(cardKey, item.label) ? 'cursor-pointer' : ''} ${lightCard ? 'hover:bg-slate-400/10' : 'hover:bg-white/5'}`}
-              onClick={() => {
-                const nextUrl = resolveCardRowUrl(cardKey, item.label);
-                if (nextUrl) {
-                  window.location.href = nextUrl;
-                }
-              }}
-              role={resolveCardRowUrl(cardKey, item.label) ? 'button' : undefined}
-              tabIndex={resolveCardRowUrl(cardKey, item.label) ? 0 : undefined}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  const nextUrl = resolveCardRowUrl(cardKey, item.label);
-                  if (nextUrl) {
-                    e.preventDefault();
-                    window.location.href = nextUrl;
-                  }
-                }
-              }}
-              title={resolveCardRowUrl(cardKey, item.label) ? `Open ${item.label} ${CARD_BREAKDOWN_STATUS[cardKey]} table` : undefined}
-              aria-label={resolveCardRowUrl(cardKey, item.label) ? `Open ${item.label} ${CARD_BREAKDOWN_STATUS[cardKey]} table` : undefined}
-            >
-              <div className="min-w-0 flex-1 space-y-1">
-                <p
-                  className={`text-[13px] font-semibold leading-snug tracking-tight ${lightCard ? 'text-slate-900' : 'text-white'}`}
+        <div className="min-w-0">
+          <p className={`text-xs font-semibold uppercase tracking-wider ${textClass}`}>{title}</p>
+          <p className={`mt-1.5 text-2xl font-bold tracking-tight tabular-nums sm:text-3xl ${lightCard ? 'text-amber-950 dark:text-amber-50' : ''}`}>
+            {value}
+          </p>
+        </div>
+
+        <div
+          id={panelId}
+          className={`grid transition-[grid-template-rows] duration-300 ease-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className={`mt-2.5 border-t ${borderClass}`} />
+            <div className="mt-2 space-y-1">
+              {items.map((item, i) => (
+                <div
+                  key={`${cardKey}-${item.label}-${i}`}
+                  className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-sm transition-colors ${resolveCardRowUrl(cardKey, item.label) ? 'cursor-pointer' : ''} ${lightCard ? 'hover:bg-amber-950/5 dark:hover:bg-black/15' : 'hover:bg-white/5'}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextUrl = resolveCardRowUrl(cardKey, item.label);
+                    if (nextUrl) {
+                      window.location.href = nextUrl;
+                    }
+                  }}
+                  role={resolveCardRowUrl(cardKey, item.label) ? 'button' : undefined}
+                  tabIndex={resolveCardRowUrl(cardKey, item.label) ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      const nextUrl = resolveCardRowUrl(cardKey, item.label);
+                      if (nextUrl) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = nextUrl;
+                      }
+                    }
+                  }}
+                  title={resolveCardRowUrl(cardKey, item.label) ? `Open ${item.label} ${CARD_BREAKDOWN_STATUS[cardKey]} table` : undefined}
+                  aria-label={resolveCardRowUrl(cardKey, item.label) ? `Open ${item.label} ${CARD_BREAKDOWN_STATUS[cardKey]} table` : undefined}
                 >
-                  {CARD_BREAKDOWN_STATUS[cardKey]}
-                </p>
-                <p
-                  className={`text-[11px] font-medium leading-tight ${lightCard ? 'text-slate-600' : 'text-white/65'}`}
-                >
-                  Branch: <span className="font-semibold tabular-nums">{item.label}</span>
-                </p>
-              </div>
-              {resolveCardRowUrl(cardKey, item.label) ? (
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums transition-opacity ${pillClass}`}>
-                  {item.value}
-                </span>
-              ) : (
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${pillClass}`}>
-                  {item.value}
-                </span>
-              )}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p
+                      className={`text-[13px] font-semibold leading-snug tracking-tight ${lightCard ? 'text-amber-950 dark:text-amber-50' : 'text-white'}`}
+                    >
+                      {CARD_BREAKDOWN_STATUS[cardKey]}
+                    </p>
+                    <p
+                      className={`text-[11px] font-medium leading-tight ${lightCard ? 'text-amber-950/65 dark:text-amber-50/70' : 'text-white/65'}`}
+                    >
+                      Branch: <span className="font-semibold tabular-nums">{item.label}</span>
+                    </p>
+                  </div>
+                  {resolveCardRowUrl(cardKey, item.label) ? (
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums transition-opacity ${pillClass}`}>
+                      {item.value}
+                    </span>
+                  ) : (
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${pillClass}`}>
+                      {item.value}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
@@ -449,6 +835,24 @@ export default function Dashboard() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStatsPayload>(() =>
     normalizeStatsPayload(parseDashboardStats())
   );
+  const [cardsExpanded, setCardsExpanded] = useState(false);
+  const [attendance, setAttendance] = useState<AttendanceStatus>(
+    () => parseAttendanceFromDom() ?? defaultAttendanceStatus()
+  );
+
+  const clockInUrl = useMemo(() => {
+    const el = document.getElementById('dashboard-root');
+    return (el?.dataset.attendanceClockInUrl ?? '').trim();
+  }, []);
+
+  const clockOutUrl = useMemo(() => {
+    const el = document.getElementById('dashboard-root');
+    return (el?.dataset.attendanceClockOutUrl ?? '').trim();
+  }, []);
+
+  const toggleAllCards = useCallback(() => {
+    setCardsExpanded((v) => !v);
+  }, []);
 
   const statCards = useMemo(() => {
     const cards = buildStatCards(dashboardStats);
@@ -569,10 +973,20 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page min-h-0 w-full">
-      <header className="dashboard-page__header">
-        <h1 className="dashboard-page__title">Dashboard</h1>
-        <p className="dashboard-page__subtitle">{dashboardAsOfSubtitle()}</p>
+      <header className="dashboard-page__header mb-2 flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="dashboard-page__title">Dashboard</h1>
+          <p className="dashboard-page__subtitle">{dashboardAsOfSubtitle()}</p>
+        </div>
+        <DashboardDateTimeZone />
       </header>
+
+      <AttendanceBanner
+        attendance={attendance}
+        clockInUrl={clockInUrl}
+        clockOutUrl={clockOutUrl}
+        onAttendanceChange={setAttendance}
+      />
 
       <section className="dashboard-cards">
         {statCards.map((card, index) => (
@@ -587,12 +1001,21 @@ export default function Dashboard() {
             bgClass={card.bgClass}
             iconColor={card.iconColor}
             pillClass={card.pillClass}
-            lightCard={index === 3}
+            lightCard
+            expanded={cardsExpanded}
+            onToggle={toggleAllCards}
           />
         ))}
       </section>
 
-      <JobStatusChart />
+      <section className="mb-6 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch">
+        <div className="min-w-0">
+          <JobStatusChart />
+        </div>
+        <div className="min-w-0 lg:min-h-[28rem]">
+          <DashboardAnnouncementCard />
+        </div>
+      </section>
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
         <div className="animate-dashboard-panel dashboard-panel-animate-delay-0 min-w-0 overflow-visible rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90 lg:col-span-2">

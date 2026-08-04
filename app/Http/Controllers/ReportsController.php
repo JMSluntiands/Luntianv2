@@ -160,10 +160,11 @@ class ReportsController extends Controller
         ";
     }
 
-    public function index(Request $request)
+    /**
+     * @return array{client: string, staff: string, dateFrom: string, dateTo: string, entries: int, filterClientRaw: string, filterStaffRaw: string}
+     */
+    private static function parseReportFilters(Request $request): array
     {
-        $utf8u = 'utf8mb4_unicode_ci';
-
         $entries = (int) $request->query('entries', 200);
         if ($entries <= 0) {
             $entries = 25;
@@ -189,30 +190,63 @@ class ReportsController extends Controller
             $dateTo = $today;
         }
 
-        $union = self::unionAllJobsSql($utf8u);
+        return [
+            'client' => $client,
+            'staff' => $staff,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'entries' => $entries,
+            'filterClientRaw' => $filterClientRaw,
+            'filterStaffRaw' => $filterStaffRaw,
+        ];
+    }
 
+    /**
+     * @param  array{client: string, staff: string, dateFrom: string, dateTo: string}  $filters
+     * @return array{0: string, 1: list<mixed>}
+     */
+    private static function buildWhereClause(array $filters): array
+    {
         $where = 'u.completion_date IS NOT NULL';
         $filterParams = [];
 
-        if ($client !== '') {
+        if ($filters['client'] !== '') {
             $where .= ' AND LOWER(TRIM(u.client_label)) = LOWER(?)';
-            $filterParams[] = $client;
+            $filterParams[] = $filters['client'];
         }
-        if ($staff !== '') {
+        if ($filters['staff'] !== '') {
             $where .= ' AND LOWER(TRIM(u.user_code)) = LOWER(?)';
-            $filterParams[] = $staff;
+            $filterParams[] = $filters['staff'];
         }
-        if ($dateFrom !== '') {
+        if ($filters['dateFrom'] !== '') {
             $where .= ' AND DATE(u.completion_date) >= ?';
-            $filterParams[] = $dateFrom;
+            $filterParams[] = $filters['dateFrom'];
         }
-        if ($dateTo !== '') {
+        if ($filters['dateTo'] !== '') {
             $where .= ' AND DATE(u.completion_date) <= ?';
-            $filterParams[] = $dateTo;
+            $filterParams[] = $filters['dateTo'];
         }
 
-        // One row per completion day, job type, and user; units summed per user.
-        // Inner subquery normalizes columns first so GROUP BY works with ONLY_FULL_GROUP_BY.
+        return [$where, $filterParams];
+    }
+
+    /**
+     * @param  array{client: string, staff: string, dateFrom: string, dateTo: string}  $filters
+     * @return \Illuminate\Support\Collection<int, object{completion_date: mixed, user_code: mixed, job_type: mixed, units: int}>
+     */
+    private static function fetchGroupedRows(array $filters, ?int $limit = null): \Illuminate\Support\Collection
+    {
+        $utf8u = 'utf8mb4_unicode_ci';
+        $union = self::unionAllJobsSql($utf8u);
+        [$where, $filterParams] = self::buildWhereClause($filters);
+
+        $limitSql = '';
+        $params = $filterParams;
+        if ($limit !== null && $limit > 0) {
+            $limitSql = ' LIMIT ?';
+            $params[] = $limit;
+        }
+
         $sqlGrouped = "
             SELECT
                 src.completion_date,
@@ -230,11 +264,10 @@ class ReportsController extends Controller
             ) src
             GROUP BY src.completion_date, src.user_code, src.job_type
             ORDER BY src.completion_date DESC, src.user_code ASC, src.job_type ASC
-            LIMIT ?
+            {$limitSql}
         ";
 
-        $groupedParams = array_merge($filterParams, [$entries]);
-        $rows = collect(DB::select($sqlGrouped, $groupedParams))->map(function ($r) {
+        return collect(DB::select($sqlGrouped, $params))->map(function ($r) {
             return (object) [
                 'completion_date' => $r->completion_date,
                 'user_code' => $r->user_code,
@@ -242,6 +275,16 @@ class ReportsController extends Controller
                 'units' => (int) ($r->units ?? 0),
             ];
         });
+    }
+
+    public function index(Request $request)
+    {
+        $utf8u = 'utf8mb4_unicode_ci';
+        $filters = self::parseReportFilters($request);
+        $union = self::unionAllJobsSql($utf8u);
+        [$where, $filterParams] = self::buildWhereClause($filters);
+
+        $rows = self::fetchGroupedRows($filters, $filters['entries']);
 
         $sqlSummary = "
             SELECT
@@ -335,12 +378,54 @@ class ReportsController extends Controller
             'summaryByLabel' => $summaryByLabel,
             'totalJobsInFilter' => $totalJobsInFilter,
             'totalUnitsInFilter' => $totalUnitsInFilter,
-            'filterDateFrom' => $dateFrom,
-            'filterDateTo' => $dateTo,
-            'filterEntries' => $entries,
-            'filterClient' => $filterClientRaw === '' ? 'all' : $filterClientRaw,
+            'filterDateFrom' => $filters['dateFrom'],
+            'filterDateTo' => $filters['dateTo'],
+            'filterEntries' => $filters['entries'],
+            'filterClient' => $filters['filterClientRaw'] === '' ? 'all' : $filters['filterClientRaw'],
             'staffOptions' => $staffOptions,
-            'filterStaff' => $filterStaffRaw === '' ? 'all' : $filterStaffRaw,
+            'filterStaff' => $filters['filterStaffRaw'] === '' ? 'all' : $filters['filterStaffRaw'],
+        ]);
+    }
+
+    /**
+     * Download the filtered report rows as an Excel-compatible CSV.
+     */
+    public function exportExcel(Request $request)
+    {
+        $filters = self::parseReportFilters($request);
+        $rows = self::fetchGroupedRows($filters, 50000);
+
+        $filename = 'reports-' . now('Asia/Manila')->format('Ymd-His') . '.xls';
+
+        return response()->streamDownload(function () use ($rows) {
+            echo "\xEF\xBB\xBF";
+            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            echo '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>';
+            echo '<table border="1">';
+            echo '<thead><tr>';
+            foreach (['Date Completion', 'User', 'Job Type', 'Total Units'] as $header) {
+                echo '<th>' . htmlspecialchars($header, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</th>';
+            }
+            echo '</tr></thead><tbody>';
+
+            foreach ($rows as $row) {
+                $cd = $row->completion_date ?? null;
+                $cdText = $cd ? Carbon::parse($cd)->format('M d, Y') : '';
+                $user = ($row->user_code !== null && trim((string) $row->user_code) !== '') ? (string) $row->user_code : '';
+                $jobType = (string) ($row->job_type ?? '');
+                $units = (int) ($row->units ?? 0);
+
+                echo '<tr>';
+                echo '<td>' . htmlspecialchars($cdText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
+                echo '<td>' . htmlspecialchars($user, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
+                echo '<td>' . htmlspecialchars($jobType, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
+                echo '<td>' . $units . '</td>';
+                echo '</tr>';
+            }
+
+            echo '</tbody></table></body></html>';
+        }, $filename, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
         ]);
     }
 }

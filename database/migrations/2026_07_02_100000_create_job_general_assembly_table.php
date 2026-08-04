@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * General Assembly jobs — same shape as legacy `jobs` (LBS pipeline).
+     * Generic EA jobs — same shape as legacy `jobs` (LBS pipeline).
      */
     public function up(): void
     {

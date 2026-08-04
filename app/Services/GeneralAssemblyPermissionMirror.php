@@ -3,7 +3,7 @@
 namespace App\Services;
 
 /**
- * Maps LBS permission grants to General Assembly equivalents when bootstrapping GA access.
+ * Maps LBS permission grants to Generic EA equivalents when bootstrapping GA access.
  */
 class GeneralAssemblyPermissionMirror
 {

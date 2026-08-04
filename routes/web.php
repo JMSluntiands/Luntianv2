@@ -3,8 +3,11 @@
 use App\Http\Controllers\AccountClientsController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AmtJobController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\ForumThreadController;
 use App\Http\Controllers\FyrsJobController;
 use App\Http\Controllers\BluinqJobController;
 use App\Http\Controllers\BphJobController;
@@ -38,7 +41,9 @@ use App\Models\ClientEmailBph;
 use App\Support\LoginReturnPath;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\HrController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\TimesheetController;
 
 Route::match(['get', 'post'], '/webhooks/jotform', JotformWebhookController::class)->name('webhooks.jotform');
 
@@ -124,9 +129,23 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     })->name('unauthorized');
 
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/task-management', [TaskController::class, 'index'])->name('task_management');
+    Route::post('/dashboard/task-management', [TaskController::class, 'store'])->name('task_management.store');
+    Route::put('/dashboard/task-management/{id}', [TaskController::class, 'update'])->name('task_management.update');
+    Route::delete('/dashboard/task-management/{id}', [TaskController::class, 'destroy'])->name('task_management.destroy');
+    Route::get('/dashboard/forum-thread', [ForumThreadController::class, 'index'])->name('forum_thread');
+    Route::get('/dashboard/forum-thread/recent', [ForumThreadController::class, 'recent'])->name('forum_thread.recent');
+    Route::post('/dashboard/forum-thread', [ForumThreadController::class, 'store'])->name('forum_thread.store');
+    Route::get('/dashboard/forum-thread/image/{path}', [ForumThreadController::class, 'image'])->name('forum_thread.image')->where('path', '[A-Za-z0-9._-]+');
+    Route::delete('/dashboard/forum-thread/post/{id}', [ForumThreadController::class, 'destroy'])->name('forum_thread.destroy');
+    Route::post('/dashboard/forum-thread/post/{id}/comment', [ForumThreadController::class, 'storeComment'])->name('forum_thread.comment.store');
+    Route::delete('/dashboard/forum-thread/comment/{id}', [ForumThreadController::class, 'destroyComment'])->name('forum_thread.comment.destroy');
     Route::get('/dashboard/stats', DashboardStatsController::class)->name('dashboard.stats');
     Route::get('/dashboard/chart', [DashboardStatsController::class, 'chart'])->name('dashboard.chart');
     Route::get('/dashboard/holidays/{year}', DashboardHolidayController::class)->name('dashboard.holidays');
+    Route::get('/dashboard/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status');
+    Route::post('/dashboard/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockIn');
+    Route::post('/dashboard/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockOut');
     Route::get('/dashboard/lbs/add', [LbsJobController::class, 'addForm'])->name('lbs.add');
     Route::post('/dashboard/lbs', [LbsJobController::class, 'store'])->name('lbs.store');
     Route::post('/dashboard/lbs/job/{id}/send-slack', [LbsJobController::class, 'sendJobSlackNotification'])->name('lbs.job.sendSlack');
@@ -376,6 +395,9 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/leading-energy/trash', [LeadingEnergyJobController::class, 'trash'])->name('leading_energy.trash');
 
     Route::get('/dashboard/reports', [ReportsController::class, 'index'])->name('reports');
+    Route::get('/dashboard/reports/export', [ReportsController::class, 'exportExcel'])->name('reports.export');
+    Route::get('/dashboard/hr', [HrController::class, 'index'])->name('hr');
+    Route::get('/dashboard/timesheet', [TimesheetController::class, 'index'])->name('timesheet');
 
     Route::get('/dashboard/settings/jotform-config', [JotformConfigController::class, 'index'])->name('settings.jotform_config');
     Route::post('/dashboard/settings/jotform-config', [JotformConfigController::class, 'store'])->name('settings.jotform_config.store');
@@ -439,6 +461,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/accounts/users', [UserAccountController::class, 'store'])->name('users.store');
     Route::get('/dashboard/accounts/users/{user}/edit', [UserAccountController::class, 'edit'])->name('users.edit');
     Route::put('/dashboard/accounts/users/{user}', [UserAccountController::class, 'update'])->name('users.update');
+    Route::patch('/dashboard/accounts/users/{user}/status', [UserAccountController::class, 'updateStatus'])->name('users.status');
     Route::delete('/dashboard/accounts/users/{user}', [UserAccountController::class, 'destroy'])->name('users.destroy');
 
     Route::get('/dashboard/accounts/staff', [StaffController::class, 'index'])->name('staff.index');

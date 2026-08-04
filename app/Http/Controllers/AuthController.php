@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
 use App\Models\User;
+use App\Services\DashboardAnnouncementService;
 use App\Services\DashboardJobStatsService;
 use App\Services\PublicHolidayService;
 use App\Support\LoginReturnPath;
@@ -77,11 +79,14 @@ class AuthController extends Controller
             return redirect('/')->with('error', 'Please log in first.');
         }
         $holidaysYear = (int) now()->format('Y');
+        $userId = (int) session('user_id', 0);
 
         return view('dashboard', [
             'dashboardStats' => DashboardJobStatsService::fetch(),
             'dashboardPublicHolidays' => PublicHolidayService::forYear($holidaysYear),
             'dashboardPublicHolidaysYear' => $holidaysYear,
+            'dashboardAttendance' => Attendance::dashboardStatusForUser($userId > 0 ? $userId : null),
+            'dashboardAnnouncements' => DashboardAnnouncementService::recentPayload(8),
         ]);
     }
 

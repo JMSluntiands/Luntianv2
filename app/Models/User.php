@@ -31,6 +31,8 @@ class User extends Authenticatable
         'add_job_checker_modules',
         'task',
         'status',
+        'leave_credits',
+        'is_employee',
         'password',
         'profile_image',
     ];
@@ -57,6 +59,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'add_job_staff_modules' => 'array',
             'add_job_checker_modules' => 'array',
+            'is_employee' => 'boolean',
         ];
     }
 

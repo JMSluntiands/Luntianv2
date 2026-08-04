@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class RolePermission extends Model
 {
     /** Dashboard stat row + chart label (must match Dashboard.tsx). */
-    public const GENERIC_ASSESSMENT_STAT_LABEL = 'GENERAL ASSEMBLY';
+    public const GENERIC_ASSESSMENT_STAT_LABEL = 'GENERIC EA';
 
     /** User-facing product name (sidebar, pages, permissions UI). */
-    public const GENERIC_ASSESSMENT_NAME = 'General Assembly';
+    public const GENERIC_ASSESSMENT_NAME = 'Generic EA';
 
     protected $table = 'role_permissions';
 
@@ -185,6 +185,10 @@ class RolePermission extends Model
 
         $aliases = [
             'lbs' => 'LBS',
+            'generic ea' => self::GENERIC_ASSESSMENT_STAT_LABEL,
+            'generic_ea' => self::GENERIC_ASSESSMENT_STAT_LABEL,
+            'general ea' => self::GENERIC_ASSESSMENT_STAT_LABEL,
+            'general_ea' => self::GENERIC_ASSESSMENT_STAT_LABEL,
             'general assembly' => self::GENERIC_ASSESSMENT_STAT_LABEL,
             'general_assembly' => self::GENERIC_ASSESSMENT_STAT_LABEL,
             'generic assessment' => self::GENERIC_ASSESSMENT_STAT_LABEL,

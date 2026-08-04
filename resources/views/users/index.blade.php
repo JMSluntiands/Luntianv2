@@ -100,11 +100,27 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3.5">
-                                    @php $status = $user->task ?: 'Active'; @endphp
-                                    <span class="inline-flex items-center rounded-full bg-slate-900/5 px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:ring-slate-600">
-                                        <span class="mr-1 h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-                                        {{ $status }}
-                                    </span>
+                                    @php
+                                        $rawStatus = strtolower(trim((string) ($user->status ?: $user->task ?: 'Active')));
+                                        $currentStatus = in_array($rawStatus, ['inactive', 'archived'], true) ? 'Inactive' : 'Active';
+                                    @endphp
+                                    <form method="POST" action="{{ route('users.status', $user) }}" class="inline-block" data-user-status-form>
+                                        @csrf
+                                        @method('PATCH')
+                                        <label class="sr-only" for="user-status-{{ $user->id }}">Status</label>
+                                        <div class="relative inline-flex items-center">
+                                            <span class="pointer-events-none absolute left-2.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full {{ $currentStatus === 'Active' ? 'bg-emerald-500' : 'bg-slate-400' }}" data-status-dot></span>
+                                            <select
+                                                id="user-status-{{ $user->id }}"
+                                                name="status"
+                                                onchange="this.form.requestSubmit()"
+                                                class="cursor-pointer appearance-none rounded-full border border-slate-200 bg-slate-900/5 py-1 pl-5 pr-7 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-900/10 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-900/60"
+                                            >
+                                                <option value="Active" @selected($currentStatus === 'Active')>Active</option>
+                                                <option value="Inactive" @selected($currentStatus === 'Inactive')>Inactive</option>
+                                            </select>
+                                        </div>
+                                    </form>
                                 </td>
                                 <td class="px-5 py-3.5 text-right">
                                     <div class="flex items-center justify-end gap-1">
