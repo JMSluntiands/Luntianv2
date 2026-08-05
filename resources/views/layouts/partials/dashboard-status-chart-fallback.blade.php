@@ -15,7 +15,9 @@
             'GENERAL EA' => 'GA',
             'GENERAL ASSEMBLY' => 'GA',
             'GENERIC ASSESSMENT' => 'GA',
-            'EFFICIENT LIVING' => 'EL',
+            'Efficient Living' => 'EL',
+            'BluInq' => 'BI',
+            'BLUINQ' => 'BI',
             'FYRS ENERGY WISE' => 'FYRS',
             default => $label,
         };
@@ -154,7 +156,7 @@
 
     var fetchGen = 0;
     var shortBranch = function (label) {
-        var map = { 'GENERIC EA': 'GA', 'GENERAL EA': 'GA', 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'EFFICIENT LIVING': 'EL', 'FYRS ENERGY WISE': 'FYRS' };
+        var map = { 'GENERIC EA': 'GA', 'GENERAL EA': 'GA', 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'Efficient Living': 'EL', 'EFFICIENT LIVING': 'EL', 'BluInq': 'BI', 'BLUINQ': 'BI', 'FYRS ENERGY WISE': 'FYRS' };
         return map[label] || label;
     };
 

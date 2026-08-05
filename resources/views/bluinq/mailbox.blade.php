@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'BLUINQ Mailbox')
+@section('title', 'BluInq Mailbox')
 
 @section('body_class', 'page-lbs-mailbox')
 
 @section('content')
     @php
-        $branchLabel = 'BLUINQ';
+        $branchLabel = 'BluInq';
         $updateRoute = 'bluinq.update';
         $jobBaseUrl = url('/dashboard/bluinq/job');
     @endphp

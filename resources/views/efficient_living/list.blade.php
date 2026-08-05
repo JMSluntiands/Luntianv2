@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'EFFICIENT LIVING List')
+@section('title', 'Efficient Living List')
 
 @section('body_class', 'page-efficient_living-list')
 
@@ -12,14 +12,14 @@
     <div class="block max-w-full pb-0 efficient_living-list-page">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4 efficient_living-list-header">
             <div class="min-w-0 efficient_living-list-header-text">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-100 efficient_living-list-title">EFFICIENT LIVING List</h1>
-                <p class="m-0 text-[0.9375rem] leading-snug text-slate-400 efficient_living-list-subtitle">View and manage all EFFICIENT LIVING jobs.</p>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-100 efficient_living-list-title">Efficient Living List</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-400 efficient_living-list-subtitle">View and manage all Efficient Living jobs.</p>
             </div>
             <div class="shrink-0 efficient_living-list-search-wrap">
                 <label for="efficient_livingSearch" class="mb-1.5 block text-xs font-semibold text-slate-400 efficient_living-search-label">Search</label>
                 <div class="relative flex min-w-[260px] items-center efficient_living-search-input-wrap">
                     <svg class="efficient_living-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="efficient_livingSearch" class="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-3.5 text-sm text-slate-200 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 efficient_living-search-input" placeholder="Search by client, job number, email..." autocomplete="off" aria-label="Search EFFICIENT LIVING jobs">
+                    <input type="search" id="efficient_livingSearch" class="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-3.5 text-sm text-slate-200 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 efficient_living-search-input" placeholder="Search by client, job number, email..." autocomplete="off" aria-label="Search Efficient Living jobs">
                 </div>
             </div>
         </div>

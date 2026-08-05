@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Add New Job (LEADING ENERGY)')
+@section('title', 'Add New Job (Leading Energy)')
 
 @section('body_class', 'page-leading_energy-add')
 
 @section('content')
     <div class="w-full max-w-full px-0">
         <div class="mb-8">
-            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (LEADING ENERGY)</h1>
-            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new LEADING ENERGY job.</p>
+            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (Leading Energy)</h1>
+            <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new Leading Energy job.</p>
         </div>
 
         <form id="leadingEnergyAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
@@ -88,7 +88,7 @@
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Job Details</h2>
                 </div>
                 <div class="p-5">
-                    <label for="le-notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes (LEADING ENERGY)</label>
+                    <label for="le-notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes (Leading Energy)</label>
                     <input type="hidden" name="notes" id="le_notes" autocomplete="off">
                     <div class="overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
                         <div class="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800/80">
@@ -261,7 +261,7 @@ $(function() {
                             '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
                         '</div>' +
                         '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
-                        '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another LEADING ENERGY job?</p>' +
+                        '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Leading Energy job?</p>' +
                         '<div class="mt-6 flex gap-3">' +
                             '<button type="button" data-le-go-list class="cursor-pointer flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Go to list</button>' +
                             '<button type="button" data-le-new-job class="cursor-pointer flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">Create another job</button>' +

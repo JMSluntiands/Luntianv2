@@ -25,7 +25,7 @@ class BluinqJobController extends Controller
     private const STORAGE_BASE = 'bluinq-documents';
 
     /**
-     * Add BLUINQ job form — same dropdown sources as BPH.
+     * Add BluInq job form — same dropdown sources as BPH.
      */
     public function addForm()
     {
@@ -60,7 +60,7 @@ class BluinqJobController extends Controller
     }
 
     /**
-     * Job detail page for BLUINQ rows (job_bph, client BLUINQ01). Uses same template as BPH but Bluinq nav and routes.
+     * Job detail page for BluInq rows (job_bph, client BLUINQ01). Uses same template as BPH but Bluinq nav and routes.
      */
     public function show(int $id)
     {
@@ -198,7 +198,7 @@ class BluinqJobController extends Controller
     }
 
     /**
-     * BLUINQ jobs in For Email Confirmation — same UX as {@see BphJobController::mailbox}.
+     * BluInq jobs in For Email Confirmation — same UX as {@see BphJobController::mailbox}.
      */
     public function mailbox()
     {
@@ -260,7 +260,7 @@ class BluinqJobController extends Controller
     }
 
     /**
-     * Same rules as {@see BphJobController::update}; restricted to BLUINQ jobs (client_code).
+     * Same rules as {@see BphJobController::update}; restricted to BluInq jobs (client_code).
      */
     public function update(Request $request, int $id)
     {
@@ -307,7 +307,7 @@ class BluinqJobController extends Controller
         $jobTypeText = $jobRequest->job_request_type ?? '—';
 
         $headerRef = trim((string) $request->input('header_reference', ''));
-        $reference = $headerRef !== '' ? $headerRef : ('BLUINQ-' . now('Asia/Manila')->format('YmdHis'));
+        $reference = $headerRef !== '' ? $headerRef : ('BluInq-' . now('Asia/Manila')->format('YmdHis'));
         $reference = substr($reference, 0, 50);
 
         $now = now('Asia/Manila');
@@ -391,7 +391,7 @@ class BluinqJobController extends Controller
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'BLUINQ job created successfully.',
+            'message' => 'BluInq job created successfully.',
             'job_id'  => $id,
         ]);
     }
@@ -422,12 +422,12 @@ class BluinqJobController extends Controller
 
         try {
             $slackMessage = [
-                'text' => '🆕 New BLUINQ Job Submitted',
+                'text' => '🆕 New BluInq Job Submitted',
                 'attachments' => [
                     [
                         'color' => '#0d9488',
                         'fields' => [
-                            ['title' => 'BLUINQ Ref #', 'value' => $reference, 'short' => true],
+                            ['title' => 'BluInq Ref #', 'value' => $reference, 'short' => true],
                             ['title' => 'Job Number', 'value' => $jobNum, 'short' => true],
                             ['title' => 'Client Name', 'value' => $clientName, 'short' => true],
                             ['title' => 'Status', 'value' => $status, 'short' => true],
@@ -438,7 +438,7 @@ class BluinqJobController extends Controller
                             ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
                             ['title' => 'Checked By', 'value' => $checked, 'short' => true],
                         ],
-                        'footer' => 'Luntian BLUINQ Job Management',
+                        'footer' => 'Luntian BluInq Job Management',
                         'ts' => time(),
                     ],
                 ],
@@ -457,10 +457,10 @@ class BluinqJobController extends Controller
             curl_close($ch);
 
             if ($slackError) {
-                \Log::warning('BLUINQ Slack notification failed', ['error' => $slackError, 'job_bph_id' => $id]);
+                \Log::warning('BluInq Slack notification failed', ['error' => $slackError, 'job_bph_id' => $id]);
             }
         } catch (\Throwable $e) {
-            \Log::warning('BLUINQ Slack exception', ['message' => $e->getMessage(), 'job_bph_id' => $id]);
+            \Log::warning('BluInq Slack exception', ['message' => $e->getMessage(), 'job_bph_id' => $id]);
         }
 
         return response()->json(['status' => 'success']);
@@ -497,9 +497,9 @@ class BluinqJobController extends Controller
         $priorityText = (($job->urgent ?? '') === 'YES') ? 'Urgent' : '—';
 
         $jobTypeShort = strtoupper(Str::limit(str_replace('-', '_', Str::slug($jobTypeLabel)), 12, ''));
-        $headerTitle = $bluinqRef . '_' . ($jobTypeShort ?: 'BLUINQ') . '_' . $jobNum;
+        $headerTitle = $bluinqRef . '_' . ($jobTypeShort ?: 'BluInq') . '_' . $jobNum;
 
-        $emailSubject = 'LUNTIAN BLUINQ Job Submission: '
+        $emailSubject = 'LUNTIAN BluInq Job Submission: '
             . trim($accountClient) . ' LUNTIAN' . $bluinqRef . '-' . $jobNum . '-' . $nccCompliance;
 
         $folderSeg = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $job->reference ?? '') ?: 'bluinq_upload';
@@ -527,7 +527,7 @@ class BluinqJobController extends Controller
             Mail::send('emails.lbs-job-submission', [
                 'headerTitle'    => $headerTitle,
                 'lbsRef'         => $bluinqRef,
-                'refLabel'       => 'BLUINQ Ref #',
+                'refLabel'       => 'BluInq Ref #',
                 'clientRef'      => $jobNum,
                 'accountClient'  => $accountClient,
                 'nccCompliance'  => $nccCompliance,
@@ -542,7 +542,7 @@ class BluinqJobController extends Controller
                 }
             });
         } catch (\Throwable $e) {
-            \Log::error('BLUINQ submission email failed', [
+            \Log::error('BluInq submission email failed', [
                 'job_bph_id' => $id,
                 'error'      => $e->getMessage(),
             ]);

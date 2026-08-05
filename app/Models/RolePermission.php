@@ -170,7 +170,7 @@ class RolePermission extends Model
      */
     public static function dashboardStatCardLabels(): array
     {
-        return ['LBS', self::GENERIC_ASSESSMENT_STAT_LABEL, 'LUNTIAN', 'BPH', 'BLUINQ', 'A&M', 'FYRS ENERGY WISE', 'CSP', 'NH', 'LC HOME BUILDER', 'EFFICIENT LIVING', 'LEADING ENERGY'];
+        return ['LBS', self::GENERIC_ASSESSMENT_STAT_LABEL, 'LUNTIAN', 'BPH', 'BluInq', 'A&M', 'FYRS ENERGY WISE', 'CSP', 'NH', 'LC Home Builder', 'Efficient Living', 'Leading Energy'];
     }
 
     /**
@@ -195,19 +195,19 @@ class RolePermission extends Model
             'generic_assessment' => self::GENERIC_ASSESSMENT_STAT_LABEL,
             'luntian' => 'LUNTIAN',
             'bph' => 'BPH',
-            'bluinq' => 'BLUINQ',
+            'bluinq' => 'BluInq',
             'amt' => 'A&M',
             'a&m' => 'A&M',
             'fyrs' => 'FYRS ENERGY WISE',
             'fyrs energy wise' => 'FYRS ENERGY WISE',
             'csp' => 'CSP',
             'nh' => 'NH',
-            'lc home builder' => 'LC HOME BUILDER',
-            'lc_home_builder' => 'LC HOME BUILDER',
-            'efficient living' => 'EFFICIENT LIVING',
-            'efficient_living' => 'EFFICIENT LIVING',
-            'leading energy' => 'LEADING ENERGY',
-            'leading_energy' => 'LEADING ENERGY',
+            'lc home builder' => 'LC Home Builder',
+            'lc_home_builder' => 'LC Home Builder',
+            'efficient living' => 'Efficient Living',
+            'efficient_living' => 'Efficient Living',
+            'leading energy' => 'Leading Energy',
+            'leading_energy' => 'Leading Energy',
         ];
 
         if (isset($aliases[$b])) {
@@ -271,10 +271,10 @@ class RolePermission extends Model
             $allowed['BPH'] = true;
         }
         if ($anyMay(['efficient_living.add', 'efficient_living.list', 'efficient_living.completed', 'efficient_living.review', 'efficient_living.mailbox', 'efficient_living.trash'])) {
-            $allowed['EFFICIENT LIVING'] = true;
+            $allowed['Efficient Living'] = true;
         }
         if ($anyMay(['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash'])) {
-            $allowed['BLUINQ'] = true;
+            $allowed['BluInq'] = true;
         }
         if ($anyMay(['amt.add', 'amt.rfq', 'amt.purchase', 'amt.list', 'amt.completed', 'amt.review', 'amt.mailbox', 'amt.trash'])) {
             $allowed['A&M'] = true;
@@ -298,13 +298,13 @@ class RolePermission extends Model
             'lc_home_builder.add', 'lc_home_builder.store', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.mailbox', 'lc_home_builder.trash',
             'lc_home_builder.update', 'lc_home_builder.job.sendSlack', 'lc_home_builder.job.sendSubmissionEmail', 'lc_home_builder.job.emailPreview', 'lc_home_builder.job.sendMailboxEmail',
         ])) {
-            $allowed['LC HOME BUILDER'] = true;
+            $allowed['LC Home Builder'] = true;
         }
         if ($anyMay([
             'leading_energy.add', 'leading_energy.store', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash',
             'leading_energy.update', 'leading_energy.job.sendSlack', 'leading_energy.job.sendSubmissionEmail', 'leading_energy.job.emailPreview', 'leading_energy.job.sendMailboxEmail',
         ])) {
-            $allowed['LEADING ENERGY'] = true;
+            $allowed['Leading Energy'] = true;
         }
 
         $keys = array_keys($allowed);

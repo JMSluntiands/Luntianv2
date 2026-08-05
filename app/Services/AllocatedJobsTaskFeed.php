@@ -37,7 +37,7 @@ class AllocatedJobsTaskFeed
                 }
             ))
             ->concat(self::lbsStyleAllocated(
-                module: 'EFFICIENT LIVING',
+                module: 'Efficient Living',
                 scope: static function ($q): void {
                     $q->whereRaw("job_request_id LIKE 'EA\\_EL\\_%'");
                 }
@@ -62,7 +62,7 @@ class AllocatedJobsTaskFeed
                 }
             ))
             ->concat(self::bphStyleAllocated(
-                module: 'BLUINQ',
+                module: 'BluInq',
                 table: 'job_bph',
                 extra: static function ($q): void {
                     $q->where('client_code', 'BLUINQ01');
@@ -94,8 +94,8 @@ class AllocatedJobsTaskFeed
         foreach ([
             'CSP' => 'job_csp',
             'NH' => 'job_nh',
-            'LC HOME BUILDER' => 'job_lc_home_builder',
-            'LEADING ENERGY' => 'job_leading_energy',
+            'LC Home Builder' => 'job_lc_home_builder',
+            'Leading Energy' => 'job_leading_energy',
         ] as $module => $table) {
             if (Schema::hasTable($table)) {
                 $rows = $rows->concat(self::bphStyleAllocated(module: $module, table: $table));

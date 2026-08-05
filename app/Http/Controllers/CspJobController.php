@@ -424,6 +424,17 @@ class CspJobController extends Controller
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_csp')->where('id', $id)->update($update);
 
+        if (array_key_exists('status', $update)) {
+            \App\Services\JobActiveTimeService::record(
+                'job_csp',
+                (int) $id,
+                (string) ($job->status ?? ''),
+                (string) $update['status'],
+                now('Asia/Manila'),
+                session('user_name') ?? null
+            );
+        }
+
         if ($assignmentChanged) {
             $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
             $jobUrl = route('csp.view', ['id' => $id]);

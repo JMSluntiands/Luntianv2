@@ -92,6 +92,7 @@ class JobCountsScope
         if ($label === 'BPH') {
             $q->whereRaw('LOWER(TRIM(COALESCE(client_code, \'\'))) NOT IN (?, ?, ?)', ['bluinq01', 'amt01', 'fyrs01']);
         } elseif ($label === 'BLUINQ') {
+            // Mapped display label is "BluInq"; strtoupper → BLUINQ
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
         } elseif ($label === 'A&M') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
@@ -105,7 +106,7 @@ class JobCountsScope
     /**
      * After computing a badge count: Branch users only see counts for their mapped vertical.
      *
-     * @param  non-empty-string  $statCardLabel  e.g. LBS, BPH, BLUINQ, EFFICIENT LIVING
+     * @param  non-empty-string  $statCardLabel  e.g. LBS, BPH, BluInq, Efficient Living
      */
     public static function sidebarCountForBranchVertical(string $statCardLabel, int $count): int
     {
@@ -150,9 +151,9 @@ class JobCountsScope
             return false;
         }
         $mapped = RolePermission::mapBranchStringToDashboardStatLabel($ub) ?? $ub;
-        $label = strtoupper(preg_replace('/\s+/u', ' ', trim((string) $mapped)));
+        $label = preg_replace('/\s+/u', ' ', trim((string) $mapped));
 
-        return $label !== '' && $label !== 'EFFICIENT LIVING';
+        return $label !== '' && strcasecmp($label, 'Efficient Living') !== 0;
     }
 
     public static function branchBlocksLuntianList(): bool
@@ -174,7 +175,7 @@ class JobCountsScope
      * Branch role: only rows for lists tied to this product line (e.g. CSP job_csp lists).
      * Uses the same mapping as dashboard stat cards.
      *
-     * @param  non-empty-string  $statCardLabel  e.g. CSP, NH, LC HOME BUILDER, LEADING ENERGY
+     * @param  non-empty-string  $statCardLabel  e.g. CSP, NH, LC Home Builder, Leading Energy
      */
     public static function applyBranchExclusiveStatLabel(Builder $q, string $statCardLabel): void
     {

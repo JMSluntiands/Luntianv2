@@ -81,9 +81,14 @@ function shortBranchLabel(label: string): string {
     'GENERAL EA': 'GA',
     'GENERAL ASSEMBLY': 'GA',
     'GENERIC ASSESSMENT': 'GA',
+    'Efficient Living': 'EL',
     'EFFICIENT LIVING': 'EL',
+    BluInq: 'BI',
+    BLUINQ: 'BI',
     'FYRS ENERGY WISE': 'FYRS',
+    'LC Home Builder': 'LC HB',
     'LC HOME BUILDER': 'LC HB',
+    'Leading Energy': 'LE',
     'LEADING ENERGY': 'LE',
   };
   return map[label] ?? label;

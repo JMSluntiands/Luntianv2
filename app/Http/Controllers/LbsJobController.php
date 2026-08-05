@@ -756,6 +756,17 @@ class LbsJobController extends Controller
         try {
             DB::table('jobs')->where('job_id', $id)->update($update);
 
+            if (array_key_exists('job_status', $update)) {
+                \App\Services\JobActiveTimeService::record(
+                    'jobs',
+                    (int) $id,
+                    (string) ($job->job_status ?? ''),
+                    (string) $update['job_status'],
+                    now('Asia/Manila'),
+                    session('user_name') ?? null
+                );
+            }
+
             // Create a single activity log entry summarising all field changes
             $now = now('Asia/Manila');
             $lines = [];

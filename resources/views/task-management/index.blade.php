@@ -165,6 +165,7 @@
                     @endforeach
                 </select>
             </label>
+            @if(!empty($canViewAll))
             <label class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 Assignee
                 <select name="assignee" onchange="this.form.submit()" class="cursor-pointer border-0 bg-transparent py-0.5 pl-1 pr-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-0 dark:text-slate-100">
@@ -175,7 +176,8 @@
                     @endforeach
                 </select>
             </label>
-            @if($statusFilter !== '' || $assigneeFilter !== null)
+            @endif
+            @if($statusFilter !== '' || (!empty($canViewAll) && $assigneeFilter !== null))
                 <a href="{{ route('task_management', ['view' => $viewMode]) }}" class="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Clear filters</a>
             @endif
         </form>

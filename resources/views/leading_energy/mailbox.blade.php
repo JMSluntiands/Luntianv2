@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'LEADING ENERGY Mailbox')
+@section('title', 'Leading Energy Mailbox')
 
 @section('body_class', 'page-lbs-mailbox')
 
 @section('content')
     @php
-        $branchLabel = 'LEADING ENERGY';
+        $branchLabel = 'Leading Energy';
         $updateRoute = 'leading_energy.update';
         $jobBaseUrl = url('/dashboard/leading-energy/job');
     @endphp

@@ -86,22 +86,88 @@ final class LbsJobStatusFlow
     }
 
     /**
+     * True if $to is the same as $from (caller may skip) or exactly one forward step in the workflow.
+     * On Hold may be entered/left outside the linear flow (timer pauses while on hold).
+     */
+    public static function isValidTransition(?string $from, ?string $to): bool
+    {
+        $fromTrim = self::normalizeStatusKey($from);
+        $toTrim = self::normalizeStatusKey($to);
+        if ($toTrim === '') {
+            return false;
+        }
+        if (strcasecmp($fromTrim, $toTrim) === 0) {
+            return true;
+        }
+
+        if (\App\Services\JobActiveTimeService::isHoldStatus($toTrim)) {
+            $fromLower = strtolower($fromTrim);
+
+            return ! in_array($fromLower, ['completed', 'cancelled', 'archived'], true);
+        }
+
+        if (\App\Services\JobActiveTimeService::isHoldStatus($fromTrim)) {
+            // Resume from On Hold to any normal workflow status (or Revised).
+            if (strcasecmp($toTrim, 'Revised') === 0) {
+                return true;
+            }
+
+            return self::indexInOrder($toTrim) !== null;
+        }
+
+        $nextLower = self::nextAllowedLower($fromTrim);
+        if ($nextLower === null) {
+            return false;
+        }
+
+        return strcasecmp($toTrim, $nextLower) === 0;
+    }
+
+    /**
      * @param iterable<int, object|string> $statuses Status models with `name`, or compatible
      * @return list<string>
      */
     public static function nextAllowedLabels(?string $currentJobStatus, iterable $statuses): array
     {
-        $nextLower = self::nextAllowedLower($currentJobStatus);
-        if ($nextLower === null) {
-            return [];
-        }
-        $resolved = self::resolveNameFromMaster($nextLower, $statuses);
-        if ($resolved !== null) {
-            return [$resolved];
-        }
-        $fallback = self::LABEL_BY_LOWER[$nextLower] ?? null;
+        $curr = self::normalizeStatusKey($currentJobStatus);
+        $labels = [];
 
-        return $fallback !== null ? [$fallback] : [];
+        if (\App\Services\JobActiveTimeService::isHoldStatus($curr)) {
+            foreach (self::ORDER as $k) {
+                $resolved = self::resolveNameFromMaster($k, $statuses);
+                $labels[] = $resolved ?? (self::LABEL_BY_LOWER[$k] ?? $k);
+            }
+            $revised = self::resolveNameFromMaster('revised', $statuses);
+            if ($revised !== null) {
+                $labels[] = $revised;
+            } else {
+                $labels[] = 'Revised';
+            }
+
+            return array_values(array_unique($labels));
+        }
+
+        $nextLower = self::nextAllowedLower($currentJobStatus);
+        if ($nextLower !== null) {
+            $resolved = self::resolveNameFromMaster($nextLower, $statuses);
+            if ($resolved !== null) {
+                $labels[] = $resolved;
+            } else {
+                $fallback = self::LABEL_BY_LOWER[$nextLower] ?? null;
+                if ($fallback !== null) {
+                    $labels[] = $fallback;
+                }
+            }
+        }
+
+        $currLower = strtolower($curr);
+        if ($curr !== '' && ! in_array($currLower, ['completed', 'cancelled', 'archived'], true)) {
+            $onHold = self::resolveNameFromMaster('on hold', $statuses)
+                ?? self::resolveNameFromMaster('on-hold', $statuses);
+            $labels[] = $onHold ?? 'On Hold';
+        }
+
+        return array_values(array_unique($labels));
     }
 
     /**
@@ -117,26 +183,5 @@ final class LbsJobStatusFlow
         }
 
         return null;
-    }
-
-    /**
-     * True if $to is the same as $from (caller may skip) or exactly one forward step in the workflow.
-     */
-    public static function isValidTransition(?string $from, ?string $to): bool
-    {
-        $fromTrim = self::normalizeStatusKey($from);
-        $toTrim = self::normalizeStatusKey($to);
-        if ($toTrim === '') {
-            return false;
-        }
-        if (strcasecmp($fromTrim, $toTrim) === 0) {
-            return true;
-        }
-        $nextLower = self::nextAllowedLower($fromTrim);
-        if ($nextLower === null) {
-            return false;
-        }
-
-        return strcasecmp($toTrim, $nextLower) === 0;
     }
 }

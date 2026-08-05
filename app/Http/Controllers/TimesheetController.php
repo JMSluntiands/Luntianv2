@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
 use App\Models\LeaveDay;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -105,7 +106,85 @@ class TimesheetController extends Controller
             }
         }
 
-        $team = $users->map(function (User $user) use ($leaveByUser) {
+        $hoursByUser = [];
+        if (Attendance::tableReady() && $users->isNotEmpty()) {
+            $now = Carbon::now($tz);
+            $attendanceRows = Attendance::query()
+                ->whereIn('user_id', $users->pluck('id')->all())
+                ->whereBetween('attendance_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+                ->get(['user_id', 'attendance_date', 'clocked_in_at', 'clocked_out_at']);
+
+            foreach ($attendanceRows as $row) {
+                if (empty($row->clocked_in_at)) {
+                    continue;
+                }
+
+                $uid = (int) $row->user_id;
+                $dateKey = $row->attendance_date?->toDateString();
+                if ($dateKey === null) {
+                    continue;
+                }
+
+                $inAt = Carbon::parse($row->clocked_in_at)->timezone($tz);
+                $noClockOut = empty($row->clocked_out_at);
+                $isPastDay = $dateKey < $today->toDateString();
+                $isToday = $dateKey === $today->toDateString();
+
+                if (! $noClockOut) {
+                    $outAt = Carbon::parse($row->clocked_out_at)->timezone($tz);
+                } elseif ($isToday) {
+                    $outAt = $now->copy();
+                } else {
+                    // Past day without clock out — freeze at midnight (end of that day)
+                    $outAt = Carbon::parse($dateKey, $tz)->endOfDay();
+                }
+
+                if ($outAt->lt($inAt)) {
+                    $outAt = $inAt->copy();
+                }
+
+                $hours = round(max(0, $inAt->diffInMinutes($outAt)) / 60, 1);
+                $dayStart = Carbon::parse($dateKey, $tz)->startOfDay();
+                $dayMinutes = 24 * 60;
+                $startMin = max(0, min($dayMinutes, $dayStart->diffInMinutes($inAt, false)));
+                $endMin = max($startMin, min($dayMinutes, $dayStart->diffInMinutes($outAt, false)));
+                $fillStartPct = round(($startMin / $dayMinutes) * 100, 2);
+                $fillEndPct = round(($endMin / $dayMinutes) * 100, 2);
+                $fillPct = round(min(100, max(0, ($hours / 24) * 100)), 2);
+
+                // Late after 8:00 + 15 min grace
+                $lateThreshold = Carbon::parse($dateKey.' '.Attendance::CUTOFF_TIME, $tz)
+                    ->addMinutes(Attendance::CLOCK_IN_GRACE_MINUTES);
+                $late = $inAt->gt($lateThreshold);
+
+                $noClockOutPast = $noClockOut && $isPastDay;
+                // Parallel colors (can stack): green = hours, orange = late, red = no clock out
+                $colors = ['green'];
+                if ($late) {
+                    $colors[] = 'orange';
+                }
+                if ($noClockOutPast) {
+                    $colors[] = 'red';
+                }
+
+                $hoursByUser[$uid][$dateKey] = [
+                    'hours' => $hours,
+                    'clocked_in' => $inAt->format('g:i A'),
+                    'clocked_out' => ! $noClockOut
+                        ? Carbon::parse($row->clocked_out_at)->timezone($tz)->format('g:i A')
+                        : null,
+                    'open' => $noClockOut && $isToday,
+                    'no_clock_out' => $noClockOutPast,
+                    'late' => $late,
+                    'colors' => $colors,
+                    'fill_start_pct' => $fillStartPct,
+                    'fill_end_pct' => $fillEndPct,
+                    'fill_pct' => $fillPct,
+                ];
+            }
+        }
+
+        $team = $users->map(function (User $user) use ($leaveByUser, $hoursByUser) {
             $name = trim((string) ($user->fullname ?? ''));
             if ($name === '') {
                 $name = trim((string) ($user->username ?? ''));
@@ -140,6 +219,7 @@ class TimesheetController extends Controller
                 'avatar' => $avatar,
                 'leave_credits' => (int) ($user->leave_credits ?? 15),
                 'leave' => $leaveByUser[(int) $user->id] ?? [],
+                'hours' => $hoursByUser[(int) $user->id] ?? [],
             ];
         })->values()->all();
 

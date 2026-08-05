@@ -163,7 +163,7 @@ class LeadingEnergyJobController extends Controller
     {
         $scoped = DB::table('job_leading_energy')->where('id', $id);
         JobCountsScope::applyJobBphAssignment($scoped);
-        JobCountsScope::applyBranchExclusiveStatLabel($scoped, 'LEADING ENERGY');
+        JobCountsScope::applyBranchExclusiveStatLabel($scoped, 'Leading Energy');
         $job = $scoped->first();
         if (! $job) {
             abort(404);
@@ -192,7 +192,7 @@ class LeadingEnergyJobController extends Controller
             $q = DB::table('job_leading_energy')
                 ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
             JobCountsScope::applyJobBphAssignment($q);
-            JobCountsScope::applyBranchExclusiveStatLabel($q, 'LEADING ENERGY');
+            JobCountsScope::applyBranchExclusiveStatLabel($q, 'Leading Energy');
             $rows = $q
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
@@ -312,6 +312,17 @@ class LeadingEnergyJobController extends Controller
 
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_leading_energy')->where('id', $id)->update($update);
+
+        if (array_key_exists('status', $update)) {
+            \App\Services\JobActiveTimeService::record(
+                'job_leading_energy',
+                (int) $id,
+                (string) ($job->status ?? ''),
+                (string) $update['status'],
+                now('Asia/Manila'),
+                session('user_name') ?? null
+            );
+        }
 
         if ($assignmentChanged) {
             $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));

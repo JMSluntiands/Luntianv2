@@ -27,8 +27,15 @@ function parseInitialAnnouncements(): AnnouncementItem[] {
     const parsed = JSON.parse(el.textContent) as
       | { announcements?: AnnouncementItem[] }
       | AnnouncementItem[];
-    if (Array.isArray(parsed)) return parsed;
-    return Array.isArray(parsed.announcements) ? parsed.announcements : [];
+    const list = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed.announcements)
+        ? parsed.announcements
+        : [];
+    return list.map((item) => ({
+      ...item,
+      id: Number(item.id),
+    }));
   } catch {
     return [];
   }
@@ -41,14 +48,16 @@ export default function DashboardAnnouncementCard() {
   }, []);
 
   const items = useMemo(() => parseInitialAnnouncements(), []);
-  const [activeId, setActiveId] = useState<number | null>(() => items[0]?.id ?? null);
+  const [activeId, setActiveId] = useState<number | null>(() =>
+    items[0] != null ? Number(items[0].id) : null
+  );
 
-  const latest = items.find((a) => a.id === activeId) ?? items[0] ?? null;
-  const previous = items;
+  const latest =
+    items.find((a) => Number(a.id) === Number(activeId)) ?? items[0] ?? null;
   const seeMoreUrl = (latest?.url || '').trim() || listUrl;
 
   return (
-    <section className="animate-dashboard-panel dashboard-panel-animate-delay-2 flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90">
+    <section className="animate-dashboard-panel dashboard-panel-animate-delay-2 relative z-10 flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90">
       <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-3 dark:border-slate-700 sm:px-5">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -75,11 +84,7 @@ export default function DashboardAnnouncementCard() {
           <div className="min-w-0 border-b border-slate-200 p-4 dark:border-slate-700 sm:p-5 lg:border-b-0 lg:border-r">
             <div className="relative mb-4 overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700">
               {latest.image_url ? (
-                <img
-                  src={latest.image_url}
-                  alt=""
-                  className="h-36 w-full object-cover sm:h-40"
-                />
+                <img src={latest.image_url} alt="" className="h-36 w-full object-cover sm:h-40" />
               ) : (
                 <>
                   <div
@@ -119,17 +124,21 @@ export default function DashboardAnnouncementCard() {
             </a>
           </div>
 
-          <aside className="min-h-0 overflow-y-auto p-3 sm:p-4">
+          <aside className="relative z-20 min-h-0 overflow-y-auto p-3 sm:p-4">
             <h4 className="mb-2 px-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Previous</h4>
             <ul className="space-y-1">
-              {previous.map((item) => {
-                const active = item.id === latest.id;
+              {items.map((item) => {
+                const active = Number(item.id) === Number(latest.id);
                 return (
                   <li key={item.id}>
                     <button
                       type="button"
-                      onClick={() => setActiveId(item.id)}
-                      className={`w-full cursor-pointer rounded-lg px-3 py-2.5 text-left transition-colors ${
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveId(Number(item.id));
+                      }}
+                      className={`relative z-20 w-full cursor-pointer rounded-lg px-3 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 ${
                         active
                           ? 'bg-sky-50 dark:bg-sky-500/15'
                           : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'

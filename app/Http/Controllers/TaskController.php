@@ -35,6 +35,14 @@ class TaskController extends Controller
             ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code']);
 
         $canManage = $this->mayManageTasks();
+        $canViewAll = $this->mayViewAllTasks();
+        $canViewSelf = $this->mayViewSelfTasks();
+        $currentUserId = (int) session('user_id', 0);
+
+        // View Self only (no View All): lock list to the signed-in user.
+        if (! $canViewAll && $canViewSelf && $currentUserId > 0) {
+            $assigneeFilter = $currentUserId;
+        }
 
         $jobItems = AllocatedJobsTaskFeed::all();
         if ($assigneeFilter !== null) {
@@ -103,6 +111,8 @@ class TaskController extends Controller
             'assigneeFilter' => $assigneeFilter,
             'viewMode' => $view,
             'canManage' => $canManage,
+            'canViewAll' => $canViewAll,
+            'canViewSelf' => $canViewSelf,
         ]);
     }
 
@@ -136,11 +146,14 @@ class TaskController extends Controller
 
     public function update(Request $request, int $id)
     {
-        if (! $this->mayManageTasks()) {
+        if (! $this->mayManageTasks() && ! RolePermission::userMayAccessRoute('task_management.update')) {
             return $this->deny($request, 'You do not have permission to update tasks.');
         }
 
         $task = Task::findOrFail($id);
+        if (! $this->mayMutateTask($task)) {
+            return $this->deny($request, 'You can only update your own tasks.');
+        }
         $data = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'assignee_user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
@@ -153,6 +166,10 @@ class TaskController extends Controller
             $task->title = trim($data['title']);
         }
         if (array_key_exists('assignee_user_id', $data)) {
+            if (! $this->mayViewAllTasks()) {
+                // View Self: cannot reassign away from self
+                $data['assignee_user_id'] = (int) session('user_id', 0) ?: $task->assignee_user_id;
+            }
             $task->assignee_user_id = $data['assignee_user_id'];
         }
         if (array_key_exists('due_date', $data)) {
@@ -186,11 +203,15 @@ class TaskController extends Controller
 
     public function destroy(Request $request, int $id)
     {
-        if (! $this->mayManageTasks()) {
+        if (! $this->mayManageTasks() && ! RolePermission::userMayAccessRoute('task_management.destroy')) {
             return $this->deny($request, 'You do not have permission to delete tasks.');
         }
 
-        Task::findOrFail($id)->delete();
+        $task = Task::findOrFail($id);
+        if (! $this->mayMutateTask($task)) {
+            return $this->deny($request, 'You can only delete your own tasks.');
+        }
+        $task->delete();
 
         return redirect()
             ->route('task_management', $this->redirectQuery($request))
@@ -321,12 +342,36 @@ class TaskController extends Controller
         ], static fn ($v) => $v !== null && $v !== '');
     }
 
+    private function mayViewAllTasks(): bool
+    {
+        return RolePermission::userMayAccessRoute('task_management.view_all')
+            || RolePermission::userMayAccessRoute('task_management')
+            || RolePermission::userMayAccessRoute('dashboard');
+    }
+
+    private function mayViewSelfTasks(): bool
+    {
+        return RolePermission::userMayAccessRoute('task_management.view_self');
+    }
+
     private function mayManageTasks(): bool
     {
         return RolePermission::userMayAccessRoute('task_management')
             || RolePermission::userMayAccessRoute('task_management.store')
             || RolePermission::userMayAccessRoute('task_management.update')
+            || RolePermission::userMayAccessRoute('task_management.view_all')
             || RolePermission::userMayAccessRoute('dashboard');
+    }
+
+    private function mayMutateTask(Task $task): bool
+    {
+        if ($this->mayViewAllTasks()) {
+            return true;
+        }
+
+        $uid = (int) session('user_id', 0);
+
+        return $uid > 0 && (int) ($task->assignee_user_id ?? 0) === $uid;
     }
 
     private function deny(Request $request, string $message, int $status = 403)

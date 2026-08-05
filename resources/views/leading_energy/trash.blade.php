@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'LEADING ENERGY Archive')
+@section('title', 'Leading Energy Archive')
 
 @section('body_class', 'page-lbs-list page-leading-energy-list page-leading-energy-trash')
 
@@ -8,8 +8,8 @@
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">LEADING ENERGY Archive</h1>
-                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">Archived LEADING ENERGY jobs.</p>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">Leading Energy Archive</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">Archived Leading Energy jobs.</p>
             </div>
         </div>
 
@@ -32,7 +32,7 @@
                                 $jobQ = \Illuminate\Support\Facades\DB::table('job_leading_energy')
                                     ->whereRaw('LOWER(status) = ?', ['archived']);
                                 \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
-                                \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LEADING ENERGY');
+                                \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'Leading Energy');
                                 $rows = $jobQ->orderByDesc('updated_at')->limit(300)->get();
                             }
                         @endphp

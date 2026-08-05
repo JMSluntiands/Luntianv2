@@ -161,7 +161,7 @@
             Dashboard
         </a>
         @endif
-        @if(\Illuminate\Support\Facades\Route::has('task_management') && ($may('task_management') || $may('dashboard')))
+        @if(\Illuminate\Support\Facades\Route::has('task_management') && ($may('task_management') || $may('task_management.view_all') || $may('task_management.view_self') || $may('dashboard')))
         <a href="{{ route('task_management') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:ring-inset dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}">
             <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             Task Management
@@ -457,11 +457,11 @@
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $efficientLivingOpen ? 'true' : 'false' }}" aria-controls="nav-sub-efficient-living">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
                     <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    EFFICIENT LIVING
+                    Efficient Living
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-efficient-living" role="region" aria-label="EFFICIENT LIVING submenu">
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-efficient-living" role="region" aria-label="Efficient Living submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
                     @if($isStaff)
                         @if($may('efficient_living.list'))
@@ -526,11 +526,11 @@
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $bluinqOpen ? 'true' : 'false' }}" aria-controls="nav-sub-bluinq">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
                     <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    BLUINQ
+                    BluInq
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-bluinq" role="region" aria-label="BLUINQ submenu">
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-bluinq" role="region" aria-label="BluInq submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
                     @if($isStaff)
                         @if($may('bluinq.list'))
@@ -856,11 +856,11 @@
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $lcHomeBuilderOpen ? 'true' : 'false' }}" aria-controls="nav-sub-lc-home-builder">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
                     <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    LC HOME BUILDER
+                    LC Home Builder
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-lc-home-builder" role="region" aria-label="LC HOME BUILDER submenu">
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-lc-home-builder" role="region" aria-label="LC Home Builder submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
                     @if($isStaff)
                         @if($may('lc_home_builder.list'))
@@ -925,11 +925,11 @@
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $leadingEnergyOpen ? 'true' : 'false' }}" aria-controls="nav-sub-leading-energy">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
                     <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    LEADING ENERGY
+                    Leading Energy
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-leading-energy" role="region" aria-label="LEADING ENERGY submenu">
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-leading-energy" role="region" aria-label="Leading Energy submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
                     @if($isStaff)
                         @if($may('leading_energy.list'))

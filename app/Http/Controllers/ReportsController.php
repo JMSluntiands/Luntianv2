@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Services\JobActiveTimeService;
 
 class ReportsController extends Controller
 {
@@ -22,13 +23,16 @@ class ReportsController extends Controller
         if (Schema::hasTable('jobs')) {
             $parts[] = "
                 SELECT
+                    j.job_id AS job_pk,
+                    CONVERT('jobs' USING utf8mb4) COLLATE {$utf8u} AS source_table,
                     j.completion_date AS completion_date,
+                    j.log_date AS started_at,
                     CONVERT(COALESCE(j.staff_id, j.checker_id) USING utf8mb4) COLLATE {$utf8u} AS user_code,
                     CONVERT(COALESCE(j.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
                     COALESCE(NULLIF(j.units, 0), j.plan_complexity, 0) AS units,
                     CONVERT(COALESCE(ca.client_account_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
                     CASE
-                        WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_EL\\_%' THEN CONVERT('EFFICIENT LIVING' USING utf8mb4) COLLATE {$utf8u}
+                        WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_EL\\_%' THEN CONVERT('Efficient Living' USING utf8mb4) COLLATE {$utf8u}
                         WHEN CONVERT(j.job_request_id USING utf8mb4) COLLATE {$utf8u} LIKE 'EA\\_LT\\_%' THEN CONVERT('LUNTIAN' USING utf8mb4) COLLATE {$utf8u}
                         ELSE CONVERT('LBS' USING utf8mb4) COLLATE {$utf8u}
                     END AS job_system
@@ -38,104 +42,73 @@ class ReportsController extends Controller
             ";
         }
 
-        if (Schema::hasTable('job_bph')) {
-            $parts[] = "
-                SELECT
-                    b.date AS completion_date,
-                    CONVERT(COALESCE(b.assigned, b.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(b.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(b.units, 0) AS units,
-                    CONVERT(COALESCE(b.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+        $bphFamily = [
+            'job_bph' => null, // CASE for BluInq below
+            'job_amt' => 'A&M',
+            'job_fyrs' => 'FYRS ENERGY WISE',
+            'job_csp' => 'CSP',
+            'job_nh' => 'NH',
+            'job_lc_home_builder' => 'LC Home Builder',
+            'job_leading_energy' => 'Leading Energy',
+        ];
+
+        foreach ($bphFamily as $table => $fixedLabel) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+            $alias = substr($table, -3) === 'bph' ? 'b' : substr(str_replace('job_', '', $table), 0, 1);
+            if ($table === 'job_bph') {
+                $systemExpr = "
                     CASE
-                        WHEN LOWER(TRIM(CONVERT(b.client_code USING utf8mb4) COLLATE {$utf8u})) = 'bluinq01' THEN CONVERT('BLUINQ' USING utf8mb4) COLLATE {$utf8u}
+                        WHEN LOWER(TRIM(CONVERT({$alias}.client_code USING utf8mb4) COLLATE {$utf8u})) = 'bluinq01' THEN CONVERT('BluInq' USING utf8mb4) COLLATE {$utf8u}
                         ELSE CONVERT('BPH' USING utf8mb4) COLLATE {$utf8u}
-                    END AS job_system
-                FROM job_bph b
-            ";
-        }
+                    END
+                ";
+                $alias = 'b';
+            } elseif ($table === 'job_amt') {
+                $alias = 'a';
+                $systemExpr = "CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u}";
+            } elseif ($table === 'job_fyrs') {
+                $alias = 'f';
+                $systemExpr = "CONVERT('FYRS ENERGY WISE' USING utf8mb4) COLLATE {$utf8u}";
+            } elseif ($table === 'job_csp') {
+                $alias = 'c';
+                $systemExpr = "CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u}";
+            } elseif ($table === 'job_nh') {
+                $alias = 'n';
+                $systemExpr = "CONVERT('NH' USING utf8mb4) COLLATE {$utf8u}";
+            } elseif ($table === 'job_lc_home_builder') {
+                $alias = 'l';
+                $systemExpr = "CONVERT('LC Home Builder' USING utf8mb4) COLLATE {$utf8u}";
+            } else {
+                $alias = 'e';
+                $systemExpr = "CONVERT('Leading Energy' USING utf8mb4) COLLATE {$utf8u}";
+            }
 
-        if (Schema::hasTable('job_amt')) {
+            $startedCol = Schema::hasColumn($table, 'created_at') ? "{$alias}.created_at" : "{$alias}.date";
+
             $parts[] = "
                 SELECT
-                    a.date AS completion_date,
-                    CONVERT(COALESCE(a.assigned, a.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(a.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(a.units, 0) AS units,
-                    CONVERT(COALESCE(a.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                    CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u} AS job_system
-                FROM job_amt a
-            ";
-        }
-
-        if (Schema::hasTable('job_fyrs')) {
-            $parts[] = "
-                SELECT
-                    f.date AS completion_date,
-                    CONVERT(COALESCE(f.assigned, f.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(f.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(f.units, 0) AS units,
-                    CONVERT(COALESCE(f.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                    CONVERT('FYRS ENERGY WISE' USING utf8mb4) COLLATE {$utf8u} AS job_system
-                FROM job_fyrs f
-            ";
-        }
-
-        if (Schema::hasTable('job_csp')) {
-            $parts[] = "
-                SELECT
-                    c.date AS completion_date,
-                    CONVERT(COALESCE(c.assigned, c.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(c.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(c.units, 0) AS units,
-                    CONVERT(COALESCE(c.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                    CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u} AS job_system
-                FROM job_csp c
-            ";
-        }
-
-        if (Schema::hasTable('job_nh')) {
-            $parts[] = "
-                SELECT
-                    n.date AS completion_date,
-                    CONVERT(COALESCE(n.assigned, n.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(n.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(n.units, 0) AS units,
-                    CONVERT(COALESCE(n.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                    CONVERT('NH' USING utf8mb4) COLLATE {$utf8u} AS job_system
-                FROM job_nh n
-            ";
-        }
-
-        if (Schema::hasTable('job_lc_home_builder')) {
-            $parts[] = "
-                SELECT
-                    l.date AS completion_date,
-                    CONVERT(COALESCE(l.assigned, l.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(l.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(l.units, 0) AS units,
-                    CONVERT(COALESCE(l.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                    CONVERT('LC HOME BUILDER' USING utf8mb4) COLLATE {$utf8u} AS job_system
-                FROM job_lc_home_builder l
-            ";
-        }
-
-        if (Schema::hasTable('job_leading_energy')) {
-            $parts[] = "
-                SELECT
-                    e.date AS completion_date,
-                    CONVERT(COALESCE(e.assigned, e.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
-                    CONVERT(COALESCE(e.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
-                    COALESCE(e.units, 0) AS units,
-                    CONVERT(COALESCE(e.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
-                    CONVERT('LEADING ENERGY' USING utf8mb4) COLLATE {$utf8u} AS job_system
-                FROM job_leading_energy e
+                    {$alias}.id AS job_pk,
+                    CONVERT('{$table}' USING utf8mb4) COLLATE {$utf8u} AS source_table,
+                    {$alias}.date AS completion_date,
+                    {$startedCol} AS started_at,
+                    CONVERT(COALESCE({$alias}.assigned, {$alias}.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE({$alias}.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
+                    COALESCE({$alias}.units, 0) AS units,
+                    CONVERT(COALESCE({$alias}.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
+                    {$systemExpr} AS job_system
+                FROM {$table} {$alias}
             ";
         }
 
         if (empty($parts)) {
             return "
                 SELECT
+                    0 AS job_pk,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS source_table,
                     NULL AS completion_date,
+                    NULL AS started_at,
                     CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS user_code,
                     CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS job_type,
                     0 AS units,
@@ -232,7 +205,7 @@ class ReportsController extends Controller
 
     /**
      * @param  array{client: string, staff: string, dateFrom: string, dateTo: string}  $filters
-     * @return \Illuminate\Support\Collection<int, object{completion_date: mixed, user_code: mixed, job_type: mixed, units: int}>
+     * @return \Illuminate\Support\Collection<int, object{completion_date: mixed, user_code: mixed, job_type: mixed, units: int, time_spent_seconds: int, time_spent: string}>
      */
     private static function fetchGroupedRows(array $filters, ?int $limit = null): \Illuminate\Support\Collection
     {
@@ -240,41 +213,89 @@ class ReportsController extends Controller
         $union = self::unionAllJobsSql($utf8u);
         [$where, $filterParams] = self::buildWhereClause($filters);
 
-        $limitSql = '';
-        $params = $filterParams;
-        if ($limit !== null && $limit > 0) {
-            $limitSql = ' LIMIT ?';
-            $params[] = $limit;
-        }
-
-        $sqlGrouped = "
+        $sqlJobs = "
             SELECT
-                src.completion_date,
-                src.user_code,
-                src.job_type,
-                SUM(src.unit_val) AS units
-            FROM (
-                SELECT
-                    DATE(u.completion_date) AS completion_date,
-                    NULLIF(TRIM(u.user_code), '') AS user_code,
-                    u.job_type AS job_type,
-                    COALESCE(u.units, 0) AS unit_val
-                FROM ({$union}) u
-                WHERE {$where}
-            ) src
-            GROUP BY src.completion_date, src.user_code, src.job_type
-            ORDER BY src.completion_date DESC, src.user_code ASC, src.job_type ASC
-            {$limitSql}
+                u.job_pk,
+                u.source_table,
+                DATE(u.completion_date) AS completion_date,
+                u.completion_date AS completion_at,
+                u.started_at,
+                NULLIF(TRIM(u.user_code), '') AS user_code,
+                u.job_type AS job_type,
+                COALESCE(u.units, 0) AS unit_val
+            FROM ({$union}) u
+            WHERE {$where}
+            ORDER BY DATE(u.completion_date) DESC, u.user_code ASC, u.job_type ASC
         ";
 
-        return collect(DB::select($sqlGrouped, $params))->map(function ($r) {
+        $jobRows = DB::select($sqlJobs, $filterParams);
+        $groups = [];
+
+        foreach ($jobRows as $job) {
+            $dateKey = (string) ($job->completion_date ?? '');
+            $userKey = (string) ($job->user_code ?? '');
+            $typeKey = (string) ($job->job_type ?? '');
+            $groupKey = $dateKey."\0".$userKey."\0".$typeKey;
+
+            $start = null;
+            $end = null;
+            try {
+                if (! empty($job->started_at)) {
+                    $start = Carbon::parse($job->started_at);
+                }
+            } catch (\Throwable $e) {
+                $start = null;
+            }
+            try {
+                if (! empty($job->completion_at)) {
+                    $end = Carbon::parse($job->completion_at);
+                    // Date-only completion stamps land at 00:00 — use end of day so duration is positive
+                    if ($end->format('H:i:s') === '00:00:00') {
+                        $end = $end->copy()->endOfDay();
+                    }
+                }
+            } catch (\Throwable $e) {
+                $end = null;
+            }
+
+            $secs = JobActiveTimeService::activeSeconds(
+                (string) ($job->source_table ?? ''),
+                (int) ($job->job_pk ?? 0),
+                $start,
+                $end
+            );
+
+            if (! isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'completion_date' => $job->completion_date,
+                    'user_code' => $job->user_code,
+                    'job_type' => $job->job_type,
+                    'units' => 0,
+                    'time_spent_seconds' => 0,
+                ];
+            }
+            $groups[$groupKey]['units'] += (int) ($job->unit_val ?? 0);
+            $groups[$groupKey]['time_spent_seconds'] += (int) ($secs ?? 0);
+        }
+
+        $collection = collect(array_values($groups))->map(function (array $g) {
+            $secs = (int) ($g['time_spent_seconds'] ?? 0);
+
             return (object) [
-                'completion_date' => $r->completion_date,
-                'user_code' => $r->user_code,
-                'job_type' => $r->job_type,
-                'units' => (int) ($r->units ?? 0),
+                'completion_date' => $g['completion_date'],
+                'user_code' => $g['user_code'],
+                'job_type' => $g['job_type'],
+                'units' => (int) ($g['units'] ?? 0),
+                'time_spent_seconds' => $secs,
+                'time_spent' => JobActiveTimeService::formatDuration($secs),
             ];
         });
+
+        if ($limit !== null && $limit > 0) {
+            $collection = $collection->take($limit)->values();
+        }
+
+        return $collection;
     }
 
     public function index(Request $request)
@@ -403,7 +424,7 @@ class ReportsController extends Controller
             echo '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>';
             echo '<table border="1">';
             echo '<thead><tr>';
-            foreach (['Date Completion', 'User', 'Job Type', 'Total Units'] as $header) {
+            foreach (['Date Completion', 'User', 'Job Type', 'Total Units', 'Time Spent'] as $header) {
                 echo '<th>' . htmlspecialchars($header, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</th>';
             }
             echo '</tr></thead><tbody>';
@@ -414,12 +435,14 @@ class ReportsController extends Controller
                 $user = ($row->user_code !== null && trim((string) $row->user_code) !== '') ? (string) $row->user_code : '';
                 $jobType = (string) ($row->job_type ?? '');
                 $units = (int) ($row->units ?? 0);
+                $timeSpent = (string) ($row->time_spent ?? JobActiveTimeService::formatDuration((int) ($row->time_spent_seconds ?? 0)));
 
                 echo '<tr>';
                 echo '<td>' . htmlspecialchars($cdText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
                 echo '<td>' . htmlspecialchars($user, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
                 echo '<td>' . htmlspecialchars($jobType, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
                 echo '<td>' . $units . '</td>';
+                echo '<td>' . htmlspecialchars($timeSpent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
                 echo '</tr>';
             }
 

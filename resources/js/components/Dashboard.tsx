@@ -43,6 +43,8 @@ type AttendanceStatus = {
   timezone_label: string;
   can_clock_in: boolean;
   can_clock_out: boolean;
+  overdue?: boolean;
+  hours_open?: number | null;
 };
 
 function parseAttendanceFromDom(): AttendanceStatus | null {
@@ -59,6 +61,8 @@ function parseAttendanceFromDom(): AttendanceStatus | null {
       clocked_out: Boolean(parsed.clocked_out),
       clocked_out_at: parsed.clocked_out_at ?? null,
       can_clock_out: Boolean(parsed.can_clock_out),
+      overdue: Boolean(parsed.overdue),
+      hours_open: parsed.hours_open ?? null,
     };
   } catch {
     return null;
@@ -76,6 +80,8 @@ function defaultAttendanceStatus(): AttendanceStatus {
     timezone_label: 'Philippines (PHT)',
     can_clock_in: true,
     can_clock_out: false,
+    overdue: false,
+    hours_open: null,
   };
 }
 
@@ -210,11 +216,19 @@ function AttendanceBanner({
               You clocked in at <span className="font-medium text-slate-700 dark:text-slate-200">{attendance.clocked_in_at}</span>
               {' '}({attendance.timezone_label}). Local time now:{' '}
               <span className="font-medium text-slate-700 dark:text-slate-200">{localTime || '—'}</span>
+              {attendance.overdue ? (
+                <span className="mt-1 block text-red-600 dark:text-red-400">
+                  Over 8 hours with no clock out — please clock out before midnight.
+                </span>
+              ) : null}
             </>
           ) : (
             <>
               Staff who have not clocked in by {attendance.cutoff_label} ({attendance.timezone_label}) will appear as absent.
               Local time now: <span className="font-medium text-slate-700 dark:text-slate-200">{localTime || '—'}</span>
+              <span className="mt-1 block text-slate-400 dark:text-slate-500">
+                After midnight, clock out is locked for the previous day (marked as no clock out) and clock in is available again.
+              </span>
             </>
           )}
         </p>
@@ -225,7 +239,9 @@ function AttendanceBanner({
         disabled={!actionEnabled}
         className={`inline-flex shrink-0 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
           actionEnabled
-            ? 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+            ? attendance.can_clock_out && attendance.overdue
+              ? 'cursor-pointer bg-red-600 hover:bg-red-500'
+              : 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
             : 'cursor-not-allowed bg-slate-400 dark:bg-slate-600 dark:text-slate-300'
         }`}
       >
@@ -294,14 +310,14 @@ const BRANCH_ORDER = [
   'GENERIC EA',
   'LUNTIAN',
   'BPH',
-  'BLUINQ',
+  'BluInq',
   'A&M',
   'FYRS ENERGY WISE',
   'CSP',
   'NH',
-  'LC HOME BUILDER',
-  'EFFICIENT LIVING',
-  'LEADING ENERGY',
+  'LC Home Builder',
+  'Efficient Living',
+  'Leading Energy',
 ] as const;
 
 function parseDashboardStats(): DashboardStatsPayload | null {
@@ -363,14 +379,14 @@ const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   'GENERIC ASSESSMENT': 'general-assembly',
   LUNTIAN: 'luntian',
   BPH: 'bph',
-  BLUINQ: 'bluinq',
+  BluInq: 'bluinq',
   'A&M': 'amt',
   'FYRS ENERGY WISE': 'fyrs',
   CSP: 'csp',
   NH: 'nh',
-  'LC HOME BUILDER': 'lc-home-builder',
-  'EFFICIENT LIVING': 'efficient-living',
-  'LEADING ENERGY': 'leading-energy',
+  'LC Home Builder': 'lc-home-builder',
+  'Efficient Living': 'efficient-living',
+  'Leading Energy': 'leading-energy',
 };
 
 const CARD_BG = 'bg-[#F0C48A] dark:bg-[#A67C3A]';

@@ -249,6 +249,17 @@ class LcHomeBuilderJobController extends Controller
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_lc_home_builder')->where('id', $id)->update($update);
 
+        if (array_key_exists('status', $update)) {
+            \App\Services\JobActiveTimeService::record(
+                'job_lc_home_builder',
+                (int) $id,
+                (string) ($job->status ?? ''),
+                (string) $update['status'],
+                now('Asia/Manila'),
+                session('user_name') ?? null
+            );
+        }
+
         if ($assignmentChanged) {
             $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));
             $jobUrl = route('lc_home_builder.list') . '?' . http_build_query(['job_id' => $id]);
@@ -276,7 +287,7 @@ class LcHomeBuilderJobController extends Controller
             $q = DB::table('job_lc_home_builder')
                 ->whereRaw('LOWER(TRIM(status)) = ?', [strtolower('For Email Confirmation')]);
             JobCountsScope::applyJobBphAssignment($q);
-            JobCountsScope::applyBranchExclusiveStatLabel($q, 'LC HOME BUILDER');
+            JobCountsScope::applyBranchExclusiveStatLabel($q, 'LC Home Builder');
             $rows = $q
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')

@@ -90,18 +90,31 @@ class CheckPagePermission
                     'users.edit',
                 ],
                 'task_management' => [
+                    'task_management.view_all',
+                    'task_management.view_self',
                     'dashboard',
+                ],
+                'task_management.view_all' => [
+                    'task_management',
+                ],
+                'task_management.view_self' => [
+                    'task_management',
                 ],
                 'task_management.store' => [
                     'task_management',
+                    'task_management.view_all',
+                    'task_management.view_self',
                     'dashboard',
                 ],
                 'task_management.update' => [
                     'task_management',
+                    'task_management.view_all',
+                    'task_management.view_self',
                     'dashboard',
                 ],
                 'task_management.destroy' => [
                     'task_management',
+                    'task_management.view_all',
                     'dashboard',
                 ],
                 'forum_thread' => [

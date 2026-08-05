@@ -108,7 +108,7 @@ class BphJobController extends Controller
     {
         $cc = strtolower(trim((string) ($job->client_code ?? '')));
         if (str_contains($cc, 'bluinq')) {
-            return 'Bluinq';
+            return 'BluInq';
         }
 
         return match ($this->pipelineJobTable()) {
@@ -1040,6 +1040,17 @@ class BphJobController extends Controller
         $update['updated_at'] = now('Asia/Manila');
 
         DB::table($this->pipelineJobTable())->where('id', $id)->update($update);
+
+        if (array_key_exists('status', $update)) {
+            \App\Services\JobActiveTimeService::record(
+                $this->pipelineJobTable(),
+                (int) $id,
+                (string) ($job->status ?? ''),
+                (string) $update['status'],
+                now('Asia/Manila'),
+                session('user_name') ?? null
+            );
+        }
 
         if ($pipelineAssignmentChanged) {
             $jobStatus = (string) (array_key_exists('status', $update) ? $update['status'] : ($job->status ?? ''));

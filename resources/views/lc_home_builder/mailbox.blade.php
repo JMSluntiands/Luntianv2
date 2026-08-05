@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'LC HOME BUILDER Mailbox')
+@section('title', 'LC Home Builder Mailbox')
 
 @section('body_class', 'page-lbs-mailbox')
 
 @section('content')
     @php
-        $branchLabel = 'LC HOME BUILDER';
+        $branchLabel = 'LC Home Builder';
         $updateRoute = 'lc_home_builder.update';
         $jobBaseUrl = url('/dashboard/lc-home-builder/job');
     @endphp

@@ -91,7 +91,12 @@ class AttendanceController extends Controller
                     ->first();
 
                 if (! $existing || empty($existing->clocked_in_at)) {
-                    return null;
+                    return ['error' => 'missing'];
+                }
+
+                // After midnight, yesterday's open session cannot be clocked out
+                if (! Attendance::canClockOutTodayRecord($existing, $now)) {
+                    return ['error' => 'locked'];
                 }
 
                 if (empty($existing->clocked_out_at)) {
@@ -99,7 +104,7 @@ class AttendanceController extends Controller
                     $existing->save();
                 }
 
-                return $existing;
+                return ['record' => $existing];
             });
         } catch (\Throwable $e) {
             return response()->json([
@@ -108,7 +113,15 @@ class AttendanceController extends Controller
             ], 500);
         }
 
-        if (! $attendance) {
+        if (($attendance['error'] ?? null) === 'locked') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Clock out is no longer available after midnight. Yesterday is marked as no clock out.',
+                'attendance' => Attendance::dashboardStatusForUser($userId),
+            ], 422);
+        }
+
+        if (($attendance['error'] ?? null) === 'missing' || empty($attendance['record'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Clock in first before clocking out.',

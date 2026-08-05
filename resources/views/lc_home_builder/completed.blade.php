@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'LC HOME BUILDER Completed')
+@section('title', 'LC Home Builder Completed')
 
 @section('body_class', 'page-lbs-list page-lc-home-builder-list page-lc-home-builder-completed')
 
@@ -8,14 +8,14 @@
     <div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">LC HOME BUILDER Completed</h1>
-                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View completed LC HOME BUILDER jobs.</p>
+                <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">LC Home Builder Completed</h1>
+                <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">View completed LC Home Builder jobs.</p>
             </div>
             <div class="shrink-0">
                 <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                 <div class="relative flex min-w-[260px] items-center">
                     <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search LC HOME BUILDER completed jobs">
+                    <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder-slate-500 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search LC Home Builder completed jobs">
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@
                             $jobQ = \Illuminate\Support\Facades\DB::table('job_lc_home_builder')
                                 ->whereRaw('LOWER(TRIM(status)) = ?', ['completed']);
                             \App\Services\JobCountsScope::applyJobBphAssignment($jobQ);
-                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LC HOME BUILDER');
+                            \App\Services\JobCountsScope::applyBranchExclusiveStatLabel($jobQ, 'LC Home Builder');
                             $rows = $jobQ->orderByDesc('created_at')->limit(300)->get();
                         @endphp
 

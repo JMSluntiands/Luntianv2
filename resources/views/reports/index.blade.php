@@ -8,7 +8,7 @@
     <div class="reports-page">
         <div class="reports-header">
             <h1 class="reports-title">Reports</h1>
-            <p class="reports-subtitle">Completion dates within your range, units summed per day, job type, and user.</p>
+            <p class="reports-subtitle">Completion dates within your range, units and active time spent (Allocated → Completed; On Hold paused) summed per day, job type, and user.</p>
         </div>
 
         <div class="reports-summary-card">
@@ -19,7 +19,7 @@
                 <div class="reports-summary-sep"></div>
                 <div class="reports-summary-meta">Total units: <strong>{{ $totalUnitsInFilter ?? 0 }}</strong></div>
                 <ul class="reports-summary-list">
-                    @foreach(['LBS', 'LUNTIAN', 'EFFICIENT LIVING', 'BPH', 'BLUINQ', 'CSP', 'NH', 'LC HOME BUILDER', 'LEADING ENERGY'] as $label)
+                    @foreach(['LBS', 'LUNTIAN', 'Efficient Living', 'BPH', 'BluInq', 'CSP', 'NH', 'LC Home Builder', 'Leading Energy'] as $label)
                         @php
                             $s = ($summaryByLabel ?? collect())[$label] ?? null;
                             $u = $s ? (int) ($s->units_sum ?? 0) : 0;
@@ -140,6 +140,10 @@
                                 <span>Total Units</span>
                                 <span class="reports-sort-icon" aria-hidden="true">↕</span>
                             </th>
+                            <th class="reports-th" data-sort="">
+                                <span>Time Spent</span>
+                                <span class="reports-sort-icon" aria-hidden="true">↕</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,11 +160,12 @@
                                     <td class="reports-td">{{ $row->user_code !== null && trim((string) $row->user_code) !== '' ? $row->user_code : '—' }}</td>
                                     <td class="reports-td">{{ $row->job_type ?? '—' }}</td>
                                     <td class="reports-td">{{ $row->units ?? 0 }}</td>
+                                    <td class="reports-td">{{ $row->time_spent ?? '—' }}</td>
                                 </tr>
                             @endforeach
                         @else
                             <tr class="reports-empty-row">
-                                <td colspan="4" class="reports-empty-cell">No data for this filter.</td>
+                                <td colspan="5" class="reports-empty-cell">No data for this filter.</td>
                             </tr>
                         @endif
                     </tbody>
