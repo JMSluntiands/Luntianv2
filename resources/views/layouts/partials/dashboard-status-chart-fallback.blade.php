@@ -18,6 +18,7 @@
             'Efficient Living' => 'EL',
             'BluInq' => 'BI',
             'BLUINQ' => 'BI',
+            'FYRS ENERGYWISE' => 'FYRS',
             'FYRS ENERGY WISE' => 'FYRS',
             default => $label,
         };
@@ -25,13 +26,13 @@
 @endphp
 <section
     id="dashboard-status-chart-fallback"
-    class="dashboard-status-chart h-full min-w-0 overflow-hidden rounded-xl border border-slate-700/60 bg-[#0f172a] shadow-lg"
+    class="dashboard-status-chart h-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
     data-chart-api="{{ route('dashboard.chart', [], false) }}"
     data-branch-filter="{{ $chartBranchFilterLocked }}"
 >
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 px-4 py-3 sm:px-5">
-        <h2 class="flex items-center gap-2.5 text-sm font-semibold text-slate-100 sm:text-base">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+        <h2 class="flex items-center gap-2.5 text-sm font-semibold text-slate-900 sm:text-base">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
@@ -41,9 +42,9 @@
     </div>
 
     <div class="flex flex-col">
-        <aside class="dashboard-chart-filters border-b border-slate-700/60 bg-slate-900/40 px-4 py-3">
-            <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <aside class="dashboard-chart-filters border-b border-slate-200 bg-slate-50/80 px-4 py-3">
+            <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
                 </svg>
                 Filters
@@ -51,7 +52,7 @@
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <label class="dashboard-chart-filter-field block">
                     <span class="dashboard-chart-filter-field__label">Client</span>
-                    <select id="dashboardChartClientFilter" aria-label="Filter by client" @disabled($chartBranchFilterLocked !== '') class="dashboard-chart-filter-select w-full rounded-lg border border-slate-600 bg-slate-900/80 px-2.5 py-2 text-xs font-medium text-slate-100">
+                    <select id="dashboardChartClientFilter" aria-label="Filter by client" @disabled($chartBranchFilterLocked !== '') class="dashboard-chart-filter-select w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800">
                         <option value="" @selected($chartBranchFilterLocked === '')>All</option>
                         @foreach (($filterOptions['clients'] ?? []) as $opt)
                             <option value="{{ $opt['value'] ?? '' }}" @selected($chartBranchFilterLocked !== '' && strcasecmp($chartBranchFilterLocked, (string) ($opt['value'] ?? '')) === 0)>
@@ -62,7 +63,7 @@
                 </label>
                 <label class="dashboard-chart-filter-field block">
                     <span class="dashboard-chart-filter-field__label">Status</span>
-                    <select id="dashboardChartStatusFilter" aria-label="Filter by status" class="dashboard-chart-filter-select w-full rounded-lg border border-slate-600 bg-slate-900/80 px-2.5 py-2 text-xs font-medium text-slate-100">
+                    <select id="dashboardChartStatusFilter" aria-label="Filter by status" class="dashboard-chart-filter-select w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800">
                         <option value="">All</option>
                         @foreach (($filterOptions['statuses'] ?? []) as $opt)
                             <option value="{{ $opt['value'] ?? '' }}">{{ $opt['label'] ?? '' }}</option>
@@ -71,7 +72,7 @@
                 </label>
                 <label class="dashboard-chart-filter-field block">
                     <span class="dashboard-chart-filter-field__label">Staff</span>
-                    <select id="dashboardChartStaffFilter" aria-label="Filter by staff" class="dashboard-chart-filter-select w-full rounded-lg border border-slate-600 bg-slate-900/80 px-2.5 py-2 text-xs font-medium text-slate-100">
+                    <select id="dashboardChartStaffFilter" aria-label="Filter by staff" class="dashboard-chart-filter-select w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800">
                         <option value="">All</option>
                         @foreach (($filterOptions['staff'] ?? []) as $opt)
                             <option value="{{ $opt['value'] ?? '' }}">{{ $opt['label'] ?? '' }}</option>
@@ -79,13 +80,13 @@
                     </select>
                 </label>
             </div>
-            <button type="button" id="dashboardChartClearFilters" class="mt-3 hidden w-full rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-500 hover:bg-slate-800 hover:text-slate-100 sm:w-auto">
+            <button type="button" id="dashboardChartClearFilters" class="mt-3 hidden w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-800 sm:w-auto">
                 Clear filters
             </button>
         </aside>
 
         <div class="min-w-0 flex-1">
-            <p class="px-4 py-2 text-xs text-slate-400 sm:px-5">Active jobs per module — matches Total Jobs card (status breakdown)</p>
+            <p class="px-4 py-2 text-xs text-slate-500 sm:px-5">Active jobs per module — matches Total Jobs card (status breakdown)</p>
             <div id="dashboardChartRows" class="dashboard-chart-body-enter space-y-3 px-4 pb-6 pt-2 sm:px-5">
                 @forelse ($chartBranches as $branch)
                     @php
@@ -93,11 +94,11 @@
                         $rowIndex = $loop->index;
                     @endphp
                     <div class="dashboard-chart-row-enter flex items-center gap-3 dashboard-chart-branch-row" data-chart-branch="{{ $branch['label'] ?? '' }}" style="animation-delay: {{ $rowIndex * 0.07 }}s">
-                        <div class="w-[4.5rem] shrink-0 text-right text-[10px] font-semibold text-slate-300 sm:w-24 sm:text-xs" title="{{ $branch['label'] ?? '' }}">
+                        <div class="w-[4.5rem] shrink-0 text-right text-[10px] font-semibold text-slate-600 sm:w-24 sm:text-xs" title="{{ $branch['label'] ?? '' }}">
                             {{ $shortBranch((string) ($branch['label'] ?? '')) }}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="flex h-7 w-full overflow-hidden rounded-md bg-slate-800/50 sm:h-8">
+                            <div class="flex h-7 w-full overflow-hidden rounded-md bg-slate-100 sm:h-8">
                                 @foreach ($branch['statuses'] ?? [] as $status)
                                     @php
                                         $count = (int) ($status['count'] ?? 0);
@@ -118,13 +119,13 @@
                                 @endforeach
                             </div>
                         </div>
-                        <span class="w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-300 sm:w-10">{{ $total }}</span>
+                        <span class="w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-600 sm:w-10">{{ $total }}</span>
                     </div>
                 @empty
                     <p class="text-sm text-slate-500">No active jobs in Job Management.</p>
                 @endforelse
                 @if (count($legend) > 0)
-                    <div id="dashboardChartLegend" class="dashboard-chart-legend-enter mt-4 flex flex-wrap gap-2 border-t border-slate-700/60 pb-1 pt-4" style="animation-delay: {{ max(0, $chartBranches->count() - 1) * 0.07 + 0.12 }}s">
+                    <div id="dashboardChartLegend" class="dashboard-chart-legend-enter mt-4 flex flex-wrap gap-2 border-t border-slate-200 pb-1 pt-4" style="animation-delay: {{ max(0, $chartBranches->count() - 1) * 0.07 + 0.12 }}s">
                         @foreach ($legend as $item)
                             @php
                                 $bg = ! empty($item['color']) ? trim((string) $item['color']) : '#3b82f6';
@@ -156,7 +157,7 @@
 
     var fetchGen = 0;
     var shortBranch = function (label) {
-        var map = { 'GENERIC EA': 'GA', 'GENERAL EA': 'GA', 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'Efficient Living': 'EL', 'EFFICIENT LIVING': 'EL', 'BluInq': 'BI', 'BLUINQ': 'BI', 'FYRS ENERGY WISE': 'FYRS' };
+        var map = { 'GENERIC EA': 'GA', 'GENERAL EA': 'GA', 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'Efficient Living': 'EL', 'EFFICIENT LIVING': 'EL', 'BluInq': 'BI', 'BLUINQ': 'BI', 'FYRS ENERGYWISE': 'FYRS', 'FYRS ENERGY WISE': 'FYRS' };
         return map[label] || label;
     };
 
@@ -218,9 +219,9 @@
         }).join('');
 
         return '<div class="dashboard-chart-row-enter flex items-center gap-3" style="animation-delay:' + (rowIndex * 0.07) + 's">' +
-            '<div class="w-[4.5rem] shrink-0 text-right text-[10px] font-semibold text-slate-300 sm:w-24 sm:text-xs" title="' + (branch.label || '') + '">' + shortBranch(branch.label || '') + '</div>' +
-            '<div class="min-w-0 flex-1"><div class="flex h-7 w-full overflow-hidden rounded-md bg-slate-800/50 sm:h-8">' + bars + '</div></div>' +
-            '<span class="w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-300 sm:w-10">' + total + '</span></div>';
+            '<div class="w-[4.5rem] shrink-0 text-right text-[10px] font-semibold text-slate-600 sm:w-24 sm:text-xs" title="' + (branch.label || '') + '">' + shortBranch(branch.label || '') + '</div>' +
+            '<div class="min-w-0 flex-1"><div class="flex h-7 w-full overflow-hidden rounded-md bg-slate-100 sm:h-8">' + bars + '</div></div>' +
+            '<span class="w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-600 sm:w-10">' + total + '</span></div>';
     }
 
     function buildLegendHtml(branches) {
@@ -237,7 +238,7 @@
             return '<span class="rounded-md px-2 py-1 text-[10px] font-medium sm:text-xs" style="background-color:' + bg + ';color:' + fg + '">' + item.label + '</span>';
         }).join('');
         if (!items) return '';
-        return '<div class="dashboard-chart-legend-enter mt-4 flex flex-wrap gap-2 border-t border-slate-700/60 pb-1 pt-4" style="animation-delay:' + (Math.max(0, branches.length - 1) * 0.07 + 0.12) + 's">' + items + '</div>';
+        return '<div class="dashboard-chart-legend-enter mt-4 flex flex-wrap gap-2 border-t border-slate-200 pb-1 pt-4" style="animation-delay:' + (Math.max(0, branches.length - 1) * 0.07 + 0.12) + 's">' + items + '</div>';
     }
 
     function renderChart(branches) {

@@ -15,6 +15,10 @@ class Task extends Model
 
     public const STATUS_DONE = 'done';
 
+    public const VISIBILITY_PUBLIC = 'public';
+
+    public const VISIBILITY_PERSONAL = 'personal';
+
     /** @var list<string> */
     public const STATUSES = [
         self::STATUS_NOT_STARTED,
@@ -23,12 +27,19 @@ class Task extends Model
         self::STATUS_DONE,
     ];
 
+    /** @var list<string> */
+    public const VISIBILITIES = [
+        self::VISIBILITY_PUBLIC,
+        self::VISIBILITY_PERSONAL,
+    ];
+
     protected $fillable = [
         'title',
         'assignee_user_id',
         'due_date',
         'status',
         'notes',
+        'visibility',
         'created_by',
     ];
 
@@ -86,5 +97,31 @@ class Task extends Model
                 'dot' => 'bg-slate-400',
             ],
         };
+    }
+
+    public function isPersonal(): bool
+    {
+        return strtolower(trim((string) $this->visibility)) === self::VISIBILITY_PERSONAL;
+    }
+
+    /**
+     * Public tasks are visible to everyone with Task Management access.
+     * Personal tasks are visible only to the user who created them.
+     */
+    public function scopeVisibleTo($query, int $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->where(function ($public) {
+                $public->whereNull('visibility')
+                    ->orWhere('visibility', self::VISIBILITY_PUBLIC);
+            });
+
+            if ($userId > 0) {
+                $q->orWhere(function ($personal) use ($userId) {
+                    $personal->where('visibility', self::VISIBILITY_PERSONAL)
+                        ->where('created_by', $userId);
+                });
+            }
+        });
     }
 }

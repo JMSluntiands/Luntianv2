@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Fyrs Energy Wise assessor workflow: after creation (Allocated), staff may set Processing or Completed.
+ * Fyrs Energywise assessor workflow: after creation (Allocated), staff may set Processing or Completed.
  */
 final class FyrsJobStatusFlow
 {

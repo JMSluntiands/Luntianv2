@@ -412,7 +412,7 @@ class DashboardJobStatsService
             'BPH' => 'bph',
             'BluInq' => 'bluinq',
             'A&M' => 'amt',
-            'FYRS ENERGY WISE' => 'fyrs',
+            'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => 'fyrs',
             'CSP' => 'csp',
             'NH' => 'nh',
             'LC Home Builder' => 'lc_home_builder',
@@ -714,7 +714,7 @@ class DashboardJobStatsService
             'BPH' => self::countJobBphLiveStatus($statusName, 'bph'),
             'BluInq' => self::countJobBphLiveStatus($statusName, 'bluinq'),
             'A&M' => self::countJobBphLiveStatus($statusName, 'amt'),
-            'FYRS ENERGY WISE' => self::countJobBphLiveStatus($statusName, 'fyrs'),
+            'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => self::countJobBphLiveStatus($statusName, 'fyrs'),
             default => 0,
         };
     }
@@ -823,7 +823,7 @@ class DashboardJobStatsService
             'BPH' => self::countJobBph($bucket, 'bph', $date, $statusName),
             'BluInq' => self::countJobBph($bucket, 'bluinq', $date, $statusName),
             'A&M' => self::countJobBph($bucket, 'amt', $date, $statusName),
-            'FYRS ENERGY WISE' => self::countJobBph($bucket, 'fyrs', $date, $statusName),
+            'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => self::countJobBph($bucket, 'fyrs', $date, $statusName),
             default => 0,
         };
     }

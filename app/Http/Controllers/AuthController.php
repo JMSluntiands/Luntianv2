@@ -105,7 +105,7 @@ class AuthController extends Controller
         }
 
         try {
-            $dashboardAnnouncements = DashboardAnnouncementService::recentPayload(8);
+            $dashboardAnnouncements = DashboardAnnouncementService::recentPayload(5);
         } catch (\Throwable) {
             $dashboardAnnouncements = [];
         }

@@ -45,7 +45,7 @@ class ReportsController extends Controller
         $bphFamily = [
             'job_bph' => null, // CASE for BluInq below
             'job_amt' => 'A&M',
-            'job_fyrs' => 'FYRS ENERGY WISE',
+            'job_fyrs' => 'FYRS ENERGYWISE',
             'job_csp' => 'CSP',
             'job_nh' => 'NH',
             'job_lc_home_builder' => 'LC Home Builder',
@@ -70,7 +70,7 @@ class ReportsController extends Controller
                 $systemExpr = "CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u}";
             } elseif ($table === 'job_fyrs') {
                 $alias = 'f';
-                $systemExpr = "CONVERT('FYRS ENERGY WISE' USING utf8mb4) COLLATE {$utf8u}";
+                $systemExpr = "CONVERT('FYRS ENERGYWISE' USING utf8mb4) COLLATE {$utf8u}";
             } elseif ($table === 'job_csp') {
                 $alias = 'c';
                 $systemExpr = "CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u}";

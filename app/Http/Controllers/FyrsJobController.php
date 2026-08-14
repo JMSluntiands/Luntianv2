@@ -139,7 +139,7 @@ class FyrsJobController extends Controller
     }
 
     /**
-     * Add Fyrs Energy Wise job form — NatHERS & BASIX assessor workflow (Excel columns only).
+     * Add Fyrs Energywise job form — NatHERS & BASIX assessor workflow (Excel columns only).
      */
     public function addForm()
     {
@@ -240,7 +240,7 @@ class FyrsJobController extends Controller
     }
 
     /**
-     * Job detail for Fyrs Energy Wise rows (`job_fyrs`, client FYRS01). Same template as BPH with fyrs-scoped permissions.
+     * Job detail for Fyrs Energywise rows (`job_fyrs`, client FYRS01). Same template as BPH with fyrs-scoped permissions.
      */
     public function show(int $id)
     {
@@ -682,7 +682,7 @@ class FyrsJobController extends Controller
                     'reference'           => $reference,
                     'client_code'         => self::FYRS_CLIENT_CODE,
                     'urgent'              => 'NO',
-                    'job_type'            => 'Fyrs Energy Wise',
+                    'job_type'            => 'Fyrs Energywise',
                     'ncc'                 => '2019',
                     'job_number'          => $legacyJobNum,
                     'client_name'         => substr($clientName, 0, 255),
@@ -740,7 +740,7 @@ class FyrsJobController extends Controller
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'Fyrs Energy Wise job created successfully.',
+            'message' => 'Fyrs Energywise job created successfully.',
             'job_id'  => $id,
         ]);
     }
@@ -769,7 +769,7 @@ class FyrsJobController extends Controller
 
         try {
             $slackMessage = [
-                'text' => '🆕 New Fyrs Energy Wise Job Submitted',
+                'text' => '🆕 New Fyrs Energywise Job Submitted',
                 'attachments' => [
                     [
                         'color' => '#0d9488',
@@ -785,7 +785,7 @@ class FyrsJobController extends Controller
                             ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
                             ['title' => 'Checked By', 'value' => $checked, 'short' => true],
                         ],
-                        'footer' => 'Luntian Fyrs Energy Wise Job Management',
+                        'footer' => 'Luntian Fyrs Energywise Job Management',
                         'ts' => time(),
                     ],
                 ],
@@ -804,10 +804,10 @@ class FyrsJobController extends Controller
             curl_close($ch);
 
             if ($slackError) {
-                \Log::warning('Fyrs Energy Wise Slack notification failed', ['error' => $slackError, 'job_id' => $id]);
+                \Log::warning('Fyrs Energywise Slack notification failed', ['error' => $slackError, 'job_id' => $id]);
             }
         } catch (\Throwable $e) {
-            \Log::warning('Fyrs Energy Wise Slack exception', ['message' => $e->getMessage(), 'job_id' => $id]);
+            \Log::warning('Fyrs Energywise Slack exception', ['message' => $e->getMessage(), 'job_id' => $id]);
         }
 
         return response()->json(['status' => 'success']);
@@ -843,7 +843,7 @@ class FyrsJobController extends Controller
         $jobTypeShort = strtoupper(Str::limit(str_replace('-', '_', Str::slug($jobTypeLabel)), 12, ''));
         $headerTitle = $fyrsRef . '_' . ($jobTypeShort ?: 'FYRS') . '_' . $jobNum;
 
-        $emailSubject = 'LUNTIAN Fyrs Energy Wise Job Submission: '
+        $emailSubject = 'LUNTIAN Fyrs Energywise Job Submission: '
             . trim($accountClient) . ' LUNTIAN' . $fyrsRef . '-' . $jobNum . '-' . $nccCompliance;
 
         $folderSeg = preg_replace('/[^A-Za-z0-9\-\_]/', '_', $job->reference ?? '') ?: 'fyrs_upload';
@@ -886,7 +886,7 @@ class FyrsJobController extends Controller
                 }
             });
         } catch (\Throwable $e) {
-            \Log::error('Fyrs Energy Wise submission email failed', [
+            \Log::error('Fyrs Energywise submission email failed', [
                 'job_id' => $id,
                 'error'      => $e->getMessage(),
             ]);

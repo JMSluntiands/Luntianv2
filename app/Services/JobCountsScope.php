@@ -96,7 +96,7 @@ class JobCountsScope
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
         } elseif ($label === 'A&M') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
-        } elseif ($label === 'FYRS ENERGY WISE') {
+        } elseif (in_array($label, ['FYRS ENERGYWISE', 'FYRS ENERGY WISE'], true)) {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
         } else {
             $q->whereRaw('1 = 0');

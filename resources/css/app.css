@@ -21,6 +21,13 @@ html, body {
     margin: 0;
     padding: 0;
 }
+html[data-theme="light"],
+html:not([data-theme="dark"]) {
+    color-scheme: light;
+}
+html[data-theme="dark"] {
+    color-scheme: dark;
+}
 
 /* Buttons and clickable controls: pointer cursor */
 button,
@@ -565,7 +572,70 @@ body.sidebar-open #sidebarNav {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    color: #64748b;
+}
+[data-theme="dark"] .dashboard-chart-filter-field__label {
     color: #94a3b8;
+}
+
+/* Date pill + Clock In share one navy so they cannot drift apart */
+.dashboard-navy-control {
+    background-color: #0b2a4a !important;
+    color: #ffffff !important;
+}
+.dashboard-navy-control:hover:not(:disabled) {
+    background-color: #093251 !important;
+}
+
+/* Hide blade fallback once React dashboard is active */
+#dashboard-root[data-dashboard-mounted="1"] [data-dashboard-fallback] {
+    display: none !important;
+}
+
+/* Job Status Chart: pin light/dark to data-theme, not OS prefers-color-scheme */
+html:not([data-theme="dark"]) .dashboard-status-chart,
+[data-theme="light"] .dashboard-status-chart {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a;
+}
+html:not([data-theme="dark"]) .dashboard-status-chart h2,
+[data-theme="light"] .dashboard-status-chart h2 {
+    color: #0f172a !important;
+}
+html:not([data-theme="dark"]) .dashboard-status-chart .dashboard-chart-filters,
+[data-theme="light"] .dashboard-status-chart .dashboard-chart-filters {
+    background: rgba(248, 250, 252, 0.9) !important;
+    border-color: #e2e8f0 !important;
+}
+html:not([data-theme="dark"]) .dashboard-status-chart .dashboard-chart-filter-select,
+[data-theme="light"] .dashboard-status-chart .dashboard-chart-filter-select {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+    color-scheme: light;
+}
+html:not([data-theme="dark"]) .dashboard-status-chart .dashboard-chart-filter-field__label,
+[data-theme="light"] .dashboard-status-chart .dashboard-chart-filter-field__label {
+    color: #64748b !important;
+}
+[data-theme="dark"] .dashboard-status-chart {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border-color: rgba(51, 65, 85, 0.6) !important;
+    color: #f1f5f9;
+}
+[data-theme="dark"] .dashboard-status-chart h2 {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .dashboard-status-chart .dashboard-chart-filters {
+    background: rgba(15, 23, 42, 0.4) !important;
+    border-color: rgba(51, 65, 85, 0.6) !important;
+}
+[data-theme="dark"] .dashboard-status-chart .dashboard-chart-filter-select {
+    background: rgba(15, 23, 42, 0.8) !important;
+    color: #f1f5f9 !important;
+    border-color: #475569 !important;
+    color-scheme: dark;
 }
 
 /* Without this, “reduce motion” can leave panels/cards at opacity:0 (animation never fills). */

@@ -87,6 +87,7 @@
                             @php
                                 $author = $post->user;
                                 $isAnnouncement = $post->isAnnouncement();
+                                $isPinned = $post->isPinned();
                                 $postTitle = trim((string) ($post->title ?? ''));
                                 $excerpt = \Illuminate\Support\Str::limit(trim(strip_tags((string) $post->body)), 80);
                                 $listLabel = $postTitle !== '' ? $postTitle : ($excerpt !== '' ? $excerpt : 'Untitled post');
@@ -95,7 +96,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="bulletin-list-item group flex w-full cursor-pointer items-start gap-3 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-3 text-left shadow-sm transition-all hover:border-slate-300 hover:bg-white dark:border-slate-600/80 dark:bg-slate-900/50 dark:hover:border-slate-500 dark:hover:bg-slate-900/80"
+                                class="bulletin-list-item group flex w-full cursor-pointer items-start gap-3 rounded-xl border bg-slate-50/80 px-3 py-3 text-left shadow-sm transition-all hover:bg-white dark:bg-slate-900/50 dark:hover:bg-slate-900/80 {{ $isPinned ? 'border-amber-300/90 hover:border-amber-400 dark:border-amber-500/40 dark:hover:border-amber-400/60' : 'border-slate-200/90 hover:border-slate-300 dark:border-slate-600/80 dark:hover:border-slate-500' }}"
                                 data-post-id="{{ $post->id }}"
                                 aria-controls="bulletinDetail-{{ $post->id }}"
                             >
@@ -113,6 +114,12 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-1.5">
                                         <span class="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">{{ $displayName($author) }}</span>
+                                        @if($isPinned)
+                                            <span class="inline-flex items-center gap-0.5 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-500/20 dark:text-amber-300" title="Pinned">
+                                                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
+                                                Pinned
+                                            </span>
+                                        @endif
                                         @if($isAnnouncement)
                                             <span class="inline-flex items-center rounded-md bg-sky-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">Announcement</span>
                                         @else
@@ -263,6 +270,8 @@
                         $imageUrl = $post->imageUrl();
                         $allowsComments = $post->allowsComments();
                         $isAnnouncement = $post->isAnnouncement();
+                        $isPinned = $post->isPinned();
+                        $mayPin = $canPin ?? false;
                     @endphp
                     <article
                         id="bulletinDetail-{{ $post->id }}"
@@ -282,6 +291,12 @@
                                     <div>
                                         <div class="flex flex-wrap items-center gap-2">
                                             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $displayName($author) }}</p>
+                                            @if($isPinned)
+                                                <span class="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                                                    <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
+                                                    Pinned
+                                                </span>
+                                            @endif
                                             @if($isAnnouncement)
                                                 <span class="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:bg-sky-500/20 dark:text-sky-300">Announcement</span>
                                             @else
@@ -292,15 +307,30 @@
                                             {{ $post->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A') }}
                                         </p>
                                     </div>
-                                    @if($canRemovePost)
-                                        <form method="POST" action="{{ route('forum_thread.destroy', $post->id) }}" onsubmit="return confirm('Delete this post?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <div class="flex shrink-0 items-center gap-1">
+                                        @if($mayPin)
+                                            <form method="POST" action="{{ route('forum_thread.pin', $post->id) }}">
+                                                @csrf
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors {{ $isPinned ? 'bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 dark:text-amber-300' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200' }}"
+                                                    title="{{ $isPinned ? 'Unpin this post' : 'Pin this post to the top' }}"
+                                                >
+                                                    <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
+                                                    {{ $isPinned ? 'Unpin' : 'Pin' }}
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @if($canRemovePost)
+                                            <form method="POST" action="{{ route('forum_thread.destroy', $post->id) }}" onsubmit="return confirm('Delete this post?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </div>
                                 @php $postTitle = trim((string) ($post->title ?? '')); @endphp
                                 @if($postTitle !== '')

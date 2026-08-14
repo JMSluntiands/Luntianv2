@@ -85,6 +85,7 @@ function shortBranchLabel(label: string): string {
     'EFFICIENT LIVING': 'EL',
     BluInq: 'BI',
     BLUINQ: 'BI',
+    'FYRS ENERGYWISE': 'FYRS',
     'FYRS ENERGY WISE': 'FYRS',
     'LC Home Builder': 'LC HB',
     'LC HOME BUILDER': 'LC HB',
@@ -154,7 +155,7 @@ function FilterField({
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         aria-label={`Filter by ${label}`}
-        className={`dashboard-chart-filter-select w-full rounded-lg border border-slate-600 bg-slate-900/80 px-2.5 py-2 text-xs font-medium text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm${pulseKey ? ' dashboard-chart-filter-select--pulse' : ''}`}
+        className={`dashboard-chart-filter-select w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm${pulseKey ? ' dashboard-chart-filter-select--pulse' : ''}`}
       >
         <option value="">All</option>
         {options.map((opt) => (
@@ -377,10 +378,10 @@ export default function JobStatusChart() {
         : '';
 
   return (
-    <section className="animate-dashboard-panel dashboard-panel-animate-delay-2 h-full min-w-0 overflow-hidden rounded-xl border border-slate-700/60 bg-[#0f172a] shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 px-4 py-3 sm:px-5">
-        <h2 className="flex items-center gap-2.5 text-sm font-semibold text-slate-100 sm:text-base">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400">
+    <section className="dashboard-status-chart animate-dashboard-panel dashboard-panel-animate-delay-2 h-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+        <h2 className="flex items-center gap-2.5 text-sm font-semibold text-slate-900 sm:text-base">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -391,16 +392,16 @@ export default function JobStatusChart() {
           type="button"
           onClick={() => void loadChart(chartFilters, { bumpAnimation: true })}
           disabled={loading}
-          className="text-xs font-medium text-blue-400 transition-colors hover:text-blue-300 disabled:opacity-40 sm:text-sm"
+          className="text-xs font-medium text-blue-600 transition-colors hover:text-blue-500 disabled:opacity-40 sm:text-sm"
         >
           Refresh
         </button>
       </div>
 
       <div className="flex flex-col">
-        <aside className="dashboard-chart-filters border-b border-slate-700/60 bg-slate-900/40 px-4 py-3">
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+        <aside className="dashboard-chart-filters border-b border-slate-200 bg-slate-50/80 px-4 py-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             Filters
@@ -433,7 +434,7 @@ export default function JobStatusChart() {
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-3 w-full rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800 hover:text-slate-100 sm:w-auto"
+              className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-slate-400 hover:bg-slate-50 hover:text-slate-800 sm:w-auto"
             >
               Clear filters
             </button>
@@ -441,9 +442,9 @@ export default function JobStatusChart() {
         </aside>
 
         <div className="min-w-0 flex-1">
-          <div className="px-4 py-2 text-xs text-slate-400 sm:px-5">
+          <div className="px-4 py-2 text-xs text-slate-500 sm:px-5">
             Active jobs per module — matches Total Jobs card (status breakdown)
-            {loading ? <span className="ml-2 text-slate-500">Loading…</span> : null}
+            {loading ? <span className="ml-2 text-slate-400">Loading…</span> : null}
           </div>
 
           {branches.length === 0 && !updating ? (
@@ -463,13 +464,13 @@ export default function JobStatusChart() {
                     style={{ animationDelay: `${rowIndex * 0.07}s` }}
                   >
                     <div
-                      className="w-[4.5rem] shrink-0 text-right text-[10px] font-semibold leading-tight text-slate-300 sm:w-24 sm:text-xs"
+                      className="w-[4.5rem] shrink-0 text-right text-[10px] font-semibold leading-tight text-slate-600 sm:w-24 sm:text-xs"
                       title={branch.label}
                     >
                       {shortBranchLabel(branch.label)}
                     </div>
                     <div className="relative min-w-0 flex-1">
-                      <div className="relative flex h-7 w-full overflow-hidden rounded-md bg-slate-800/50 sm:h-8">
+                      <div className="relative flex h-7 w-full overflow-hidden rounded-md bg-slate-100 sm:h-8">
                         {statuses.map((status, statusIndex) => {
                           const count = Number(status.count) || 0;
                           const barColor = resolveHexColor(status.color);
@@ -513,7 +514,7 @@ export default function JobStatusChart() {
                                 </span>
                               ) : null}
                               {isHover ? (
-                                <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-[10px] text-slate-100 shadow-lg">
+                                <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-800 shadow-lg">
                                   {status.label}: <strong>{count}</strong>
                                 </div>
                               ) : null}
@@ -522,7 +523,7 @@ export default function JobStatusChart() {
                         })}
                       </div>
                     </div>
-                    <span className="w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-300 sm:w-10">
+                    <span className="w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-600 sm:w-10">
                       {total}
                     </span>
                   </div>
@@ -532,7 +533,7 @@ export default function JobStatusChart() {
               {filteredLegendStatuses.length > 0 ? (
                 <div
                   key={`legend-${chartAnimKey}`}
-                  className="dashboard-chart-legend-enter mt-4 flex flex-wrap gap-2 border-t border-slate-700/60 pb-1 pt-4"
+                  className="dashboard-chart-legend-enter mt-4 flex flex-wrap gap-2 border-t border-slate-200 pb-1 pt-4"
                   style={{ animationDelay: `${branches.length * 0.07 + 0.12}s` }}
                 >
                   {filteredLegendStatuses.map((s) => (

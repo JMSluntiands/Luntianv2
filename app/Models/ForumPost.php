@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class ForumPost extends Model
 {
@@ -18,6 +20,11 @@ class ForumPost extends Model
         'body',
         'post_type',
         'image_path',
+        'pinned_at',
+    ];
+
+    protected $casts = [
+        'pinned_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -38,6 +45,24 @@ class ForumPost extends Model
     public function isAnnouncement(): bool
     {
         return $this->normalizeType() === self::TYPE_ANNOUNCEMENT;
+    }
+
+    public function isPinned(): bool
+    {
+        return $this->pinned_at !== null;
+    }
+
+    /**
+     * Pinned posts first (newest pin), then newest created.
+     */
+    public function scopeFeedOrder(Builder $query): Builder
+    {
+        if (Schema::hasColumn($this->getTable(), 'pinned_at')) {
+            $query->orderByRaw('CASE WHEN pinned_at IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('pinned_at');
+        }
+
+        return $query->orderByDesc('created_at')->orderByDesc('id');
     }
 
     public function normalizeType(): string

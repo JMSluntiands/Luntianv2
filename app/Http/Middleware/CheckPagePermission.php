@@ -128,6 +128,11 @@ class CheckPagePermission
                     'forum_thread.post',
                     'forum_thread',
                 ],
+                'forum_thread.pin' => [
+                    'forum_thread.post',
+                    'forum_thread',
+                    'dashboard',
+                ],
                 'forum_thread.image' => [
                     'forum_thread',
                 ],

@@ -113,7 +113,7 @@ class BphJobController extends Controller
 
         return match ($this->pipelineJobTable()) {
             'job_amt' => 'A&M',
-            'job_fyrs' => 'Fyrs Energy Wise',
+            'job_fyrs' => 'Fyrs Energywise',
             default => 'BPH',
         };
     }
@@ -875,7 +875,7 @@ class BphJobController extends Controller
             if ($this->pipelineJobTable() === 'job_fyrs') {
                 $currentStatus = (string) ($job->status ?? '');
                 if ($newStatus !== '' && ! FyrsJobStatusFlow::isValidTransition($currentStatus, $newStatus)) {
-                    $message = 'Invalid status change for Fyrs Energy Wise. Allowed: Allocated → Processing or Completed; Processing → Completed.';
+                    $message = 'Invalid status change for Fyrs Energywise. Allowed: Allocated → Processing or Completed; Processing → Completed.';
                     if ($request->expectsJson() || $request->ajax()) {
                         return response()->json(['status' => 'error', 'message' => $message], 422);
                     }

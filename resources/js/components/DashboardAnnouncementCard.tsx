@@ -7,6 +7,7 @@ type AnnouncementItem = {
   excerpt: string;
   author: string;
   status?: string;
+  is_pinned?: boolean;
   image_url?: string | null;
   date_label: string | null;
   time_label: string | null;
@@ -18,6 +19,16 @@ type AnnouncementItem = {
 function resolveUrl(raw: string | undefined, fallback: string): string {
   const value = (raw || '').trim();
   return value !== '' ? value : fallback;
+}
+
+function isAnnouncementType(item: AnnouncementItem | null): boolean {
+  return (item?.status || '').toLowerCase() === 'announcement';
+}
+
+function featuredCaption(item: AnnouncementItem | null): string {
+  if (!item) return '';
+  const kind = isAnnouncementType(item) ? 'announcement' : 'discussion';
+  return item.is_pinned ? `Pinned ${kind}` : `Latest ${kind}`;
 }
 
 function parseInitialAnnouncements(): AnnouncementItem[] {
@@ -32,9 +43,10 @@ function parseInitialAnnouncements(): AnnouncementItem[] {
       : Array.isArray(parsed.announcements)
         ? parsed.announcements
         : [];
-    return list.map((item) => ({
+    return list.slice(0, 5).map((item) => ({
       ...item,
       id: Number(item.id),
+      is_pinned: Boolean(item.is_pinned),
     }));
   } catch {
     return [];
@@ -55,6 +67,7 @@ export default function DashboardAnnouncementCard() {
   const latest =
     items.find((a) => Number(a.id) === Number(activeId)) ?? items[0] ?? null;
   const seeMoreUrl = (latest?.url || '').trim() || listUrl;
+  const latestIsAnnouncement = isAnnouncementType(latest);
 
   return (
     <section className="animate-dashboard-panel dashboard-panel-animate-delay-2 relative z-10 flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700/60 dark:bg-slate-800/90">
@@ -74,7 +87,7 @@ export default function DashboardAnnouncementCard() {
 
       {!latest ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-10 text-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400">No bulletin announcements yet.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No bulletin posts yet.</p>
           <a href={listUrl} className="text-sm font-semibold text-sky-600 hover:text-sky-500 dark:text-sky-400">
             Open Bulletin
           </a>
@@ -102,13 +115,29 @@ export default function DashboardAnnouncementCard() {
                 </>
               )}
               <div className="absolute bottom-0 left-0 right-0 bg-slate-900/55 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-[2px]">
-                Latest announcement
+                {featuredCaption(latest)}
               </div>
             </div>
 
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-              Latest update
-            </p>
+            <div className="mb-1 flex flex-wrap items-center gap-1.5">
+              {latest.is_pinned ? (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z" />
+                  </svg>
+                  Pinned
+                </span>
+              ) : null}
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  latestIsAnnouncement
+                    ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
+                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                }`}
+              >
+                {latestIsAnnouncement ? 'Announcement' : 'Discussion'}
+              </span>
+            </div>
             <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">
               {latest.title}
             </h3>
@@ -129,6 +158,7 @@ export default function DashboardAnnouncementCard() {
             <ul className="space-y-1">
               {items.map((item) => {
                 const active = Number(item.id) === Number(latest.id);
+                const announcement = isAnnouncementType(item);
                 return (
                   <li key={item.id}>
                     <button
@@ -144,17 +174,30 @@ export default function DashboardAnnouncementCard() {
                           : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
                       }`}
                     >
-                      <p
-                        className={`truncate text-sm font-semibold ${
-                          active
-                            ? 'text-sky-800 dark:text-sky-200'
-                            : 'text-slate-800 dark:text-slate-100'
-                        }`}
-                      >
-                        {item.title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        {item.date_label || '—'}
+                      <div className="flex items-start gap-1.5">
+                        {item.is_pinned ? (
+                          <svg
+                            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden
+                          >
+                            <path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z" />
+                          </svg>
+                        ) : null}
+                        <p
+                          className={`min-w-0 flex-1 truncate text-sm font-semibold ${
+                            active
+                              ? 'text-sky-800 dark:text-sky-200'
+                              : 'text-slate-800 dark:text-slate-100'
+                          }`}
+                        >
+                          {item.title}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                        {announcement ? 'Announcement' : 'Discussion'}
+                        {item.date_label ? ` · ${item.date_label}` : ''}
                       </p>
                     </button>
                   </li>

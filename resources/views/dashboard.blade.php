@@ -148,7 +148,7 @@
                     $dashNow = now($dashTz);
                 @endphp
                 <div class="relative shrink-0 self-start sm:self-center" data-dashboard-tz-widget>
-                    <div class="inline-flex items-center overflow-hidden rounded-md bg-[#0b2a4a] text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm sm:text-xs">
+                    <div class="dashboard-navy-control inline-flex items-center overflow-hidden rounded-md text-[11px] font-semibold uppercase tracking-wide shadow-sm sm:text-xs">
                         <span class="px-3 py-2 tabular-nums" data-dashboard-tz-date>{{ strtoupper($dashNow->format('M j, Y')) }}</span>
                         <span class="w-px self-stretch bg-white/35" aria-hidden="true"></span>
                         <span class="px-3 py-2 tabular-nums" data-dashboard-tz-time>{{ strtoupper($dashNow->format('g:i A')) }}</span>
@@ -220,7 +220,7 @@
                 </div>
                 <button
                     type="button"
-                    class="inline-flex shrink-0 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors {{ $attCanAct ? 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white' : 'cursor-not-allowed bg-slate-400 dark:bg-slate-600 dark:text-slate-300' }}"
+                    class="inline-flex shrink-0 items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition-colors {{ $attCanAct ? 'dashboard-navy-control cursor-pointer' : 'cursor-not-allowed bg-slate-400 dark:bg-slate-600 dark:text-slate-300' }}"
                     data-attendance-action
                     data-clock-in-url="{{ \Illuminate\Support\Facades\Route::has('attendance.clockIn') ? route('attendance.clockIn') : '' }}"
                     data-clock-out-url="{{ \Illuminate\Support\Facades\Route::has('attendance.clockOut') ? route('attendance.clockOut') : '' }}"
@@ -476,7 +476,7 @@
                             clockBtn.setAttribute('data-can-clock-in', '0');
                             clockBtn.setAttribute('data-can-clock-out', '0');
                             clockBtn.classList.add('cursor-not-allowed', 'bg-slate-400');
-                            clockBtn.classList.remove('cursor-pointer', 'bg-slate-900', 'hover:bg-slate-800');
+                            clockBtn.classList.remove('cursor-pointer', 'dashboard-navy-control', 'bg-[#0b2a4a]', 'hover:bg-[#093251]');
                         } else if (att.can_clock_out) {
                             clockBtn.disabled = false;
                             clockBtn.textContent = 'CLOCK OUT';

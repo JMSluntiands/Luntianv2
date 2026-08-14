@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Mirrors existing BPH grants to Fyrs Energy Wise (fyrs.* / job_view.fyrs.*) so Staff/Branch
+ * Mirrors existing BPH grants to Fyrs Energywise (fyrs.* / job_view.fyrs.*) so Staff/Branch
  * pick up the new product line without re-clicking every checkbox in Permission settings.
  */
 return new class extends Migration

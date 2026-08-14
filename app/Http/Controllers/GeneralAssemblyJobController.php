@@ -21,6 +21,7 @@ use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
@@ -2077,7 +2078,7 @@ class GeneralAssemblyJobController extends Controller
             'reference_no'     => ['nullable', 'string', 'max:255'],
             'client_reference' => ['nullable', 'string', 'max:255'],
             'compliance'       => ['required', 'integer'],
-            'client'           => ['required', 'integer'],
+            'client'           => ['required', 'string', 'max:255'],
             'job_address'      => ['required', 'string', 'max:1000'],
             'priority'         => ['required', 'integer'],
             'job_type'         => ['required', 'integer'],
@@ -2101,7 +2102,7 @@ class GeneralAssemblyJobController extends Controller
 
         $compliance = Compliance::find($data['compliance']);
         $jobRequest = JobRequest::find($data['job_type']);
-        $client     = ClientAccount::find($data['client']);
+        $client = $this->resolveOrCreateClientAccount($data['client']);
 
         if (!$compliance || !$jobRequest || !$client) {
             return response()->json([
@@ -2680,11 +2681,17 @@ class GeneralAssemblyJobController extends Controller
                     $jobRequestId = $jr?->id;
                 }
 
+                $duplicateClientName = null;
+                if (!empty($job->client_account_id)) {
+                    $duplicateClientName = ClientAccount::find($job->client_account_id)?->client_account_name;
+                }
+
                 $duplicateJob = (object) [
                     'reference_no'      => $suggestedRef,
                     'client_reference'   => $suggestedClientRef,
                     'compliance_id'      => $complianceId,
                     'client_account_id'  => $job->client_account_id ?? null,
+                    'client_account_name' => $duplicateClientName,
                     'job_address'       => $job->address_client ?? '',
                     'priority_id'       => $priorityId,
                     'job_request_id'    => $jobRequestId,
@@ -2700,6 +2707,8 @@ class GeneralAssemblyJobController extends Controller
             'defaultComplianceId'  => $defaultCompliance?->id,
             'clientAccounts'        => $clientAccounts,
             'defaultClientAccountId' => $defaultClient?->client_account_id,
+            'defaultClientName'     => $defaultClient?->client_account_name ?? '',
+            'suggestedClientNames'  => $this->recentGaClientNames(),
             'priorities'           => $priorities,
             'defaultPriorityId'     => $defaultPriority?->id,
             'jobRequests'          => $jobRequests,
@@ -2710,6 +2719,58 @@ class GeneralAssemblyJobController extends Controller
             'duplicateJob'         => $duplicateJob,
             'suggestedReference'   => $this->nextGeaJobReference(),
         ];
+    }
+
+    /**
+     * Client names from past Generic EA jobs, most recently used first.
+     *
+     * @return list<string>
+     */
+    private function recentGaClientNames(int $limit = 50): array
+    {
+        if (! Schema::hasTable('job_general_assembly')) {
+            return ClientAccount::query()
+                ->whereNotNull('client_account_name')
+                ->where('client_account_name', '!=', '')
+                ->orderByDesc('client_account_id')
+                ->limit($limit)
+                ->pluck('client_account_name')
+                ->map(fn ($name) => trim((string) $name))
+                ->filter()
+                ->values()
+                ->all();
+        }
+
+        return DB::table('job_general_assembly as j')
+            ->join('client_accounts as c', 'c.client_account_id', '=', 'j.client_account_id')
+            ->whereNotNull('c.client_account_name')
+            ->where('c.client_account_name', '!=', '')
+            ->select('c.client_account_name', DB::raw('MAX(COALESCE(j.log_date, j.last_update)) as last_used'))
+            ->groupBy('c.client_account_name')
+            ->orderByDesc('last_used')
+            ->limit($limit)
+            ->pluck('client_account_name')
+            ->map(fn ($name) => trim((string) $name))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function resolveOrCreateClientAccount(string $name): ?ClientAccount
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return null;
+        }
+
+        $existing = ClientAccount::query()
+            ->whereRaw('LOWER(client_account_name) = ?', [strtolower($name)])
+            ->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        return ClientAccount::create(['client_account_name' => $name]);
     }
 
     /**

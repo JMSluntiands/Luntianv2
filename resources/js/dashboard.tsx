@@ -4,9 +4,13 @@ import Dashboard from './components/Dashboard';
 
 function mountDashboard() {
   const dashboardRoot = document.getElementById('dashboard-root');
-  if (dashboardRoot) {
-    createRoot(dashboardRoot).render(<Dashboard />);
+  if (!dashboardRoot) {
+    return;
   }
+
+  dashboardRoot.setAttribute('data-dashboard-mounted', '1');
+
+  createRoot(dashboardRoot).render(<Dashboard />);
 }
 
 if (document.readyState === 'loading') {

@@ -59,6 +59,7 @@ class TaskController extends Controller
         // Manual tasks: only when status filter is set (job rows are always "Allocated")
         // or when browsing all.
         $manualQuery = Task::query()
+            ->visibleTo($currentUserId)
             ->with(['assignee:id,fullname,username,email,profile_image'])
             ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('due_date')
@@ -113,6 +114,7 @@ class TaskController extends Controller
             'canManage' => $canManage,
             'canViewAll' => $canViewAll,
             'canViewSelf' => $canViewSelf,
+            'currentUserId' => $currentUserId,
         ]);
     }
 
@@ -128,15 +130,24 @@ class TaskController extends Controller
             'due_date' => ['nullable', 'date'],
             'status' => ['nullable', Rule::in(Task::STATUSES)],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'visibility' => ['nullable', Rule::in(Task::VISIBILITIES)],
         ]);
+
+        $creatorId = (int) session('user_id', 0) ?: null;
+        $visibility = $data['visibility'] ?? Task::VISIBILITY_PUBLIC;
+        $assigneeId = $data['assignee_user_id'] ?? null;
+        if ($visibility === Task::VISIBILITY_PERSONAL && $creatorId) {
+            $assigneeId = $creatorId;
+        }
 
         Task::create([
             'title' => trim($data['title']),
-            'assignee_user_id' => $data['assignee_user_id'] ?? null,
+            'assignee_user_id' => $assigneeId,
             'due_date' => $data['due_date'] ?? null,
             'status' => $data['status'] ?? Task::STATUS_NOT_STARTED,
             'notes' => isset($data['notes']) ? trim((string) $data['notes']) : null,
-            'created_by' => (int) session('user_id', 0) ?: null,
+            'visibility' => $visibility,
+            'created_by' => $creatorId,
         ]);
 
         return redirect()
@@ -160,6 +171,7 @@ class TaskController extends Controller
             'due_date' => ['sometimes', 'nullable', 'date'],
             'status' => ['sometimes', 'required', Rule::in(Task::STATUSES)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'visibility' => ['sometimes', Rule::in(Task::VISIBILITIES)],
         ]);
 
         if (array_key_exists('title', $data)) {
@@ -180,6 +192,16 @@ class TaskController extends Controller
         }
         if (array_key_exists('notes', $data)) {
             $task->notes = $data['notes'] !== null ? trim((string) $data['notes']) : null;
+        }
+        if (array_key_exists('visibility', $data)) {
+            $task->visibility = $data['visibility'];
+            if ($task->visibility === Task::VISIBILITY_PERSONAL) {
+                $uid = (int) session('user_id', 0);
+                if ($uid > 0) {
+                    $task->assignee_user_id = $uid;
+                    $task->created_by = $task->created_by ?: $uid;
+                }
+            }
         }
         $task->save();
 
@@ -244,6 +266,8 @@ class TaskController extends Controller
                 'due_date' => null,
                 'status' => 'allocated',
                 'notes' => null,
+                'visibility' => Task::VISIBILITY_PUBLIC,
+                'created_by' => null,
                 'sort_at' => $job->sort_at,
             ];
         });
@@ -262,6 +286,8 @@ class TaskController extends Controller
                 'due_date' => $task->due_date,
                 'status' => $task->status,
                 'notes' => $task->notes,
+                'visibility' => $task->visibility ?: Task::VISIBILITY_PUBLIC,
+                'created_by' => $task->created_by,
                 'sort_at' => optional($task->updated_at)?->toDateTimeString() ?? '',
             ];
         });
@@ -365,11 +391,15 @@ class TaskController extends Controller
 
     private function mayMutateTask(Task $task): bool
     {
+        $uid = (int) session('user_id', 0);
+
+        if ($task->isPersonal()) {
+            return $uid > 0 && (int) ($task->created_by ?? 0) === $uid;
+        }
+
         if ($this->mayViewAllTasks()) {
             return true;
         }
-
-        $uid = (int) session('user_id', 0);
 
         return $uid > 0 && (int) ($task->assignee_user_id ?? 0) === $uid;
     }

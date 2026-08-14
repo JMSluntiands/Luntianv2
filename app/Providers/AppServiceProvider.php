@@ -34,55 +34,76 @@ class AppServiceProvider extends ServiceProvider
         // Share LBS sidebar counts (Allocated / For Review) across all pages
         try {
             View::composer('layouts.partials.sidebar', function ($view) {
-                $lbsBase = DB::table('jobs')->where('reference', 'like', 'JOBS%');
-                JobCountsScope::applyLbsStandardJobsScope($lbsBase, '');
-                JobCountsScope::applyJobsTableAssignment($lbsBase);
-                $counts = $lbsBase
-                    ->selectRaw("
-                        SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                        SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                    ")
-                    ->first();
+                try {
+                $jobsTableExists = Schema::hasTable('jobs');
 
-                $view->with('lbs_list_count', JobCountsScope::sidebarCountForBranchVertical('LBS', (int) ($counts->allocated_count ?? 0)));
-                $view->with('lbs_review_count', JobCountsScope::sidebarCountForBranchVertical('LBS', (int) ($counts->review_count ?? 0)));
-                $view->with('lbs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LBS', (int) ($counts->mailbox_count ?? 0)));
+                if ($jobsTableExists) {
+                    $lbsBase = DB::table('jobs')->where('reference', 'like', 'JOBS%');
+                    JobCountsScope::applyLbsStandardJobsScope($lbsBase, '');
+                    JobCountsScope::applyJobsTableAssignment($lbsBase);
+                    $counts = $lbsBase
+                        ->selectRaw("
+                            SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                            SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                            SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                        ")
+                        ->first();
+
+                    $view->with('lbs_list_count', JobCountsScope::sidebarCountForBranchVertical('LBS', (int) ($counts->allocated_count ?? 0)));
+                    $view->with('lbs_review_count', JobCountsScope::sidebarCountForBranchVertical('LBS', (int) ($counts->review_count ?? 0)));
+                    $view->with('lbs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LBS', (int) ($counts->mailbox_count ?? 0)));
+                } else {
+                    $view->with('lbs_list_count', 0);
+                    $view->with('lbs_review_count', 0);
+                    $view->with('lbs_mailbox_count', 0);
+                }
 
                 // Efficient Living: same logic as LBS badges, but only `jobs` rows for EL (EA_EL_*), matching list/review/mailbox queries
-                $elBase = DB::table('jobs')
-                    ->whereRaw("job_request_id LIKE 'EA\_EL\_%'")
-                    ->where('reference', 'like', 'JOBS%');
-                JobCountsScope::applyJobsTableAssignment($elBase);
-                $elCounts = $elBase
-                    ->selectRaw("
-                        SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                        SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                    ")
-                    ->first();
-                $elList = JobCountsScope::sidebarCountForBranchVertical('Efficient Living', (int) ($elCounts->allocated_count ?? 0));
-                $elReview = JobCountsScope::sidebarCountForBranchVertical('Efficient Living', (int) ($elCounts->review_count ?? 0));
-                $elMailbox = JobCountsScope::sidebarCountForBranchVertical('Efficient Living', (int) ($elCounts->mailbox_count ?? 0));
+                if ($jobsTableExists) {
+                    $elBase = DB::table('jobs')
+                        ->whereRaw("job_request_id LIKE 'EA\_EL\_%'")
+                        ->where('reference', 'like', 'JOBS%');
+                    JobCountsScope::applyJobsTableAssignment($elBase);
+                    $elCounts = $elBase
+                        ->selectRaw("
+                            SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                            SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                            SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                        ")
+                        ->first();
+                    $elList = JobCountsScope::sidebarCountForBranchVertical('Efficient Living', (int) ($elCounts->allocated_count ?? 0));
+                    $elReview = JobCountsScope::sidebarCountForBranchVertical('Efficient Living', (int) ($elCounts->review_count ?? 0));
+                    $elMailbox = JobCountsScope::sidebarCountForBranchVertical('Efficient Living', (int) ($elCounts->mailbox_count ?? 0));
 
-                $view->with('efficient_living_list_count', $elList);
-                $view->with('efficient_living_review_count', $elReview);
-                $view->with('efficient_living_mailbox_count', $elMailbox);
+                    $view->with('efficient_living_list_count', $elList);
+                    $view->with('efficient_living_review_count', $elReview);
+                    $view->with('efficient_living_mailbox_count', $elMailbox);
+                } else {
+                    $view->with('efficient_living_list_count', 0);
+                    $view->with('efficient_living_review_count', 0);
+                    $view->with('efficient_living_mailbox_count', 0);
+                }
 
-                $ltBase = DB::table('jobs')
-                    ->where('reference', 'like', 'JOBS%');
-                JobCountsScope::applyLuntianJobsScope($ltBase, '');
-                JobCountsScope::applyJobsTableAssignment($ltBase);
-                $ltCounts = $ltBase
-                    ->selectRaw("
-                        SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                        SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                    ")
-                    ->first();
-                $view->with('luntian_list_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->allocated_count ?? 0)));
-                $view->with('luntian_review_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->review_count ?? 0)));
-                $view->with('luntian_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->mailbox_count ?? 0)));
+                if ($jobsTableExists) {
+                    $ltBase = DB::table('jobs')
+                        ->where('reference', 'like', 'JOBS%');
+                    JobCountsScope::applyLuntianJobsScope($ltBase, '');
+                    JobCountsScope::applyJobsTableAssignment($ltBase);
+                    $ltCounts = $ltBase
+                        ->selectRaw("
+                            SUM(CASE WHEN job_status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
+                            SUM(CASE WHEN job_status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
+                            SUM(CASE WHEN job_status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
+                        ")
+                        ->first();
+                    $view->with('luntian_list_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->allocated_count ?? 0)));
+                    $view->with('luntian_review_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->review_count ?? 0)));
+                    $view->with('luntian_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LUNTIAN', (int) ($ltCounts->mailbox_count ?? 0)));
+                } else {
+                    $view->with('luntian_list_count', 0);
+                    $view->with('luntian_review_count', 0);
+                    $view->with('luntian_mailbox_count', 0);
+                }
 
                 $gaBase = Schema::hasTable('job_general_assembly')
                     ? DB::table('job_general_assembly')->where('reference', 'like', 'JOB%')
@@ -172,9 +193,9 @@ class AppServiceProvider extends ServiceProvider
                     ")
                     ->first();
 
-                $view->with('fyrs_list_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGY WISE', (int) ($fyrsCounts->allocated_count ?? 0)));
-                $view->with('fyrs_review_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGY WISE', (int) ($fyrsCounts->review_count ?? 0)));
-                $view->with('fyrs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGY WISE', (int) ($fyrsCounts->mailbox_count ?? 0)));
+                $view->with('fyrs_list_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGYWISE', (int) ($fyrsCounts->allocated_count ?? 0)));
+                $view->with('fyrs_review_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGYWISE', (int) ($fyrsCounts->review_count ?? 0)));
+                $view->with('fyrs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGYWISE', (int) ($fyrsCounts->mailbox_count ?? 0)));
 
                 // CSP sidebar badges from job_csp
                 if (\Illuminate\Support\Facades\Schema::hasTable('job_csp')) {
@@ -255,6 +276,9 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('leading_energy_list_count', 0);
                     $view->with('leading_energy_review_count', 0);
                     $view->with('leading_energy_mailbox_count', 0);
+                }
+                } catch (\Throwable) {
+                    // Fail silently; sidebar will use default fallback values
                 }
 
             });

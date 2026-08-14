@@ -17,7 +17,9 @@
             @php
                 $preRef = $suggestedReference ?? 'JOB-GEA-' . now('Asia/Manila')->format('ymd') . '001';
                 $selCompliance = isset($duplicateJob) ? ($duplicateJob->compliance_id ?? null) : ($defaultComplianceId ?? null);
-                $selClient = isset($duplicateJob) ? ($duplicateJob->client_account_id ?? null) : ($defaultClientAccountId ?? null);
+                $selClientName = isset($duplicateJob)
+                    ? ($duplicateJob->client_account_name ?? '')
+                    : ($defaultClientName ?? '');
                 $selPriority = isset($duplicateJob) ? ($duplicateJob->priority_id ?? null) : ($defaultPriorityId ?? null);
                 $selJobRequest = isset($duplicateJob) ? ($duplicateJob->job_request_id ?? null) : ($defaultJobRequestId ?? null);
             @endphp
@@ -52,12 +54,14 @@
                         </div>
                         <div>
                             <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client</label>
-                            <select id="client" name="client" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="">Select client</option>
-                                @foreach($clientAccounts ?? [] as $client)
-                                    <option value="{{ $client->client_account_id }}" {{ $selClient !== null && (int) $selClient === (int) $client->client_account_id ? 'selected' : '' }}>{{ $client->client_account_name ?? '' }}</option>
+                            <input type="text" id="client" name="client" value="{{ e($selClientName) }}" list="client-suggestions" placeholder="Enter client name" autocomplete="off"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
+                            <datalist id="client-suggestions">
+                                @foreach($suggestedClientNames ?? [] as $clientName)
+                                    <option value="{{ e($clientName) }}"></option>
                                 @endforeach
-                            </select>
+                            </datalist>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Type freely; previously used client names will appear as suggestions.</p>
                         </div>
                     </div>
                 </div>

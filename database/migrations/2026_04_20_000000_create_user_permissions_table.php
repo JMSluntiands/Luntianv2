@@ -9,13 +9,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('user_permissions', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id')->index();
-            $table->string('branch', 255)->default('');
-            $table->string('route_name', 128)->index();
-            $table->unique(['user_id', 'branch', 'route_name']);
-        });
+        if (! Schema::hasTable('user_permissions')) {
+            Schema::create('user_permissions', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->index();
+                $table->string('branch', 255)->default('');
+                $table->string('route_name', 128)->index();
+                $table->unique(['user_id', 'branch', 'route_name']);
+            });
+        }
 
         if (Schema::hasTable('users') && Schema::hasTable('role_permissions')) {
             $this->seedFromRolePermissions();

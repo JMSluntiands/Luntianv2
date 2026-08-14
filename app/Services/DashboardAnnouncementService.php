@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\Schema;
 class DashboardAnnouncementService
 {
     /**
-     * Bulletin posts marked as announcements, newest first.
+     * Bulletin announcements and discussions for the dashboard preview.
+     * Pinned posts first, then newest. Default max 5.
      *
      * @return list<array<string, mixed>>
      */
-    public static function recentPayload(int $limit = 8): array
+    public static function recentPayload(int $limit = 5): array
     {
         try {
             if (! Schema::hasTable('forum_posts')) {
@@ -23,16 +24,10 @@ class DashboardAnnouncementService
         }
 
         try {
-            $query = ForumPost::query()->with('user:id,fullname,username');
-
-            if (Schema::hasColumn('forum_posts', 'post_type')) {
-                $query->where('post_type', ForumPost::TYPE_ANNOUNCEMENT);
-            }
-
-            $rows = $query
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->limit(max(1, min($limit, 20)))
+            $rows = ForumPost::query()
+                ->with('user:id,fullname,username')
+                ->feedOrder()
+                ->limit(max(1, min($limit, 5)))
                 ->get();
         } catch (\Throwable) {
             return [];
@@ -54,8 +49,13 @@ class DashboardAnnouncementService
             $when = $post->created_at?->timezone('Asia/Manila');
             $plain = self::plainText((string) ($post->body ?? ''));
             $title = trim((string) ($post->title ?? ''));
+            $postType = $post->normalizeType();
+            $isPinned = $post->isPinned();
             if ($title === '') {
-                $title = self::titleFromPlain($plain);
+                $title = self::titleFromPlain(
+                    $plain,
+                    $postType === ForumPost::TYPE_ANNOUNCEMENT ? 'Announcement' : 'Discussion'
+                );
             }
             $excerpt = self::excerptFromPlain($plain);
 
@@ -76,7 +76,8 @@ class DashboardAnnouncementService
                 'message' => $plain,
                 'excerpt' => $excerpt,
                 'author' => $authorName,
-                'status' => ForumPost::TYPE_ANNOUNCEMENT,
+                'status' => $postType,
+                'is_pinned' => $isPinned,
                 'image_url' => $imageUrl,
                 'date_label' => $when ? $when->format('F j, Y') : null,
                 'time_label' => $when ? $when->format('g:i A') : null,
@@ -96,10 +97,10 @@ class DashboardAnnouncementService
         return preg_replace('/\s+/u', ' ', $plain) ?? $plain;
     }
 
-    private static function titleFromPlain(string $plain): string
+    private static function titleFromPlain(string $plain, string $fallback = 'Post'): string
     {
         if ($plain === '') {
-            return 'Announcement';
+            return $fallback;
         }
 
         $first = preg_split('/(?<=[.!?])\s+/u', $plain, 2)[0] ?? $plain;

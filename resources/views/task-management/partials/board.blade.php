@@ -43,6 +43,9 @@
                                 <div class="min-w-0">
                                     <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $task->client ?? '—' }}</p>
                                     <h3 class="text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100">{{ $task->reference ?? $task->title ?? '—' }}</h3>
+                                    @if(!$isJob && ($task->visibility ?? '') === \App\Models\Task::VISIBILITY_PERSONAL)
+                                        <span class="mt-1 inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
+                                    @endif
                                 </div>
                                 @if($canManage && !$isJob && !empty($task->id))
                                     <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="shrink-0 opacity-0 transition-opacity group-hover/card:opacity-100">

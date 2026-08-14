@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('forum_posts')) {
+            return;
+        }
+
         Schema::table('forum_posts', function (Blueprint $table) {
             if (! Schema::hasColumn('forum_posts', 'title')) {
                 $table->string('title', 200)->nullable()->after('user_id');

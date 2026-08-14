@@ -237,11 +237,11 @@ function AttendanceBanner({
         type="button"
         onClick={attendance.can_clock_out ? handleClockOut : handleClockIn}
         disabled={!actionEnabled}
-        className={`inline-flex shrink-0 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
+        className={`inline-flex shrink-0 items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0b2a4a]/40 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
           actionEnabled
             ? attendance.can_clock_out && attendance.overdue
               ? 'cursor-pointer bg-red-600 hover:bg-red-500'
-              : 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+              : 'dashboard-navy-control cursor-pointer'
             : 'cursor-not-allowed bg-slate-400 dark:bg-slate-600 dark:text-slate-300'
         }`}
       >
@@ -312,7 +312,7 @@ const BRANCH_ORDER = [
   'BPH',
   'BluInq',
   'A&M',
-  'FYRS ENERGY WISE',
+  'FYRS ENERGYWISE',
   'CSP',
   'NH',
   'LC Home Builder',
@@ -381,7 +381,7 @@ const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   BPH: 'bph',
   BluInq: 'bluinq',
   'A&M': 'amt',
-  'FYRS ENERGY WISE': 'fyrs',
+  'FYRS ENERGYWISE': 'fyrs',
   CSP: 'csp',
   NH: 'nh',
   'LC Home Builder': 'lc-home-builder',
@@ -561,7 +561,7 @@ function DashboardDateTimeZone() {
 
   return (
     <div ref={rootRef} className="relative shrink-0 self-start sm:self-center">
-      <div className="inline-flex items-center gap-0 overflow-hidden rounded-md bg-[#0b2a4a] text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm sm:text-xs">
+      <div className="dashboard-navy-control inline-flex items-center gap-0 overflow-hidden rounded-md text-[11px] font-semibold uppercase tracking-wide shadow-sm sm:text-xs">
         <span className="px-3 py-2 tabular-nums">{date}</span>
         <span className="self-stretch w-px bg-white/35" aria-hidden />
         <span className="px-3 py-2 tabular-nums">{time}</span>

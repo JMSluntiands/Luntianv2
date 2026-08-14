@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 return new class extends Migration
 {
     /**
-     * Dedicated job tables for A&M and Fyrs Energy Wise (previously rows in `job_bph`).
+     * Dedicated job tables for A&M and Fyrs Energywise (previously rows in `job_bph`).
      * Copies matching rows, moves on-disk folders from `bph-documents` when present, then removes legacy rows.
      */
     public function up(): void

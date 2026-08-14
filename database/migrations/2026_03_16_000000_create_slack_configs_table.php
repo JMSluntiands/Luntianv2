@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('slack_configs')) {
+            return;
+        }
+
         Schema::create('slack_configs', function (Blueprint $table) {
             $table->id();
             $table->string('name')->default('LBS Notifications')->comment('Config label e.g. LBS webhook');

@@ -82,7 +82,7 @@ class AllocatedJobsTaskFeed
 
         $fyrsTable = Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
         $rows = $rows->concat(self::bphStyleAllocated(
-            module: 'FYRS ENERGY WISE',
+            module: 'FYRS ENERGYWISE',
             table: $fyrsTable,
             extra: $fyrsTable === 'job_bph'
                 ? static function ($q): void {

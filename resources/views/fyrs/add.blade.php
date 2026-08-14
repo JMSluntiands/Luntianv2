@@ -1,13 +1,13 @@
 @extends($layoutView ?? 'layouts.dashboard')
 
-@section('title', 'Add New Job (Fyrs Energy Wise)')
+@section('title', 'Add New Job (Fyrs Energywise)')
 
 @section('body_class', 'page-fyrs-add')
 
 @section('content')
     <div class="w-full max-w-full px-0">
         <div class="mb-8">
-            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (Fyrs Energy Wise)</h1>
+            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (Fyrs Energywise)</h1>
             <p class="text-slate-500 dark:text-slate-400">NatHERS and BASIX assessor workflow — fields match the Luntian Assessor spreadsheet.</p>
         </div>
 
@@ -224,7 +224,7 @@
                                     '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
                                 '</div>' +
                                 '<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Job saved</h3>' +
-                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Fyrs Energy Wise job?</p>' +
+                                '<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Do you want to create another Fyrs Energywise job?</p>' +
                                 '<div class="mt-6 flex gap-3">' +
                                     '<button type="button" data-fyrs-go-list class="flex-1 cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">' + leaveLabel + '</button>' +
                                     '<button type="button" data-fyrs-new-job class="flex-1 cursor-pointer rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">' + stayLabel + '</button>' +

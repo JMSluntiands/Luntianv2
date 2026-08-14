@@ -137,6 +137,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/forum-thread/recent', [ForumThreadController::class, 'recent'])->name('forum_thread.recent');
     Route::post('/dashboard/forum-thread', [ForumThreadController::class, 'store'])->name('forum_thread.store');
     Route::get('/dashboard/forum-thread/image/{path}', [ForumThreadController::class, 'image'])->name('forum_thread.image')->where('path', '[A-Za-z0-9._-]+');
+    Route::post('/dashboard/forum-thread/post/{id}/pin', [ForumThreadController::class, 'togglePin'])->name('forum_thread.pin');
     Route::delete('/dashboard/forum-thread/post/{id}', [ForumThreadController::class, 'destroy'])->name('forum_thread.destroy');
     Route::post('/dashboard/forum-thread/post/{id}/comment', [ForumThreadController::class, 'storeComment'])->name('forum_thread.comment.store');
     Route::delete('/dashboard/forum-thread/comment/{id}', [ForumThreadController::class, 'destroyComment'])->name('forum_thread.comment.destroy');

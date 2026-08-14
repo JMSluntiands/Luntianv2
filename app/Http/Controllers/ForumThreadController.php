@@ -18,21 +18,24 @@ class ForumThreadController extends Controller
         $posts = ForumPost::query()
             ->with(['user:id,fullname,username,profile_image', 'comments.user:id,fullname,username,profile_image'])
             ->withCount('comments')
-            ->orderByDesc('created_at')
+            ->feedOrder()
             ->paginate(20);
 
         $userId = (int) session('user_id', 0);
         $role = strtolower(trim((string) session('user_role', '')));
+        $isAdmin = $role === 'admin';
+        $canPost = RolePermission::userMayAccessRoute('forum_thread.post');
 
         return view('forum-thread.index', [
             'sidebar_active' => 'forum_thread',
             'posts' => $posts,
             'currentUser' => $userId > 0 ? User::find($userId) : null,
-            'canPost' => RolePermission::userMayAccessRoute('forum_thread.post'),
+            'canPost' => $canPost,
+            'canPin' => $isAdmin || $canPost,
             'canComment' => RolePermission::userMayAccessRoute('forum_thread.comment'),
             'canDeletePost' => RolePermission::userMayAccessRoute('forum_thread.destroy'),
             'canDeleteComment' => RolePermission::userMayAccessRoute('forum_thread.comment.destroy'),
-            'isAdmin' => $role === 'admin',
+            'isAdmin' => $isAdmin,
             'currentUserId' => $userId,
         ]);
     }
@@ -40,7 +43,7 @@ class ForumThreadController extends Controller
     public function recent()
     {
         return response()->json([
-            'posts' => self::recentPostsPayload(8),
+            'posts' => self::recentPostsPayload(5),
             'feed_url' => route('forum_thread', [], false),
         ]);
     }
@@ -48,13 +51,13 @@ class ForumThreadController extends Controller
     /**
      * @return list<array<string, mixed>>
      */
-    public static function recentPostsPayload(int $limit = 8): array
+    public static function recentPostsPayload(int $limit = 5): array
     {
         $posts = ForumPost::query()
             ->with(['user:id,fullname,username,profile_image'])
             ->withCount('comments')
-            ->orderByDesc('created_at')
-            ->limit(max(1, min($limit, 20)))
+            ->feedOrder()
+            ->limit(max(1, min($limit, 5)))
             ->get();
 
         return $posts->map(static function (ForumPost $post): array {
@@ -95,6 +98,8 @@ class ForumThreadController extends Controller
                 'title' => $title,
                 'excerpt' => $plain,
                 'has_image' => trim((string) ($post->image_path ?? '')) !== '',
+                'status' => $post->normalizeType(),
+                'is_pinned' => $post->isPinned(),
                 'comments_count' => (int) $post->comments_count,
                 'created_at' => $post->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A'),
                 'created_at_iso' => $post->created_at?->toIso8601String(),
@@ -194,6 +199,24 @@ class ForumThreadController extends Controller
         return redirect()
             ->route('forum_thread')
             ->with('success', $postType === ForumPost::TYPE_ANNOUNCEMENT ? 'Announcement posted.' : 'Discussion posted.');
+    }
+
+    public function togglePin(Request $request, int $id)
+    {
+        $isAdmin = strtolower(trim((string) session('user_role', ''))) === 'admin';
+        if (! $isAdmin && ! RolePermission::userMayAccessRoute('forum_thread.post')) {
+            return $this->deny($request, 'You do not have permission to pin posts.');
+        }
+
+        $post = ForumPost::findOrFail($id);
+        $wasPinned = $post->isPinned();
+        $post->pinned_at = $wasPinned ? null : now();
+        $post->save();
+
+        return redirect()
+            ->route('forum_thread')
+            ->with('success', $wasPinned ? 'Post unpinned.' : 'Post pinned to the top.')
+            ->withFragment('post-'.$post->id);
     }
 
     public function destroy(Request $request, int $id)

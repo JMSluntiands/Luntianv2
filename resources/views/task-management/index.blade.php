@@ -55,6 +55,7 @@
         Task::STATUS_DONE => Task::statusMeta(Task::STATUS_DONE),
     ];
     $canManage = ! empty($canManage);
+    $currentUserId = (int) ($currentUserId ?? session('user_id', 0));
     $statusFilter = $statusFilter ?? '';
     $assigneeFilter = $assigneeFilter ?? null;
     $viewMode = in_array(($viewMode ?? 'table'), ['table', 'board'], true) ? $viewMode : 'table';
@@ -116,7 +117,7 @@
                 @if($assigneeFilter !== null)
                     <input type="hidden" name="assignee_redirect" value="{{ $assigneeFilter }}">
                 @endif
-                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                     <div class="sm:col-span-2 lg:col-span-2">
                         <label for="taskTitle" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Task name</label>
                         <input type="text" id="taskTitle" name="title" required maxlength="255" placeholder="Task name" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-100">
@@ -141,6 +142,20 @@
                                 <option value="{{ $value }}">{{ $meta['label'] }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Visibility</span>
+                        <div id="taskVisibilityToggle" class="inline-flex w-full overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900/50" role="group" aria-label="Task visibility">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="visibility" value="public" class="peer sr-only" checked>
+                                <span class="block px-2 py-2 text-center text-xs font-semibold text-slate-600 transition-colors peer-checked:bg-emerald-600 peer-checked:text-white dark:text-slate-300 dark:peer-checked:bg-emerald-600">Public</span>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="visibility" value="personal" class="peer sr-only">
+                                <span class="block px-2 py-2 text-center text-xs font-semibold text-slate-600 transition-colors peer-checked:bg-slate-800 peer-checked:text-white dark:text-slate-300 dark:peer-checked:bg-slate-200 dark:peer-checked:text-slate-900">Personal</span>
+                            </label>
+                        </div>
+                        <p id="taskVisibilityHint" class="mt-1 hidden text-[11px] leading-snug text-slate-500 dark:text-slate-400">Only you can see this task.</p>
                     </div>
                 </div>
                 <div class="mt-3">
@@ -211,13 +226,48 @@ document.addEventListener('DOMContentLoaded', function () {
     var addForm = document.getElementById('taskAddForm');
     var addCancel = document.getElementById('taskAddCancel');
     var assigneeSelect = document.getElementById('taskAssignee');
+    var visibilityHint = document.getElementById('taskVisibilityHint');
+    var currentUserId = @json((string) $currentUserId);
+    var lastPublicAssignee = assigneeSelect ? assigneeSelect.value : '';
+
+    function isPersonalSelected() {
+        var checked = document.querySelector('#taskAddForm input[name="visibility"]:checked');
+        return checked && checked.value === 'personal';
+    }
+
+    function applyVisibilityUi() {
+        var personal = isPersonalSelected();
+        if (visibilityHint) {
+            visibilityHint.classList.toggle('hidden', !personal);
+        }
+        if (!assigneeSelect) return;
+        if (personal) {
+            lastPublicAssignee = assigneeSelect.value;
+            if (currentUserId && currentUserId !== '0') {
+                assigneeSelect.value = currentUserId;
+            }
+            assigneeSelect.disabled = true;
+        } else {
+            assigneeSelect.disabled = false;
+            if (lastPublicAssignee !== null) {
+                assigneeSelect.value = lastPublicAssignee;
+            }
+        }
+    }
+
+    document.querySelectorAll('#taskAddForm input[name="visibility"]').forEach(function (radio) {
+        radio.addEventListener('change', applyVisibilityUi);
+    });
+    applyVisibilityUi();
 
     function openAddForm(assigneeId) {
         if (!addForm) return;
         addForm.classList.remove('hidden');
         if (assigneeSelect && typeof assigneeId !== 'undefined' && assigneeId !== null) {
+            lastPublicAssignee = String(assigneeId);
             assigneeSelect.value = String(assigneeId);
         }
+        applyVisibilityUi();
         addForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         var title = document.getElementById('taskTitle');
         if (title) title.focus();
@@ -239,6 +289,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (addCancel && addForm) {
         addCancel.addEventListener('click', function () {
             addForm.classList.add('hidden');
+        });
+    }
+    if (addForm) {
+        addForm.addEventListener('submit', function () {
+            if (assigneeSelect) assigneeSelect.disabled = false;
         });
     }
 

@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Fyrs Energy Wise Mailbox')
+@section('title', 'Fyrs Energywise Mailbox')
 
 @section('body_class', 'page-lbs-mailbox')
 
 @section('content')
     @php
-        $branchLabel = 'Fyrs Energy Wise';
+        $branchLabel = 'Fyrs Energywise';
         $updateRoute = 'fyrs.update';
         $jobBaseUrl = url('/dashboard/fyrs/job');
     @endphp
