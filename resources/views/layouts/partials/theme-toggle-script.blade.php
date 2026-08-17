@@ -5,6 +5,7 @@
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
+        document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
         if (iconSun && iconMoon) {
             var isDark = theme !== 'light';
             iconSun.classList.toggle('active', isDark);

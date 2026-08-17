@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Support\FecUnitsValidation;
+use App\Support\ForCheckingAttachmentValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -495,6 +496,9 @@ class NhJobController extends Controller
             $candidate = trim((string) ($data['job_status'] ?? ''));
             if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidate)) {
                 return $fecErr;
+            }
+            if ($fileErr = ForCheckingAttachmentValidation::jsonErrorIfForCheckingWithoutAttachment($job, $candidate, (string) ($job->status ?? ''))) {
+                return $fileErr;
             }
         }
 

@@ -31,7 +31,6 @@
                         <col class="luntian-col-action">
                         <col class="luntian-col-log-date">
                         <col class="luntian-col-client">
-                        <col class="luntian-col-client-reference">
                         <col class="luntian-col-reference">
                         <col class="luntian-col-job-type">
                         <col class="luntian-col-priority">
@@ -54,10 +53,6 @@
                             </th>
                             <th class="luntian-th" data-sort="">
                                 <span>Client</span>
-                                <span class="luntian-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="luntian-th" data-sort="">
-                                <span>Client Reference</span>
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="luntian-th" data-sort="">
@@ -131,6 +126,10 @@
 
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
+                                $referenceDisplay = \App\Support\JobReference::luntianDisplay(
+                                    $job->job_reference_no ?? null,
+                                    $job->reference ?? null
+                                );
                             @endphp
                             <tr class="luntian-data-row lbs-data-row" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ route('luntian.job.update', ['id' => $job->job_id]) }}">
                                 {{-- Action column: same pattern as LBS list — no .lbs-td hover cell styling; icons use lbs-action-icon --}}
@@ -139,7 +138,7 @@
                                         <a href="{{ route('luntian.add', ['duplicate' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate" aria-label="Duplicate job to Add New form">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
-                                        <a href="{{ route('luntian.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View job {{ $job->job_reference_no }}">
+                                        <a href="{{ route('luntian.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View job {{ $referenceDisplay }}">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
                                     </div>
@@ -152,8 +151,7 @@
                                     <span class="luntian-date-line1">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span>
                                     <span class="luntian-date-line2">{{ $job->ncc_compliance ?? '' }}</span>
                                 </td>
-                                <td class="luntian-td" data-label="Client Reference">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</td>
-                                <td class="luntian-td luntian-td-nowrap" data-label="Reference">{{ $job->job_reference_no ?? '—' }}</td>
+                                <td class="luntian-td luntian-td-nowrap" data-label="Reference">{{ $referenceDisplay }}</td>
                                 <td class="luntian-td luntian-td-job-type" data-label="Job Type">
                                     <span class="luntian-job-line1">{{ $job->job_type ?? '—' }}</span>
                                     @if(!empty($job->job_request_id))
@@ -188,7 +186,7 @@
                                                 data-status-trigger
                                                 aria-haspopup="true"
                                                 aria-expanded="false"
-                                                data-reference="{{ $job->job_reference_no }}"
+                                                data-reference="{{ $referenceDisplay }}"
                                             >{{ $status }}</button>
                                             <div class="lbs-status-menu fixed z-[9999] flex min-w-[90px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
                                                 @foreach($statusOptions as $opt)
@@ -231,7 +229,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="luntian-td text-center text-slate-400" colspan="13">No Luntian jobs found.</td>
+                                <td class="luntian-td text-center text-slate-400" colspan="12">No Luntian jobs found.</td>
                             </tr>
                         @endforelse
                     </tbody>

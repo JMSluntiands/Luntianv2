@@ -15,6 +15,7 @@ use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
+use App\Support\ForCheckingAttachmentValidation;
 use App\Support\JobUploadFolder;
 use App\Support\LegacyDbJoin;
 use App\Support\LbsJobStatusFlow;
@@ -542,6 +543,9 @@ class GeneralAssemblyJobController extends Controller
             $candidateStatus = trim((string) $data['job_status']);
             if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidateStatus, 'units')) {
                 return $fecErr;
+            }
+            if ($fileErr = ForCheckingAttachmentValidation::jsonErrorIfForCheckingWithoutAttachment($job, $candidateStatus, (string) ($job->job_status ?? ''))) {
+                return $fileErr;
             }
         }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class Task extends Model
 {
@@ -101,7 +102,21 @@ class Task extends Model
 
     public function isPersonal(): bool
     {
+        if (! static::supportsVisibility()) {
+            return false;
+        }
+
         return strtolower(trim((string) $this->visibility)) === self::VISIBILITY_PERSONAL;
+    }
+
+    public static function supportsVisibility(): bool
+    {
+        static $supported = null;
+        if ($supported === null) {
+            $supported = Schema::hasTable('tasks') && Schema::hasColumn('tasks', 'visibility');
+        }
+
+        return $supported;
     }
 
     /**
@@ -110,6 +125,10 @@ class Task extends Model
      */
     public function scopeVisibleTo($query, int $userId)
     {
+        if (! static::supportsVisibility()) {
+            return $query;
+        }
+
         return $query->where(function ($q) use ($userId) {
             $q->where(function ($public) {
                 $public->whereNull('visibility')

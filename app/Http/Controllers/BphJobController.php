@@ -14,6 +14,7 @@ use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
+use App\Support\ForCheckingAttachmentValidation;
 use App\Support\FyrsJobStatusFlow;
 use App\Support\JobUploadFolder;
 use Illuminate\Http\Request;
@@ -894,6 +895,16 @@ class BphJobController extends Controller
                 return redirect()
                     ->back()
                     ->withErrors(['units' => 'Maglagay muna ng units (minimum 1) bago ilipat sa For Email Confirmation.'])
+                    ->withInput();
+            }
+            if ($fileErr = ForCheckingAttachmentValidation::jsonErrorIfForCheckingWithoutAttachment($job, $newStatus, (string) ($job->status ?? ''))) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return $fileErr;
+                }
+
+                return redirect()
+                    ->back()
+                    ->withErrors(['job_status' => ForCheckingAttachmentValidation::MESSAGE])
                     ->withInput();
             }
         }

@@ -76,6 +76,9 @@ class CheckPagePermission
                 'reports.export' => [
                     'reports',
                 ],
+                'reports.chart' => [
+                    'reports',
+                ],
                 'hr' => [
                     'hr',
                     'reports',

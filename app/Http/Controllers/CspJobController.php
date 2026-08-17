@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Support\FecUnitsValidation;
+use App\Support\ForCheckingAttachmentValidation;
 
 class CspJobController extends Controller
 {
@@ -384,6 +385,9 @@ class CspJobController extends Controller
             $candidate = trim((string) ($data['job_status'] ?? ''));
             if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidate)) {
                 return $fecErr;
+            }
+            if ($fileErr = ForCheckingAttachmentValidation::jsonErrorIfForCheckingWithoutAttachment($job, $candidate, (string) ($job->status ?? ''))) {
+                return $fileErr;
             }
         }
 

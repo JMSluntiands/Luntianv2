@@ -9,6 +9,7 @@ use App\Services\AllocatedJobsTaskFeed;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
@@ -44,7 +45,12 @@ class TaskController extends Controller
             $assigneeFilter = $currentUserId;
         }
 
-        $jobItems = AllocatedJobsTaskFeed::all();
+        $jobItems = collect();
+        try {
+            $jobItems = AllocatedJobsTaskFeed::all();
+        } catch (\Throwable) {
+            $jobItems = collect();
+        }
         if ($assigneeFilter !== null) {
             $jobItems = $jobItems->filter(function (object $row) use ($assigneeFilter) {
                 $uid = (int) ($row->assignee_user_id ?? 0);
@@ -58,27 +64,36 @@ class TaskController extends Controller
 
         // Manual tasks: only when status filter is set (job rows are always "Allocated")
         // or when browsing all.
-        $manualQuery = Task::query()
-            ->visibleTo($currentUserId)
-            ->with(['assignee:id,fullname,username,email,profile_image'])
-            ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('due_date')
-            ->orderByDesc('updated_at');
+        $manualTasks = collect();
+        if (Schema::hasTable('tasks')) {
+            try {
+                $manualQuery = Task::query()
+                    ->visibleTo($currentUserId)
+                    ->with(['assignee:id,fullname,username,email,profile_image'])
+                    ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
+                    ->orderBy('due_date')
+                    ->orderByDesc('updated_at');
 
-        if ($statusFilter !== '') {
-            $manualQuery->where('status', $statusFilter);
-            $jobItems = collect(); // allocated jobs are not task statuses
-        }
+                if ($statusFilter !== '') {
+                    $manualQuery->where('status', $statusFilter);
+                    $jobItems = collect(); // allocated jobs are not task statuses
+                }
 
-        if ($assigneeFilter !== null) {
-            if ($assigneeFilter === 0) {
-                $manualQuery->whereNull('assignee_user_id');
-            } else {
-                $manualQuery->where('assignee_user_id', $assigneeFilter);
+                if ($assigneeFilter !== null) {
+                    if ($assigneeFilter === 0) {
+                        $manualQuery->whereNull('assignee_user_id');
+                    } else {
+                        $manualQuery->where('assignee_user_id', $assigneeFilter);
+                    }
+                }
+
+                $manualTasks = $manualQuery->get();
+            } catch (\Throwable) {
+                $manualTasks = collect();
             }
+        } elseif ($statusFilter !== '') {
+            $jobItems = collect();
         }
-
-        $manualTasks = $manualQuery->get();
 
         $rows = $this->mergeTaskRows($jobItems, $manualTasks, $users);
 
@@ -140,15 +155,15 @@ class TaskController extends Controller
             $assigneeId = $creatorId;
         }
 
-        Task::create([
+        Task::create(array_filter([
             'title' => trim($data['title']),
             'assignee_user_id' => $assigneeId,
             'due_date' => $data['due_date'] ?? null,
             'status' => $data['status'] ?? Task::STATUS_NOT_STARTED,
             'notes' => isset($data['notes']) ? trim((string) $data['notes']) : null,
-            'visibility' => $visibility,
+            'visibility' => Task::supportsVisibility() ? $visibility : null,
             'created_by' => $creatorId,
-        ]);
+        ], static fn ($value) => $value !== null));
 
         return redirect()
             ->route('task_management', $this->redirectQuery($request))
@@ -193,7 +208,7 @@ class TaskController extends Controller
         if (array_key_exists('notes', $data)) {
             $task->notes = $data['notes'] !== null ? trim((string) $data['notes']) : null;
         }
-        if (array_key_exists('visibility', $data)) {
+        if (array_key_exists('visibility', $data) && Task::supportsVisibility()) {
             $task->visibility = $data['visibility'];
             if ($task->visibility === Task::VISIBILITY_PERSONAL) {
                 $uid = (int) session('user_id', 0);

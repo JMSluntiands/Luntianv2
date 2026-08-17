@@ -396,6 +396,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/leading-energy/trash', [LeadingEnergyJobController::class, 'trash'])->name('leading_energy.trash');
 
     Route::get('/dashboard/reports', [ReportsController::class, 'index'])->name('reports');
+    Route::get('/dashboard/reports/chart', [ReportsController::class, 'chart'])->name('reports.chart');
     Route::get('/dashboard/reports/export', [ReportsController::class, 'exportExcel'])->name('reports.export');
     Route::get('/dashboard/hr', [HrController::class, 'index'])->name('hr');
     Route::get('/dashboard/timesheet', [TimesheetController::class, 'index'])->name('timesheet');

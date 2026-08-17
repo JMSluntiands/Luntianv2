@@ -28,6 +28,8 @@ class ReportsController extends Controller
                     j.completion_date AS completion_date,
                     j.log_date AS started_at,
                     CONVERT(COALESCE(j.staff_id, j.checker_id) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE(j.staff_id, '') USING utf8mb4) COLLATE {$utf8u} AS staff_code,
+                    CONVERT(COALESCE(j.checker_id, '') USING utf8mb4) COLLATE {$utf8u} AS checker_code,
                     CONVERT(COALESCE(j.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
                     COALESCE(NULLIF(j.units, 0), j.plan_complexity, 0) AS units,
                     CONVERT(COALESCE(ca.client_account_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
@@ -87,13 +89,20 @@ class ReportsController extends Controller
 
             $startedCol = Schema::hasColumn($table, 'created_at') ? "{$alias}.created_at" : "{$alias}.date";
 
+            $staffCol = Schema::hasColumn($table, 'assigned') ? "{$alias}.assigned" : 'NULL';
+            $checkerCol = Schema::hasColumn($table, 'checked')
+                ? "{$alias}.checked"
+                : (Schema::hasColumn($table, 'checker') ? "{$alias}.checker" : 'NULL');
+
             $parts[] = "
                 SELECT
                     {$alias}.id AS job_pk,
                     CONVERT('{$table}' USING utf8mb4) COLLATE {$utf8u} AS source_table,
                     {$alias}.date AS completion_date,
                     {$startedCol} AS started_at,
-                    CONVERT(COALESCE({$alias}.assigned, {$alias}.checked) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE({$staffCol}, {$checkerCol}) USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT(COALESCE({$staffCol}, '') USING utf8mb4) COLLATE {$utf8u} AS staff_code,
+                    CONVERT(COALESCE({$checkerCol}, '') USING utf8mb4) COLLATE {$utf8u} AS checker_code,
                     CONVERT(COALESCE({$alias}.job_type, '') USING utf8mb4) COLLATE {$utf8u} AS job_type,
                     COALESCE({$alias}.units, 0) AS units,
                     CONVERT(COALESCE({$alias}.client_name, '') USING utf8mb4) COLLATE {$utf8u} AS client_label,
@@ -110,6 +119,8 @@ class ReportsController extends Controller
                     NULL AS completion_date,
                     NULL AS started_at,
                     CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS user_code,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS staff_code,
+                    CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS checker_code,
                     CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS job_type,
                     0 AS units,
                     CONVERT('' USING utf8mb4) COLLATE {$utf8u} AS client_label,
@@ -201,6 +212,182 @@ class ReportsController extends Controller
         }
 
         return [$where, $filterParams];
+    }
+
+    /**
+     * @return array{client: string, staff: string, checker: string, jobType: string, dateFrom: string, dateTo: string}
+     */
+    private static function parseChartFilters(Request $request): array
+    {
+        $normalize = static function (string $raw): string {
+            $raw = trim($raw);
+            $key = strtolower($raw);
+
+            return ($raw === '' || $key === 'all') ? '' : $raw;
+        };
+
+        $dateFrom = trim((string) $request->query('chart_date_from', $request->query('date_from', '')));
+        $dateTo = trim((string) $request->query('chart_date_to', $request->query('date_to', '')));
+        if ($dateFrom === '' && $dateTo === '') {
+            $today = Carbon::today()->toDateString();
+            $dateFrom = $today;
+            $dateTo = $today;
+        }
+
+        return [
+            'client' => $normalize((string) $request->query('chart_client', '')),
+            'staff' => $normalize((string) $request->query('chart_staff', '')),
+            'checker' => $normalize((string) $request->query('chart_checker', '')),
+            'jobType' => $normalize((string) $request->query('chart_job_type', '')),
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+        ];
+    }
+
+    /**
+     * @param  array{client: string, staff: string, checker: string, jobType: string, dateFrom: string, dateTo: string}  $filters
+     * @return array{0: string, 1: list<mixed>}
+     */
+    private static function buildChartWhereClause(array $filters): array
+    {
+        $where = 'u.completion_date IS NOT NULL';
+        $params = [];
+
+        if ($filters['client'] !== '') {
+            $where .= ' AND LOWER(TRIM(u.client_label)) = LOWER(?)';
+            $params[] = $filters['client'];
+        }
+        if ($filters['staff'] !== '') {
+            $where .= ' AND LOWER(TRIM(u.staff_code)) = LOWER(?)';
+            $params[] = $filters['staff'];
+        }
+        if ($filters['checker'] !== '') {
+            $where .= ' AND LOWER(TRIM(u.checker_code)) = LOWER(?)';
+            $params[] = $filters['checker'];
+        }
+        if ($filters['jobType'] !== '') {
+            $where .= ' AND LOWER(TRIM(u.job_type)) = LOWER(?)';
+            $params[] = $filters['jobType'];
+        }
+        if ($filters['dateFrom'] !== '') {
+            $where .= ' AND DATE(u.completion_date) >= ?';
+            $params[] = $filters['dateFrom'];
+        }
+        if ($filters['dateTo'] !== '') {
+            $where .= ' AND DATE(u.completion_date) <= ?';
+            $params[] = $filters['dateTo'];
+        }
+
+        return [$where, $params];
+    }
+
+    /**
+     * @param  array{client: string, staff: string, checker: string, jobType: string, dateFrom: string, dateTo: string}  $filters
+     * @return array{labels: list<string>, units: list<int>, jobs: list<int>, title: string}
+     */
+    private static function buildChartPayload(array $filters): array
+    {
+        $utf8u = 'utf8mb4_unicode_ci';
+        $union = self::unionAllJobsSql($utf8u);
+        [$where, $params] = self::buildChartWhereClause($filters);
+
+        $sql = "
+            SELECT
+                DATE(u.completion_date) AS day_key,
+                COUNT(*) AS job_count,
+                SUM(COALESCE(u.units, 0)) AS units_sum
+            FROM ({$union}) u
+            WHERE {$where}
+            GROUP BY DATE(u.completion_date)
+            ORDER BY DATE(u.completion_date) ASC
+        ";
+
+        $byDay = [];
+        try {
+            foreach (DB::select($sql, $params) as $row) {
+                $key = (string) ($row->day_key ?? '');
+                if ($key === '') {
+                    continue;
+                }
+                $byDay[$key] = [
+                    'jobs' => (int) ($row->job_count ?? 0),
+                    'units' => (int) ($row->units_sum ?? 0),
+                ];
+            }
+        } catch (\Throwable $e) {
+            $byDay = [];
+        }
+
+        $labels = [];
+        $units = [];
+        $jobs = [];
+
+        try {
+            $from = $filters['dateFrom'] !== '' ? Carbon::parse($filters['dateFrom'])->startOfDay() : null;
+            $to = $filters['dateTo'] !== '' ? Carbon::parse($filters['dateTo'])->startOfDay() : $from;
+        } catch (\Throwable $e) {
+            $from = null;
+            $to = null;
+        }
+
+        if ($from && $to && $from->lte($to) && $from->diffInDays($to) <= 90) {
+            $cursor = $from->copy();
+            while ($cursor->lte($to)) {
+                $key = $cursor->toDateString();
+                $labels[] = $cursor->format('M j');
+                $units[] = (int) ($byDay[$key]['units'] ?? 0);
+                $jobs[] = (int) ($byDay[$key]['jobs'] ?? 0);
+                $cursor->addDay();
+            }
+        } else {
+            foreach ($byDay as $key => $vals) {
+                try {
+                    $labels[] = Carbon::parse($key)->format('M j');
+                } catch (\Throwable $e) {
+                    $labels[] = $key;
+                }
+                $units[] = (int) ($vals['units'] ?? 0);
+                $jobs[] = (int) ($vals['jobs'] ?? 0);
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'units' => $units,
+            'jobs' => $jobs,
+            'title' => 'Units by day',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function distinctUnionColumn(string $column): array
+    {
+        $utf8u = 'utf8mb4_unicode_ci';
+        $union = self::unionAllJobsSql($utf8u);
+        try {
+            $sql = "
+                SELECT t.val AS val
+                FROM (
+                    SELECT DISTINCT TRIM(u.{$column}) AS val
+                    FROM ({$union}) u
+                    WHERE u.{$column} IS NOT NULL AND TRIM(u.{$column}) <> ''
+                ) t
+                WHERE t.val IS NOT NULL AND t.val <> ''
+                ORDER BY t.val ASC
+            ";
+
+            return collect(DB::select($sql))
+                ->pluck('val')
+                ->map(fn ($v) => is_string($v) ? trim($v) : '')
+                ->filter(fn ($v) => $v !== '')
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**
@@ -390,6 +577,9 @@ class ReportsController extends Controller
         }
 
         $summaryByLabel = $summaryRows->keyBy('job_system');
+        $chartFilters = self::parseChartFilters($request);
+        $checkerOptions = self::distinctUnionColumn('checker_code');
+        $jobTypeOptions = self::distinctUnionColumn('job_type');
 
         return view('reports.index', [
             'sidebar_active' => 'reports',
@@ -405,7 +595,23 @@ class ReportsController extends Controller
             'filterClient' => $filters['filterClientRaw'] === '' ? 'all' : $filters['filterClientRaw'],
             'staffOptions' => $staffOptions,
             'filterStaff' => $filters['filterStaffRaw'] === '' ? 'all' : $filters['filterStaffRaw'],
+            'checkerOptions' => $checkerOptions,
+            'jobTypeOptions' => $jobTypeOptions,
+            'chartPayload' => self::buildChartPayload($chartFilters),
+            'chartFilterClient' => $chartFilters['client'] === '' ? 'all' : $chartFilters['client'],
+            'chartFilterStaff' => $chartFilters['staff'] === '' ? 'all' : $chartFilters['staff'],
+            'chartFilterChecker' => $chartFilters['checker'] === '' ? 'all' : $chartFilters['checker'],
+            'chartFilterJobType' => $chartFilters['jobType'] === '' ? 'all' : $chartFilters['jobType'],
+            'chartDateFrom' => $chartFilters['dateFrom'],
+            'chartDateTo' => $chartFilters['dateTo'],
         ]);
+    }
+
+    public function chart(Request $request)
+    {
+        $filters = self::parseChartFilters($request);
+
+        return response()->json(self::buildChartPayload($filters));
     }
 
     /**

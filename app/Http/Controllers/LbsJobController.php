@@ -15,6 +15,7 @@ use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
+use App\Support\ForCheckingAttachmentValidation;
 use App\Support\JobUploadFolder;
 use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
@@ -537,6 +538,9 @@ class LbsJobController extends Controller
             $candidateStatus = trim((string) $data['job_status']);
             if ($fecErr = FecUnitsValidation::jsonErrorIfFecWithoutUnits($request, $job, $candidateStatus, 'units')) {
                 return $fecErr;
+            }
+            if ($fileErr = ForCheckingAttachmentValidation::jsonErrorIfForCheckingWithoutAttachment($job, $candidateStatus, (string) ($job->job_status ?? ''))) {
+                return $fileErr;
             }
         }
 
@@ -2180,6 +2184,9 @@ class LbsJobController extends Controller
             $jobReferenceNo = trim((string) ($data['reference_no'] ?? ''));
             if ($jobReferenceNo === '' && $referenceValue !== '') {
                 $jobReferenceNo = preg_replace('/-1$/', '', $referenceValue);
+            }
+            if ($isLuntianStore) {
+                $jobReferenceNo = \App\Support\JobReference::luntianForDate($now);
             }
 
             $jobId = DB::table('jobs')->insertGetId([
