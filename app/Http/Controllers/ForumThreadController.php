@@ -7,6 +7,7 @@ use App\Models\ForumPost;
 use App\Models\RolePermission;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +16,12 @@ class ForumThreadController extends Controller
 {
     public function index()
     {
+        if (! Schema::hasTable('forum_posts')) {
+            return redirect()
+                ->route('dashboard')
+                ->with('error', 'Bulletin is not ready yet. Run database/jms_fix_forum_thread.sql on the live database.');
+        }
+
         $posts = ForumPost::query()
             ->with(['user:id,fullname,username,profile_image', 'comments.user:id,fullname,username,profile_image'])
             ->withCount('comments')
@@ -53,6 +60,10 @@ class ForumThreadController extends Controller
      */
     public static function recentPostsPayload(int $limit = 5): array
     {
+        if (! Schema::hasTable('forum_posts')) {
+            return [];
+        }
+
         $posts = ForumPost::query()
             ->with(['user:id,fullname,username,profile_image'])
             ->withCount('comments')
@@ -83,12 +94,12 @@ class ForumThreadController extends Controller
             $plain = trim(html_entity_decode(strip_tags((string) $post->body), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             $plain = preg_replace('/\s+/u', ' ', $plain) ?? $plain;
             if (mb_strlen($plain) > 160) {
-                $plain = rtrim(mb_substr($plain, 0, 157)).'…';
+                $plain = rtrim(mb_substr($plain, 0, 157)).'â€¦';
             }
 
             $title = trim((string) ($post->title ?? ''));
             if ($title === '') {
-                $title = $plain !== '' ? (mb_strlen($plain) > 80 ? rtrim(mb_substr($plain, 0, 77)).'…' : $plain) : 'Post';
+                $title = $plain !== '' ? (mb_strlen($plain) > 80 ? rtrim(mb_substr($plain, 0, 77)).'â€¦' : $plain) : 'Post';
             }
 
             return [
@@ -101,7 +112,7 @@ class ForumThreadController extends Controller
                 'status' => $post->normalizeType(),
                 'is_pinned' => $post->isPinned(),
                 'comments_count' => (int) $post->comments_count,
-                'created_at' => $post->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A'),
+                'created_at' => $post->created_at?->timezone('Asia/Manila')->format('M j, Y Â· g:i A'),
                 'created_at_iso' => $post->created_at?->toIso8601String(),
             ];
         })->values()->all();
@@ -125,7 +136,7 @@ class ForumThreadController extends Controller
             'image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:4096'],
         ], [
             'title.required' => 'Please enter a title.',
-            'image.uploaded' => 'The image failed to upload. It may be too large — try a photo under 4MB (JPG, PNG, GIF, or WebP).',
+            'image.uploaded' => 'The image failed to upload. It may be too large â€” try a photo under 4MB (JPG, PNG, GIF, or WebP).',
             'image.image' => 'The selected file must be an image (JPG, PNG, GIF, or WebP).',
             'image.mimes' => 'The image must be a JPG, PNG, GIF, or WebP file.',
             'image.max' => 'The cover image may not be greater than 4MB.',
