@@ -1,6 +1,6 @@
 /**
  * Shared client-side table sort (asc / desc) for dashboard list tables.
- * Prefer td[data-sort]; keep Action columns non-sortable; preserve detail-row pairs.
+ * Prefer td[data-sort] for cell values; use data-sort-dir on th for asc/desc toggle.
  */
 (function (w, d) {
   'use strict';
@@ -8,7 +8,7 @@
   var DETAIL_SEL =
     '.lbs-row-detail, .efficient_living-row-detail, .luntian-row-detail, tr[data-row-detail]';
   var SKIP_TH =
-    '.lbs-th-action, .efficient_living-th-action, .luntian-th-action, .reports-th-action, [data-no-sort]';
+    '.lbs-th-action, .efficient_living-th-action, .luntian-th-action, .reports-th-action';
   var TABLE_SEL = [
     'table#lbsTable',
     'table#efficient_livingTable',
@@ -25,6 +25,7 @@
   var ARROW_BOTH = '\u2195';
   var ARROW_UP = '\u2191';
   var ARROW_DOWN = '\u2193';
+  var prepared = typeof w.WeakSet === 'function' ? new w.WeakSet() : null;
 
   function cellSortValue(cell) {
     if (!cell) return '';
@@ -67,14 +68,13 @@
     var aStr = String(aVal).trim();
     var bStr = String(bVal).trim();
 
-    // Prefer ISO / SQL datetimes for Log Date / Due Date columns.
     var aTime = Date.parse(aStr.replace(' ', 'T'));
     var bTime = Date.parse(bStr.replace(' ', 'T'));
     var bothDates =
       !isNaN(aTime) &&
       !isNaN(bTime) &&
-      (/^\d{4}-\d{2}-\d{2}/.test(aStr) || /[\/\-]/.test(aStr)) &&
-      (/^\d{4}-\d{2}-\d{2}/.test(bStr) || /[\/\-]/.test(bStr));
+      (/^\d{4}-\d{2}-\d{2}/.test(aStr) || /\d+[\/\-]\d+/.test(aStr)) &&
+      (/^\d{4}-\d{2}-\d{2}/.test(bStr) || /\d+[\/\-]\d+/.test(bStr));
     if (bothDates) {
       return dir === 'asc' ? aTime - bTime : bTime - aTime;
     }
@@ -109,6 +109,7 @@
     var icon = d.createElement('span');
     icon.className = 'lbs-sort-icon ml-1 text-xs opacity-60';
     icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('data-sort-icon', '1');
     icon.textContent = ARROW_BOTH;
     th.appendChild(icon);
   }
@@ -123,20 +124,30 @@
     else icon.textContent = ARROW_BOTH;
   }
 
+  function headerLabel(th) {
+    var clone = th.cloneNode(true);
+    clone
+      .querySelectorAll(
+        '.lbs-sort-icon, .efficient_living-sort-icon, .luntian-sort-icon, .reports-sort-icon, .bph-sort-icon, [data-sort-icon]'
+      )
+      .forEach(function (el) {
+        el.remove();
+      });
+    return String(clone.textContent || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
   function isSkipHeader(th) {
     if (!th) return true;
+    if (th.getAttribute('data-sortable') === '0') return true;
+    if (th.hasAttribute('data-no-sort')) return true;
     try {
       if (th.matches(SKIP_TH)) return true;
     } catch (e) {}
-    if (th.hasAttribute('data-no-sort')) return true;
-    var label = String(th.textContent || '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toLowerCase()
-      .replace(new RegExp('[' + ARROW_BOTH + ARROW_UP + ARROW_DOWN + ']', 'g'), '')
-      .trim();
-    if (label === 'action' || label === 'actions') return true;
-    return false;
+    var label = headerLabel(th);
+    return label === 'action' || label === 'actions';
   }
 
   function isSortableTable(table) {
@@ -145,7 +156,7 @@
       if (table.matches(TABLE_SEL)) return true;
     } catch (e) {}
     return !!table.querySelector(
-      'thead th[data-sort], thead th .lbs-sort-icon, thead th .reports-sort-icon, thead th .efficient_living-sort-icon, thead th .luntian-sort-icon, thead th .bph-sort-icon'
+      'thead th[data-sort], thead th[data-sort-dir], thead th .lbs-sort-icon, thead th .reports-sort-icon, thead th .efficient_living-sort-icon, thead th .luntian-sort-icon, thead th .bph-sort-icon'
     );
   }
 
@@ -167,33 +178,61 @@
     return groups;
   }
 
+  function headerIndex(table, th) {
+    var thead = table.tHead || table.querySelector('thead');
+    if (!thead) return typeof th.cellIndex === 'number' ? th.cellIndex : -1;
+    var row = th.parentElement;
+    if (!row || row.tagName !== 'TR') {
+      return typeof th.cellIndex === 'number' ? th.cellIndex : -1;
+    }
+    var headers = Array.prototype.slice.call(row.children).filter(function (el) {
+      return el.tagName === 'TH';
+    });
+    var idx = headers.indexOf(th);
+    if (idx >= 0) return idx;
+    return typeof th.cellIndex === 'number' ? th.cellIndex : -1;
+  }
+
+  function currentDir(th) {
+    var dir = (th.getAttribute('data-sort-dir') || th.getAttribute('data-sort') || '')
+      .trim()
+      .toLowerCase();
+    return dir === 'asc' || dir === 'desc' ? dir : '';
+  }
+
+  function setHeaderDir(th, dir) {
+    if (dir === 'asc' || dir === 'desc') {
+      th.setAttribute('data-sort-dir', dir);
+      th.setAttribute('data-sort', dir); // keep CSS hooks working
+    } else {
+      th.removeAttribute('data-sort-dir');
+      th.setAttribute('data-sort', '');
+    }
+    updateSortIcon(th, dir || '');
+  }
+
   function sortTable(table, th, dir) {
     var tbody = table.tBodies[0];
     if (!tbody) return;
 
-    var headers = Array.prototype.slice.call(
-      (table.tHead || table.querySelector('thead') || table).querySelectorAll('tr:first-child th')
-    );
-    var colIndex = headers.indexOf(th);
-    if (colIndex < 0) {
-      colIndex = typeof th.cellIndex === 'number' ? th.cellIndex : -1;
-    }
+    var colIndex = headerIndex(table, th);
     if (colIndex < 0) return;
 
-    headers.forEach(function (h) {
-      if (h !== th) {
-        h.setAttribute('data-sort', '');
-        updateSortIcon(h, '');
-      }
-    });
-    th.setAttribute('data-sort', dir);
-    updateSortIcon(th, dir);
+    var thead = table.tHead || table.querySelector('thead');
+    if (thead) {
+      Array.prototype.forEach.call(thead.querySelectorAll('th'), function (h) {
+        if (h !== th) setHeaderDir(h, '');
+      });
+    }
+    setHeaderDir(th, dir);
 
     var groups = collectRowGroups(tbody);
     groups.sort(function (ga, gb) {
-      var aCell = ga.row.children[colIndex];
-      var bCell = gb.row.children[colIndex];
-      return compareValues(cellSortValue(aCell), cellSortValue(bCell), dir);
+      return compareValues(
+        cellSortValue(ga.row.children[colIndex]),
+        cellSortValue(gb.row.children[colIndex]),
+        dir
+      );
     });
 
     var frag = d.createDocumentFragment();
@@ -213,27 +252,39 @@
       if (isSkipHeader(th)) {
         th.classList.add('cursor-default');
         th.setAttribute('data-no-sort', '');
+        th.setAttribute('data-sortable', '0');
         return;
       }
+      th.setAttribute('data-sortable', '1');
+      th.removeAttribute('data-no-sort');
       if (!th.hasAttribute('data-sort')) th.setAttribute('data-sort', '');
       th.classList.add('cursor-pointer', 'select-none');
       th.style.cursor = 'pointer';
       ensureSortIcon(th);
     });
+
+    if (prepared) prepared.add(table);
+    table.setAttribute('data-sort-ready', '1');
   }
 
   function onDocClick(e) {
     var th = e.target && e.target.closest ? e.target.closest('thead th') : null;
-    if (!th || isSkipHeader(th)) return;
+    if (!th) return;
+    if (th.getAttribute('data-sortable') === '0' || th.hasAttribute('data-no-sort')) return;
+    try {
+      if (th.matches(SKIP_TH)) return;
+    } catch (err) {}
     if (e.target.closest('a, button, input, select, label')) return;
 
     var table = th.closest('table');
     if (!table || !isSortableTable(table)) return;
 
-    e.preventDefault();
-    prepareTable(table);
+    if (!table.hasAttribute('data-sort-ready') && !(prepared && prepared.has(table))) {
+      prepareTable(table);
+    }
+    if (th.getAttribute('data-sortable') === '0' || th.hasAttribute('data-no-sort')) return;
 
-    var current = th.getAttribute('data-sort') || '';
+    var current = currentDir(th);
     var next = current === 'asc' ? 'desc' : 'asc';
     sortTable(table, th, next);
   }
@@ -266,7 +317,6 @@
   w.initTableSort = initTableSort;
   w.initAllTableSorts = initAllTableSorts;
 
-  // Capture phase so row/button stopPropagation does not block header clicks.
   d.addEventListener('click', onDocClick, true);
 
   function boot() {
@@ -278,7 +328,4 @@
   } else {
     boot();
   }
-  // Late boot for Hostinger/Cloudflare delayed script injection.
-  w.setTimeout(boot, 0);
-  w.setTimeout(boot, 500);
 })(window, document);
