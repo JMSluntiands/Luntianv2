@@ -6,10 +6,42 @@
         @forelse($boardColumns as $column)
             @php
                 $user = $column['user'] ?? null;
-                $columnTasks = $column['tasks'] ?? collect();
+                $columnTasks = collect($column['tasks'] ?? []);
                 $assigneeId = ($column['key'] ?? '0') === '0' ? '' : ($column['key'] ?? '');
+                $jobTasks = $columnTasks->filter(static fn ($task) => ($task->row_type ?? '') === 'job')->values();
+                $personalTasks = $columnTasks->filter(static function ($task) {
+                    return ($task->row_type ?? '') !== 'job'
+                        && strtolower(trim((string) ($task->visibility ?? ''))) === Task::VISIBILITY_PERSONAL;
+                })->values();
+                $publicManualTasks = $columnTasks->filter(static function ($task) {
+                    return ($task->row_type ?? '') !== 'job'
+                        && strtolower(trim((string) ($task->visibility ?? ''))) !== Task::VISIBILITY_PERSONAL;
+                })->values();
+                $sections = [
+                    [
+                        'key' => 'jobs',
+                        'label' => 'Jobs',
+                        'hint' => 'Allocated jobs',
+                        'tasks' => $jobTasks,
+                        'tone' => 'border-violet-200 bg-violet-50/70 text-violet-800 dark:border-violet-800/60 dark:bg-violet-500/10 dark:text-violet-200',
+                    ],
+                    [
+                        'key' => 'tasks',
+                        'label' => 'Tasks',
+                        'hint' => 'Shared tasks',
+                        'tasks' => $publicManualTasks,
+                        'tone' => 'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-800/60 dark:bg-sky-500/10 dark:text-sky-200',
+                    ],
+                    [
+                        'key' => 'personal',
+                        'label' => 'Personal',
+                        'hint' => 'Personal tasks only',
+                        'tasks' => $personalTasks,
+                        'tone' => 'border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-800/60 dark:bg-amber-500/10 dark:text-amber-100',
+                    ],
+                ];
             @endphp
-            <section class="flex w-72 shrink-0 flex-col rounded-xl border border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40">
+            <section class="flex w-80 shrink-0 flex-col rounded-xl border border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40">
                 <header class="flex items-center gap-2.5 border-b border-slate-200 px-3 py-3 dark:border-slate-700">
                     <div class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-100">
                         @if($user && $avatarUrl($user))
@@ -20,75 +52,98 @@
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $displayName($user) }}</p>
+                        <p class="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                            {{ $jobTasks->count() }} job{{ $jobTasks->count() === 1 ? '' : 's' }}
+                            · {{ $personalTasks->count() }} personal
+                        </p>
                     </div>
                     <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">{{ $columnTasks->count() }}</span>
                 </header>
 
-                <div class="flex max-h-[70vh] flex-col gap-2.5 overflow-y-auto p-2.5">
-                    @foreach($columnTasks as $task)
-                        @php
-                            $isJob = ($task->row_type ?? '') === 'job';
-                            if ($isJob) {
-                                $meta = [
-                                    'label' => 'Allocated',
-                                    'pill' => 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300',
-                                    'dot' => 'bg-violet-500',
-                                ];
-                            } else {
-                                $meta = Task::statusMeta((string) $task->status);
-                            }
-                        @endphp
-                        <article class="group/card rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-600 dark:bg-slate-800" @if(!$isJob) data-task-row data-task-id="{{ $task->id }}" @endif>
-                            <div class="mb-2 flex items-start justify-between gap-2">
+                <div class="flex max-h-[70vh] flex-col gap-3 overflow-y-auto p-2.5">
+                    @foreach($sections as $section)
+                        @if($section['tasks']->isEmpty())
+                            @continue
+                        @endif
+                        <div class="space-y-2">
+                            <div class="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 {{ $section['tone'] }}">
                                 <div class="min-w-0">
-                                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $task->client ?? '—' }}</p>
-                                    <h3 class="text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100">{{ $task->reference ?? $task->title ?? '—' }}</h3>
-                                    @if(!$isJob && ($task->visibility ?? '') === \App\Models\Task::VISIBILITY_PERSONAL)
-                                        <span class="mt-1 inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
-                                    @endif
+                                    <p class="text-[11px] font-bold uppercase tracking-wide">{{ $section['label'] }}</p>
+                                    <p class="truncate text-[10px] opacity-80">{{ $section['hint'] }}</p>
                                 </div>
-                                @if($canManage && !$isJob && !empty($task->id))
-                                    <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="shrink-0 opacity-0 transition-opacity group-hover/card:opacity-100">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="view_redirect" value="board">
-                                        <button type="submit" class="cursor-pointer rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400" title="Delete">
-                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
-                                    </form>
-                                @endif
+                                <span class="rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:bg-slate-900/50 dark:text-slate-200">{{ $section['tasks']->count() }}</span>
                             </div>
 
-                            <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ $task->module ?? '' }}</p>
-
-                            @if(!$isJob && !empty($task->due_date))
-                                <p class="mb-2 text-xs tabular-nums text-slate-500 dark:text-slate-400">
-                                    {{ $task->due_date instanceof \Carbon\Carbon ? $task->due_date->format('F j, Y') : \Illuminate\Support\Carbon::parse($task->due_date)->format('F j, Y') }}
-                                </p>
-                            @endif
-
-                            <div class="mb-2">
-                                @if($isJob)
-                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold {{ $meta['pill'] }}">
-                                        <span class="h-1.5 w-1.5 rounded-full {{ $meta['dot'] }}"></span>
-                                        {{ $meta['label'] }}
-                                    </span>
-                                @else
-                                    @php
-                                        $taskModel = (object) [
-                                            'id' => $task->id,
-                                            'status' => $task->status,
+                            @foreach($section['tasks'] as $task)
+                                @php
+                                    $isJob = ($task->row_type ?? '') === 'job';
+                                    if ($isJob) {
+                                        $meta = [
+                                            'label' => 'Allocated',
+                                            'pill' => 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300',
+                                            'dot' => 'bg-violet-500',
                                         ];
-                                    @endphp
-                                    @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => $canManage])
-                                @endif
-                            </div>
+                                    } else {
+                                        $meta = Task::statusMeta((string) $task->status);
+                                    }
+                                @endphp
+                                <article class="group/card rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-600 dark:bg-slate-800" @if(!$isJob) data-task-row data-task-id="{{ $task->id }}" @endif>
+                                    <div class="mb-2 flex items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $task->client ?? '—' }}</p>
+                                            <h3 class="text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100">{{ $task->reference ?? $task->title ?? '—' }}</h3>
+                                            @if(!$isJob && ($task->visibility ?? '') === Task::VISIBILITY_PERSONAL)
+                                                <span class="mt-1 inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
+                                            @endif
+                                        </div>
+                                        @if($canManage && !$isJob && !empty($task->id))
+                                            <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="shrink-0 opacity-0 transition-opacity group-hover/card:opacity-100">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="view_redirect" value="board">
+                                                <button type="submit" class="cursor-pointer rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400" title="Delete">
+                                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
 
-                            @if(!$isJob && trim((string) ($task->notes ?? '')) !== '')
-                                <p class="mb-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ $task->notes }}</p>
-                            @endif
-                        </article>
+                                    <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ $task->module ?? '' }}</p>
+
+                                    @if(!$isJob && !empty($task->due_date))
+                                        <p class="mb-2 text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                                            {{ $task->due_date instanceof \Carbon\Carbon ? $task->due_date->format('F j, Y') : \Illuminate\Support\Carbon::parse($task->due_date)->format('F j, Y') }}
+                                        </p>
+                                    @endif
+
+                                    <div class="mb-2">
+                                        @if($isJob)
+                                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold {{ $meta['pill'] }}">
+                                                <span class="h-1.5 w-1.5 rounded-full {{ $meta['dot'] }}"></span>
+                                                {{ $meta['label'] }}
+                                            </span>
+                                        @else
+                                            @php
+                                                $taskModel = (object) [
+                                                    'id' => $task->id,
+                                                    'status' => $task->status,
+                                                ];
+                                            @endphp
+                                            @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => $canManage])
+                                        @endif
+                                    </div>
+
+                                    @if(!$isJob && trim((string) ($task->notes ?? '')) !== '')
+                                        <p class="mb-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ $task->notes }}</p>
+                                    @endif
+                                </article>
+                            @endforeach
+                        </div>
                     @endforeach
+
+                    @if($columnTasks->isEmpty())
+                        <p class="rounded-xl border border-dashed border-slate-300 px-3 py-6 text-center text-xs text-slate-500 dark:border-slate-600 dark:text-slate-400">No jobs or personal tasks</p>
+                    @endif
 
                     @if($canManage)
                         <button
