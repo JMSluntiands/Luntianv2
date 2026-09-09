@@ -2105,15 +2105,17 @@ class LbsJobController extends Controller
         $now = now('Asia/Manila');
         $isLuntianStore = $request->route()?->getName() === 'luntian.store';
 
-        // Ensure reference column starts with JOBS so the job appears in LBS list; append -1
-        $referenceValue = $headerRef ?: ($data['reference_no'] ?? '');
-        if ($referenceValue !== '' && stripos($referenceValue, 'JOBS') !== 0) {
-            $referenceValue = 'JOBS-' . $referenceValue;
-        }
-        if ($referenceValue !== '') {
-            $referenceValue = $referenceValue . '-1';
-        } elseif ($isLuntianStore) {
-            $referenceValue = 'JOBS' . $now->format('YmdHis') . '-1';
+        // System reference: JOBSMMDD-NNN (increments per day). Duplicates append -1, -2, ...
+        $referenceValue = trim((string) ($headerRef ?: ''));
+        if ($referenceValue === '') {
+            $referenceValue = $isLuntianStore
+                ? ('JOBS'.$now->format('YmdHis'))
+                : $this->nextLbsSystemReference($now);
+        } elseif (! $isLuntianStore && ! preg_match('/^JOBS\d{4}-\d{3}(?:-\d+)*$/i', $referenceValue)) {
+            // Invalid/stale header badge (e.g. old hardcoded JOBS0823-003) — allocate a fresh sequence.
+            $referenceValue = $this->nextLbsSystemReference($now);
+        } elseif ($isLuntianStore && stripos($referenceValue, 'JOBS') !== 0) {
+            $referenceValue = 'JOBS-'.$referenceValue;
         }
 
         $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
@@ -2182,9 +2184,6 @@ class LbsJobController extends Controller
             }
 
             $jobReferenceNo = trim((string) ($data['reference_no'] ?? ''));
-            if ($jobReferenceNo === '' && $referenceValue !== '') {
-                $jobReferenceNo = preg_replace('/-1$/', '', $referenceValue);
-            }
             if ($isLuntianStore) {
                 $jobReferenceNo = \App\Support\JobReference::luntianForDate($now);
             }
@@ -2678,16 +2677,27 @@ class LbsJobController extends Controller
 
         $duplicateJob = null;
         $duplicateId = $request->query('duplicate');
+        $nextSystemReference = $this->nextLbsSystemReference();
         if ($duplicateId && is_numeric($duplicateId)) {
             $job = DB::table('jobs')->where('job_id', (int) $duplicateId)->first();
             if ($job) {
-                $nextSuffix = $this->getNextDuplicateSuffix(
-                    (string) ($job->job_reference_no ?? $job->reference ?? '')
-                );
-                $baseRef = trim((string) ($job->job_reference_no ?? $job->reference ?? ''));
-                $baseClientRef = trim((string) ($job->client_reference_no ?? ''));
-                $suggestedRef = $baseRef !== '' ? $baseRef . '-' . $nextSuffix : '';
-                $suggestedClientRef = $baseClientRef !== '' ? $baseClientRef . '-' . $nextSuffix : '';
+                $systemBase = $this->lbsSystemReferenceBase((string) ($job->reference ?? ''));
+                $nextSystemSuffix = $this->getNextDuplicateSuffixForColumn('reference', $systemBase);
+                $suggestedSystemRef = $systemBase !== ''
+                    ? $systemBase.'-'.$nextSystemSuffix
+                    : $nextSystemReference;
+
+                $jobRefBase = $this->stripTrailingNumericSuffix(trim((string) ($job->job_reference_no ?? '')));
+                $nextJobRefSuffix = $this->getNextDuplicateSuffix($jobRefBase !== '' ? $jobRefBase : trim((string) ($job->job_reference_no ?? '')));
+                $baseJobRef = $jobRefBase !== '' ? $jobRefBase : trim((string) ($job->job_reference_no ?? ''));
+                $suggestedRef = $baseJobRef !== '' ? $baseJobRef.'-'.$nextJobRefSuffix : '';
+
+                $baseClientRef = $this->stripTrailingNumericSuffix(trim((string) ($job->client_reference_no ?? '')));
+                if ($baseClientRef === '') {
+                    $baseClientRef = trim((string) ($job->client_reference_no ?? ''));
+                }
+                $nextClientSuffix = $this->getNextDuplicateSuffixForColumn('client_reference_no', $baseClientRef);
+                $suggestedClientRef = $baseClientRef !== '' ? $baseClientRef.'-'.$nextClientSuffix : '';
 
                 $complianceId = null;
                 if (!empty($job->ncc_compliance)) {
@@ -2712,15 +2722,16 @@ class LbsJobController extends Controller
                 }
 
                 $duplicateJob = (object) [
+                    'system_reference'  => $suggestedSystemRef,
                     'reference_no'      => $suggestedRef,
-                    'client_reference'   => $suggestedClientRef,
-                    'compliance_id'      => $complianceId,
-                    'client_account_id'  => $job->client_account_id ?? null,
+                    'client_reference'  => $suggestedClientRef,
+                    'compliance_id'     => $complianceId,
+                    'client_account_id' => $job->client_account_id ?? null,
                     'job_address'       => $job->address_client ?? '',
                     'priority_id'       => $priorityId,
                     'job_request_id'    => $jobRequestId,
-                    'notes'              => $job->notes ?? '',
-                    'staff_id'           => $job->staff_id ?? '',
+                    'notes'             => $job->notes ?? '',
+                    'staff_id'          => $job->staff_id ?? '',
                     'checker_id'        => $job->checker_id ?? '',
                 ];
             }
@@ -2739,7 +2750,90 @@ class LbsJobController extends Controller
             'assignmentCheckerUsers' => $assignmentCheckerUsers,
             'assignmentUsers'      => $assignmentStaffUsers,
             'duplicateJob'         => $duplicateJob,
+            'nextSystemReference'  => $nextSystemReference,
         ];
+    }
+
+    /**
+     * Next LBS/EL system reference: JOBSMMDD-NNN (NNN increments per calendar day, Asia/Manila).
+     */
+    private function nextLbsSystemReference(?\DateTimeInterface $now = null): string
+    {
+        $day = $now
+            ? \Carbon\Carbon::parse($now)->timezone('Asia/Manila')
+            : now('Asia/Manila');
+        $prefix = 'JOBS'.$day->format('md');
+
+        $refs = DB::table('jobs')
+            ->where('reference', 'like', $prefix.'-%')
+            ->pluck('reference');
+
+        $max = 0;
+        $pattern = '/^'.preg_quote($prefix, '/').'-(\d+)/i';
+        foreach ($refs as $ref) {
+            if (preg_match($pattern, trim((string) $ref), $m)) {
+                $max = max($max, (int) $m[1]);
+            }
+        }
+
+        return $prefix.'-'.str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Base JOBSMMDD-NNN from a stored reference (strips duplicate -1, -2, … suffixes).
+     */
+    private function lbsSystemReferenceBase(string $ref): string
+    {
+        $ref = trim($ref);
+        if ($ref === '') {
+            return '';
+        }
+        if (preg_match('/^(JOBS\d{4}-\d{3})(?:-\d+)*$/i', $ref, $m)) {
+            return strtoupper($m[1]);
+        }
+
+        return $this->stripTrailingNumericSuffix($ref);
+    }
+
+    private function stripTrailingNumericSuffix(string $ref): string
+    {
+        $ref = trim($ref);
+        if ($ref !== '' && preg_match('/^(.*)-\d+$/', $ref, $m)) {
+            return $m[1];
+        }
+
+        return $ref;
+    }
+
+    /**
+     * Next duplicate suffix (1, 2, 3…) for values in a jobs column matching base or base-N.
+     */
+    private function getNextDuplicateSuffixForColumn(string $column, string $baseRef): int
+    {
+        if ($baseRef === '' || ! in_array($column, ['reference', 'job_reference_no', 'client_reference_no'], true)) {
+            return 1;
+        }
+
+        $refs = DB::table('jobs')
+            ->where(function ($q) use ($column, $baseRef) {
+                $q->where($column, $baseRef)
+                    ->orWhere($column, 'like', $baseRef.'-%');
+            })
+            ->pluck($column);
+
+        $max = 0;
+        foreach ($refs as $ref) {
+            $ref = trim((string) $ref);
+            if ($ref === '' || strcasecmp($ref, $baseRef) === 0) {
+                continue;
+            }
+            $suffix = substr($ref, strlen($baseRef) + 1);
+            if (preg_match('/^(\d+)/', $suffix, $m)) {
+                $max = max($max, (int) $m[1]);
+            }
+        }
+
+        return $max + 1;
     }
 
     /**
@@ -2748,24 +2842,7 @@ class LbsJobController extends Controller
      */
     private function getNextDuplicateSuffix(string $baseRef): int
     {
-        if ($baseRef === '') {
-            return 1;
-        }
-        $pattern = $baseRef . '-%';
-        $refs = DB::table('jobs')
-            ->where('job_reference_no', 'like', $pattern)
-            ->pluck('job_reference_no');
-        $max = 0;
-        foreach ($refs as $ref) {
-            $suffix = substr((string) $ref, strlen($baseRef) + 1);
-            if (preg_match('/^\d+$/', $suffix)) {
-                $n = (int) $suffix;
-                if ($n > $max) {
-                    $max = $n;
-                }
-            }
-        }
-        return $max + 1;
+        return $this->getNextDuplicateSuffixForColumn('job_reference_no', $baseRef);
     }
 
     /**

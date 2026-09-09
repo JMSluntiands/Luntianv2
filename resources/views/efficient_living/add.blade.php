@@ -15,7 +15,9 @@
         <form id="elAddForm" action="#" method="POST" autocomplete="off" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @php
-                $preRef = isset($duplicateJob) ? ($duplicateJob->reference_no ?? '') : 'JOBS0823-003';
+                $preRef = isset($duplicateJob)
+                    ? ($duplicateJob->system_reference ?? $duplicateJob->reference_no ?? '')
+                    : ($nextSystemReference ?? '');
                 $selCompliance = isset($duplicateJob) ? ($duplicateJob->compliance_id ?? null) : ($defaultComplianceId ?? null);
                 $selClient = isset($duplicateJob) ? ($duplicateJob->client_account_id ?? null) : ($defaultClientAccountId ?? null);
                 $selPriority = isset($duplicateJob) ? ($duplicateJob->priority_id ?? null) : ($defaultPriorityId ?? null);
@@ -26,7 +28,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef ?: 'JOBS0823-003' }}</span>
+                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef !== '' ? $preRef : ($nextSystemReference ?? 'JOBS'.now('Asia/Manila')->format('md').'-001') }}</span>
                 </div>
                 <div class="p-5">
                     <div class="grid gap-5 sm:grid-cols-2">

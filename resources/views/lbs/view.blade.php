@@ -197,15 +197,10 @@
                                     <dd class="job-details-dd">@if(!empty($job->log_date)){{ \Carbon\Carbon::parse($job->log_date)->format('M d, Y h:i A') }}@else—@endif</dd>
                                 </div>
                                 <div class="job-details-row">
-                                    <dt class="job-details-dt">Reference Number</dt>
-                                    <dd class="job-details-dd font-mono">{{ $jobReferenceDisplay }}</dd>
-                                </div>
-                                @if(($jobViewModuleKey ?? '') === 'fyrs')
-                                <div class="job-details-row">
-                                    <dt class="job-details-dt">Client Reference Number</dt>
+                                    <dt class="job-details-dt">Job Reference Number</dt>
                                     <dd class="job-details-dd font-mono">{{ trim((string) ($job->job_reference_no ?? '')) !== '' ? $job->job_reference_no : '—' }}</dd>
                                 </div>
-                                @else
+                                @if(($jobViewModuleKey ?? '') !== 'fyrs')
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Client Reference Number</dt>
                                     <dd class="job-details-dd font-mono">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</dd>
