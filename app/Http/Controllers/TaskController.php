@@ -9,6 +9,7 @@ use App\Services\AllocatedJobsTaskFeed;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
@@ -36,23 +37,6 @@ class TaskController extends Controller
             ->orderBy('username')
             ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
 
-        // Assignee picker: user account unique_code only (exclude Admin / Branch roles).
-        $assigneeEligibleUsers = User::query()
-            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
-            ->whereNotNull('unique_code')
-            ->whereRaw('TRIM(unique_code) != ?', [''])
-            ->orderBy('unique_code')
-            ->orderBy('id')
-            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
-
-        $assigneeUsers = $assigneeEligibleUsers
-            ->groupBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
-            ->map(static function ($group) {
-                return $group->sortBy('id')->first();
-            })
-            ->sortBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
-            ->values();
-
         $canManage = $this->mayManageTasks();
         $canViewAll = $this->mayViewAllTasks();
         $canViewSelf = $this->mayViewSelfTasks();
@@ -63,14 +47,30 @@ class TaskController extends Controller
             $assigneeFilter = $currentUserId;
         }
 
+        $jobItemsAll = collect();
+        try {
+            $jobItemsAll = AllocatedJobsTaskFeed::all();
+        } catch (\Throwable) {
+            $jobItemsAll = collect();
+        }
+
+        // Assignee picker: staff accounts (not Admin/Branch). Always include codes that
+        // appear on allocated jobs so assignees like PEP stay in the filter dropdown.
+        $assigneeEligibleUsers = $this->assigneeEligibleUsers(
+            $jobItemsAll->pluck('assignee_code')->filter()->values()->all()
+        );
+
+        $assigneeUsers = $assigneeEligibleUsers
+            ->groupBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
+            ->map(static function ($group) {
+                return $group->sortBy('id')->first();
+            })
+            ->sortBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
+            ->values();
+
         $assigneeFilterIds = $this->assigneeFilterUserIds($assigneeEligibleUsers, $assigneeFilter);
 
-        $jobItems = collect();
-        try {
-            $jobItems = AllocatedJobsTaskFeed::all();
-        } catch (\Throwable) {
-            $jobItems = collect();
-        }
+        $jobItems = $jobItemsAll;
         if ($assigneeFilter !== null) {
             $jobItems = $jobItems->filter(function (object $row) use ($assigneeFilter, $assigneeFilterIds) {
                 $uid = (int) ($row->assignee_user_id ?? 0);
@@ -162,7 +162,7 @@ class TaskController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'assignee_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assignee_user_id' => ['nullable', 'integer', Rule::in($this->assigneeEligibleUsers()->pluck('id')->all())],
             'due_date' => ['nullable', 'date'],
             'status' => ['nullable', Rule::in(Task::STATUSES)],
             'notes' => ['nullable', 'string', 'max:5000'],
@@ -208,7 +208,7 @@ class TaskController extends Controller
         }
         $data = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'assignee_user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            'assignee_user_id' => ['sometimes', 'nullable', 'integer', Rule::in($this->assigneeEligibleUsers()->pluck('id')->all())],
             'due_date' => ['sometimes', 'nullable', 'date'],
             'status' => ['sometimes', 'required', Rule::in(Task::STATUSES)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
@@ -279,6 +279,95 @@ class TaskController extends Controller
         return redirect()
             ->route('task_management', $this->redirectQuery($request))
             ->with('success', 'Task deleted.');
+    }
+
+    /**
+     * Staff assignees for the Task Management picker.
+     * Excludes Admin/Branch roles and known branch/client login codes, but does NOT
+     * drop Staff/Checker/User accounts just because they have a branch office set.
+     * Extra unique codes (e.g. from allocated jobs) are always merged in when present.
+     *
+     * @param  list<string>  $extraCodes
+     * @return Collection<int, User>
+     */
+    private function assigneeEligibleUsers(array $extraCodes = []): Collection
+    {
+        $blockedCodes = collect();
+
+        if (Schema::hasTable('branches')) {
+            $blockedCodes = $blockedCodes->merge(
+                DB::table('branches')->pluck('branch_name')
+            );
+        }
+
+        if (Schema::hasTable('clients')) {
+            $blockedCodes = $blockedCodes->merge(
+                DB::table('clients')->pluck('client_code')
+            );
+        }
+
+        $blockedCodes = $blockedCodes->merge(
+            User::query()
+                ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) = ?', ['branch'])
+                ->whereNotNull('unique_code')
+                ->pluck('unique_code')
+        );
+
+        $blockedCodes = $blockedCodes
+            ->map(static fn ($code) => strtoupper(trim((string) $code)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $extraCodes = collect($extraCodes)
+            ->map(static fn ($code) => strtoupper(trim((string) $code)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        // Codes forced in from jobs: never treat them as blocked branch logins.
+        $blockedCodes = array_values(array_diff($blockedCodes, $extraCodes));
+
+        $base = User::query()
+            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
+            ->whereNotNull('unique_code')
+            ->whereRaw('TRIM(unique_code) != ?', [''])
+            ->where(function ($q) {
+                $q->whereNull('task')
+                    ->orWhereRaw('LOWER(TRIM(COALESCE(task, ""))) != ?', ['archived']);
+            })
+            ->when($blockedCodes !== [], function ($q) use ($blockedCodes) {
+                $q->whereRaw(
+                    'UPPER(TRIM(unique_code)) NOT IN ('.implode(',', array_fill(0, count($blockedCodes), '?')).')',
+                    $blockedCodes
+                );
+            })
+            ->orderBy('unique_code')
+            ->orderBy('id')
+            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
+
+        if ($extraCodes === []) {
+            return $base;
+        }
+
+        $extraUsers = User::query()
+            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
+            ->whereNotNull('unique_code')
+            ->whereRaw(
+                'UPPER(TRIM(unique_code)) IN ('.implode(',', array_fill(0, count($extraCodes), '?')).')',
+                $extraCodes
+            )
+            ->orderBy('unique_code')
+            ->orderBy('id')
+            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
+
+        return $base
+            ->concat($extraUsers)
+            ->unique('id')
+            ->sortBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
+            ->values();
     }
 
     /**
