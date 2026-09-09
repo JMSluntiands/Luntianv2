@@ -15,6 +15,55 @@
     @include('layouts.partials.dashboard-styles')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/layout.ts'])
+    <style>
+        /* Shared asc/desc sort icons for all dashboard tables */
+        th .lbs-sort-icon,
+        th .efficient_living-sort-icon,
+        th .luntian-sort-icon,
+        th .reports-sort-icon,
+        th .bph-sort-icon {
+            display: inline-block;
+            margin-left: 0.25rem;
+            opacity: 0.55;
+            font-size: 0.75rem;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        th[data-sort="asc"] .lbs-sort-icon,
+        th[data-sort="asc"] .efficient_living-sort-icon,
+        th[data-sort="asc"] .luntian-sort-icon,
+        th[data-sort="asc"] .reports-sort-icon,
+        th[data-sort="asc"] .bph-sort-icon,
+        th[data-sort="desc"] .lbs-sort-icon,
+        th[data-sort="desc"] .efficient_living-sort-icon,
+        th[data-sort="desc"] .luntian-sort-icon,
+        th[data-sort="desc"] .reports-sort-icon,
+        th[data-sort="desc"] .bph-sort-icon {
+            opacity: 1;
+            font-size: 0;
+        }
+        th[data-sort="asc"] .lbs-sort-icon::before,
+        th[data-sort="asc"] .efficient_living-sort-icon::before,
+        th[data-sort="asc"] .luntian-sort-icon::before,
+        th[data-sort="asc"] .reports-sort-icon::before,
+        th[data-sort="asc"] .bph-sort-icon::before { content: "↑"; font-size: 0.75rem; color: #34d399; }
+        th[data-sort="desc"] .lbs-sort-icon::before,
+        th[data-sort="desc"] .efficient_living-sort-icon::before,
+        th[data-sort="desc"] .luntian-sort-icon::before,
+        th[data-sort="desc"] .reports-sort-icon::before,
+        th[data-sort="desc"] .bph-sort-icon::before { content: "↓"; font-size: 0.75rem; color: #34d399; }
+        th[data-sort="asc"]::after,
+        th[data-sort="desc"]::after {
+            content: "";
+            display: inline-block;
+            width: 0.375rem;
+            height: 0.375rem;
+            margin-left: 0.35rem;
+            border-radius: 9999px;
+            background: #34d399;
+            vertical-align: middle;
+        }
+    </style>
     @stack('styles')
     @include('layouts.partials.select2-theme')
 </head>
@@ -207,6 +256,7 @@
     })();
     </script>
     @include('partials.assignment-user-select2')
+    <script src="{{ asset('js/table-sort.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

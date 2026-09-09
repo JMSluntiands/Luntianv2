@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\SlackConfig;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -85,13 +87,32 @@ class SlackConfigController extends Controller
 
         $purpose = $validated['purpose'];
         $field = $purpose === 'new_job' ? 'new_job_slack_active' : 'assignment_slack_active';
+
+        if (! Schema::hasColumn('slack_configs', $field)
+            || ! Schema::hasColumn('slack_configs', 'assignment_slack_active')
+            || ! Schema::hasColumn('slack_configs', 'new_job_slack_active')) {
+            return redirect()
+                ->route('settings.slack_config')
+                ->withErrors([
+                    'slack_config' => 'Database is missing Slack switch columns. Run migrations (or ALTER TABLE slack_configs to add new_job_slack_active and assignment_slack_active).',
+                ]);
+        }
+
         $next = ! (bool) $config->getAttribute($field);
 
-        $config->update([$field => $next]);
-        $config->refresh();
-        $config->update([
-            'is_active' => $config->new_job_slack_active || $config->assignment_slack_active,
-        ]);
+        try {
+            $config->update([$field => $next]);
+            $config->refresh();
+            $config->update([
+                'is_active' => (bool) $config->new_job_slack_active || (bool) $config->assignment_slack_active,
+            ]);
+        } catch (QueryException $e) {
+            return redirect()
+                ->route('settings.slack_config')
+                ->withErrors([
+                    'slack_config' => 'Could not update Slack switch. Ensure slack_configs has new_job_slack_active and assignment_slack_active columns.',
+                ]);
+        }
 
         $label = $purpose === 'new_job' ? 'New job Slack' : 'Assignment Slack';
         $state = $next ? 'on' : 'off';

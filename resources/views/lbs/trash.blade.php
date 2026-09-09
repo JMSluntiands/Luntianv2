@@ -232,34 +232,6 @@
                     detailRow.hidden = true;
                 });
             });
-            if (!table) return;
-            var thead = table.querySelector('thead');
-            thead.addEventListener('click', function(e) {
-                var th = e.target.closest('th');
-                if (!th || th.classList.contains('lbs-th-action')) return;
-                var current = th.getAttribute('data-sort') || '';
-                var next = current === 'asc' ? 'desc' : 'asc';
-                thead.querySelectorAll('th').forEach(function(h) { h.setAttribute('data-sort', ''); });
-                th.setAttribute('data-sort', next);
-                var colIndex = Array.prototype.indexOf.call(thead.querySelectorAll('th'), th);
-                var tbody = table.querySelector('tbody');
-                var allRows = Array.from(tbody.querySelectorAll('tr'));
-                var dataRows = allRows.filter(function(r) { return !r.classList.contains('lbs-row-detail'); });
-                dataRows.sort(function(a, b) {
-                    var aCell = a.children[colIndex], bCell = b.children[colIndex];
-                    var aVal = (aCell && (aCell.getAttribute('data-sort') || aCell.textContent)) || '';
-                    var bVal = (bCell && (bCell.getAttribute('data-sort') || bCell.textContent)) || '';
-                    var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
-                    if (!isNaN(aNum) && !isNaN(bNum)) return next === 'asc' ? aNum - bNum : bNum - aNum;
-                    if (next === 'asc') return String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
-                    return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
-                });
-                dataRows.forEach(function(r) {
-                    tbody.appendChild(r);
-                    var detail = r.nextElementSibling;
-                    if (detail && detail.classList.contains('lbs-row-detail')) tbody.appendChild(detail);
-                });
-            });
         })();
 
         (function restoreModal() {

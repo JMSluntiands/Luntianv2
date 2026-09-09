@@ -267,33 +267,6 @@
                     });
                 });
             }
-            if (!table) return;
-            var thead = table.querySelector('thead');
-            thead.addEventListener('click', function(e) {
-                var th = e.target.closest('th');
-                if (!th || th.classList.contains('luntian-th-action')) return;
-                var current = th.getAttribute('data-sort') || '';
-                var next = current === 'asc' ? 'desc' : 'asc';
-                thead.querySelectorAll('th').forEach(function(h) { h.setAttribute('data-sort', ''); });
-                th.setAttribute('data-sort', next);
-                var colIndex = Array.prototype.indexOf.call(thead.querySelectorAll('th'), th);
-                var tbody = table.querySelector('tbody');
-                var rows = Array.from(tbody.querySelectorAll('tr'));
-                rows.sort(function(a, b) {
-                    var aCell = a.children[colIndex];
-                    var bCell = b.children[colIndex];
-                    var aVal = (aCell && (aCell.getAttribute('data-sort') || aCell.textContent)) || '';
-                    var bVal = (bCell && (bCell.getAttribute('data-sort') || bCell.textContent)) || '';
-                    var aNum = parseFloat(aVal);
-                    var bNum = parseFloat(bVal);
-                    if (!isNaN(aNum) && !isNaN(bNum)) {
-                        return next === 'asc' ? aNum - bNum : bNum - aNum;
-                    }
-                    if (next === 'asc') return String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
-                    return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
-                });
-                rows.forEach(function(r) { tbody.appendChild(r); });
-            });
         })();
     </script>
 @endpush

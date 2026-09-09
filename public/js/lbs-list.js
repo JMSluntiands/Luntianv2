@@ -307,45 +307,11 @@ $(function () {
           .attr('title', open ? 'Hide details' : 'View full row details below');
       });
 
-    var $thead = $table.find('thead');
-    $thead.off('click.lbsMainSort').on('click.lbsMainSort', 'th', function (e) {
-      var $tbl = getLbsTable();
-      if (!$tbl.length) return;
-      var $th = $(e.target).closest('th');
-      if (!$th.length || $th.hasClass('lbs-th-action')) return;
-      var current = $th.attr('data-sort') || '';
-      var next = current === 'asc' ? 'desc' : 'asc';
-      var $thAll = $tbl.find('thead th');
-      $thAll.attr('data-sort', '');
-      $th.attr('data-sort', next);
-      var colIndex = $th.index();
-      var $tbody = $tbl.find('tbody');
-      var rows = $tbody
-        .find('tr')
-        .not('.lbs-row-detail')
-        .get();
-      rows.sort(function (a, b) {
-        var aCell = a.children[colIndex];
-        var bCell = b.children[colIndex];
-        var aVal = (aCell && (aCell.getAttribute('data-sort') || aCell.textContent)) || '';
-        var bVal = (bCell && (bCell.getAttribute('data-sort') || bCell.textContent)) || '';
-        var aNum = parseFloat(aVal);
-        var bNum = parseFloat(bVal);
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-          return next === 'asc' ? aNum - bNum : bNum - aNum;
-        }
-        if (next === 'asc') {
-          return String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
-        }
-        return String(bVal).localeCompare(String(aVal), undefined, { numeric: true });
-      });
-      rows.forEach(function (row) {
-        var $row = $(row);
-        $tbody.append($row);
-        var $detail = $row.next('.lbs-row-detail');
-        if ($detail.length) $tbody.append($detail);
-      });
-    });
+    if (typeof w.initTableSort === 'function') {
+      w.initTableSort($table);
+    } else if (typeof w.initAllTableSorts === 'function') {
+      w.initAllTableSorts();
+    }
   }
 
   bindLbsMainTableInteractions();
