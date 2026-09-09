@@ -4,6 +4,128 @@
 
 @section('body_class', 'page-users-index')
 
+@push('styles')
+<style>
+    .page-users-index .dataTables_wrapper .dataTables_length,
+    .page-users-index .dataTables_wrapper .dataTables_filter,
+    .page-users-index .dataTables_wrapper .dataTables_info,
+    .page-users-index .dataTables_wrapper .dataTables_paginate {
+        color: rgb(71 85 105);
+        font-size: 0.875rem;
+    }
+    .dark .page-users-index .dataTables_wrapper .dataTables_length,
+    .dark .page-users-index .dataTables_wrapper .dataTables_filter,
+    .dark .page-users-index .dataTables_wrapper .dataTables_info,
+    .dark .page-users-index .dataTables_wrapper .dataTables_paginate {
+        color: rgb(148 163 184);
+    }
+    .page-users-index .dataTables_wrapper .dataTables_length select,
+    .page-users-index .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid rgb(203 213 225);
+        border-radius: 0.5rem;
+        background: #fff;
+        color: rgb(30 41 59);
+        padding: 0.35rem 0.6rem;
+        margin-left: 0.35rem;
+    }
+    .dark .page-users-index .dataTables_wrapper .dataTables_length select,
+    .dark .page-users-index .dataTables_wrapper .dataTables_filter input {
+        border-color: rgb(71 85 105);
+        background: rgb(30 41 59);
+        color: rgb(226 232 240);
+    }
+    .page-users-index .dataTables_wrapper .dataTables_filter input:focus,
+    .page-users-index .dataTables_wrapper .dataTables_length select:focus {
+        outline: none;
+        border-color: rgb(16 185 129);
+        box-shadow: 0 0 0 2px rgb(16 185 129 / 0.25);
+    }
+    .page-users-index .dataTables_wrapper .top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgb(226 232 240);
+        background: rgb(248 250 252 / 0.8);
+    }
+    .dark .page-users-index .dataTables_wrapper .top {
+        border-bottom-color: rgb(51 65 85);
+        background: rgb(15 23 42 / 0.35);
+    }
+    .page-users-index .dataTables_wrapper .bottom {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.85rem 1.25rem;
+        border-top: 1px solid rgb(226 232 240);
+        background: rgb(248 250 252 / 0.5);
+    }
+    .dark .page-users-index .dataTables_wrapper .bottom {
+        border-top-color: rgb(51 65 85);
+        background: rgb(15 23 42 / 0.25);
+    }
+    .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        margin: 0 0.1rem !important;
+        padding: 0.35rem 0.65rem !important;
+        border-radius: 0.5rem !important;
+        border: 1px solid transparent !important;
+        background: transparent !important;
+        color: rgb(71 85 105) !important;
+        box-shadow: none !important;
+    }
+    .dark .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button {
+        color: rgb(148 163 184) !important;
+    }
+    .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: rgb(16 185 129 / 0.12) !important;
+        border-color: rgb(16 185 129 / 0.25) !important;
+        color: rgb(5 150 105) !important;
+    }
+    .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: rgb(5 150 105) !important;
+        border-color: rgb(5 150 105) !important;
+        color: #fff !important;
+    }
+    .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+    .page-users-index .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+        opacity: 0.4;
+        background: transparent !important;
+        border-color: transparent !important;
+        color: rgb(148 163 184) !important;
+        cursor: default !important;
+    }
+    .page-users-index table.dataTable thead th {
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .page-users-index table.dataTable thead th.sorting_disabled {
+        cursor: default;
+    }
+    .page-users-index table.dataTable.no-footer {
+        border-bottom: 0 !important;
+    }
+    .page-users-index .dataTables_wrapper .dataTables_processing {
+        background: rgb(255 255 255 / 0.9);
+        color: rgb(15 23 42);
+        border-radius: 0.75rem;
+    }
+    .dark .page-users-index .dataTables_wrapper .dataTables_processing {
+        background: rgb(30 41 59 / 0.95);
+        color: rgb(226 232 240);
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+@endpush
+
 @section('content')
     <div class="w-full">
         {{-- Header --}}
@@ -37,7 +159,7 @@
         {{-- Table card --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1100px] border-collapse text-sm" id="usersTable">
+                <table class="w-full min-w-[1100px] border-collapse text-sm display" id="usersTable" style="width:100%">
                     <thead>
                         <tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80">
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">ID</th>
@@ -54,9 +176,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($users as $user)
+                        @foreach($users as $user)
+                            @php
+                                $staffModules = is_array($user->add_job_staff_modules) ? $user->add_job_staff_modules : [];
+                                $checkerModules = is_array($user->add_job_checker_modules) ? $user->add_job_checker_modules : [];
+                                $staffLabels = collect($staffModules)->map(fn ($k) => \App\Support\AddJobModules::label((string) $k))->implode(' ');
+                                $checkerLabels = collect($checkerModules)->map(fn ($k) => \App\Support\AddJobModules::label((string) $k))->implode(' ');
+                                $rawStatus = strtolower(trim((string) ($user->status ?: $user->task ?: 'Active')));
+                                $currentStatus = in_array($rawStatus, ['inactive', 'archived'], true) ? 'Inactive' : 'Active';
+                            @endphp
                             <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50">
-                                <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $user->id }}</td>
+                                <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400" data-order="{{ $user->id }}">{{ $user->id }}</td>
                                 <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">
                                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600">
                                         {{ $user->unique_code }}
@@ -71,8 +201,7 @@
                                     </span>
                                 </td>
                                 <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">{{ $user->branch ?: '—' }}</td>
-                                <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">
-                                    @php $staffModules = is_array($user->add_job_staff_modules) ? $user->add_job_staff_modules : []; @endphp
+                                <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300" data-search="{{ $staffLabels }}">
                                     @if(empty($staffModules))
                                         <span class="text-slate-400 dark:text-slate-500">—</span>
                                     @else
@@ -85,8 +214,7 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">
-                                    @php $checkerModules = is_array($user->add_job_checker_modules) ? $user->add_job_checker_modules : []; @endphp
+                                <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300" data-search="{{ $checkerLabels }}">
                                     @if(empty($checkerModules))
                                         <span class="text-slate-400 dark:text-slate-500">—</span>
                                     @else
@@ -99,11 +227,7 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td class="px-5 py-3.5">
-                                    @php
-                                        $rawStatus = strtolower(trim((string) ($user->status ?: $user->task ?: 'Active')));
-                                        $currentStatus = in_array($rawStatus, ['inactive', 'archived'], true) ? 'Inactive' : 'Active';
-                                    @endphp
+                                <td class="px-5 py-3.5" data-order="{{ $currentStatus }}" data-search="{{ $currentStatus }}">
                                     <form method="POST" action="{{ route('users.status', $user) }}" class="inline-block" data-user-status-form>
                                         @csrf
                                         @method('PATCH')
@@ -137,23 +261,10 @@
                                     </div>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="11" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
-                                    <svg class="mx-auto mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a4 4 0 00-5.33-3.8M9 20H4v-2a4 4 0 015.33-3.8M8 7a4 4 0 118 0 4 4 0 01-8 0z"/></svg>
-                                    <p class="font-medium">No user accounts yet.</p>
-                                    <p class="mt-1 text-sm"><a href="{{ route('users.create') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Add one</a> to get started.</p>
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
-            @if($users->hasPages())
-                <div class="border-t border-slate-200 bg-slate-50/50 px-5 py-3 dark:border-slate-700 dark:bg-slate-800/40">
-                    {{ $users->links('vendor.pagination.dashboard') }}
-                </div>
-            @endif
         </div>
     </div>
 
@@ -185,8 +296,37 @@
 @endsection
 
 @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script>
         (function() {
+            var $table = $('#usersTable');
+            if ($table.length && $.fn.DataTable) {
+                $table.DataTable({
+                    order: [[0, 'desc']],
+                    pageLength: 15,
+                    lengthMenu: [[10, 15, 25, 50, 100, -1], [10, 15, 25, 50, 100, 'All']],
+                    columnDefs: [
+                        { orderable: false, targets: [10] },
+                        { searchable: false, targets: [10] }
+                    ],
+                    language: {
+                        search: 'Search:',
+                        lengthMenu: 'Show _MENU_',
+                        info: 'Showing _START_ to _END_ of _TOTAL_ users',
+                        infoEmpty: 'No users to show',
+                        infoFiltered: '(filtered from _MAX_ total)',
+                        emptyTable: 'No user accounts yet.',
+                        zeroRecords: 'No matching users found.',
+                        paginate: {
+                            previous: 'Prev',
+                            next: 'Next'
+                        }
+                    },
+                    dom: '<"top"lf>rt<"bottom"ip>'
+                });
+            }
+
             var modal = document.getElementById('deleteUserModal');
             var cancelBtn = document.getElementById('deleteUserModalCancel');
             var confirmBtn = document.getElementById('deleteUserModalConfirm');
@@ -210,12 +350,15 @@
                 resetModal();
             }
 
-            document.querySelectorAll('[data-delete-trigger]').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    formToSubmit = this.closest('[data-delete-form]');
-                    if (formToSubmit && modal) { resetModal(); modal.classList.add('show'); }
-                });
+            document.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-delete-trigger]');
+                if (!btn || !modal) return;
+                e.preventDefault();
+                formToSubmit = btn.closest('[data-delete-form]');
+                if (formToSubmit) {
+                    resetModal();
+                    modal.classList.add('show');
+                }
             });
             if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
             if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
@@ -242,4 +385,3 @@
         })();
     </script>
 @endpush
-

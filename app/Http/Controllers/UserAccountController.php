@@ -18,7 +18,7 @@ class UserAccountController extends Controller
                 $q->whereNull('task')->orWhere('task', '!=', 'Archived');
             })
             ->orderByDesc('id')
-            ->paginate(15);
+            ->get();
 
         return view('users.index', [
             'sidebar_active' => 'users.index',
