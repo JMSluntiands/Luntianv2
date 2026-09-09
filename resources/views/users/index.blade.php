@@ -138,7 +138,7 @@
                 </div>
                 <div class="min-w-0">
                     <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">User Accounts</h1>
-                    <p class="text-slate-600 dark:text-slate-400">View and manage application users (excluding admin).</p>
+                    <p class="text-slate-600 dark:text-slate-400">View and manage all application users (archived users are on Archive).</p>
                 </div>
             </div>
             <a href="{{ route('users.create') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">

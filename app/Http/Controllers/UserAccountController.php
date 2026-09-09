@@ -13,9 +13,11 @@ class UserAccountController extends Controller
 {
     public function index()
     {
-        $users = User::where('role', '!=', 'Admin')
+        // Show every row in users except archived (those stay on Archive page).
+        $users = User::query()
             ->where(function ($q) {
-                $q->whereNull('task')->orWhere('task', '!=', 'Archived');
+                $q->whereNull('task')
+                    ->orWhereRaw('LOWER(TRIM(COALESCE(task, ""))) != ?', ['archived']);
             })
             ->orderByDesc('id')
             ->get();
@@ -80,10 +82,6 @@ class UserAccountController extends Controller
 
     public function edit(User $user)
     {
-        if ($user->role === 'Admin') {
-            abort(404);
-        }
-
         return view('users.edit', [
             'sidebar_active' => 'users.edit',
             'user' => $user,
@@ -93,9 +91,6 @@ class UserAccountController extends Controller
 
     public function update(Request $request, User $user)
     {
-        if ($user->role === 'admin') {
-            abort(404);
-        }
 
         $validator = Validator::make($request->all(), [
             'unique_code' => ['required', 'string', 'max:50'],
