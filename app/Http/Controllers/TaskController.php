@@ -46,6 +46,8 @@ class TaskController extends Controller
             $assigneeFilter = $currentUserId;
         }
 
+        $assigneeFilterIds = $this->assigneeFilterUserIds($users, $assigneeFilter);
+
         $jobItems = collect();
         try {
             $jobItems = AllocatedJobsTaskFeed::all();
@@ -53,13 +55,13 @@ class TaskController extends Controller
             $jobItems = collect();
         }
         if ($assigneeFilter !== null) {
-            $jobItems = $jobItems->filter(function (object $row) use ($assigneeFilter) {
+            $jobItems = $jobItems->filter(function (object $row) use ($assigneeFilter, $assigneeFilterIds) {
                 $uid = (int) ($row->assignee_user_id ?? 0);
                 if ($assigneeFilter === 0) {
                     return $uid === 0;
                 }
 
-                return $uid === $assigneeFilter;
+                return in_array($uid, $assigneeFilterIds, true);
             })->values();
         }
 
@@ -84,7 +86,7 @@ class TaskController extends Controller
                     if ($assigneeFilter === 0) {
                         $manualQuery->whereNull('assignee_user_id');
                     } else {
-                        $manualQuery->where('assignee_user_id', $assigneeFilter);
+                        $manualQuery->whereIn('assignee_user_id', $assigneeFilterIds !== [] ? $assigneeFilterIds : [$assigneeFilter]);
                     }
                 }
 
@@ -254,6 +256,32 @@ class TaskController extends Controller
         return redirect()
             ->route('task_management', $this->redirectQuery($request))
             ->with('success', 'Task deleted.');
+    }
+
+    /**
+     * Expand an assignee filter user id to all users sharing the same unique_code.
+     *
+     * @param  Collection<int, User>  $users
+     * @return list<int>
+     */
+    private function assigneeFilterUserIds(Collection $users, ?int $assigneeFilter): array
+    {
+        if ($assigneeFilter === null || $assigneeFilter <= 0) {
+            return [];
+        }
+
+        $selected = $users->firstWhere('id', $assigneeFilter);
+        $code = strtoupper(trim((string) ($selected->unique_code ?? '')));
+        if ($code === '') {
+            return [$assigneeFilter];
+        }
+
+        return $users
+            ->filter(static fn (User $user) => strtoupper(trim((string) ($user->unique_code ?? ''))) === $code)
+            ->pluck('id')
+            ->map(static fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 
     /**

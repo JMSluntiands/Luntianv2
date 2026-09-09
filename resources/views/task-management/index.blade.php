@@ -56,9 +56,27 @@
 
         return asset('storage/'.$img);
     };
-    $staffUsers = collect($users ?? [])->filter(static function ($user) {
-        return strtoupper(trim((string) ($user->unique_code ?? ''))) !== '';
-    })->values();
+    $staffUsers = collect($users ?? [])
+        ->filter(static function ($user) {
+            return strtoupper(trim((string) ($user->unique_code ?? ''))) !== '';
+        })
+        ->groupBy(static function ($user) {
+            return strtoupper(trim((string) ($user->unique_code ?? '')));
+        })
+        ->map(function ($group) use ($assigneeFilter) {
+            if ($assigneeFilter) {
+                $selected = $group->firstWhere('id', (int) $assigneeFilter);
+                if ($selected) {
+                    return $selected;
+                }
+            }
+
+            return $group->sortBy('id')->first();
+        })
+        ->sortBy(static function ($user) {
+            return strtoupper(trim((string) ($user->unique_code ?? '')));
+        })
+        ->values();
     $statusOptions = [
         Task::STATUS_NOT_STARTED => Task::statusMeta(Task::STATUS_NOT_STARTED),
         Task::STATUS_IN_PROGRESS => Task::statusMeta(Task::STATUS_IN_PROGRESS),
