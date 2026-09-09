@@ -54,31 +54,30 @@ class TaskController extends Controller
             $jobItemsAll = collect();
         }
 
-        // Assignee picker: staff accounts (not Admin/Branch). Always include codes that
-        // appear on allocated jobs so assignees like PEP stay in the filter dropdown.
-        $assigneeEligibleUsers = $this->assigneeEligibleUsers(
-            $jobItemsAll->pluck('assignee_code')->filter()->values()->all()
-        );
-
-        $assigneeUsers = $assigneeEligibleUsers
-            ->groupBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
-            ->map(static function ($group) {
-                return $group->sortBy('id')->first();
-            })
-            ->sortBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
-            ->values();
-
+        // Assignee picker must include everyone who appears on allocated jobs (e.g. PEP),
+        // plus other staff accounts. Branch/Admin stay out unless they are on a job row.
+        $assigneeEligibleUsers = $this->assigneeEligibleUsers($users, $jobItemsAll);
+        $assigneeUsers = $this->dedupeAssigneesByCode($assigneeEligibleUsers, $assigneeFilter);
         $assigneeFilterIds = $this->assigneeFilterUserIds($assigneeEligibleUsers, $assigneeFilter);
+        $assigneeFilterCode = '';
+        if ($assigneeFilter !== null && $assigneeFilter > 0) {
+            $selectedAssignee = $assigneeEligibleUsers->firstWhere('id', $assigneeFilter);
+            $assigneeFilterCode = strtoupper(trim((string) ($selectedAssignee->unique_code ?? '')));
+        }
 
         $jobItems = $jobItemsAll;
         if ($assigneeFilter !== null) {
-            $jobItems = $jobItems->filter(function (object $row) use ($assigneeFilter, $assigneeFilterIds) {
+            $jobItems = $jobItems->filter(function (object $row) use ($assigneeFilter, $assigneeFilterIds, $assigneeFilterCode) {
                 $uid = (int) ($row->assignee_user_id ?? 0);
+                $code = strtoupper(trim((string) ($row->assignee_code ?? '')));
                 if ($assigneeFilter === 0) {
-                    return $uid === 0;
+                    return $uid === 0 && $code === '';
+                }
+                if ($uid > 0 && in_array($uid, $assigneeFilterIds, true)) {
+                    return true;
                 }
 
-                return in_array($uid, $assigneeFilterIds, true);
+                return $assigneeFilterCode !== '' && $code === $assigneeFilterCode;
             })->values();
         }
 
@@ -162,7 +161,7 @@ class TaskController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'assignee_user_id' => ['nullable', 'integer', Rule::in($this->assigneeEligibleUsers()->pluck('id')->all())],
+            'assignee_user_id' => ['nullable', 'integer', Rule::in($this->assignableStaffUserIds())],
             'due_date' => ['nullable', 'date'],
             'status' => ['nullable', Rule::in(Task::STATUSES)],
             'notes' => ['nullable', 'string', 'max:5000'],
@@ -208,7 +207,7 @@ class TaskController extends Controller
         }
         $data = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'assignee_user_id' => ['sometimes', 'nullable', 'integer', Rule::in($this->assigneeEligibleUsers()->pluck('id')->all())],
+            'assignee_user_id' => ['sometimes', 'nullable', 'integer', Rule::in($this->assignableStaffUserIds())],
             'due_date' => ['sometimes', 'nullable', 'date'],
             'status' => ['sometimes', 'required', Rule::in(Task::STATUSES)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
@@ -282,98 +281,142 @@ class TaskController extends Controller
     }
 
     /**
-     * Staff assignees for the Task Management picker.
-     * Excludes Admin/Branch roles and known branch/client login codes, but does NOT
-     * drop Staff/Checker/User accounts just because they have a branch office set.
-     * Extra unique codes (e.g. from allocated jobs) are always merged in when present.
+     * User ids allowed when creating/editing manual tasks (staff accounts only).
      *
-     * @param  list<string>  $extraCodes
-     * @return Collection<int, User>
+     * @return list<int>
      */
-    private function assigneeEligibleUsers(array $extraCodes = []): Collection
+    private function assignableStaffUserIds(): array
     {
-        $blockedCodes = collect();
-
-        if (Schema::hasTable('branches')) {
-            $blockedCodes = $blockedCodes->merge(
-                DB::table('branches')->pluck('branch_name')
-            );
-        }
-
-        if (Schema::hasTable('clients')) {
-            $blockedCodes = $blockedCodes->merge(
-                DB::table('clients')->pluck('client_code')
-            );
-        }
-
-        $blockedCodes = $blockedCodes->merge(
-            User::query()
-                ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) = ?', ['branch'])
-                ->whereNotNull('unique_code')
-                ->pluck('unique_code')
-        );
-
-        $blockedCodes = $blockedCodes
-            ->map(static fn ($code) => strtoupper(trim((string) $code)))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        $extraCodes = collect($extraCodes)
-            ->map(static fn ($code) => strtoupper(trim((string) $code)))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        // Codes forced in from jobs: never treat them as blocked branch logins.
-        $blockedCodes = array_values(array_diff($blockedCodes, $extraCodes));
-
-        $base = User::query()
+        return User::query()
             ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
             ->whereNotNull('unique_code')
             ->whereRaw('TRIM(unique_code) != ?', [''])
-            ->where(function ($q) {
-                $q->whereNull('task')
-                    ->orWhereRaw('LOWER(TRIM(COALESCE(task, ""))) != ?', ['archived']);
-            })
-            ->when($blockedCodes !== [], function ($q) use ($blockedCodes) {
-                $q->whereRaw(
-                    'UPPER(TRIM(unique_code)) NOT IN ('.implode(',', array_fill(0, count($blockedCodes), '?')).')',
-                    $blockedCodes
-                );
-            })
-            ->orderBy('unique_code')
-            ->orderBy('id')
-            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
+            ->pluck('id')
+            ->map(static fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
 
-        if ($extraCodes === []) {
-            return $base;
+    /**
+     * Filter dropdown users: all staff + anyone currently assigned on allocated jobs.
+     * Job assignees are included even if their account role/branch would normally hide them,
+     * so codes like PEP always appear when they have allocated work.
+     *
+     * @param  Collection<int, User>  $users
+     * @param  Collection<int, object>  $jobItems
+     * @return Collection<int, User>
+     */
+    private function assigneeEligibleUsers(Collection $users, Collection $jobItems): Collection
+    {
+        $userMap = $users->keyBy('id');
+
+        $fromJobs = collect();
+        foreach ($jobItems as $job) {
+            $uid = (int) ($job->assignee_user_id ?? 0);
+            if ($uid > 0 && $userMap->has($uid)) {
+                $fromJobs->put($uid, $userMap->get($uid));
+                continue;
+            }
+
+            $code = strtoupper(trim((string) ($job->assignee_code ?? '')));
+            if ($code === '') {
+                continue;
+            }
+
+            $match = $users->first(
+                static fn (User $user) => strtoupper(trim((string) $user->unique_code)) === $code
+            );
+            if ($match) {
+                $fromJobs->put((int) $match->id, $match);
+            } else {
+                // Synthetic row so the filter still lists the job assignee code.
+                $fromJobs->put('code:'.$code, (object) [
+                    'id' => 0,
+                    'unique_code' => $code,
+                    'fullname' => $code,
+                    'username' => $code,
+                    'email' => '',
+                    'profile_image' => null,
+                    'role' => 'User',
+                    'branch' => '',
+                    'assignee_filter_code' => $code,
+                ]);
+            }
         }
 
-        $extraUsers = User::query()
-            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
-            ->whereNotNull('unique_code')
-            ->whereRaw(
-                'UPPER(TRIM(unique_code)) IN ('.implode(',', array_fill(0, count($extraCodes), '?')).')',
-                $extraCodes
-            )
-            ->orderBy('unique_code')
-            ->orderBy('id')
-            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
+        $blockedBranchCodes = collect();
+        if (Schema::hasTable('branches')) {
+            $blockedBranchCodes = $blockedBranchCodes->merge(DB::table('branches')->pluck('branch_name'));
+        }
+        if (Schema::hasTable('clients')) {
+            $blockedBranchCodes = $blockedBranchCodes->merge(DB::table('clients')->pluck('client_code'));
+        }
+        $blockedBranchCodes = $blockedBranchCodes
+            ->map(static fn ($code) => strtoupper(trim((string) $code)))
+            ->filter()
+            ->unique();
 
-        return $base
-            ->concat($extraUsers)
-            ->unique('id')
-            ->sortBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
+        $fromStaff = $users->filter(function (User $user) use ($blockedBranchCodes) {
+            $role = strtolower(trim((string) ($user->role ?? '')));
+            if (in_array($role, ['admin', 'branch'], true)) {
+                return false;
+            }
+            $code = strtoupper(trim((string) ($user->unique_code ?? '')));
+            if ($code === '') {
+                return false;
+            }
+            // Hide pure branch/client login codes unless they already appear via jobs above.
+            if ($blockedBranchCodes->contains($code)) {
+                return false;
+            }
+            $task = strtolower(trim((string) ($user->task ?? '')));
+
+            return $task !== 'archived';
+        });
+
+        return $fromStaff
+            ->concat($fromJobs->values())
+            ->unique(static function ($user) {
+                if (is_object($user) && isset($user->assignee_filter_code)) {
+                    return 'code:'.strtoupper((string) $user->assignee_filter_code);
+                }
+
+                return 'id:'.(int) ($user->id ?? 0);
+            })
+            ->sortBy(static fn ($user) => strtoupper(trim((string) ($user->unique_code ?? ''))))
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, User|object>  $assigneeUsers
+     * @return Collection<int, User|object>
+     */
+    private function dedupeAssigneesByCode(Collection $assigneeUsers, ?int $assigneeFilter): Collection
+    {
+        return $assigneeUsers
+            ->groupBy(static fn ($user) => strtoupper(trim((string) ($user->unique_code ?? ''))))
+            ->map(function ($group) use ($assigneeFilter) {
+                if ($assigneeFilter) {
+                    $selected = $group->firstWhere('id', (int) $assigneeFilter);
+                    if ($selected) {
+                        return $selected;
+                    }
+                }
+
+                // Prefer real user rows (id > 0) over synthetic code placeholders.
+                return $group->sortBy([
+                    static fn ($user) => (int) ($user->id ?? 0) > 0 ? 0 : 1,
+                    static fn ($user) => (int) ($user->id ?? 0),
+                ])->first();
+            })
+            ->sortBy(static fn ($user) => strtoupper(trim((string) ($user->unique_code ?? ''))))
             ->values();
     }
 
     /**
      * Expand an assignee filter user id to all assignment-eligible users sharing the same unique_code.
      *
-     * @param  Collection<int, User>  $assigneeUsers
+     * @param  Collection<int, User|object>  $assigneeUsers
      * @return list<int>
      */
     private function assigneeFilterUserIds(Collection $assigneeUsers, ?int $assigneeFilter): array
@@ -385,16 +428,20 @@ class TaskController extends Controller
         $selected = $assigneeUsers->firstWhere('id', $assigneeFilter);
         $code = strtoupper(trim((string) ($selected->unique_code ?? '')));
         if ($code === '') {
-            // Selected user may not be in the picker list (e.g. view-self lock); still filter that id.
             return [$assigneeFilter];
         }
 
-        return $assigneeUsers
-            ->filter(static fn (User $user) => strtoupper(trim((string) ($user->unique_code ?? ''))) === $code)
+        $ids = $assigneeUsers
+            ->filter(static function ($user) use ($code) {
+                return strtoupper(trim((string) ($user->unique_code ?? ''))) === $code
+                    && (int) ($user->id ?? 0) > 0;
+            })
             ->pluck('id')
             ->map(static fn ($id) => (int) $id)
             ->values()
             ->all();
+
+        return $ids !== [] ? $ids : [$assigneeFilter];
     }
 
     /**
@@ -409,6 +456,25 @@ class TaskController extends Controller
 
         $fromJobs = $jobItems->map(function (object $job) use ($userMap) {
             $assigneeId = (int) ($job->assignee_user_id ?? 0);
+            $assignee = $assigneeId > 0 ? ($userMap->get($assigneeId) ?? null) : null;
+            $code = strtoupper(trim((string) ($job->assignee_code ?? '')));
+            if ($assignee === null && $code !== '') {
+                $assignee = $userMap->first(
+                    static fn (User $user) => strtoupper(trim((string) $user->unique_code)) === $code
+                );
+                if ($assignee) {
+                    $assigneeId = (int) $assignee->id;
+                } else {
+                    $assignee = (object) [
+                        'id' => 0,
+                        'unique_code' => $code,
+                        'fullname' => $code,
+                        'username' => $code,
+                        'email' => '',
+                        'profile_image' => null,
+                    ];
+                }
+            }
 
             return (object) [
                 'row_type' => 'job',
@@ -419,7 +485,7 @@ class TaskController extends Controller
                 'module' => $job->module,
                 'title' => $job->reference,
                 'assignee_user_id' => $assigneeId > 0 ? $assigneeId : null,
-                'assignee' => $assigneeId > 0 ? ($userMap->get($assigneeId) ?? null) : null,
+                'assignee' => $assignee,
                 'due_date' => null,
                 'status' => 'allocated',
                 'notes' => null,

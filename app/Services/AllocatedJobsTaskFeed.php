@@ -154,16 +154,30 @@ class AllocatedJobsTaskFeed
      */
     private static function assigneeCodeMap(): array
     {
-        return User::query()
+        // Prefer Staff/Checker/User over Admin/Branch when multiple accounts share a code.
+        $users = User::query()
             ->whereNotNull('unique_code')
             ->where('unique_code', '!=', '')
-            ->get(['id', 'unique_code'])
-            ->mapWithKeys(function (User $user) {
-                $code = strtoupper(trim((string) $user->unique_code));
+            ->orderByRaw(
+                "CASE LOWER(TRIM(COALESCE(role, '')))
+                    WHEN 'admin' THEN 3
+                    WHEN 'branch' THEN 2
+                    ELSE 0
+                END"
+            )
+            ->orderBy('id')
+            ->get(['id', 'unique_code', 'role']);
 
-                return $code !== '' ? [$code => (int) $user->id] : [];
-            })
-            ->all();
+        $map = [];
+        foreach ($users as $user) {
+            $code = strtoupper(trim((string) $user->unique_code));
+            if ($code === '' || isset($map[$code])) {
+                continue;
+            }
+            $map[$code] = (int) $user->id;
+        }
+
+        return $map;
     }
 
     /**

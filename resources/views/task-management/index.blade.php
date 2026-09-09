@@ -58,7 +58,8 @@
     };
     $staffUsers = collect($assigneeUsers ?? [])
         ->filter(static function ($user) {
-            return strtoupper(trim((string) ($user->unique_code ?? ''))) !== '';
+            return strtoupper(trim((string) ($user->unique_code ?? ''))) !== ''
+                && (int) ($user->id ?? 0) > 0;
         })
         ->groupBy(static function ($user) {
             return strtoupper(trim((string) ($user->unique_code ?? '')));
