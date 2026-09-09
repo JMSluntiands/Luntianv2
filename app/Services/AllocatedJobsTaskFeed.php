@@ -20,6 +20,8 @@ class AllocatedJobsTaskFeed
      *   module: string,
      *   client: string,
      *   reference: string,
+     *   job_id: int|null,
+     *   view_url: string|null,
      *   assignee_code: string|null,
      *   assignee_user_id: int|null,
      *   sort_at: string|null
@@ -111,11 +113,40 @@ class AllocatedJobsTaskFeed
                 $row->assignee_user_id = ($code !== '' && isset($codeToUserId[$code]))
                     ? $codeToUserId[$code]
                     : null;
+                $jobId = (int) ($row->job_id ?? 0);
+                $row->view_url = $jobId > 0 ? self::viewUrlForModule((string) $row->module, $jobId) : null;
 
                 return $row;
             })
             ->sortByDesc(fn (object $row) => $row->sort_at ?? '')
             ->values();
+    }
+
+    public static function viewUrlForModule(string $module, int $jobId): ?string
+    {
+        if ($jobId <= 0) {
+            return null;
+        }
+
+        $route = match (strtolower(trim($module))) {
+            'lbs' => 'lbs.job.view',
+            'efficient living' => 'efficient_living.job.view',
+            'luntian' => 'luntian.job.view',
+            'generic ea', 'general assembly', 'generic assessment' => 'general_assembly.job.view',
+            'bph' => 'bph.view',
+            'bluinq' => 'bluinq.view',
+            'a&m', 'a and m', 'amt' => 'amt.view',
+            'fyrs energywise', 'fyrs' => 'fyrs.view',
+            'csp' => 'csp.view',
+            'leading energy' => 'leading_energy.view',
+            default => null,
+        };
+
+        if ($route === null || ! \Illuminate\Support\Facades\Route::has($route)) {
+            return null;
+        }
+
+        return route($route, ['id' => $jobId]);
     }
 
     /**
@@ -178,6 +209,8 @@ class AllocatedJobsTaskFeed
                 'module' => $module,
                 'client' => $client !== '' ? $client : '—',
                 'reference' => $reference !== '' ? $reference : '—',
+                'job_id' => (int) $row->job_id,
+                'view_url' => null,
                 'assignee_code' => $row->staff_id,
                 'assignee_user_id' => null,
                 'sort_at' => (string) ($row->last_update ?? $row->log_date ?? ''),
@@ -224,6 +257,8 @@ class AllocatedJobsTaskFeed
                 'module' => $module,
                 'client' => $client !== '' ? $client : '—',
                 'reference' => $reference !== '' ? $reference : '—',
+                'job_id' => (int) $row->job_id,
+                'view_url' => null,
                 'assignee_code' => $row->staff_id,
                 'assignee_user_id' => null,
                 'sort_at' => (string) ($row->last_update ?? $row->log_date ?? ''),
@@ -269,6 +304,8 @@ class AllocatedJobsTaskFeed
                 'module' => $module,
                 'client' => $client !== '' ? $client : '—',
                 'reference' => $reference !== '' ? $reference : '—',
+                'job_id' => (int) $row->id,
+                'view_url' => null,
                 'assignee_code' => $row->assigned ?? null,
                 'assignee_user_id' => null,
                 'sort_at' => (string) ($row->updated_at ?? $row->created_at ?? ''),

@@ -39,10 +39,24 @@
                         } else {
                             $meta = Task::statusMeta((string) $task->status);
                         }
+                        $isOverdue = false;
+                        if (!$isJob && !empty($task->due_date) && ($task->status ?? '') !== \App\Models\Task::STATUS_DONE) {
+                            $dueDate = $task->due_date instanceof \Carbon\Carbon
+                                ? $task->due_date->copy()->startOfDay()
+                                : \Illuminate\Support\Carbon::parse($task->due_date)->startOfDay();
+                            $isOverdue = $dueDate->lt(\Illuminate\Support\Carbon::today());
+                        }
+                        $rowClass = $isOverdue
+                            ? 'group/row bg-red-50 transition-colors hover:bg-red-100/80 dark:bg-red-500/10 dark:hover:bg-red-500/15'
+                            : 'group/row transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/30';
+                        $jobViewUrl = $isJob ? trim((string) ($task->view_url ?? '')) : '';
+                        if ($jobViewUrl !== '') {
+                            $rowClass .= ' cursor-pointer';
+                        }
                     @endphp
-                    <tr class="group/row transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/30" @if(!$isJob) data-task-row data-task-id="{{ $task->id }}" @endif>
+                    <tr class="{{ $rowClass }}" @if(!$isJob) data-task-row data-task-id="{{ $task->id }}" @endif @if($jobViewUrl !== '') data-job-url="{{ $jobViewUrl }}" title="Open job details" @endif>
                         <td class="px-3 py-2.5 align-middle sm:px-4">
-                            <input type="checkbox" class="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/30 dark:border-slate-600 dark:bg-slate-800" aria-label="Select row">
+                            <input type="checkbox" class="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/30 dark:border-slate-600 dark:bg-slate-800" aria-label="Select row" onclick="event.stopPropagation()">
                         </td>
                         <td class="px-2 py-2.5 align-middle">
                             <span class="font-medium text-slate-800 dark:text-slate-100">{{ $task->client ?? '—' }}</span>
@@ -50,7 +64,11 @@
                         <td class="px-2 py-2.5 align-middle">
                             <div class="flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                <span class="font-medium text-slate-800 dark:text-slate-100">{{ $task->reference ?? $task->title ?? '—' }}</span>
+                                @if($jobViewUrl !== '')
+                                    <a href="{{ $jobViewUrl }}" class="font-medium text-slate-800 no-underline hover:text-emerald-700 dark:text-slate-100 dark:hover:text-emerald-300">{{ $task->reference ?? $task->title ?? '—' }}</a>
+                                @else
+                                    <span class="font-medium text-slate-800 dark:text-slate-100">{{ $task->reference ?? $task->title ?? '—' }}</span>
+                                @endif
                                 @if(!$isJob && ($task->visibility ?? '') === \App\Models\Task::VISIBILITY_PERSONAL)
                                     <span class="inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
                                 @endif
@@ -75,9 +93,12 @@
                                 <span class="text-slate-400 dark:text-slate-500">—</span>
                             @endif
                         </td>
-                        <td class="px-2 py-2.5 align-middle tabular-nums text-slate-700 dark:text-slate-200">
+                        <td class="px-2 py-2.5 align-middle tabular-nums {{ $isOverdue ? 'font-semibold text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-200' }}">
                             @if(!$isJob && !empty($task->due_date))
                                 {{ $task->due_date instanceof \Carbon\Carbon ? $task->due_date->format('F j, Y') : \Illuminate\Support\Carbon::parse($task->due_date)->format('F j, Y') }}
+                                @if($isOverdue)
+                                    <span class="ml-1 text-[10px] font-bold uppercase tracking-wide">Overdue</span>
+                                @endif
                             @else
                                 —
                             @endif

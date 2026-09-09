@@ -336,6 +336,7 @@ class TaskController extends Controller
                 'notes' => null,
                 'visibility' => Task::VISIBILITY_PUBLIC,
                 'created_by' => null,
+                'view_url' => $job->view_url ?? null,
                 'sort_at' => $job->sort_at,
             ];
         });
@@ -356,6 +357,7 @@ class TaskController extends Controller
                 'notes' => $task->notes,
                 'visibility' => $task->visibility ?: Task::VISIBILITY_PUBLIC,
                 'created_by' => $task->created_by,
+                'view_url' => null,
                 'sort_at' => optional($task->updated_at)?->toDateTimeString() ?? '',
             ];
         });

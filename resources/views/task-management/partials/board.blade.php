@@ -86,8 +86,26 @@
                                     } else {
                                         $meta = Task::statusMeta((string) $task->status);
                                     }
+                                    $isOverdue = false;
+                                    if (!$isJob && !empty($task->due_date) && ($task->status ?? '') !== Task::STATUS_DONE) {
+                                        $dueDate = $task->due_date instanceof \Carbon\Carbon
+                                            ? $task->due_date->copy()->startOfDay()
+                                            : \Illuminate\Support\Carbon::parse($task->due_date)->startOfDay();
+                                        $isOverdue = $dueDate->lt(\Illuminate\Support\Carbon::today());
+                                    }
+                                    $cardClass = $isOverdue
+                                        ? 'group/card rounded-xl border border-red-400 bg-red-50 p-3 shadow-sm transition-shadow hover:shadow-md dark:border-red-500/70 dark:bg-red-500/10'
+                                        : 'group/card rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-600 dark:bg-slate-800';
+                                    $jobViewUrl = $isJob ? trim((string) ($task->view_url ?? '')) : '';
+                                    if ($jobViewUrl !== '') {
+                                        $cardClass .= ' block cursor-pointer no-underline hover:border-emerald-400 dark:hover:border-emerald-500';
+                                    }
                                 @endphp
-                                <article class="group/card rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-600 dark:bg-slate-800" @if(!$isJob) data-task-row data-task-id="{{ $task->id }}" @endif>
+                                @if($jobViewUrl !== '')
+                                    <a href="{{ $jobViewUrl }}" class="{{ $cardClass }}" title="Open job details">
+                                @else
+                                    <article class="{{ $cardClass }}" @if(!$isJob) data-task-row data-task-id="{{ $task->id }}" @endif>
+                                @endif
                                     <div class="mb-2 flex items-start justify-between gap-2">
                                         <div class="min-w-0">
                                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $task->client ?? '—' }}</p>
@@ -145,8 +163,11 @@
                                     <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ $task->module ?? '' }}</p>
 
                                     @if(!$isJob && !empty($task->due_date))
-                                        <p class="mb-2 text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                                        <p class="mb-2 text-xs tabular-nums {{ $isOverdue ? 'font-semibold text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400' }}">
                                             {{ $task->due_date instanceof \Carbon\Carbon ? $task->due_date->format('F j, Y') : \Illuminate\Support\Carbon::parse($task->due_date)->format('F j, Y') }}
+                                            @if($isOverdue)
+                                                <span class="ml-1 text-[10px] font-bold uppercase tracking-wide">Overdue</span>
+                                            @endif
                                         </p>
                                     @endif
 
@@ -170,7 +191,11 @@
                                     @if(!$isJob && trim((string) ($task->notes ?? '')) !== '')
                                         <p class="mb-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ $task->notes }}</p>
                                     @endif
-                                </article>
+                                @if($jobViewUrl !== '')
+                                    </a>
+                                @else
+                                    </article>
+                                @endif
                             @endforeach
                         </div>
                     @endforeach

@@ -516,6 +516,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.addEventListener('click', function () { closeAllStatusMenus(); });
+
+    document.querySelectorAll('tr[data-job-url]').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+            if (e.target.closest('a, button, input, select, label, form')) return;
+            var url = row.getAttribute('data-job-url');
+            if (url) window.location.href = url;
+        });
+    });
 });
 </script>
 @endpush
