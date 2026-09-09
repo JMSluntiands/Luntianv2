@@ -386,10 +386,9 @@ class DashboardJobStatsService
                     continue;
                 }
 
-                $name = trim((string) ($user->fullname ?? $user->username ?? ''));
                 $staffByCode[$code] = [
                     'value' => $code,
-                    'label' => $name !== '' ? "{$code} ? {$name}" : $code,
+                    'label' => $code,
                 ];
             }
         }
