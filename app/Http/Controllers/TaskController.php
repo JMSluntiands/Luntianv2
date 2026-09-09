@@ -36,9 +36,11 @@ class TaskController extends Controller
             ->orderBy('username')
             ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
 
-        // Assignee picker: real user accounts only (exclude Admin / Branch accounts).
+        // Assignee picker: user account unique_code only (exclude Admin / Branch roles).
         $assigneeEligibleUsers = User::query()
-            ->forJobAssignment()
+            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
+            ->whereNotNull('unique_code')
+            ->whereRaw('TRIM(unique_code) != ?', [''])
             ->orderBy('unique_code')
             ->orderBy('id')
             ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
