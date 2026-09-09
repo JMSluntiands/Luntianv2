@@ -23,7 +23,7 @@
                         'label' => 'Jobs',
                         'hint' => 'Allocated jobs',
                         'tasks' => $jobTasks,
-                        'tone' => 'border-violet-200 bg-violet-100 text-violet-900 dark:border-violet-700 dark:bg-slate-900 dark:text-violet-200',
+                        'tone' => 'border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-700/70 dark:bg-orange-500/10 dark:text-orange-200',
                     ],
                     [
                         'key' => 'tasks',
@@ -80,8 +80,8 @@
                                     if ($isJob) {
                                         $meta = [
                                             'label' => 'Allocated',
-                                            'pill' => 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300',
-                                            'dot' => 'bg-violet-500',
+                                            'pill' => 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
+                                            'dot' => 'bg-orange-500',
                                         ];
                                     } else {
                                         $meta = Task::statusMeta((string) $task->status);

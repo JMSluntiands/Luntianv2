@@ -33,8 +33,8 @@
                         if ($isJob) {
                             $meta = [
                                 'label' => 'Allocated',
-                                'pill' => 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300',
-                                'dot' => 'bg-violet-500',
+                                'pill' => 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
+                                'dot' => 'bg-orange-500',
                             ];
                         } else {
                             $meta = Task::statusMeta((string) $task->status);
