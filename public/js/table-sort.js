@@ -5,7 +5,8 @@
 (function (w, d) {
   'use strict';
 
-  var DETAIL_SEL = '.lbs-row-detail, .efficient_living-row-detail, .luntian-row-detail, tr[data-row-detail]';
+  var DETAIL_SEL =
+    '.lbs-row-detail, .efficient_living-row-detail, .luntian-row-detail, tr[data-row-detail]';
   var SKIP_TH =
     '.lbs-th-action, .efficient_living-th-action, .luntian-th-action, .reports-th-action, [data-no-sort]';
   var TABLE_SEL = [
@@ -16,8 +17,14 @@
     'table[id$="MailboxTable"]',
     'table[data-table-sort]',
     'table.lbs-table',
+    'table.efficient_living-table',
+    'table.luntian-table',
     'table.reports-table',
   ].join(',');
+
+  var ARROW_BOTH = '\u2195';
+  var ARROW_UP = '\u2191';
+  var ARROW_DOWN = '\u2193';
 
   function cellSortValue(cell) {
     if (!cell) return '';
@@ -36,13 +43,18 @@
       });
 
     var trigger =
-      clone.querySelector('[data-status-trigger], [data-initials-trigger], .lbs-status-btn, .lbs-initials-btn') ||
-      clone.querySelector('button, a');
+      clone.querySelector(
+        '[data-status-trigger], [data-initials-trigger], .lbs-status-btn, .lbs-initials-btn'
+      ) || clone.querySelector('button, a');
     if (trigger) {
-      return String(trigger.textContent || '').replace(/\s+/g, ' ').trim();
+      return String(trigger.textContent || '')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
-    return String(clone.textContent || '').replace(/\s+/g, ' ').trim();
+    return String(clone.textContent || '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   function compareValues(aVal, bVal, dir) {
@@ -54,6 +66,19 @@
 
     var aStr = String(aVal).trim();
     var bStr = String(bVal).trim();
+
+    // Prefer ISO / SQL datetimes for Log Date / Due Date columns.
+    var aTime = Date.parse(aStr.replace(' ', 'T'));
+    var bTime = Date.parse(bStr.replace(' ', 'T'));
+    var bothDates =
+      !isNaN(aTime) &&
+      !isNaN(bTime) &&
+      (/^\d{4}-\d{2}-\d{2}/.test(aStr) || /[\/\-]/.test(aStr)) &&
+      (/^\d{4}-\d{2}-\d{2}/.test(bStr) || /[\/\-]/.test(bStr));
+    if (bothDates) {
+      return dir === 'asc' ? aTime - bTime : bTime - aTime;
+    }
+
     var aNum = parseFloat(aStr);
     var bNum = parseFloat(bStr);
     var bothNumeric =
@@ -74,25 +99,41 @@
   }
 
   function ensureSortIcon(th) {
-    if (th.querySelector('.lbs-sort-icon, .efficient_living-sort-icon, .luntian-sort-icon, .reports-sort-icon, .bph-sort-icon')) {
+    if (
+      th.querySelector(
+        '.lbs-sort-icon, .efficient_living-sort-icon, .luntian-sort-icon, .reports-sort-icon, .bph-sort-icon'
+      )
+    ) {
       return;
     }
     var icon = d.createElement('span');
     icon.className = 'lbs-sort-icon ml-1 text-xs opacity-60';
     icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = '↕';
+    icon.textContent = ARROW_BOTH;
     th.appendChild(icon);
+  }
+
+  function updateSortIcon(th, dir) {
+    var icon = th.querySelector(
+      '.lbs-sort-icon, .efficient_living-sort-icon, .luntian-sort-icon, .reports-sort-icon, .bph-sort-icon'
+    );
+    if (!icon) return;
+    if (dir === 'asc') icon.textContent = ARROW_UP;
+    else if (dir === 'desc') icon.textContent = ARROW_DOWN;
+    else icon.textContent = ARROW_BOTH;
   }
 
   function isSkipHeader(th) {
     if (!th) return true;
-    if (th.matches(SKIP_TH)) return true;
+    try {
+      if (th.matches(SKIP_TH)) return true;
+    } catch (e) {}
     if (th.hasAttribute('data-no-sort')) return true;
     var label = String(th.textContent || '')
       .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase()
-      .replace(/[↕↑↓]/g, '')
+      .replace(new RegExp('[' + ARROW_BOTH + ARROW_UP + ARROW_DOWN + ']', 'g'), '')
       .trim();
     if (label === 'action' || label === 'actions') return true;
     return false;
@@ -100,7 +141,9 @@
 
   function isSortableTable(table) {
     if (!table || table.tagName !== 'TABLE') return false;
-    if (table.matches(TABLE_SEL)) return true;
+    try {
+      if (table.matches(TABLE_SEL)) return true;
+    } catch (e) {}
     return !!table.querySelector(
       'thead th[data-sort], thead th .lbs-sort-icon, thead th .reports-sort-icon, thead th .efficient_living-sort-icon, thead th .luntian-sort-icon, thead th .bph-sort-icon'
     );
@@ -128,14 +171,23 @@
     var tbody = table.tBodies[0];
     if (!tbody) return;
 
-    var headers = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+    var headers = Array.prototype.slice.call(
+      (table.tHead || table.querySelector('thead') || table).querySelectorAll('tr:first-child th')
+    );
     var colIndex = headers.indexOf(th);
+    if (colIndex < 0) {
+      colIndex = typeof th.cellIndex === 'number' ? th.cellIndex : -1;
+    }
     if (colIndex < 0) return;
 
     headers.forEach(function (h) {
-      if (h !== th) h.setAttribute('data-sort', '');
+      if (h !== th) {
+        h.setAttribute('data-sort', '');
+        updateSortIcon(h, '');
+      }
     });
     th.setAttribute('data-sort', dir);
+    updateSortIcon(th, dir);
 
     var groups = collectRowGroups(tbody);
     groups.sort(function (ga, gb) {
@@ -165,18 +217,20 @@
       }
       if (!th.hasAttribute('data-sort')) th.setAttribute('data-sort', '');
       th.classList.add('cursor-pointer', 'select-none');
+      th.style.cursor = 'pointer';
       ensureSortIcon(th);
     });
   }
 
   function onDocClick(e) {
-    var th = e.target.closest('thead th');
+    var th = e.target && e.target.closest ? e.target.closest('thead th') : null;
     if (!th || isSkipHeader(th)) return;
     if (e.target.closest('a, button, input, select, label')) return;
 
     var table = th.closest('table');
     if (!table || !isSortableTable(table)) return;
 
+    e.preventDefault();
     prepareTable(table);
 
     var current = th.getAttribute('data-sort') || '';
@@ -212,13 +266,19 @@
   w.initTableSort = initTableSort;
   w.initAllTableSorts = initAllTableSorts;
 
-  d.addEventListener('click', onDocClick);
+  // Capture phase so row/button stopPropagation does not block header clicks.
+  d.addEventListener('click', onDocClick, true);
 
-  if (d.readyState === 'loading') {
-    d.addEventListener('DOMContentLoaded', function () {
-      initAllTableSorts();
-    });
-  } else {
+  function boot() {
     initAllTableSorts();
   }
+
+  if (d.readyState === 'loading') {
+    d.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+  // Late boot for Hostinger/Cloudflare delayed script injection.
+  w.setTimeout(boot, 0);
+  w.setTimeout(boot, 500);
 })(window, document);

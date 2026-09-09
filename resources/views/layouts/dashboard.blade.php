@@ -256,7 +256,12 @@
     })();
     </script>
     @include('partials.assignment-user-select2')
-    <script src="{{ asset('js/table-sort.js') }}"></script>
     @stack('scripts')
+    <script src="{{ asset('js/table-sort.js') }}?v={{ @filemtime(public_path('js/table-sort.js')) ?: '1' }}"></script>
+    <script>
+        if (typeof window.initAllTableSorts === 'function') {
+            window.initAllTableSorts();
+        }
+    </script>
 </body>
 </html>
