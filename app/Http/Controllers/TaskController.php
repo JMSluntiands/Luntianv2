@@ -193,11 +193,16 @@ class TaskController extends Controller
 
     public function update(Request $request, int $id)
     {
-        if (! $this->mayManageTasks() && ! RolePermission::userMayAccessRoute('task_management.update')) {
+        $task = Task::findOrFail($id);
+
+        $mayUpdate = $this->mayManageTasks()
+            || RolePermission::userMayAccessRoute('task_management.update')
+            || $this->mayViewSelfTasks();
+
+        if (! $mayUpdate) {
             return $this->deny($request, 'You do not have permission to update tasks.');
         }
 
-        $task = Task::findOrFail($id);
         if (! $this->mayMutateTask($task)) {
             return $this->deny($request, 'You can only update your own tasks.');
         }

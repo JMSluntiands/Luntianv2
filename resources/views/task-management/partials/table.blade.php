@@ -20,7 +20,7 @@
                     <th class="min-w-[11rem] px-2 py-2.5 font-medium">Assignee</th>
                     <th class="min-w-[8.5rem] px-2 py-2.5 font-medium">Due</th>
                     <th class="min-w-[10rem] px-2 py-2.5 font-medium">Status</th>
-                    @if($canManage)
+                    @if($canManage || !empty($canViewSelf))
                         <th class="w-16 px-2 py-2.5 text-right font-medium sm:px-4"><span class="sr-only">Actions</span></th>
                     @endif
                 </tr>
@@ -98,22 +98,53 @@
                                 @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => $canManage])
                             @endif
                         </td>
-                        @if($canManage)
+                        @if($canManage || !empty($canViewSelf))
                             <td class="px-2 py-2.5 text-right align-middle sm:px-4">
-                                @if(!$isJob && !empty($task->id))
-                                    <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="view_redirect" value="table">
-                                        <button type="submit" class="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-slate-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover/row:opacity-100 dark:hover:bg-red-500/10 dark:hover:text-red-400">Delete</button>
-                                    </form>
+                                @php
+                                    $isPersonalTask = !$isJob && strtolower(trim((string) ($task->visibility ?? ''))) === \App\Models\Task::VISIBILITY_PERSONAL;
+                                    $canEditTask = !$isJob && !empty($task->id) && (
+                                        $isPersonalTask
+                                            ? ((int) ($task->created_by ?? 0) === (int) ($currentUserId ?? 0))
+                                            : (bool) $canManage
+                                    );
+                                    $dueValue = '';
+                                    if (!$isJob && !empty($task->due_date)) {
+                                        $dueValue = $task->due_date instanceof \Carbon\Carbon
+                                            ? $task->due_date->format('Y-m-d')
+                                            : \Illuminate\Support\Carbon::parse($task->due_date)->format('Y-m-d');
+                                    }
+                                @endphp
+                                @if(!$isJob && !empty($task->id) && ($canEditTask || $canManage))
+                                    <div class="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover/row:opacity-100">
+                                        @if($canEditTask)
+                                            <button
+                                                type="button"
+                                                class="task-edit-open cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+                                                data-task-id="{{ $task->id }}"
+                                                data-title="{{ $task->title ?? $task->reference ?? '' }}"
+                                                data-assignee="{{ $task->assignee_user_id ?? '' }}"
+                                                data-due="{{ $dueValue }}"
+                                                data-status="{{ $task->status ?? 'not_started' }}"
+                                                data-notes="{{ $task->notes ?? '' }}"
+                                                data-visibility="{{ $task->visibility ?? 'public' }}"
+                                            >Edit</button>
+                                        @endif
+                                        @if($canManage)
+                                            <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="view_redirect" value="table">
+                                                <button type="submit" class="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400">Delete</button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 @endif
                             </td>
                         @endif
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $canManage ? 8 : 7 }}" class="px-4 py-12 text-center">
+                        <td colspan="{{ ($canManage || !empty($canViewSelf)) ? 8 : 7 }}" class="px-4 py-12 text-center">
                             <p class="text-sm font-medium text-slate-700 dark:text-slate-200">No allocated jobs yet</p>
                             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Allocated jobs from Job Management will appear here with client and reference.</p>
                         </td>

@@ -136,9 +136,10 @@
             <div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">{{ $errors->first() }}</div>
         @endif
 
-        @if($canManage)
+        @if($canManage || $canViewSelf)
             <form id="taskAddForm" method="POST" action="{{ route('task_management.store') }}" class="mb-4 hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/70 sm:p-5">
                 @csrf
+                <input type="hidden" name="_method" id="taskFormMethod" value="POST">
                 <input type="hidden" name="view_redirect" value="{{ $viewMode }}">
                 @if($statusFilter !== '')
                     <input type="hidden" name="status_redirect" value="{{ $statusFilter }}">
@@ -146,6 +147,10 @@
                 @if($assigneeFilter !== null)
                     <input type="hidden" name="assignee_redirect" value="{{ $assigneeFilter }}">
                 @endif
+                <div class="mb-3 flex items-center justify-between gap-2">
+                    <h2 id="taskFormHeading" class="text-sm font-semibold text-slate-800 dark:text-slate-100">New task</h2>
+                    <span id="taskFormModeBadge" class="hidden rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">Editing</span>
+                </div>
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                     <div class="sm:col-span-2 lg:col-span-2">
                         <label for="taskTitle" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Task name</label>
@@ -193,7 +198,7 @@
                 </div>
                 <div class="mt-3 flex justify-end gap-2">
                     <button type="button" id="taskAddCancel" class="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancel</button>
-                    <button type="submit" class="cursor-pointer rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Add task</button>
+                    <button type="submit" id="taskFormSubmit" class="cursor-pointer rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Add task</button>
                 </div>
             </form>
         @endif
@@ -231,6 +236,7 @@
                 'boardColumns' => $boardColumns ?? collect(),
                 'statusOptions' => $statusOptions,
                 'canManage' => $canManage,
+                'currentUserId' => $currentUserId,
                 'displayName' => $displayName,
                 'initials' => $initials,
                 'avatarUrl' => $avatarUrl,
@@ -240,6 +246,8 @@
                 'tasks' => $tasks,
                 'statusOptions' => $statusOptions,
                 'canManage' => $canManage,
+                'canViewSelf' => $canViewSelf ?? false,
+                'currentUserId' => $currentUserId,
                 'displayName' => $displayName,
                 'initials' => $initials,
                 'avatarUrl' => $avatarUrl,
@@ -273,12 +281,25 @@ document.addEventListener('DOMContentLoaded', function () {
     var addCancel = document.getElementById('taskAddCancel');
     var assigneeSelect = document.getElementById('taskAssignee');
     var visibilityHint = document.getElementById('taskVisibilityHint');
+    var formMethod = document.getElementById('taskFormMethod');
+    var formHeading = document.getElementById('taskFormHeading');
+    var formModeBadge = document.getElementById('taskFormModeBadge');
+    var formSubmit = document.getElementById('taskFormSubmit');
     var currentUserId = @json((string) $currentUserId);
+    var storeUrl = @json(route('task_management.store'));
+    var updateUrlBase = @json(url('/dashboard/task-management'));
     var lastPublicAssignee = assigneeSelect ? assigneeSelect.value : '';
 
     function isPersonalSelected() {
         var checked = document.querySelector('#taskAddForm input[name="visibility"]:checked');
         return checked && checked.value === 'personal';
+    }
+
+    function setVisibility(value) {
+        var radios = document.querySelectorAll('#taskAddForm input[name="visibility"]');
+        radios.forEach(function (radio) {
+            radio.checked = radio.value === value;
+        });
     }
 
     function applyVisibilityUi() {
@@ -288,14 +309,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!assigneeSelect) return;
         if (personal) {
-            lastPublicAssignee = assigneeSelect.value;
+            if (!assigneeSelect.disabled) {
+                lastPublicAssignee = assigneeSelect.value;
+            }
             if (currentUserId && currentUserId !== '0') {
                 assigneeSelect.value = currentUserId;
             }
             assigneeSelect.disabled = true;
         } else {
             assigneeSelect.disabled = false;
-            if (lastPublicAssignee !== null) {
+            if (lastPublicAssignee !== null && lastPublicAssignee !== undefined) {
                 assigneeSelect.value = lastPublicAssignee;
             }
         }
@@ -306,16 +329,76 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     applyVisibilityUi();
 
-    function openAddForm(assigneeId) {
+    function resetCreateForm(assigneeId) {
         if (!addForm) return;
-        addForm.classList.remove('hidden');
-        if (assigneeSelect && typeof assigneeId !== 'undefined' && assigneeId !== null) {
-            lastPublicAssignee = String(assigneeId);
-            assigneeSelect.value = String(assigneeId);
+        addForm.action = storeUrl;
+        if (formMethod) formMethod.value = 'POST';
+        if (formHeading) formHeading.textContent = 'New task';
+        if (formModeBadge) formModeBadge.classList.add('hidden');
+        if (formSubmit) formSubmit.textContent = 'Add task';
+        var title = document.getElementById('taskTitle');
+        var due = document.getElementById('taskDue');
+        var status = document.getElementById('taskStatus');
+        var notes = document.getElementById('taskNotes');
+        if (title) title.value = '';
+        if (due) due.value = '';
+        if (status) status.value = status.options.length ? status.options[0].value : 'not_started';
+        if (notes) notes.value = '';
+        setVisibility('public');
+        if (assigneeSelect) {
+            assigneeSelect.disabled = false;
+            lastPublicAssignee = (typeof assigneeId !== 'undefined' && assigneeId !== null && assigneeId !== '')
+                ? String(assigneeId)
+                : '';
+            assigneeSelect.value = lastPublicAssignee;
         }
         applyVisibilityUi();
+    }
+
+    function openAddForm(assigneeId) {
+        if (!addForm) return;
+        resetCreateForm(assigneeId);
+        addForm.classList.remove('hidden');
         addForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         var title = document.getElementById('taskTitle');
+        if (title) title.focus();
+    }
+
+    function openEditForm(btn) {
+        if (!addForm || !btn) return;
+        var id = btn.getAttribute('data-task-id') || '';
+        if (!id) return;
+
+        addForm.action = updateUrlBase + '/' + id;
+        if (formMethod) formMethod.value = 'PUT';
+        if (formHeading) formHeading.textContent = 'Edit task';
+        if (formModeBadge) formModeBadge.classList.remove('hidden');
+        if (formSubmit) formSubmit.textContent = 'Save changes';
+
+        var title = document.getElementById('taskTitle');
+        var due = document.getElementById('taskDue');
+        var status = document.getElementById('taskStatus');
+        var notes = document.getElementById('taskNotes');
+        if (title) title.value = btn.getAttribute('data-title') || '';
+        if (due) due.value = btn.getAttribute('data-due') || '';
+        if (status) status.value = btn.getAttribute('data-status') || 'not_started';
+        if (notes) notes.value = btn.getAttribute('data-notes') || '';
+
+        var visibility = btn.getAttribute('data-visibility') || 'public';
+        setVisibility(visibility);
+
+        var assignee = btn.getAttribute('data-assignee') || '';
+        if (assigneeSelect) {
+            assigneeSelect.disabled = false;
+            if (visibility !== 'personal') {
+                lastPublicAssignee = assignee;
+            }
+            assigneeSelect.value = assignee;
+        }
+        applyVisibilityUi();
+
+        addForm.classList.remove('hidden');
+        addForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         if (title) title.focus();
     }
 
@@ -323,7 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
         addToggle.addEventListener('click', function () {
             if (!addForm) return;
             if (addForm.classList.contains('hidden')) openAddForm('');
-            else addForm.classList.add('hidden');
+            else {
+                addForm.classList.add('hidden');
+                resetCreateForm('');
+            }
         });
     }
     document.querySelectorAll('.task-add-open').forEach(function (btn) {
@@ -332,9 +418,15 @@ document.addEventListener('DOMContentLoaded', function () {
             openAddForm(aid === null ? '' : aid);
         });
     });
+    document.querySelectorAll('.task-edit-open').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openEditForm(btn);
+        });
+    });
     if (addCancel && addForm) {
         addCancel.addEventListener('click', function () {
             addForm.classList.add('hidden');
+            resetCreateForm('');
         });
     }
     if (addForm) {

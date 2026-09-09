@@ -96,15 +96,49 @@
                                                 <span class="mt-1 inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
                                             @endif
                                         </div>
-                                        @if($canManage && !$isJob && !empty($task->id))
-                                            <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="shrink-0 opacity-0 transition-opacity group-hover/card:opacity-100">
-                                                @csrf
-                                                @method('DELETE')
-                                                <input type="hidden" name="view_redirect" value="board">
-                                                <button type="submit" class="cursor-pointer rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400" title="Delete">
-                                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                </button>
-                                            </form>
+                                        @php
+                                            $isPersonalTask = !$isJob && strtolower(trim((string) ($task->visibility ?? ''))) === Task::VISIBILITY_PERSONAL;
+                                            $canEditTask = !$isJob && !empty($task->id) && (
+                                                $isPersonalTask
+                                                    ? ((int) ($task->created_by ?? 0) === (int) ($currentUserId ?? 0))
+                                                    : (bool) $canManage
+                                            );
+                                            $dueValue = '';
+                                            if (!$isJob && !empty($task->due_date)) {
+                                                $dueValue = $task->due_date instanceof \Carbon\Carbon
+                                                    ? $task->due_date->format('Y-m-d')
+                                                    : \Illuminate\Support\Carbon::parse($task->due_date)->format('Y-m-d');
+                                            }
+                                        @endphp
+                                        @if($canEditTask || ($canManage && !$isJob && !empty($task->id)))
+                                            <div class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/card:opacity-100">
+                                                @if($canEditTask)
+                                                    <button
+                                                        type="button"
+                                                        class="task-edit-open cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                                                        title="Edit task"
+                                                        data-task-id="{{ $task->id }}"
+                                                        data-title="{{ $task->title ?? $task->reference ?? '' }}"
+                                                        data-assignee="{{ $task->assignee_user_id ?? '' }}"
+                                                        data-due="{{ $dueValue }}"
+                                                        data-status="{{ $task->status ?? 'not_started' }}"
+                                                        data-notes="{{ $task->notes ?? '' }}"
+                                                        data-visibility="{{ $task->visibility ?? 'public' }}"
+                                                    >
+                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                    </button>
+                                                @endif
+                                                @if($canManage && !$isJob && !empty($task->id))
+                                                    <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <input type="hidden" name="view_redirect" value="board">
+                                                        <button type="submit" class="cursor-pointer rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400" title="Delete">
+                                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
                                         @endif
                                     </div>
 
