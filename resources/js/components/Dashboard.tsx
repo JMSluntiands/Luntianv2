@@ -389,6 +389,23 @@ const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   'Leading Energy': 'leading-energy',
 };
 
+/** Short display label for branch names on dashboard UI. */
+function branchDisplayLabel(label: string): string {
+  const key = label.trim().toUpperCase();
+  if (
+    key === 'GENERIC EA' ||
+    key === 'GENERAL EA' ||
+    key === 'GENERAL ASSEMBLY' ||
+    key === 'GENERIC ASSESSMENT'
+  ) {
+    return 'GEN EA';
+  }
+  if (key === 'BLUINQ') {
+    return 'BluInQ';
+  }
+  return label;
+}
+
 const CARD_BG = 'bg-[#F0C48A] dark:bg-[#A67C3A]';
 const CARD_ICON = 'text-amber-900/55 dark:text-amber-50/50';
 const CARD_PILL = 'bg-amber-950/10 text-amber-950 dark:bg-black/25 dark:text-amber-50';
@@ -810,7 +827,7 @@ function StatCard({
                     <p
                       className={`text-[11px] font-medium leading-tight ${lightCard ? 'text-amber-950/65 dark:text-amber-50/70' : 'text-white/65'}`}
                     >
-                      Branch: <span className="font-semibold tabular-nums">{item.label}</span>
+                      Branch: <span className="font-semibold tabular-nums">{branchDisplayLabel(item.label)}</span>
                     </p>
                   </div>
                   {resolveCardRowUrl(cardKey, item.label) ? (

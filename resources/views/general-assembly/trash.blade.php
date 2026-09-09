@@ -8,7 +8,7 @@
     @php
         $isLuntianPage = (bool) ($isLuntian ?? false);
         $isEfficientLivingPage = (bool) ($isEfficientLiving ?? false);
-        $branchLabel = $isLuntianPage ? 'Luntian' : ($isEfficientLivingPage ? 'Efficient Living' : 'GA');
+        $branchLabel = $isLuntianPage ? 'Luntian' : ($isEfficientLivingPage ? 'Efficient Living' : 'GEN EA');
         $clientCodeFallback = $isLuntianPage ? 'LT' : ($isEfficientLivingPage ? 'EL' : 'GA');
         $viewRoute = $isLuntianPage ? 'luntian.job.view' : ($isEfficientLivingPage ? 'efficient_living.job.view' : 'general_assembly.job.view');
         $restoreRoute = $isLuntianPage ? 'luntian.job.restore' : ($isEfficientLivingPage ? 'efficient_living.job.restore' : 'general_assembly.job.restore');

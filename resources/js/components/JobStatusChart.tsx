@@ -77,14 +77,14 @@ function parseInitialChart(): StatusChartPayload | null {
 
 function shortBranchLabel(label: string): string {
   const map: Record<string, string> = {
-    'GENERIC EA': 'GA',
-    'GENERAL EA': 'GA',
-    'GENERAL ASSEMBLY': 'GA',
-    'GENERIC ASSESSMENT': 'GA',
+    'GENERIC EA': 'GEN EA',
+    'GENERAL EA': 'GEN EA',
+    'GENERAL ASSEMBLY': 'GEN EA',
+    'GENERIC ASSESSMENT': 'GEN EA',
     'Efficient Living': 'EL',
     'EFFICIENT LIVING': 'EL',
-    BluInq: 'BI',
-    BLUINQ: 'BI',
+    BluInq: 'BluInQ',
+    BLUINQ: 'BluInQ',
     'FYRS ENERGYWISE': 'FYRS',
     'FYRS ENERGY WISE': 'FYRS',
     'LC Home Builder': 'LC HB',

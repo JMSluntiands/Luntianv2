@@ -30,7 +30,8 @@ class TaskController extends Controller
         $assigneeFilter = $assigneeFilter === null || $assigneeFilter === '' ? null : (int) $assigneeFilter;
 
         $users = User::query()
-            ->orderByRaw("CASE WHEN COALESCE(NULLIF(TRIM(fullname), ''), '') = '' THEN 1 ELSE 0 END")
+            ->orderByRaw("CASE WHEN COALESCE(NULLIF(TRIM(unique_code), ''), '') = '' THEN 1 ELSE 0 END")
+            ->orderBy('unique_code')
             ->orderBy('fullname')
             ->orderBy('username')
             ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code']);
@@ -69,7 +70,7 @@ class TaskController extends Controller
             try {
                 $manualQuery = Task::query()
                     ->visibleTo($currentUserId)
-                    ->with(['assignee:id,fullname,username,email,profile_image'])
+                    ->with(['assignee:id,fullname,username,email,profile_image,unique_code'])
                     ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
                     ->orderBy('due_date')
                     ->orderByDesc('updated_at');

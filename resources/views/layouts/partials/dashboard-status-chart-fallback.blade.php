@@ -11,15 +11,12 @@
     }
     $shortBranch = static function (string $label): string {
         return match (strtoupper(trim($label))) {
-            'GENERIC EA' => 'GA',
-            'GENERAL EA' => 'GA',
-            'GENERAL ASSEMBLY' => 'GA',
-            'GENERIC ASSESSMENT' => 'GA',
-            'Efficient Living' => 'EL',
-            'BluInq' => 'BI',
-            'BLUINQ' => 'BI',
-            'FYRS ENERGYWISE' => 'FYRS',
-            'FYRS ENERGY WISE' => 'FYRS',
+            'GENERIC EA', 'GENERAL EA', 'GENERAL ASSEMBLY', 'GENERIC ASSESSMENT' => 'GEN EA',
+            'EFFICIENT LIVING' => 'EL',
+            'BLUINQ' => 'BluInQ',
+            'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => 'FYRS',
+            'LC HOME BUILDER' => 'LC HB',
+            'LEADING ENERGY' => 'LE',
             default => $label,
         };
     };
@@ -157,7 +154,7 @@
 
     var fetchGen = 0;
     var shortBranch = function (label) {
-        var map = { 'GENERIC EA': 'GA', 'GENERAL EA': 'GA', 'GENERAL ASSEMBLY': 'GA', 'GENERIC ASSESSMENT': 'GA', 'Efficient Living': 'EL', 'EFFICIENT LIVING': 'EL', 'BluInq': 'BI', 'BLUINQ': 'BI', 'FYRS ENERGYWISE': 'FYRS', 'FYRS ENERGY WISE': 'FYRS' };
+        var map = { 'GENERIC EA': 'GEN EA', 'GENERAL EA': 'GEN EA', 'GENERAL ASSEMBLY': 'GEN EA', 'GENERIC ASSESSMENT': 'GEN EA', 'Efficient Living': 'EL', 'EFFICIENT LIVING': 'EL', 'BluInq': 'BluInQ', 'BLUINQ': 'BluInQ', 'FYRS ENERGYWISE': 'FYRS', 'FYRS ENERGY WISE': 'FYRS', 'LC Home Builder': 'LC HB', 'LC HOME BUILDER': 'LC HB', 'Leading Energy': 'LE', 'LEADING ENERGY': 'LE' };
         return map[label] || label;
     };
 

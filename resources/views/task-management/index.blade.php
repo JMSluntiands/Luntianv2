@@ -12,6 +12,10 @@
         if (! $user) {
             return 'Unassigned';
         }
+        $code = strtoupper(trim((string) ($user->unique_code ?? '')));
+        if ($code !== '') {
+            return $code;
+        }
         $name = trim((string) ($user->fullname ?? ''));
         if ($name !== '') {
             return $name;
@@ -27,6 +31,10 @@
     $initials = static function ($user) use ($displayName): string {
         if (! $user) {
             return '?';
+        }
+        $code = strtoupper(trim((string) ($user->unique_code ?? '')));
+        if ($code !== '') {
+            return $code;
         }
         $name = $displayName($user);
         $parts = preg_split('/\s+/', $name) ?: [];
@@ -48,6 +56,9 @@
 
         return asset('storage/'.$img);
     };
+    $staffUsers = collect($users ?? [])->filter(static function ($user) {
+        return strtoupper(trim((string) ($user->unique_code ?? ''))) !== '';
+    })->values();
     $statusOptions = [
         Task::STATUS_NOT_STARTED => Task::statusMeta(Task::STATUS_NOT_STARTED),
         Task::STATUS_IN_PROGRESS => Task::statusMeta(Task::STATUS_IN_PROGRESS),
@@ -124,9 +135,9 @@
                     </div>
                     <div>
                         <label for="taskAssignee" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Assignee</label>
-                        <select id="taskAssignee" name="assignee_user_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-100">
+                        <select id="taskAssignee" name="assignee_user_id" class="task-filter-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/50 dark:text-white">
                             <option value="">Unassigned</option>
-                            @foreach($users as $user)
+                            @foreach($staffUsers as $user)
                                 <option value="{{ $user->id }}">{{ $displayName($user) }}</option>
                             @endforeach
                         </select>
@@ -137,7 +148,7 @@
                     </div>
                     <div>
                         <label for="taskStatus" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Status</label>
-                        <select id="taskStatus" name="status" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-100">
+                        <select id="taskStatus" name="status" class="task-filter-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/50 dark:text-white">
                             @foreach($statusOptions as $value => $meta)
                                 <option value="{{ $value }}">{{ $meta['label'] }}</option>
                             @endforeach
@@ -173,7 +184,7 @@
             <input type="hidden" name="view" value="{{ $viewMode }}">
             <label class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 Status
-                <select name="status" onchange="this.form.submit()" class="cursor-pointer border-0 bg-transparent py-0.5 pl-1 pr-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-0 dark:text-slate-100">
+                <select name="status" onchange="this.form.submit()" class="task-filter-select cursor-pointer border-0 bg-transparent py-0.5 pl-1 pr-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-0 dark:text-white">
                     <option value="">All</option>
                     @foreach($statusOptions as $value => $meta)
                         <option value="{{ $value }}" @selected($statusFilter === $value)>{{ $meta['label'] }}</option>
@@ -183,10 +194,10 @@
             @if(!empty($canViewAll))
             <label class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 Assignee
-                <select name="assignee" onchange="this.form.submit()" class="cursor-pointer border-0 bg-transparent py-0.5 pl-1 pr-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-0 dark:text-slate-100">
+                <select name="assignee" onchange="this.form.submit()" class="task-filter-select cursor-pointer border-0 bg-transparent py-0.5 pl-1 pr-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-0 dark:text-white">
                     <option value="">All</option>
                     <option value="0" @selected($assigneeFilter === 0)>Unassigned</option>
-                    @foreach($users as $user)
+                    @foreach($staffUsers as $user)
                         <option value="{{ $user->id }}" @selected($assigneeFilter === (int) $user->id)>{{ $displayName($user) }}</option>
                     @endforeach
                 </select>
@@ -218,6 +229,23 @@
         @endif
     </div>
 @endsection
+
+@push('styles')
+<style>
+    /* Status / Assignee native selects: pure-white option text in dark theme */
+    .page-task-management .task-filter-select {
+        color-scheme: light;
+    }
+    [data-theme="dark"] .page-task-management .task-filter-select {
+        color-scheme: dark;
+        color: #ffffff;
+    }
+    [data-theme="dark"] .page-task-management .task-filter-select option {
+        background-color: #0f172a;
+        color: #ffffff;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
