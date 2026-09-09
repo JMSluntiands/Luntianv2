@@ -23,26 +23,26 @@
                         'label' => 'Jobs',
                         'hint' => 'Allocated jobs',
                         'tasks' => $jobTasks,
-                        'tone' => 'border-violet-200 bg-violet-50/70 text-violet-800 dark:border-violet-800/60 dark:bg-violet-500/10 dark:text-violet-200',
+                        'tone' => 'border-violet-200 bg-violet-100 text-violet-900 dark:border-violet-700 dark:bg-slate-900 dark:text-violet-200',
                     ],
                     [
                         'key' => 'tasks',
                         'label' => 'Tasks',
                         'hint' => 'Shared tasks',
                         'tasks' => $publicManualTasks,
-                        'tone' => 'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-800/60 dark:bg-sky-500/10 dark:text-sky-200',
+                        'tone' => 'border-sky-200 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-slate-900 dark:text-sky-200',
                     ],
                     [
                         'key' => 'personal',
                         'label' => 'Personal',
                         'hint' => 'Personal tasks only',
                         'tasks' => $personalTasks,
-                        'tone' => 'border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-800/60 dark:bg-amber-500/10 dark:text-amber-100',
+                        'tone' => 'border-amber-200 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-100',
                     ],
                 ];
             @endphp
             <section class="flex w-80 shrink-0 flex-col rounded-xl border border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40">
-                <header class="flex items-center gap-2.5 border-b border-slate-200 px-3 py-3 dark:border-slate-700">
+                <header class="flex shrink-0 items-center gap-2.5 rounded-t-xl border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
                     <div class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-100">
                         @if($user && $avatarUrl($user))
                             <img src="{{ $avatarUrl($user) }}" alt="" class="h-full w-full object-cover">
@@ -66,12 +66,12 @@
                             @continue
                         @endif
                         <div class="space-y-2">
-                            <div class="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 {{ $section['tone'] }}">
+                            <div class="flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 {{ $section['tone'] }}">
                                 <div class="min-w-0">
                                     <p class="text-[11px] font-bold uppercase tracking-wide">{{ $section['label'] }}</p>
                                     <p class="truncate text-[10px] opacity-80">{{ $section['hint'] }}</p>
                                 </div>
-                                <span class="rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:bg-slate-900/50 dark:text-slate-200">{{ $section['tasks']->count() }}</span>
+                                <span class="rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-200">{{ $section['tasks']->count() }}</span>
                             </div>
 
                             @foreach($section['tasks'] as $task)
