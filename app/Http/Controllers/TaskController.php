@@ -34,7 +34,22 @@ class TaskController extends Controller
             ->orderBy('unique_code')
             ->orderBy('fullname')
             ->orderBy('username')
-            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code']);
+            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
+
+        // Assignee picker: real user accounts only (exclude Admin / Branch accounts).
+        $assigneeEligibleUsers = User::query()
+            ->forJobAssignment()
+            ->orderBy('unique_code')
+            ->orderBy('id')
+            ->get(['id', 'fullname', 'username', 'email', 'profile_image', 'unique_code', 'role', 'branch']);
+
+        $assigneeUsers = $assigneeEligibleUsers
+            ->groupBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
+            ->map(static function ($group) {
+                return $group->sortBy('id')->first();
+            })
+            ->sortBy(static fn (User $user) => strtoupper(trim((string) $user->unique_code)))
+            ->values();
 
         $canManage = $this->mayManageTasks();
         $canViewAll = $this->mayViewAllTasks();
@@ -46,7 +61,7 @@ class TaskController extends Controller
             $assigneeFilter = $currentUserId;
         }
 
-        $assigneeFilterIds = $this->assigneeFilterUserIds($users, $assigneeFilter);
+        $assigneeFilterIds = $this->assigneeFilterUserIds($assigneeEligibleUsers, $assigneeFilter);
 
         $jobItems = collect();
         try {
@@ -126,6 +141,7 @@ class TaskController extends Controller
             'tasks' => $tasks,
             'boardColumns' => $boardColumns,
             'users' => $users,
+            'assigneeUsers' => $assigneeUsers,
             'statusFilter' => $statusFilter,
             'assigneeFilter' => $assigneeFilter,
             'viewMode' => $view,
@@ -259,24 +275,25 @@ class TaskController extends Controller
     }
 
     /**
-     * Expand an assignee filter user id to all users sharing the same unique_code.
+     * Expand an assignee filter user id to all assignment-eligible users sharing the same unique_code.
      *
-     * @param  Collection<int, User>  $users
+     * @param  Collection<int, User>  $assigneeUsers
      * @return list<int>
      */
-    private function assigneeFilterUserIds(Collection $users, ?int $assigneeFilter): array
+    private function assigneeFilterUserIds(Collection $assigneeUsers, ?int $assigneeFilter): array
     {
         if ($assigneeFilter === null || $assigneeFilter <= 0) {
             return [];
         }
 
-        $selected = $users->firstWhere('id', $assigneeFilter);
+        $selected = $assigneeUsers->firstWhere('id', $assigneeFilter);
         $code = strtoupper(trim((string) ($selected->unique_code ?? '')));
         if ($code === '') {
+            // Selected user may not be in the picker list (e.g. view-self lock); still filter that id.
             return [$assigneeFilter];
         }
 
-        return $users
+        return $assigneeUsers
             ->filter(static fn (User $user) => strtoupper(trim((string) ($user->unique_code ?? ''))) === $code)
             ->pluck('id')
             ->map(static fn ($id) => (int) $id)

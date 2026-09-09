@@ -56,7 +56,7 @@
 
         return asset('storage/'.$img);
     };
-    $staffUsers = collect($users ?? [])
+    $staffUsers = collect($assigneeUsers ?? [])
         ->filter(static function ($user) {
             return strtoupper(trim((string) ($user->unique_code ?? ''))) !== '';
         })
