@@ -69,12 +69,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Users eligible for job Assigned To / Checked By dropdowns (excludes Admin and Branch users).
+     * Users eligible for job Assigned To / Checked By dropdowns (excludes Branch users).
+     * Admin, Staff, Checker, and User roles with a unique code are included.
      */
     public function scopeForJobAssignment(Builder $query): Builder
     {
         return $query
-            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
+            ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) != ?', ['branch'])
             ->where(function (Builder $q) {
                 $q->whereNull('branch')
                     ->orWhereRaw('TRIM(COALESCE(branch, "")) = ?', ['']);

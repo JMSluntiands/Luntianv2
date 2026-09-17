@@ -98,10 +98,41 @@
 .lbs-badge-revised { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
 .lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
 .lbs-status-trigger, .lbs-initials-trigger { cursor: pointer; }
+.lbs-initials-select {
+    display: inline-block;
+    max-width: 4.75rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0.375rem;
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.3rem center;
+    background-size: 12px;
+    padding: 0.25rem 1.15rem 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #1e293b;
+    line-height: 1.25;
+}
+.lbs-initials-select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+[data-theme="dark"] .lbs-initials-select {
+    border-color: #475569;
+    background-color: rgba(30, 41, 59, 0.5);
+    color: #e2e8f0;
+}
 </style>
 @endpush
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ asset('js/lbs-list.js') }}"></script>
+    <script src="{{ asset('js/lbs-list.js') }}?v={{ @filemtime(public_path('js/lbs-list.js')) ?: '1' }}"></script>
 @endpush

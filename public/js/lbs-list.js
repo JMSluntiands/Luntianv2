@@ -359,66 +359,23 @@ $(function () {
     $('[data-status-trigger]').attr('aria-expanded', 'false');
   }
 
-  function closeAllInitialsMenus() {
-    $('.lbs-initials-menu').prop('hidden', true);
-    $('[data-initials-trigger]').attr('aria-expanded', 'false');
-  }
-
-  $(document).on('click.lbsInitialsTrigger', '[data-initials-trigger]', function (e) {
-    e.stopPropagation();
-    var $trigger = $(this);
-    var $wrap = $trigger.closest('[data-initials-wrap]');
-    var $menu = $wrap.find('.lbs-initials-menu');
-    if (!$menu.length) return;
-
-    if (!$menu.prop('hidden')) {
-      $menu.prop('hidden', true);
-      $trigger.attr('aria-expanded', 'false');
-      return;
-    }
-    closeAllStatusMenus();
-    closeAllInitialsMenus();
-    var role = String($wrap.data('role') || '');
-    var rect = this.getBoundingClientRect();
-    $menu.css({
-      top: rect.bottom + 4,
-      left: rect.left,
-      minWidth: Math.max(rect.width, role === 'stage' ? 120 : 70)
-    });
-    $menu.prop('hidden', false);
-    $trigger.attr('aria-expanded', 'true');
-  });
-
-  $(document).on('click.lbsInitialsOption', '.lbs-initials-option', function (e) {
-    e.stopPropagation();
-    var $option = $(this);
-    var val = $option.data('value');
-    var $wrap = $option.closest('[data-initials-wrap]');
-    var $trigger = $wrap.find('[data-initials-trigger]');
-    var role = $wrap.data('role');
+  function submitAssignmentChange($select, role, val, prevVal) {
+    var $wrap = $select.closest('[data-initials-wrap]');
     var $row = $wrap.closest('tr.lbs-data-row');
     var updateUrl = ($row.length && ($row.attr('data-update-url') || $row.data('updateUrl'))) || '';
-    var prevVal = $trigger.text();
-    var $menu = $wrap.find('.lbs-initials-menu');
-    $menu.prop('hidden', true);
-    $trigger.attr('aria-expanded', 'false');
+    var $detail = $row.next('.lbs-row-detail');
+    var selector = role === 'staff' ? '.lbs-detail-staff-badge' : (role === 'checker' ? '.lbs-detail-checker-badge' : null);
+
+    if ($detail.length && selector) {
+      $detail.find(selector).text(val || '--');
+    }
 
     if (!updateUrl || !csrfToken) {
-      $trigger.text(val);
-      var $detail = $row.next('.lbs-row-detail');
-      if ($detail.length) {
-        var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
-        $detail.find(selector).text(val);
-      }
+      $select.attr('data-prev', val);
       return;
     }
 
-    $trigger.text(val);
-    var $detail = $row.next('.lbs-row-detail');
-    if ($detail.length) {
-      var selector = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
-      $detail.find(selector).text(val);
-    }
+    $select.prop('disabled', true);
 
     var payload = new URLSearchParams();
     payload.append('_token', csrfToken);
@@ -439,6 +396,7 @@ $(function () {
       }
     })
       .done(function (res) {
+        $select.attr('data-prev', val);
         var msg = (res && res.message) || (role === 'stage' ? 'Stage updated successfully.' : 'Staff/Checker updated successfully.');
         if (window.showSuccessToast) window.showSuccessToast(msg);
         setTimeout(function () {
@@ -448,13 +406,35 @@ $(function () {
       .fail(function (xhr) {
         var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update.';
         if (window.showSuccessToast) window.showSuccessToast(msg);
-        $trigger.text(prevVal);
-        if ($detail.length) {
-          var sel = role === 'staff' ? '.lbs-detail-staff-badge' : '.lbs-detail-checker-badge';
-          $detail.find(sel).text(prevVal);
+        $select.val(prevVal);
+        if ($detail.length && selector) {
+          $detail.find(selector).text(prevVal || '--');
         }
+      })
+      .always(function () {
+        $select.prop('disabled', false);
       });
+  }
+
+  // Native <select> for Staff / Checker (reliable in overflow table cells).
+  $(document).on('mousedown.lbsInitialsSelect click.lbsInitialsSelect', '[data-initials-select]', function (e) {
+    e.stopPropagation();
   });
+
+  $(document).on('change.lbsInitialsSelect', '[data-initials-select]', function () {
+    var $select = $(this);
+    var role = String($select.data('role') || $select.closest('[data-initials-wrap]').data('role') || '');
+    var val = String($select.val() || '');
+    var prevVal = String($select.attr('data-prev') || '');
+    if (val === prevVal) return;
+    submitAssignmentChange($select, role, val, prevVal);
+  });
+
+  function closeAllInitialsMenus() {
+    // Kept for status-menu coordination / legacy button menus.
+    $('.lbs-initials-menu').prop('hidden', true).attr('hidden', 'hidden').css({ display: 'none' });
+    $('[data-initials-trigger]').attr('aria-expanded', 'false');
+  }
 
   $(document).on('click', '#lbsTable [data-status-trigger], #efficient_livingTable [data-status-trigger], #luntianTable [data-status-trigger]', function (e) {
     e.stopPropagation();
@@ -622,7 +602,7 @@ $(function () {
   });
 
   $(document).on('click', function (e) {
-    if ($(e.target).closest('[data-status-trigger], .lbs-status-menu').length) return;
+    if ($(e.target).closest('[data-status-trigger], .lbs-status-menu, [data-initials-trigger], .lbs-initials-menu, [data-initials-select]').length) return;
     closeAllStatusMenus();
     closeAllInitialsMenus();
   });

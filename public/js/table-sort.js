@@ -45,7 +45,7 @@
 
     var trigger =
       clone.querySelector(
-        '[data-status-trigger], [data-initials-trigger], .lbs-status-btn, .lbs-initials-btn'
+        '[data-status-trigger], [data-initials-trigger], [data-initials-select], .lbs-status-btn, .lbs-initials-btn'
       ) || clone.querySelector('button, a');
     if (trigger) {
       return String(trigger.textContent || '')
