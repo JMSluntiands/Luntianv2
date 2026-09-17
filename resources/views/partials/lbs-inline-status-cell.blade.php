@@ -16,7 +16,6 @@
     }
     $selectOptions = $selectOptions->merge($statusOptions)->filter()->unique()->values();
 
-    // Prefer explicit flag; otherwise editable when there is at least a current status.
     $canEditStatus = (bool) ($canEditStatus ?? $selectOptions->isNotEmpty());
 @endphp
 @if($canEditStatus && $selectOptions->isNotEmpty())
@@ -27,7 +26,7 @@
         @if($reference !== '') data-reference="{{ $reference }}" @endif
         aria-label="Status"
         title="Change status"
-        @if($statusBg) style="--lbs-select-bg: {{ $statusBg }}; --lbs-select-fg: {{ $statusFg }};" @endif
+        @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFg }};" @endif
     >
         @foreach($selectOptions as $opt)
             <option value="{{ $opt }}" @selected($opt === $statusLabel)>{{ $opt }}</option>

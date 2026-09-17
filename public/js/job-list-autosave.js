@@ -70,6 +70,26 @@
     });
   }
 
+  function applyPriorityColor(select, value) {
+    if (!select) return;
+    var color = '';
+    var opts = select.options || [];
+    for (var i = 0; i < opts.length; i++) {
+      if (String(opts[i].value) === String(value)) {
+        color = String(opts[i].getAttribute('data-color') || '').trim();
+        break;
+      }
+    }
+    if (!color) {
+      try {
+        var map = JSON.parse(select.getAttribute('data-priority-colors') || '{}');
+        if (map && typeof map === 'object' && map[value]) color = String(map[value]).trim();
+      } catch (e) {}
+    }
+    if (color) select.style.backgroundColor = color;
+    else select.style.removeProperty('background-color');
+  }
+
   function handleSelectChange(select) {
     if (!select || saving) return;
 
@@ -82,16 +102,20 @@
     var prev = String(select.getAttribute('data-prev') || '');
     if (val === prev) return;
 
+    if (isPriority) applyPriorityColor(select, val);
+
     var url = updateUrlFor(select);
     var token = csrfToken();
     if (!url) {
       toast('Missing update URL for this row.');
       select.value = prev;
+      if (isPriority) applyPriorityColor(select, prev);
       return;
     }
     if (!token) {
       toast('Missing CSRF token. Reload the page.');
       select.value = prev;
+      if (isPriority) applyPriorityColor(select, prev);
       return;
     }
 
@@ -122,6 +146,7 @@
             'Failed to save (' + result.status + ').';
           toast(err);
           select.value = prev;
+          if (isPriority) applyPriorityColor(select, prev);
           return;
         }
         select.setAttribute('data-prev', val);
@@ -133,6 +158,7 @@
       .catch(function () {
         toast('Failed to save. Check your connection.');
         select.value = prev;
+        if (isPriority) applyPriorityColor(select, prev);
       })
       .finally(function () {
         saving = false;
