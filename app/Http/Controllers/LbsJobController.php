@@ -1853,6 +1853,7 @@ class LbsJobController extends Controller
             'sidebar_active' => 'lbs.review',
             'jobs'           => $jobs,
             'priorityColors' => $priorityColors,
+            'priorityOptions' => Priority::optionsForSelect(),
             'statuses'       => $statuses,
         ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('lbs')));
     }

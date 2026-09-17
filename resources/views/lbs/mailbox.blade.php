@@ -59,7 +59,7 @@
                                 $latestCheckerFiles = is_array($latestCheckerFiles) ? array_values(array_filter($latestCheckerFiles, fn ($f) => is_string($f) && trim($f) !== '')) : [];
                                 $hasLatestCheckerFiles = !empty($latestCheckerFiles);
                             @endphp
-                            <tr class="lbs-data-row lbs-mailbox-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ route($updateRoute, ['id' => $job->job_id]) }}">
+                            <tr class="lbs-data-row lbs-mailbox-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ route($updateRoute, ['id' => $job->job_id], false) }}">
                                 <td class="border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">
                                     <div class="flex items-center gap-1.5">
                                         <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-amber-500/15 hover:text-amber-500 dark:hover:bg-amber-500/15 dark:hover:text-amber-400" title="Revert (set status to For Checking)" aria-label="Revert" data-revert-job>

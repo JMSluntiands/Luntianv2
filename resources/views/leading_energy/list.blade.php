@@ -103,7 +103,7 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('leading_energy.update', ['id' => $row->id]) }}">
+                            <tr class="lbs-data-row border-b border-slate-200 overflow-hidden align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('leading_energy.update', ['id' => $row->id], false) }}">
                                 <td class="overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center gap-1.5">
                                         <a href="{{ route('leading_energy.add', ['duplicate' => 1, 'job_number' => $jobNumber, 'client_name' => $clientName, 'contact_email' => $clientEmail, 'urgent_job' => ($urgent === 'YES') ? 1 : 0]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 transition-colors hover:bg-blue-900/25 hover:text-blue-300 no-underline" title="Duplicate">
@@ -123,14 +123,13 @@
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">{{ $clientName }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">{{ $clientEmail }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">
-                                    <div class="lbs-status-wrap relative inline-block" data-status-wrap>
-                                        <button type="button" class="lbs-badge lbs-status-trigger {{ $statusClass }} inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90" data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="{{ $jobNumber }}">{{ $status }}</button>
-                                        <div class="lbs-status-menu fixed z-[9999] flex min-w-[90px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg" role="menu" hidden>
-                                            @foreach($statusOptions as $opt)
-                                                <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10" data-status-value="{{ $opt }}">{{ $opt }}</button>
-                                            @endforeach
-                                        </div>
-                                    </div>
+                                    @include('partials.lbs-inline-status-cell', [
+                                        'status' => $status,
+                                        'statusOptions' => $statusOptions,
+                                        'canEditStatus' => count($statusOptions) > 0,
+                                        'statusClass' => $statusClass ?? null,
+                                        'reference' => $jobNumber,
+                                    ])
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle dark:border-slate-700">
                                     @include('partials.assignment-initials-cell', ['role' => 'staff', 'current' => $assigned ?? '', 'options' => $assignmentStaffCodes ?? []])

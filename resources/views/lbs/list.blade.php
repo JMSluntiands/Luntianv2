@@ -139,7 +139,8 @@
     -webkit-appearance: none;
     border-radius: 0.375rem;
     border: 1px solid #cbd5e1;
-    background-color: #f8fafc;
+    background-color: var(--lbs-select-bg, #f8fafc);
+    color: var(--lbs-select-fg, #1e293b);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.35rem center;
@@ -147,7 +148,6 @@
     padding: 0.25rem 1.2rem 0.25rem 0.5rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #1e293b;
     line-height: 1.25;
 }
 .lbs-priority-select:focus,
@@ -159,7 +159,6 @@
 [data-theme="dark"] .lbs-priority-select,
 [data-theme="dark"] .lbs-status-select {
     border-color: #475569;
-    color: #e2e8f0;
 }
 </style>
 @endpush

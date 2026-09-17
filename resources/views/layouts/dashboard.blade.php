@@ -16,6 +16,62 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/layout.ts'])
     <style>
+        /* Inline job-table dropdowns (always available even if Vite build is stale) */
+        .lbs-initials-select {
+            display: inline-block;
+            max-width: 4.75rem;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            border-radius: 0.375rem;
+            border: 1px solid #cbd5e1;
+            background-color: #f8fafc;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.3rem center;
+            background-size: 12px;
+            padding: 0.25rem 1.15rem 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #1e293b;
+            line-height: 1.25;
+        }
+        .lbs-priority-select,
+        .lbs-status-select {
+            display: inline-block;
+            max-width: 11rem;
+            min-width: 6.5rem;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            border-radius: 0.375rem;
+            border: 1px solid #cbd5e1;
+            background-color: var(--lbs-select-bg, #f8fafc);
+            color: var(--lbs-select-fg, #1e293b);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.35rem center;
+            background-size: 12px;
+            padding: 0.25rem 1.2rem 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        [data-theme="dark"] .lbs-initials-select,
+        .dark .lbs-initials-select {
+            border-color: #475569;
+            background-color: rgba(30, 41, 59, 0.5);
+            color: #e2e8f0;
+        }
+        [data-theme="dark"] .lbs-priority-select,
+        [data-theme="dark"] .lbs-status-select,
+        .dark .lbs-priority-select,
+        .dark .lbs-status-select {
+            border-color: #475569;
+        }
+
         /* Shared asc/desc sort icons for all dashboard tables */
         th .lbs-sort-icon,
         th .efficient_living-sort-icon,

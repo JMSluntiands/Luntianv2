@@ -5,7 +5,12 @@
 @section('body_class', 'page-lbs-list page-csp-list page-csp-review')
 
 @section('content')
-    <div class="block max-w-full pb-0">
+    @php
+        $__assign = \App\Models\User::assignmentInitialsViewData('csp');
+        $assignmentStaffCodes = $assignmentStaffCodes ?? $__assign['assignmentStaffCodes'];
+        $assignmentCheckerCodes = $assignmentCheckerCodes ?? $__assign['assignmentCheckerCodes'];
+    @endphp
+<div class="block max-w-full pb-0">
         <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
                 <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">CSP For Review</h1>
@@ -81,7 +86,7 @@
                                 $assigned = strtoupper((string) ($row->assigned ?? 'GM'));
                                 $checker = strtoupper((string) ($row->checked ?? 'GM'));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('csp.update', ['id' => $row->id]) }}">
+                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-units="{{ (int) ($row->units ?? 0) }}" data-update-url="{{ route('csp.update', ['id' => $row->id], false) }}">
                                 <td class="px-4 py-3 text-center">
                                     @if(\App\Models\RolePermission::userMayAccessRoute('csp.view'))
                                         <a href="{{ route('csp.view', $row->id) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-emerald-500/15 hover:text-emerald-500 dark:text-slate-400 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-400" title="View job" aria-label="View job">
@@ -105,16 +110,17 @@
                                 <td class="px-4 py-3">{{ $clientName }}</td>
                                 <td class="px-4 py-3">{{ $clientEmail }}</td>
                                 <td class="px-4 py-3">
-                                    <div class="lbs-status-wrap relative inline-block" data-status-wrap>
-                                        <button type="button" class="lbs-badge lbs-status-trigger {{ $statusClass }} inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold leading-tight cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-600/40 focus:ring-offset-0 dark:focus:ring-blue-500/40" data-status-trigger aria-haspopup="true" aria-expanded="false" data-reference="{{ $jobNumber }}">{{ $status }}</button>
-                                        <div class="lbs-status-menu fixed z-[9999] flex min-w-[90px] flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="menu" hidden>
-                                            @foreach($statusOptions as $opt)
-                                                <button type="button" role="menuitem" class="lbs-status-option block w-full rounded-md border-0 bg-transparent px-2.5 py-1.5 text-left text-xs font-medium text-slate-200 hover:bg-white/10" data-status-value="{{ $opt }}">{{ $opt }}</button>
-                                            @endforeach
-                                        </div>
-                                    </div>
+                                    @include('partials.lbs-inline-status-cell', [
+                                        'status' => $status,
+                                        'statusOptions' => $statusOptions,
+                                        'canEditStatus' => count($statusOptions) > 0,
+                                        'statusClass' => $statusClass ?? null,
+                                        'reference' => $jobNumber,
+                                    ])
                                 </td>
-                                <td class="px-4 py-3">{{ $assigned }}</td>
+                                <td class="px-4 py-3">
+                                    @include('partials.assignment-initials-cell', ['role' => 'staff', 'current' => $assigned ?? '', 'options' => $assignmentStaffCodes ?? []])
+                                </td>
                                 <td class="px-4 py-3">{{ $checker }}</td>
                             </tr>
                         @endforeach
