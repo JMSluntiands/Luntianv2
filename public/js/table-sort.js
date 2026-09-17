@@ -8,7 +8,7 @@
   var DETAIL_SEL =
     '.lbs-row-detail, .efficient_living-row-detail, .luntian-row-detail, tr[data-row-detail]';
   var SKIP_TH =
-    '.lbs-th-action, .efficient_living-th-action, .luntian-th-action, .reports-th-action';
+    '.lbs-th-action, .lbs-th-rownum, .efficient_living-th-action, .luntian-th-action, .reports-th-action';
   var TABLE_SEL = [
     'table#lbsTable',
     'table#efficient_livingTable',
@@ -45,7 +45,7 @@
 
     var trigger =
       clone.querySelector(
-        '[data-status-trigger], [data-initials-trigger], [data-initials-select], .lbs-status-btn, .lbs-initials-btn'
+        '[data-status-trigger], [data-initials-trigger], [data-initials-select], [data-priority-select], [data-status-select], .lbs-status-btn, .lbs-initials-btn'
       ) || clone.querySelector('button, a');
     if (trigger) {
       return String(trigger.textContent || '')

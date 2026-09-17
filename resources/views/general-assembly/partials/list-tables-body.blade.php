@@ -164,15 +164,12 @@
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->job_type }}</span>
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $job->job_request_id }}</span>
                                 </td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Priority" style="white-space: nowrap;">
-                                    <span
-                                        class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold"
-                                        @if($priorityBg)
-                                            style="background-color: {{ $priorityBg }};"
-                                        @endif
-                                    >
-                                        {{ $priorityText }}
-                                    </span>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Priority" data-sort="{{ $priorityText }}" style="white-space: nowrap;">
+                                    @include('partials.lbs-inline-priority-cell', [
+                                        'priority' => $priorityText,
+                                        'priorityBg' => $priorityBg,
+                                        'priorityOptions' => $priorityOptions ?? [],
+                                    ])
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Staff" style="white-space: nowrap;">
                                     @include('partials.assignment-initials-cell', ['role' => 'staff', 'current' => $job->staff_id ?? '', 'options' => $assignmentStaffCodes ?? []])

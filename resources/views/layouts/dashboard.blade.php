@@ -258,9 +258,14 @@
     @include('partials.assignment-user-select2')
     @stack('scripts')
     <script src="{{ asset('js/table-sort.js') }}?v={{ @filemtime(public_path('js/table-sort.js')) ?: '1' }}"></script>
+    <script src="{{ asset('js/job-list-pagination.js') }}?v={{ @filemtime(public_path('js/job-list-pagination.js')) ?: '1' }}"></script>
+    <script src="{{ asset('js/job-list-autosave.js') }}?v={{ @filemtime(public_path('js/job-list-autosave.js')) ?: '1' }}"></script>
     <script>
         if (typeof window.initAllTableSorts === 'function') {
             window.initAllTableSorts();
+        }
+        if (typeof window.JobListPagination === 'object' && window.JobListPagination.init) {
+            window.JobListPagination.init();
         }
     </script>
 </body>

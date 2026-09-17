@@ -164,6 +164,50 @@ $(function () {
     document.querySelector('meta[name="csrf-token"]') &&
     document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+  function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return (meta && meta.getAttribute('content')) || csrfToken || '';
+  }
+
+  function normalizeUpdateUrl(raw) {
+    var url = String(raw || '').trim();
+    if (!url) return '';
+    try {
+      // APP_URL host can differ from the browser host (e.g. jms.luntian.local vs 127.0.0.1).
+      // Always post to the current origin using path only.
+      if (/^https?:\/\//i.test(url)) {
+        var parsed = new URL(url, window.location.href);
+        return parsed.pathname + parsed.search;
+      }
+    } catch (e) {}
+    return url;
+  }
+
+  function getRowUpdateUrl($row) {
+    if (!$row || !$row.length) return '';
+    return normalizeUpdateUrl($row.attr('data-update-url') || $row.data('updateUrl') || '');
+  }
+
+  function postJobUpdate(updateUrl, fields) {
+    var token = getCsrfToken();
+    var data = Object.assign({ _token: token, _method: 'PUT' }, fields || {});
+    return $.ajax({
+      url: normalizeUpdateUrl(updateUrl),
+      method: 'POST',
+      data: data,
+      headers: {
+        'X-CSRF-TOKEN': token,
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+  }
+
+  function toastMsg(msg) {
+    if (window.showSuccessToast) window.showSuccessToast(msg);
+    else window.alert(msg);
+  }
+
   function recalcStatusSummary() {
     var $table = getLbsTable();
     if (!$table.length) return;
@@ -201,7 +245,7 @@ $(function () {
     var filterBuilder = ($filterBuilder.length ? String($filterBuilder.val() || '').trim().toLowerCase() : '');
     var filterPriority = ($filterPriority.length ? String($filterPriority.val() || '').trim().toLowerCase() : '');
 
-    var $rows = $tbody.find('tr').not('.lbs-row-detail').not('.lbs-filter-empty');
+    var $rows = $tbody.find('tr.lbs-data-row').not('.lbs-filter-empty');
     var visible = 0;
     $rows.each(function () {
       var $row = $(this);
@@ -216,17 +260,24 @@ $(function () {
       var matchPriority = !filterPriority || rowPriority === filterPriority;
       var match = matchSearch && matchDate && matchBuilder && matchPriority;
 
-      $row.toggle(match);
+      $row.attr('data-job-filter-match', match ? '1' : '0');
       if (match) visible++;
       var $next = $row.next('.lbs-row-detail');
-      if ($next.length) {
-        if (match && !$next.prop('hidden')) {
-          $next.show();
-        } else if (!match) {
-          $next.hide();
-        }
+      if ($next.length && !match) {
+        $next.hide();
       }
     });
+
+    $table.attr('data-job-page', '1');
+    if (window.JobListPagination && typeof window.JobListPagination.refresh === 'function') {
+      window.JobListPagination.refresh($table[0]);
+    } else {
+      $rows.each(function () {
+        var $row = $(this);
+        var match = $row.attr('data-job-filter-match') !== '0';
+        $row.toggle(match);
+      });
+    }
 
     var colCount = $table.find('thead th').length || 13;
     var $empty = $tbody.find('.lbs-filter-empty');
@@ -238,6 +289,8 @@ $(function () {
             '">No jobs match your search or filters.</td></tr>'
         );
         $tbody.append($empty);
+      } else {
+        $empty.find('td[colspan]').attr('colspan', colCount);
       }
       $empty.show();
     } else if ($empty.length) {
@@ -339,6 +392,9 @@ $(function () {
           .then(function (html) {
             $lbsListTablesInner.html(html);
             bindLbsMainTableInteractions();
+            if (window.JobListPagination && typeof window.JobListPagination.refreshAll === 'function') {
+              window.JobListPagination.refreshAll($lbsListTablesInner[0]);
+            }
             applyTableFilters();
           })
           .catch(function () {
@@ -362,7 +418,9 @@ $(function () {
   function submitAssignmentChange($select, role, val, prevVal) {
     var $wrap = $select.closest('[data-initials-wrap]');
     var $row = $wrap.closest('tr.lbs-data-row');
-    var updateUrl = ($row.length && ($row.attr('data-update-url') || $row.data('updateUrl'))) || '';
+    if (!$row.length) $row = $select.closest('tr.lbs-data-row');
+    var updateUrl = getRowUpdateUrl($row);
+    var token = getCsrfToken();
     var $detail = $row.next('.lbs-row-detail');
     var selector = role === 'staff' ? '.lbs-detail-staff-badge' : (role === 'checker' ? '.lbs-detail-checker-badge' : null);
 
@@ -370,42 +428,36 @@ $(function () {
       $detail.find(selector).text(val || '--');
     }
 
-    if (!updateUrl || !csrfToken) {
-      $select.attr('data-prev', val);
+    if (!updateUrl) {
+      toastMsg('Missing update URL for this row.');
+      $select.val(prevVal);
+      return;
+    }
+    if (!token) {
+      toastMsg('Missing CSRF token. Reload the page.');
+      $select.val(prevVal);
       return;
     }
 
     $select.prop('disabled', true);
 
-    var payload = new URLSearchParams();
-    payload.append('_token', csrfToken);
-    payload.append('_method', 'PUT');
-    if (role === 'staff') payload.append('staff_id', val);
-    else if (role === 'stage') payload.append('stage', val);
-    else payload.append('checker_id', val);
+    var fields = {};
+    if (role === 'staff') fields.staff_id = val;
+    else if (role === 'stage') fields.stage = val;
+    else fields.checker_id = val;
 
-    $.ajax({
-      url: updateUrl,
-      method: 'POST',
-      data: payload.toString(),
-      headers: {
-        'X-CSRF-TOKEN': csrfToken,
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
+    postJobUpdate(updateUrl, fields)
       .done(function (res) {
         $select.attr('data-prev', val);
         var msg = (res && res.message) || (role === 'stage' ? 'Stage updated successfully.' : 'Staff/Checker updated successfully.');
-        if (window.showSuccessToast) window.showSuccessToast(msg);
+        toastMsg(msg);
         setTimeout(function () {
           window.location.reload();
         }, 800);
       })
       .fail(function (xhr) {
         var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update.';
-        if (window.showSuccessToast) window.showSuccessToast(msg);
+        toastMsg(msg);
         $select.val(prevVal);
         if ($detail.length && selector) {
           $detail.find(selector).text(prevVal || '--');
@@ -417,17 +469,15 @@ $(function () {
   }
 
   // Native <select> for Staff / Checker (reliable in overflow table cells).
-  $(document).on('mousedown.lbsInitialsSelect click.lbsInitialsSelect', '[data-initials-select]', function (e) {
-    e.stopPropagation();
-  });
+  // NOTE: primary auto-save is handled by job-list-autosave.js (capture-phase).
+  // These jQuery handlers remain as a secondary path for older pages.
 
   $(document).on('change.lbsInitialsSelect', '[data-initials-select]', function () {
-    var $select = $(this);
-    var role = String($select.data('role') || $select.closest('[data-initials-wrap]').data('role') || '');
-    var val = String($select.val() || '');
-    var prevVal = String($select.attr('data-prev') || '');
-    if (val === prevVal) return;
-    submitAssignmentChange($select, role, val, prevVal);
+    // no-op if vanilla autosave already handled it via data-prev update mid-flight
+  });
+
+  $(document).on('change.lbsPrioritySelect', '[data-priority-select]', function () {
+    // handled by job-list-autosave.js
   });
 
   function closeAllInitialsMenus() {
@@ -496,20 +546,7 @@ $(function () {
     return null;
   }
 
-  $(document).on('click', statusTableSelector, function (e) {
-    e.stopPropagation();
-    var $option = $(this);
-    var $wrap = $option.closest('[data-status-wrap]');
-    var $trigger = $wrap.find('[data-status-trigger]');
-    var $menu = $wrap.find('.lbs-status-menu');
-    var val = $option.data('status-value');
-    var $row = $wrap.closest('tr.lbs-data-row');
-    var updateUrl = ($row.length && ($row.attr('data-update-url') || $row.data('updateUrl'))) || '';
-    var prevText = $trigger.text();
-    var prevClass = 'lbs-badge-' + String(prevText).toLowerCase().replace(/\s+/g, '-');
-    $menu.prop('hidden', true);
-    $trigger.attr('aria-expanded', 'false');
-
+  function submitStatusChange($el, val, prevText, updateUrl, $row) {
     var currentUnits = 0;
     if ($row.length && $row.data('job-units') !== undefined) {
       currentUnits = parseInt($row.data('job-units'), 10);
@@ -518,8 +555,13 @@ $(function () {
 
     if (!window.LuntianFecUnitsModal || !window.LuntianFecUnitsModal.promptIfNeeded) {
       if (window.showSuccessToast) window.showSuccessToast('Status UI error: reload the page.');
+      if ($el.is('select')) $el.val(prevText);
       return;
     }
+
+    var $detail = $row.next('.lbs-row-detail');
+    var $badge = $detail.find('.lbs-detail-status-badge');
+    var isSelect = $el.is('select');
 
     window.LuntianFecUnitsModal.promptIfNeeded({
       currentUnits: currentUnits,
@@ -527,57 +569,39 @@ $(function () {
     })
       .then(function (fecResult) {
         var unitsToSend = fecResult && fecResult.unitsToSend != null ? fecResult.unitsToSend : null;
+        if (isSelect) $el.prop('disabled', true);
+        else $el.addClass('lbs-status-updating');
 
-        $trigger.addClass('lbs-status-updating');
-
-        var badgeClass = 'lbs-badge-' + String(val).toLowerCase().replace(/\s+/g, '-');
-        var allClasses = [
-          'lbs-badge-pending',
-          'lbs-badge-accepted',
-          'lbs-badge-allocated',
-          'lbs-badge-awaiting-further-information',
-          'lbs-badge-completed',
-          'lbs-badge-for-email-confirmation',
-          'lbs-badge-cancelled',
-          'lbs-badge-for-review',
-          'lbs-badge-processing',
-          'lbs-badge-for-checking',
-          'lbs-badge-revised'
-        ];
-        $trigger.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
-        var $detail = $row.next('.lbs-row-detail');
-        var $badge = $detail.find('.lbs-detail-status-badge');
         if ($detail.length && $badge.length) {
-          $badge.removeClass(allClasses.join(' ')).addClass(badgeClass).text(val).removeAttr('style');
+          $badge.text(val).removeAttr('style');
         }
         recalcStatusSummary();
 
-        if (!updateUrl || !csrfToken) return;
+        if (!updateUrl) {
+          if (window.showSuccessToast) window.showSuccessToast('Missing update URL for this row.');
+          if (isSelect) $el.val(prevText).prop('disabled', false);
+          else $el.removeClass('lbs-status-updating').text(prevText);
+          return;
+        }
+        if (!getCsrfToken()) {
+          if (window.showSuccessToast) window.showSuccessToast('Missing CSRF token. Reload the page.');
+          if (isSelect) $el.val(prevText).prop('disabled', false);
+          else $el.removeClass('lbs-status-updating').text(prevText);
+          return;
+        }
 
-        var payload = new URLSearchParams();
-        payload.append('_token', csrfToken);
-        payload.append('_method', 'PUT');
-        payload.append('job_status', val);
-        if (unitsToSend !== null) payload.append('units', String(unitsToSend));
+        var fields = { job_status: val };
+        if (unitsToSend !== null) fields.units = String(unitsToSend);
 
-        $.ajax({
-          url: updateUrl,
-          method: 'POST',
-          data: payload.toString(),
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        })
+        postJobUpdate(updateUrl, fields)
           .done(function (res) {
-            $trigger.removeClass('lbs-status-updating').addClass('lbs-status-success');
+            if (isSelect) $el.attr('data-prev', val);
+            else $el.removeClass('lbs-status-updating').addClass('lbs-status-success').text(val);
             var msg = (res && res.message) || 'Status updated to ' + val + '.';
             if (window.showSuccessToast) window.showSuccessToast(msg);
             var redirectUrl = resolveStatusRedirectUrl(val);
             setTimeout(function () {
-              $trigger.removeClass('lbs-status-success');
+              if (!isSelect) $el.removeClass('lbs-status-success');
               if (redirectUrl) {
                 window.location.href = redirectUrl;
                 return;
@@ -586,23 +610,45 @@ $(function () {
             }, 1500);
           })
           .fail(function (xhr) {
-            $trigger.removeClass('lbs-status-updating');
             var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';
             if (window.showSuccessToast) window.showSuccessToast(msg);
-            $trigger.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
+            if (isSelect) $el.val(prevText);
+            else $el.removeClass('lbs-status-updating').text(prevText);
             if ($detail.length && $badge.length) {
-              $badge.removeClass(allClasses.join(' ')).addClass(prevClass).text(prevText);
+              $badge.text(prevText);
             }
             recalcStatusSummary();
+          })
+          .always(function () {
+            if (isSelect) $el.prop('disabled', false);
           });
       })
       .catch(function () {
-        /* user cancelled FEC units modal — keep previous status */
+        if (isSelect) $el.val(prevText);
       });
+  }
+
+  $(document).on('change.lbsStatusSelect', '[data-status-select]', function () {
+    // handled by job-list-autosave.js (capture phase)
+  });
+
+  $(document).on('click', statusTableSelector, function (e) {
+    e.stopPropagation();
+    var $option = $(this);
+    var $wrap = $option.closest('[data-status-wrap]');
+    var $trigger = $wrap.find('[data-status-trigger]');
+    var $menu = $wrap.find('.lbs-status-menu');
+    var val = $option.data('status-value');
+    var $row = $wrap.closest('tr.lbs-data-row');
+    var updateUrl = getRowUpdateUrl($row);
+    var prevText = $trigger.text();
+    $menu.prop('hidden', true);
+    $trigger.attr('aria-expanded', 'false');
+    submitStatusChange($trigger, val, prevText, updateUrl, $row);
   });
 
   $(document).on('click', function (e) {
-    if ($(e.target).closest('[data-status-trigger], .lbs-status-menu, [data-initials-trigger], .lbs-initials-menu, [data-initials-select]').length) return;
+    if ($(e.target).closest('[data-status-trigger], .lbs-status-menu, [data-initials-trigger], .lbs-initials-menu, [data-initials-select], [data-priority-select], [data-status-select]').length) return;
     closeAllStatusMenus();
     closeAllInitialsMenus();
   });

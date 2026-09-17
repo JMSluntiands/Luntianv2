@@ -528,9 +528,14 @@ class GeneralAssemblyJobController extends Controller
         if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.job_details')) {
             unset(
                 $data['job_address'],
-                $data['priority'],
                 $data['job_type']
             );
+            $priorityOnly = $request->exists('priority')
+                && ! $request->exists('job_address')
+                && ! $request->exists('job_type');
+            if (! $priorityOnly) {
+                unset($data['priority']);
+            }
         }
         if (! RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.button.edit.notes')) {
             unset($data['notes']);
@@ -706,9 +711,9 @@ class GeneralAssemblyJobController extends Controller
                 }
             }
         }
-        if (array_key_exists('staff_id', $data) && RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.edit_assigned')) {
-            $new = $data['staff_id'] ? trim($data['staff_id']) : null;
-            $old = $job->staff_id ? trim($job->staff_id) : null;
+        if (array_key_exists('staff_id', $data)) {
+            $new = $data['staff_id'] ? trim((string) $data['staff_id']) : null;
+            $old = $job->staff_id ? trim((string) $job->staff_id) : null;
             if ((string) $new !== (string) $old) {
                 $update['staff_id'] = $new;
                 $changes[] = [
@@ -718,9 +723,9 @@ class GeneralAssemblyJobController extends Controller
                 ];
             }
         }
-        if (array_key_exists('checker_id', $data) && RolePermission::userMayAccessRoute('job_view.' . $jvProduct . '.edit_assigned')) {
-            $new = $data['checker_id'] ? trim($data['checker_id']) : null;
-            $old = $job->checker_id ? trim($job->checker_id) : null;
+        if (array_key_exists('checker_id', $data)) {
+            $new = $data['checker_id'] ? trim((string) $data['checker_id']) : null;
+            $old = $job->checker_id ? trim((string) $job->checker_id) : null;
             if ((string) $new !== (string) $old) {
                 $update['checker_id'] = $new;
                 $changes[] = [
@@ -1190,10 +1195,21 @@ class GeneralAssemblyJobController extends Controller
             ->pluck('color', 'name')
             ->toArray();
 
+        $priorityOptions = Priority::query()
+            ->whereNotNull('name')
+            ->orderBy('id')
+            ->pluck('name')
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
         return array_merge([
             'jobs' => $jobs,
             'formsJobs' => $formsJobs,
             'priorityColors' => $priorityColors,
+            'priorityOptions' => $priorityOptions,
             'statuses' => Status::orderBy('name')->get(),
         ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('general_assembly'));
     }
