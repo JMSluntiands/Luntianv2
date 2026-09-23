@@ -1,6 +1,6 @@
 @extends($layoutView ?? 'layouts.dashboard')
 
-@section('title', 'Add New Job')
+@section('title', 'Add New Job (GEN EA)')
 
 @section('body_class', 'page-ga-add')
 
@@ -8,7 +8,7 @@
     <div class="w-full max-w-full px-0">
         {{-- Page Header --}}
         <div class="mb-8">
-            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job</h1>
+            <h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add New Job (GEN EA)</h1>
             <p class="text-slate-500 dark:text-slate-400">Fill in the form below to create a new Generic EA job.</p>
         </div>
 

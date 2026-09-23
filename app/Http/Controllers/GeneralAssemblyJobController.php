@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\URL;
 
 class GeneralAssemblyJobController extends Controller
 {
+    private const GEN_EA_CLIENT_CODE = 'GENEA01';
+
     public function show(int $id)
     {
         $job = DB::table('job_general_assembly as j')
@@ -99,8 +101,8 @@ class GeneralAssemblyJobController extends Controller
         $clientCodeFilter = match ($product) {
             'efficient_living' => 'EL01',
             'luntian' => 'LT01',
-            'general_assembly' => 'GA01',
-            default => 'GA01',
+            'general_assembly' => self::GEN_EA_CLIENT_CODE,
+            default => self::GEN_EA_CLIENT_CODE,
         };
         $jobRequests = $clientCodeFilter
             ? $this->jobRequestsForVerticalClient($clientCodeFilter)
@@ -2122,7 +2124,10 @@ class GeneralAssemblyJobController extends Controller
         }
 
         $compliance = Compliance::find($data['compliance']);
-        $jobRequest = JobRequest::find($data['job_type']);
+        $jobRequest = JobRequest::query()
+            ->where('id', $data['job_type'])
+            ->whereRaw('UPPER(TRIM(client_code)) = ?', [self::GEN_EA_CLIENT_CODE])
+            ->first();
         $client = $this->resolveOrCreateClientAccount($data['client']);
 
         if (!$compliance || !$jobRequest || !$client) {
@@ -2520,7 +2525,7 @@ class GeneralAssemblyJobController extends Controller
      */
     public function addForm(Request $request)
     {
-        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, 'GA01'), [
+        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, self::GEN_EA_CLIENT_CODE), [
             'sidebar_active' => 'general_assembly.add',
         ]));
     }
@@ -2530,7 +2535,7 @@ class GeneralAssemblyJobController extends Controller
      */
     public function publicAddForm(Request $request)
     {
-        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, 'GA01'), [
+        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, self::GEN_EA_CLIENT_CODE), [
             'layoutView' => 'layouts.public-form',
             'storeRoute' => route('general_assembly.public.store'),
             'sendSlackBaseUrl' => url('/lbs/add-new/job'),
@@ -2578,6 +2583,7 @@ class GeneralAssemblyJobController extends Controller
             'EL01' => 'efficient_living',
             'LT01' => 'luntian',
             'GA01' => 'general_assembly',
+            self::GEN_EA_CLIENT_CODE => 'general_assembly',
             default => 'general_assembly',
         };
     }
@@ -3013,7 +3019,8 @@ class GeneralAssemblyJobController extends Controller
                 ->get();
         }
 
-        return JobRequest::where('client_code', $clientCode)
+        return JobRequest::query()
+            ->whereRaw('UPPER(TRIM(client_code)) = ?', [strtoupper(trim((string) $clientCode))])
             ->orderBy('job_request_type')
             ->get();
     }
