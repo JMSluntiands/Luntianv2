@@ -32,19 +32,19 @@
             $hasActiveFilters = $selectedClientCode !== '' || $search !== '';
         @endphp
         <form method="GET" action="{{ route('job_request.index') }}" class="mb-4 flex flex-wrap items-end gap-3" id="jobRequestFilterForm" autocomplete="off">
-            <div class="min-w-[180px]">
+            <div class="w-48">
                 <label for="jobRequestClientFilter" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Client Code</label>
-                <select id="jobRequestClientFilter" name="client_code" class="w-full min-w-[180px] cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                <select id="jobRequestClientFilter" name="client_code" class="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                     <option value="">All client codes</option>
                     @foreach($clientCodes as $code)
                         <option value="{{ $code }}" @selected($selectedClientCode === (string) $code)>{{ $code }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="min-w-[240px] flex-1">
+            <div class="min-w-60 flex-1">
                 <label for="jobRequestSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
-                <div class="relative">
-                    <svg class="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35"/></svg>
+                <div class="relative overflow-hidden">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:18px;height:18px"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/></svg>
                     <input type="search" id="jobRequestSearch" name="q" value="{{ $search }}" placeholder="Request ID or type..." class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                 </div>
             </div>
