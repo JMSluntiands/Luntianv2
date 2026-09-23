@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, ArrowRight, Sun, Moon, Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import LuntianLogo from '../components/LuntianLogo';
 
 const THEME_KEY = 'theme';
 
@@ -19,11 +20,6 @@ export default function Login() {
     return saved !== 'light';
   });
   const [iconAnimating, setIconAnimating] = useState(false);
-
-  const logoUrl = useMemo(() => {
-    if (typeof document === 'undefined') return '/branding/logo-light';
-    return document.querySelector('meta[name="logo-url"]')?.getAttribute('content') || '/branding/logo-light';
-  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -145,6 +141,10 @@ export default function Login() {
         </div>
       )}
 
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
+        <LuntianLogo compact />
+      </div>
+
       {/* Top right: theme toggle + toast */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex flex-col items-end gap-3 z-10">
         <button
@@ -220,24 +220,7 @@ export default function Login() {
         <div className={`rounded-2xl border px-6 sm:px-8 py-8 sm:py-10 transition-colors duration-300 ${isDarkClasses.card}`}>
           {/* Logo – Luntian branding */}
           <div className="flex justify-center mb-8">
-            <img
-              src={logoUrl}
-              alt="Luntian"
-              className="max-h-14 sm:max-h-16 w-auto object-contain"
-              onError={(e) => {
-                const target = e.currentTarget;
-                target.style.display = 'none';
-                const fallback = target.nextElementSibling as HTMLElement;
-                if (fallback) fallback.style.display = 'block';
-              }}
-            />
-            <p
-              className={`text-2xl sm:text-3xl font-bold uppercase tracking-wide text-center w-full text-emerald-600 ${isDark ? '!text-emerald-400' : ''}`}
-              style={{ display: 'none' }}
-              aria-hidden="true"
-            >
-              LUNTIAN
-            </p>
+            <LuntianLogo />
           </div>
 
           <div className="space-y-6">

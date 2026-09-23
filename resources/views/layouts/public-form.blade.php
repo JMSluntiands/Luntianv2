@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Luntian Form') - Luntian</title>
+    @includeIf('layouts.partials.favicon')
     <script>
         (function() {
             var t = (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || '';
@@ -28,9 +29,14 @@
 <body class="overflow-x-hidden @yield('body_class', '')">
     <main class="min-h-screen bg-slate-50 p-4 dark:bg-slate-900 md:p-6">
         <div class="mx-auto w-full max-w-6xl">
-            <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
-                <span class="text-sm font-medium text-slate-500 dark:text-slate-400 max-[480px]:sr-only">Theme</span>
-                @include('layouts.partials.theme-toggle-button')
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <a href="{{ url('/') }}" class="inline-flex items-center no-underline">
+                    @includeIf('layouts.partials.brand-logo', ['compact' => true])
+                </a>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-slate-500 dark:text-slate-400 max-[480px]:sr-only">Theme</span>
+                    @include('layouts.partials.theme-toggle-button')
+                </div>
             </div>
             @yield('content')
         </div>

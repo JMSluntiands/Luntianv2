@@ -2664,8 +2664,14 @@ class GeneralAssemblyJobController extends Controller
             ?? $jobRequests->first();
 
         $assignmentModule = $this->assignmentModuleForClientCode($jobRequestClientCode);
-        $assignmentStaffUsers = User::assignmentUsersForSelect($assignmentModule, 'staff');
-        $assignmentCheckerUsers = User::assignmentUsersForSelect($assignmentModule, 'checker');
+        try {
+            $assignmentStaffUsers = User::assignmentUsersForSelect($assignmentModule, 'staff');
+            $assignmentCheckerUsers = User::assignmentUsersForSelect($assignmentModule, 'checker');
+        } catch (\Throwable $e) {
+            \Log::warning('GA add form assignment users failed', ['error' => $e->getMessage()]);
+            $assignmentStaffUsers = collect();
+            $assignmentCheckerUsers = collect();
+        }
 
         $duplicateJob = null;
         $duplicateId = $request->query('duplicate');
@@ -2747,34 +2753,53 @@ class GeneralAssemblyJobController extends Controller
      *
      * @return list<string>
      */
-    private function recentGaClientNames(int $limit = 50): array
+    private function fallbackClientAccountNames(int $limit = 50): array
     {
-        if (! Schema::hasTable('job_general_assembly')) {
-            return ClientAccount::query()
-                ->whereNotNull('client_account_name')
-                ->where('client_account_name', '!=', '')
-                ->orderByDesc('client_account_id')
-                ->limit($limit)
-                ->pluck('client_account_name')
-                ->map(fn ($name) => trim((string) $name))
-                ->filter()
-                ->values()
-                ->all();
+        if (! Schema::hasTable('client_accounts')) {
+            return [];
         }
 
-        return DB::table('job_general_assembly as j')
-            ->join('client_accounts as c', 'c.client_account_id', '=', 'j.client_account_id')
-            ->whereNotNull('c.client_account_name')
-            ->where('c.client_account_name', '!=', '')
-            ->select('c.client_account_name', DB::raw('MAX(COALESCE(j.log_date, j.last_update)) as last_used'))
-            ->groupBy('c.client_account_name')
-            ->orderByDesc('last_used')
+        return ClientAccount::query()
+            ->whereNotNull('client_account_name')
+            ->where('client_account_name', '!=', '')
+            ->orderByDesc('client_account_id')
             ->limit($limit)
             ->pluck('client_account_name')
             ->map(fn ($name) => trim((string) $name))
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function recentGaClientNames(int $limit = 50): array
+    {
+        try {
+            if (! Schema::hasTable('job_general_assembly') || ! Schema::hasTable('client_accounts')) {
+                return $this->fallbackClientAccountNames($limit);
+            }
+
+            $orderExpr = Schema::hasColumn('job_general_assembly', 'last_update')
+                ? 'MAX(j.last_update)'
+                : (Schema::hasColumn('job_general_assembly', 'log_date') ? 'MAX(j.log_date)' : 'MAX(j.job_id)');
+
+            return DB::table('job_general_assembly as j')
+                ->join('client_accounts as c', 'c.client_account_id', '=', 'j.client_account_id')
+                ->whereNotNull('c.client_account_name')
+                ->where('c.client_account_name', '!=', '')
+                ->select('c.client_account_name', DB::raw($orderExpr.' as last_used'))
+                ->groupBy('c.client_account_name')
+                ->orderByDesc('last_used')
+                ->limit($limit)
+                ->pluck('client_account_name')
+                ->map(fn ($name) => trim((string) $name))
+                ->filter()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            \Log::warning('GA add form client suggestions failed', ['error' => $e->getMessage()]);
+
+            return $this->fallbackClientAccountNames($limit);
+        }
     }
 
     private function resolveOrCreateClientAccount(string $name): ?ClientAccount
@@ -2804,25 +2829,50 @@ class GeneralAssemblyJobController extends Controller
             : now('Asia/Manila');
         $prefix = 'JOB-GEA-' . $day->format('ymd');
 
-        $rows = DB::table('job_general_assembly')
-            ->where(function ($q) use ($prefix) {
-                $q->where('job_reference_no', 'like', $prefix . '%')
-                    ->orWhere('reference', 'like', $prefix . '%');
-            })
-            ->get(['job_reference_no', 'reference']);
-
-        $max = 0;
-        $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)/';
-        foreach ($rows as $row) {
-            foreach ([$row->job_reference_no ?? '', $row->reference ?? ''] as $val) {
-                $val = trim((string) $val);
-                if ($val !== '' && preg_match($pattern, $val, $m)) {
-                    $max = max($max, (int) $m[1]);
-                }
-            }
+        if (! Schema::hasTable('job_general_assembly')) {
+            return $prefix . '001';
         }
 
-        return $prefix . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+        $hasJobRef = Schema::hasColumn('job_general_assembly', 'job_reference_no');
+        $hasReference = Schema::hasColumn('job_general_assembly', 'reference');
+        if (! $hasJobRef && ! $hasReference) {
+            return $prefix . '001';
+        }
+
+        try {
+            $columns = array_values(array_filter([
+                $hasJobRef ? 'job_reference_no' : null,
+                $hasReference ? 'reference' : null,
+            ]));
+
+            $rows = DB::table('job_general_assembly')
+                ->where(function ($q) use ($prefix, $hasJobRef, $hasReference) {
+                    if ($hasJobRef) {
+                        $q->where('job_reference_no', 'like', $prefix . '%');
+                    }
+                    if ($hasReference) {
+                        $q->{$hasJobRef ? 'orWhere' : 'where'}('reference', 'like', $prefix . '%');
+                    }
+                })
+                ->get($columns);
+
+            $max = 0;
+            $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)/';
+            foreach ($rows as $row) {
+                foreach ([$row->job_reference_no ?? '', $row->reference ?? ''] as $val) {
+                    $val = trim((string) $val);
+                    if ($val !== '' && preg_match($pattern, $val, $m)) {
+                        $max = max($max, (int) $m[1]);
+                    }
+                }
+            }
+
+            return $prefix . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+        } catch (\Throwable $e) {
+            \Log::warning('GA next job reference lookup failed', ['error' => $e->getMessage()]);
+
+            return $prefix . $day->format('His');
+        }
     }
 
     /**

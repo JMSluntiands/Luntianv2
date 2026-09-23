@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class User extends Authenticatable
 {
@@ -108,11 +109,18 @@ class User extends Authenticatable
 
     public static function assignmentUsersForSelect(?string $module = null, string $assignmentRole = 'staff'): Collection
     {
+        $columns = ['id', 'unique_code', 'username', 'fullname'];
+        foreach (['add_job_staff_modules', 'add_job_checker_modules'] as $column) {
+            if (Schema::hasColumn((new static)->getTable(), $column)) {
+                $columns[] = $column;
+            }
+        }
+
         return static::query()
             ->forJobAssignment()
             ->orderBy('unique_code')
             ->orderByDesc('id')
-            ->get(['id', 'unique_code', 'username', 'fullname', 'add_job_staff_modules', 'add_job_checker_modules'])
+            ->get($columns)
             ->groupBy(fn (self $user) => strtoupper(trim((string) $user->unique_code)))
             ->map(fn (Collection $group) => $group->first(
                 fn (self $user) => $user->appearsInAddJobModule($module, $assignmentRole)

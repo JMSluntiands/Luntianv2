@@ -88,11 +88,18 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/branding/logo-light', function () {
-    if (!Storage::disk('public')->exists('logo-light.png')) {
-        abort(404);
+    $storagePath = Storage::disk('public')->path('logo-light.png');
+    $publicPath = public_path('images/luntian-logo.png');
+
+    if (Storage::disk('public')->exists('logo-light.png')) {
+        return response()->file($storagePath);
     }
 
-    return response()->file(Storage::disk('public')->path('logo-light.png'));
+    if (is_file($publicPath)) {
+        return response()->file($publicPath);
+    }
+
+    abort(404);
 })->name('branding.logo_light');
 
 $registerPublicLbsRoutes = function () {

@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="logo-url" content="{{ route('branding.logo_light') }}">
-    <title>{{ config('app.name', 'BLIUNQ') }}</title>
+    <title>{{ config('app.name', 'Luntian') }}</title>
+    @includeIf('layouts.partials.favicon')
     <script>
         (function(){
             var t = localStorage.getItem('theme');

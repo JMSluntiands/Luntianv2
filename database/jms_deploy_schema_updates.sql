@@ -274,9 +274,16 @@ WHERE up.`route_name` IN ('dashboard', 'forum_thread')
   );
 
 -- -----------------------------------------------------------------------------
+-- Generic EA add form: ensure reference column exists (avoids 500 on /general-assembly/add)
+-- -----------------------------------------------------------------------------
+ALTER TABLE `job_general_assembly`
+  ADD COLUMN IF NOT EXISTS `reference` varchar(255) DEFAULT NULL AFTER `job_id`;
+
+-- -----------------------------------------------------------------------------
 -- Optional check queries (run after):
 -- SHOW COLUMNS FROM tasks LIKE 'visibility';
 -- SHOW COLUMNS FROM slack_configs LIKE '%slack_active%';
+-- SHOW COLUMNS FROM job_general_assembly LIKE 'reference';
 -- SELECT route_name, COUNT(*) FROM role_permissions
 --   WHERE route_name LIKE 'task_management%' GROUP BY route_name;
 -- =============================================================================

@@ -129,7 +129,7 @@
 <aside id="sidebarNav" role="navigation" aria-label="Main navigation" class="sidebar fixed left-0 top-0 z-50 flex h-screen w-60 flex-col overflow-hidden border-r border-slate-200 bg-white py-0 shadow-sm transition-[transform,box-shadow] duration-250 ease-out dark:border-slate-700/50 dark:bg-slate-900 dark:shadow-slate-950/30 -translate-x-full lg:translate-x-0">
     <div class="sidebar-brand flex h-14 w-full flex-shrink-0 items-center justify-center border-b border-slate-200 bg-slate-50/50 px-4 dark:border-slate-700 dark:bg-slate-800/50">
         <a href="{{ route('dashboard') }}" class="flex w-full items-center justify-center no-underline">
-            <img src="{{ url('/branding/logo-light') }}" alt="Luntian" class="sidebar-logo-img mx-auto block h-8 w-auto max-w-[130px] object-contain" onerror="this.style.display='none';" />
+            @includeIf('layouts.partials.brand-logo', ['compact' => true])
         </a>
     </div>
     @php

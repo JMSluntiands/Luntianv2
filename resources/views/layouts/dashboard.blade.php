@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - Luntian</title>
+    @includeIf('layouts.partials.favicon')
     <script>
         (function(){
             var t = (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || '';
@@ -135,7 +136,7 @@
 <body class="overflow-x-hidden @yield('body_class', '')">
     <div class="page-loader" id="pageLoader" aria-hidden="true" data-theme="">
         <div class="page-loader-spinner"></div>
-        <span class="page-loader-logo">Luntian</span>
+        <span class="page-loader-logo">LUNTIAN</span>
     </div>
     <script>
         (function(){

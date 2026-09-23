@@ -9,15 +9,41 @@ use Illuminate\Support\Facades\Validator;
 
 class JobRequestController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $jobRequests = JobRequest::with('client')
-            ->orderByDesc('id')
-            ->paginate(15);
+        $clientCode = trim((string) $request->query('client_code', ''));
+        $search = trim((string) $request->query('q', ''));
+
+        $query = JobRequest::with('client')->orderByDesc('id');
+
+        if ($clientCode !== '') {
+            $query->where('client_code', $clientCode);
+        }
+
+        if ($search !== '') {
+            $like = '%'.$search.'%';
+            $query->where(function ($q) use ($like) {
+                $q->where('job_request_id', 'like', $like)
+                    ->orWhere('job_request_type', 'like', $like)
+                    ->orWhere('client_code', 'like', $like);
+            });
+        }
+
+        $jobRequests = $query->paginate(15)->withQueryString();
+
+        $clientCodes = JobRequest::query()
+            ->whereNotNull('client_code')
+            ->where('client_code', '!=', '')
+            ->distinct()
+            ->orderBy('client_code')
+            ->pluck('client_code');
 
         return view('job_request.index', [
             'sidebar_active' => 'job_request.index',
             'jobRequests' => $jobRequests,
+            'clientCodes' => $clientCodes,
+            'selectedClientCode' => $clientCode,
+            'search' => $search,
         ]);
     }
 

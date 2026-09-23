@@ -25,6 +25,37 @@
             </a>
         </div>
 
+        @php
+            $selectedClientCode = $selectedClientCode ?? '';
+            $search = $search ?? '';
+            $clientCodes = $clientCodes ?? collect();
+            $hasActiveFilters = $selectedClientCode !== '' || $search !== '';
+        @endphp
+        <form method="GET" action="{{ route('job_request.index') }}" class="mb-4 flex flex-wrap items-end gap-3" id="jobRequestFilterForm" autocomplete="off">
+            <div class="min-w-[180px]">
+                <label for="jobRequestClientFilter" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Client Code</label>
+                <select id="jobRequestClientFilter" name="client_code" class="w-full min-w-[180px] cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                    <option value="">All client codes</option>
+                    @foreach($clientCodes as $code)
+                        <option value="{{ $code }}" @selected($selectedClientCode === (string) $code)>{{ $code }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="min-w-[240px] flex-1">
+                <label for="jobRequestSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
+                <div class="relative">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35"/></svg>
+                    <input type="search" id="jobRequestSearch" name="q" value="{{ $search }}" placeholder="Request ID or type..." class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
+                </div>
+            </div>
+            <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-slate-700 dark:hover:bg-slate-600 dark:focus:ring-offset-slate-900">
+                Filter
+            </button>
+            @if($hasActiveFilters)
+                <a href="{{ route('job_request.index') }}" class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 no-underline transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Clear</a>
+            @endif
+        </form>
+
         @if(session('success'))
             <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-700/70 dark:bg-emerald-900/30 dark:text-emerald-200">
                 <span class="mt-0.5 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white dark:bg-emerald-500">
@@ -91,8 +122,13 @@
                             <tr>
                                 <td colspan="5" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
                                     <svg class="mx-auto mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <p class="font-medium">No job requests yet.</p>
-                                    <p class="mt-1 text-sm"><a href="{{ route('job_request.create') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Add one</a> to get started.</p>
+                                    @if($hasActiveFilters)
+                                        <p class="font-medium">No job requests match this filter.</p>
+                                        <p class="mt-1 text-sm"><a href="{{ route('job_request.index') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Clear filters</a> to see all records.</p>
+                                    @else
+                                        <p class="font-medium">No job requests yet.</p>
+                                        <p class="mt-1 text-sm"><a href="{{ route('job_request.create') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">Add one</a> to get started.</p>
+                                    @endif
                                 </td>
                             </tr>
                         @endforelse
@@ -161,6 +197,14 @@
                 modal.classList.remove('show');
                 formToSubmit = null;
                 resetModal();
+            }
+
+            var filterForm = document.getElementById('jobRequestFilterForm');
+            var clientFilter = document.getElementById('jobRequestClientFilter');
+            if (filterForm && clientFilter) {
+                clientFilter.addEventListener('change', function() {
+                    filterForm.submit();
+                });
             }
 
             document.querySelectorAll('[data-delete-trigger]').forEach(function(btn) {
