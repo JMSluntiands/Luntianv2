@@ -28,6 +28,14 @@ class BphJobController extends Controller
 {
     private const BPH_CLIENT_CODE = 'BPH01';
 
+    private function bphJobRequests()
+    {
+        return JobRequest::query()
+            ->whereRaw('UPPER(TRIM(client_code)) = ?', [self::BPH_CLIENT_CODE])
+            ->orderBy('job_request_type')
+            ->get();
+    }
+
     private static ?string $pipelineJobTable = null;
 
     private static ?string $pipelineStorageBase = null;
@@ -363,7 +371,7 @@ class BphJobController extends Controller
     public function addForm()
     {
         $compliances = Compliance::orderBy('column')->get();
-        $jobRequests = JobRequest::orderBy('job_request_type')->get();
+        $jobRequests = $this->bphJobRequests();
         $assignmentStaffUsers = User::assignmentUsersForSelect('bph', 'staff');
         $assignmentCheckerUsers = User::assignmentUsersForSelect('bph', 'checker');
 
@@ -408,7 +416,12 @@ class BphJobController extends Controller
         }
 
         $compliance = !empty($data['ncc_compliance']) ? Compliance::find($data['ncc_compliance']) : null;
-        $jobRequest = !empty($data['job_type_request']) ? JobRequest::find($data['job_type_request']) : null;
+        $jobRequest = !empty($data['job_type_request'])
+            ? JobRequest::query()
+                ->where('id', $data['job_type_request'])
+                ->whereRaw('UPPER(TRIM(client_code)) = ?', [self::BPH_CLIENT_CODE])
+                ->first()
+            : null;
 
         $nccText = $compliance->column ?? '2019';
         $jobTypeText = $jobRequest->job_request_type ?? '—';
@@ -757,9 +770,7 @@ class BphJobController extends Controller
             : null;
 
         $compliances = Compliance::orderBy('column')->get(['column']);
-        $jobRequests = JobRequest::whereIn('client_code', ['BPH01', 'B1001'])
-            ->orderBy('job_request_type')
-            ->get(['job_request_type']);
+        $jobRequests = $this->bphJobRequests();
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['email']);
         $priorities = Priority::orderBy('id')->get();
         $statuses = Status::orderBy('name')->get();
