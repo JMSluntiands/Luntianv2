@@ -2125,17 +2125,17 @@ class LbsJobController extends Controller
         $now = now('Asia/Manila');
         $isLuntianStore = $request->route()?->getName() === 'luntian.store';
 
-        // System reference: JOBSMMDD-NNN (increments per day). Duplicates append -1, -2, ...
-        $referenceValue = trim((string) ($headerRef ?: ''));
-        if ($referenceValue === '') {
-            $referenceValue = $isLuntianStore
-                ? ('JOBS'.$now->format('YmdHis'))
-                : $this->nextLbsSystemReference($now);
-        } elseif (! $isLuntianStore && ! preg_match('/^JOBS\d{4}-\d{3}(?:-\d+)*$/i', $referenceValue)) {
-            // Invalid/stale header badge (e.g. old hardcoded JOBS0823-003) — allocate a fresh sequence.
-            $referenceValue = $this->nextLbsSystemReference($now);
-        } elseif ($isLuntianStore && stripos($referenceValue, 'JOBS') !== 0) {
-            $referenceValue = 'JOBS-'.$referenceValue;
+        // LBS/EL system reference: always allocate a fresh JOBSMMDD-NNN on save.
+        // Do not trust the form badge — a stale page would keep reusing …-001.
+        if ($isLuntianStore) {
+            $referenceValue = trim((string) ($headerRef ?: ''));
+            if ($referenceValue === '') {
+                $referenceValue = 'JOBS'.$now->format('YmdHis');
+            } elseif (stripos($referenceValue, 'JOBS') !== 0) {
+                $referenceValue = 'JOBS-'.$referenceValue;
+            }
+        } else {
+            $referenceValue = $this->allocateLbsSystemReference($now);
         }
 
         $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
@@ -2245,6 +2245,10 @@ class LbsJobController extends Controller
                 'status'  => 'success',
                 'message' => $successMessage,
                 'job_id'  => $jobId,
+                'reference' => $referenceValue,
+                'next_reference' => $isLuntianStore
+                    ? ('JOBS'.$now->copy()->addSecond()->format('YmdHis'))
+                    : $this->nextLbsSystemReference($now),
                 'submission_email_enabled' => EmailConfig::where('is_active', true)->exists(),
             ]);
         } catch (\Throwable $e) {
@@ -2797,6 +2801,43 @@ class LbsJobController extends Controller
         }
 
         return $prefix.'-'.str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Allocate a unique daily LBS/EL reference, retrying if a concurrent save took the same NNN.
+     */
+    private function allocateLbsSystemReference(?\DateTimeInterface $now = null): string
+    {
+        $day = $now
+            ? \Carbon\Carbon::parse($now)->timezone('Asia/Manila')
+            : now('Asia/Manila');
+        $prefix = 'JOBS'.$day->format('md');
+        $pattern = '/^'.preg_quote($prefix, '/').'-(\d+)/i';
+
+        for ($attempt = 0; $attempt < 40; $attempt++) {
+            $candidate = $this->nextLbsSystemReference($day);
+            $taken = DB::table('jobs')->where('reference', $candidate)->exists();
+            if (! $taken) {
+                return $candidate;
+            }
+
+            // Rare race: bump past the colliding sequence explicitly.
+            $refs = DB::table('jobs')
+                ->where('reference', 'like', $prefix.'-%')
+                ->pluck('reference');
+            $max = 0;
+            foreach ($refs as $ref) {
+                if (preg_match($pattern, trim((string) $ref), $m)) {
+                    $max = max($max, (int) $m[1]);
+                }
+            }
+            $forced = $prefix.'-'.str_pad((string) ($max + 1 + $attempt), 3, '0', STR_PAD_LEFT);
+            if (! DB::table('jobs')->where('reference', $forced)->exists()) {
+                return $forced;
+            }
+        }
+
+        return $prefix.'-'.str_pad((string) ((int) $day->format('His') % 1000), 3, '0', STR_PAD_LEFT);
     }
 
     /**
