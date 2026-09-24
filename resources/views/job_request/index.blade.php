@@ -141,7 +141,7 @@
     </div>
 
     {{-- Delete confirmation modal --}}
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200 backdrop-blur-sm" id="deleteJobRequestModal" role="dialog" aria-labelledby="deleteJobRequestModalTitle" aria-modal="true">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 opacity-0 pointer-events-none transition-opacity duration-200 backdrop-blur-sm [&.show]:opacity-100 [&.show]:pointer-events-auto" id="deleteJobRequestModal" role="dialog" aria-labelledby="deleteJobRequestModalTitle" aria-modal="true">
         <div class="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800" role="document">
             <div class="flex items-center gap-3 px-5 py-5">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/20 text-red-600 dark:bg-red-500/30 dark:text-red-400">

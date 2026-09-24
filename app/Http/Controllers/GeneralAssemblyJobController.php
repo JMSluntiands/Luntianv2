@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClientAccount;
 use App\Models\Compliance;
 use App\Models\JobRequest;
+use App\Models\JobModuleClient;
 use App\Models\ActivityLog;
 use App\Models\Priority;
 use App\Models\Status;
@@ -28,7 +29,10 @@ use Illuminate\Support\Facades\URL;
 
 class GeneralAssemblyJobController extends Controller
 {
-    private const GEN_EA_CLIENT_CODE = 'GENEA01';
+    private function genEaClientCode(): string
+    {
+        return JobModuleClient::codeFor('general_assembly');
+    }
 
     public function show(int $id)
     {
@@ -99,10 +103,10 @@ class GeneralAssemblyJobController extends Controller
         $compliances = Compliance::orderBy('column')->get();
         $clientAccounts = ClientAccount::orderBy('client_account_name')->get();
         $clientCodeFilter = match ($product) {
-            'efficient_living' => 'EL01',
-            'luntian' => 'LT01',
-            'general_assembly' => self::GEN_EA_CLIENT_CODE,
-            default => self::GEN_EA_CLIENT_CODE,
+            'efficient_living' => JobModuleClient::codeFor('efficient_living'),
+            'luntian' => JobModuleClient::codeFor('luntian'),
+            'general_assembly' => $this->genEaClientCode(),
+            default => $this->genEaClientCode(),
         };
         $jobRequests = $clientCodeFilter
             ? $this->jobRequestsForVerticalClient($clientCodeFilter)
@@ -2126,7 +2130,7 @@ class GeneralAssemblyJobController extends Controller
         $compliance = Compliance::find($data['compliance']);
         $jobRequest = JobRequest::query()
             ->where('id', $data['job_type'])
-            ->whereRaw('UPPER(TRIM(client_code)) = ?', [self::GEN_EA_CLIENT_CODE])
+            ->whereRaw('UPPER(TRIM(client_code)) = ?', [$this->genEaClientCode()])
             ->first();
         $client = $this->resolveOrCreateClientAccount($data['client']);
 
@@ -2525,7 +2529,7 @@ class GeneralAssemblyJobController extends Controller
      */
     public function addForm(Request $request)
     {
-        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, self::GEN_EA_CLIENT_CODE), [
+        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, $this->genEaClientCode()), [
             'sidebar_active' => 'general_assembly.add',
         ]));
     }
@@ -2535,7 +2539,7 @@ class GeneralAssemblyJobController extends Controller
      */
     public function publicAddForm(Request $request)
     {
-        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, self::GEN_EA_CLIENT_CODE), [
+        return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, $this->genEaClientCode()), [
             'layoutView' => 'layouts.public-form',
             'storeRoute' => route('general_assembly.public.store'),
             'sendSlackBaseUrl' => url('/lbs/add-new/job'),
@@ -2550,14 +2554,14 @@ class GeneralAssemblyJobController extends Controller
      */
     public function efficientLivingAddForm(Request $request)
     {
-        return view('efficient_living.add', array_merge($this->buildAddJobFormData($request, 'EL01'), [
+        return view('efficient_living.add', array_merge($this->buildAddJobFormData($request, JobModuleClient::codeFor('efficient_living')), [
             'sidebar_active' => 'efficient_living.add',
         ]));
     }
 
     public function luntianAddForm(Request $request)
     {
-        $data = $this->buildAddJobFormData($request, 'LT01');
+        $data = $this->buildAddJobFormData($request, JobModuleClient::codeFor('luntian'));
         $luntianClient = $this->defaultLuntianClientAccount();
         if ($luntianClient) {
             $data['defaultClientAccountId'] = $luntianClient->client_account_id;
@@ -2583,7 +2587,8 @@ class GeneralAssemblyJobController extends Controller
             'EL01' => 'efficient_living',
             'LT01' => 'luntian',
             'GA01' => 'general_assembly',
-            self::GEN_EA_CLIENT_CODE => 'general_assembly',
+            'GENEA01' => 'general_assembly',
+            'GEA01' => 'general_assembly',
             default => 'general_assembly',
         };
     }

@@ -500,6 +500,8 @@ return [
             'priority.index' => 'Priority',
             'status.index' => 'Status',
             'job_request.index' => 'Job Request',
+            'job_module_client.index' => 'Assign Client',
+            'job_module_client.update' => 'Assign Client Save',
             'client.index' => 'Client',
         ],
         'Announcement' => [
@@ -907,7 +909,7 @@ return [
                 'settings.jotform_config', 'settings.jotform_config.toggle',
                 'settings.email_config', 'settings.email_config.toggle', 'settings.slack_config', 'settings.slack_config.toggle',
                 'settings.notifications', 'settings.permission',
-                'compliance.index', 'priority.index', 'status.index', 'job_request.index', 'client.index',
+                'compliance.index', 'priority.index', 'status.index', 'job_request.index', 'job_module_client.index', 'job_module_client.update', 'client.index',
                 'announcement.index', 'announcement.create', 'announcement.store', 'announcement.edit', 'announcement.update', 'announcement.destroy',
                 'branch.index', 'branch.archive',
                 'users.index', 'accounts.clients.index', 'users.archive',

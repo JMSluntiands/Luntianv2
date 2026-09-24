@@ -20,6 +20,15 @@ class JobRequest extends Model
         return $this->belongsTo(Client::class, 'client_code', 'client_code');
     }
 
+    public static function forClientCode(string $clientCode): Builder
+    {
+        $code = strtoupper(trim($clientCode));
+
+        return static::query()
+            ->whereRaw('UPPER(TRIM(client_code)) = ?', [$code])
+            ->orderBy('job_request_type');
+    }
+
     /** @return list<string> */
     public static function luntianClientCodesForQuery(): array
     {

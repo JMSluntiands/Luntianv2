@@ -33,6 +33,11 @@
                 <span class="flex-1">{{ session('success') }}</span>
             </div>
         @endif
+        @if(session('error'))
+            <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+                <span class="flex-1">{{ session('error') }}</span>
+            </div>
+        @endif
 
         {{-- Table card --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">

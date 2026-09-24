@@ -25,6 +25,7 @@ use App\Http\Controllers\EmailConfigController;
 use App\Http\Controllers\JotformConfigController;
 use App\Http\Controllers\JotformWebhookController;
 use App\Http\Controllers\JobRequestController;
+use App\Http\Controllers\JobModuleClientController;
 use App\Http\Controllers\GeneralAssemblyJobController;
 use App\Http\Controllers\LbsJobController;
 use App\Http\Controllers\LcHomeBuilderJobController;
@@ -457,6 +458,9 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/job-request/{job_request}/edit', [JobRequestController::class, 'edit'])->name('job_request.edit');
     Route::put('/dashboard/job-request/{job_request}', [JobRequestController::class, 'update'])->name('job_request.update');
     Route::delete('/dashboard/job-request/{job_request}', [JobRequestController::class, 'destroy'])->name('job_request.destroy');
+
+    Route::get('/dashboard/job-assign-client', [JobModuleClientController::class, 'index'])->name('job_module_client.index');
+    Route::put('/dashboard/job-assign-client', [JobModuleClientController::class, 'update'])->name('job_module_client.update');
 
     Route::get('/dashboard/client', [ClientAccountController::class, 'index'])->name('client.index');
     Route::get('/dashboard/client/create', [ClientAccountController::class, 'create'])->name('client.create');

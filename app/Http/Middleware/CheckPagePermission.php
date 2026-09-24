@@ -150,6 +150,13 @@ class CheckPagePermission
                     'forum_thread.comment',
                     'forum_thread',
                 ],
+                'job_module_client.index' => [
+                    'job_request.index',
+                ],
+                'job_module_client.update' => [
+                    'job_module_client.index',
+                    'job_request.index',
+                ],
             ];
             if (isset($routePermissionAlternates[$routeName])) {
                 foreach ($routePermissionAlternates[$routeName] as $altRoute) {

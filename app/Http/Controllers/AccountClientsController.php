@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AccountClientsController extends Controller
 {
@@ -93,7 +95,34 @@ class AccountClientsController extends Controller
                 ->withInput();
         }
 
-        $client->update($validator->validated());
+        $data = $validator->validated();
+        $oldCode = trim((string) $client->client_code);
+        $newCode = trim((string) $data['client_code']);
+
+        try {
+            DB::transaction(function () use ($client, $data, $oldCode, $newCode) {
+                if ($oldCode !== '' && strcasecmp($oldCode, $newCode) !== 0) {
+                    Schema::disableForeignKeyConstraints();
+                    try {
+                        $client->update($data);
+                        $this->renameClientCodeReferences($oldCode, $newCode);
+                    } finally {
+                        Schema::enableForeignKeyConstraints();
+                    }
+                } else {
+                    $client->update($data);
+                }
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('accounts.clients.edit', $client)
+                ->withErrors([
+                    'client_code' => 'Could not change the client code because related job records still use the current code.',
+                ])
+                ->withInput();
+        }
 
         return redirect()
             ->route('accounts.clients.index')
@@ -102,10 +131,49 @@ class AccountClientsController extends Controller
 
     public function destroy(Client $client)
     {
-        $client->delete();
+        try {
+            $client->delete();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('accounts.clients.index')
+                ->with('error', 'Cannot delete this client while job requests or jobs still use its code.');
+        }
 
         return redirect()
             ->route('accounts.clients.index')
             ->with('success', 'Client account deleted successfully.');
+    }
+
+    private function renameClientCodeReferences(string $oldCode, string $newCode): void
+    {
+        foreach ($this->tablesWithClientCodeColumn() as $table) {
+            if ($table === 'clients' || ! Schema::hasTable($table) || ! Schema::hasColumn($table, 'client_code')) {
+                continue;
+            }
+
+            DB::table($table)->where('client_code', $oldCode)->update(['client_code' => $newCode]);
+        }
+    }
+
+    /** @return list<string> */
+    private function tablesWithClientCodeColumn(): array
+    {
+        $schema = DB::getDatabaseName();
+        $rows = DB::select(
+            'SELECT TABLE_NAME AS table_name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = ?',
+            [$schema, 'client_code']
+        );
+
+        $tables = [];
+        foreach ($rows as $row) {
+            $name = trim((string) ($row->table_name ?? ''));
+            if ($name !== '') {
+                $tables[] = $name;
+            }
+        }
+
+        return array_values(array_unique($tables));
     }
 }

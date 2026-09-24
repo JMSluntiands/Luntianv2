@@ -6,6 +6,7 @@ use App\Models\ClientEmailBph;
 use App\Models\Compliance;
 use App\Models\EmailConfig;
 use App\Models\JobRequest;
+use App\Models\JobModuleClient;
 use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
@@ -28,12 +29,14 @@ class BphJobController extends Controller
 {
     private const BPH_CLIENT_CODE = 'BPH01';
 
+    private function bphClientCode(): string
+    {
+        return JobModuleClient::codeFor('bph') ?: self::BPH_CLIENT_CODE;
+    }
+
     private function bphJobRequests()
     {
-        return JobRequest::query()
-            ->whereRaw('UPPER(TRIM(client_code)) = ?', [self::BPH_CLIENT_CODE])
-            ->orderBy('job_request_type')
-            ->get();
+        return JobRequest::forClientCode($this->bphClientCode())->get();
     }
 
     private static ?string $pipelineJobTable = null;
@@ -419,7 +422,7 @@ class BphJobController extends Controller
         $jobRequest = !empty($data['job_type_request'])
             ? JobRequest::query()
                 ->where('id', $data['job_type_request'])
-                ->whereRaw('UPPER(TRIM(client_code)) = ?', [self::BPH_CLIENT_CODE])
+                ->whereRaw('UPPER(TRIM(client_code)) = ?', [$this->bphClientCode()])
                 ->first()
             : null;
 
@@ -468,7 +471,7 @@ class BphJobController extends Controller
             $row = [
                 'id'                  => $nextId,
                 'reference'           => $reference,
-                'client_code'         => self::BPH_CLIENT_CODE,
+                'client_code'         => $this->bphClientCode(),
                 'urgent'              => $urgent,
                 'job_type'            => substr($jobTypeText, 0, 100),
                 'ncc'                 => substr((string) $nccText, 0, 255),

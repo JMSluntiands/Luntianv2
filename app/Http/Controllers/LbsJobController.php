@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClientAccount;
 use App\Models\Compliance;
 use App\Models\JobRequest;
+use App\Models\JobModuleClient;
 use App\Models\ActivityLog;
 use App\Models\Priority;
 use App\Models\Status;
@@ -2527,7 +2528,7 @@ class LbsJobController extends Controller
      */
     public function addForm(Request $request)
     {
-        return view('lbs.add', array_merge($this->buildAddJobFormData($request, 'LBS01'), [
+        return view('lbs.add', array_merge($this->buildAddJobFormData($request, JobModuleClient::codeFor('lbs')), [
             'sidebar_active' => 'lbs.add',
         ]));
     }
@@ -2537,7 +2538,7 @@ class LbsJobController extends Controller
      */
     public function publicAddForm(Request $request)
     {
-        return view('lbs.add', array_merge($this->buildAddJobFormData($request, 'LBS01'), [
+        return view('lbs.add', array_merge($this->buildAddJobFormData($request, JobModuleClient::codeFor('lbs')), [
             'layoutView' => 'layouts.public-form',
             'storeRoute' => route('lbs.public.store'),
             'sendSlackBaseUrl' => url('/lbs/add-new/job'),
@@ -2552,14 +2553,14 @@ class LbsJobController extends Controller
      */
     public function efficientLivingAddForm(Request $request)
     {
-        return view('efficient_living.add', array_merge($this->buildAddJobFormData($request, 'EL01'), [
+        return view('efficient_living.add', array_merge($this->buildAddJobFormData($request, JobModuleClient::codeFor('efficient_living')), [
             'sidebar_active' => 'efficient_living.add',
         ]));
     }
 
     public function luntianAddForm(Request $request)
     {
-        $data = $this->buildAddJobFormData($request, 'LT01');
+        $data = $this->buildAddJobFormData($request, JobModuleClient::codeFor('luntian'));
         $luntianClient = $this->defaultLuntianClientAccount();
         if ($luntianClient) {
             $data['defaultClientAccountId'] = $luntianClient->client_account_id;
