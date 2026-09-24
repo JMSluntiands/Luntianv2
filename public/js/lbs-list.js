@@ -345,25 +345,13 @@ $(function () {
     var $table = getLbsTable();
     if (!$table.length) return;
 
-    $table
-      .find('[data-expand-row]')
-      .off('click.lbsMainExpand')
-      .on('click.lbsMainExpand', function (e) {
-        e.stopPropagation();
-        var $row = $(this).closest('tr');
-        var $next = $row.next('.lbs-row-detail');
-        if (!$next.length) return;
-        var open = $next.prop('hidden');
-        $next.prop('hidden', !open);
-        $(this)
-          .attr('aria-expanded', open)
-          .attr('title', open ? 'Hide details' : 'View full row details below');
-      });
-
     if (typeof w.initTableSort === 'function') {
       w.initTableSort($table);
     } else if (typeof w.initAllTableSorts === 'function') {
       w.initAllTableSorts();
+    }
+    if (typeof w.refreshTableColumnResize === 'function') {
+      w.refreshTableColumnResize($table[0] && $table[0].parentElement ? $table[0].parentElement : document);
     }
   }
 

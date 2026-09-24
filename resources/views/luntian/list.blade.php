@@ -38,7 +38,6 @@
                         <col class="luntian-col-checker">
                         <col class="luntian-col-status">
                         <col class="luntian-col-due-date">
-                        <col class="luntian-col-completion-date">
                         <col class="luntian-col-complexity">
                     </colgroup>
                     <thead>
@@ -84,10 +83,6 @@
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="luntian-th" data-sort="">
-                                <span>Completion Date</span>
-                                <span class="luntian-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="luntian-th" data-sort="">
                                 <span>Complexity</span>
                                 <span class="luntian-sort-icon" aria-hidden="true">↕</span>
                             </th>
@@ -121,9 +116,6 @@
 
                                 $dueDate1 = $due ? $due->format('F j, Y') : '—';
                                 $dueDate2 = $due ? $due->format('g:i A') : '';
-                                $completionDate1 = $completion ? $completion->format('F j, Y') : '—';
-                                $completionDate2 = $completion ? $completion->format('g:i A') : '';
-
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                                 $referenceDisplay = \App\Support\JobReference::luntianDisplay(
@@ -190,21 +182,13 @@
                                         <span class="luntian-date-line2" style="color: rgb(248 113 113); margin-top: 0.15rem;">(Overdue)</span>
                                     @endif
                                 </td>
-                                <td class="luntian-td luntian-td-nowrap" data-label="Completion Date" data-sort="{{ $completion ? $completion->format('Y-m-d H:i:s') : '' }}">
-                                    <span class="luntian-date-line1">{{ $completionDate1 }}</span>
-                                    @if($completionDate2)
-                                        <span class="luntian-date-line2">{{ $completionDate2 }}</span>
-                                    @endif
-                                </td>
                                 <td class="luntian-td luntian-td-nowrap" data-label="Complexity" data-sort="{{ $complexity }}">
-                                    <span class="luntian-stars inline-flex items-center" data-rating="{{ $complexity }}" aria-label="{{ $complexity }} out of 5">
-                                        @include('lbs.partials.stars', ['rating' => $complexity])
-                                    </span>
+                                    @include('partials.lbs-inline-complexity-cell', ['rating' => $complexity, 'complexityModule' => 'luntian'])
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="luntian-td text-center text-slate-400" colspan="12">No Luntian jobs found.</td>
+                                <td class="luntian-td text-center text-slate-400" colspan="11">No Luntian jobs found.</td>
                             </tr>
                         @endforelse
                     </tbody>

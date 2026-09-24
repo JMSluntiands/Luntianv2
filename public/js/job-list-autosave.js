@@ -326,6 +326,71 @@
     commitUpdate(select, url, fields, val, prev, okMsg, isPriority);
   }
 
+  function setComplexityStars(btn, value) {
+    if (!btn) return;
+    var stars = btn.querySelectorAll('.lbs-star');
+    Array.prototype.forEach.call(stars, function (star, idx) {
+      var i = idx + 1;
+      if (i <= value) {
+        star.classList.add('lbs-star-filled');
+        star.classList.remove('lbs-star-empty');
+      } else {
+        star.classList.add('lbs-star-empty');
+        star.classList.remove('lbs-star-filled');
+      }
+    });
+    btn.setAttribute('data-complexity-rating', String(value));
+    btn.setAttribute('data-prev', String(value));
+    btn.setAttribute('aria-label', 'Plan complexity ' + value + ' of 5, click a star to change');
+    var cell = btn.closest('td[data-label="Complexity"]');
+    if (cell) cell.setAttribute('data-sort', String(value));
+  }
+
+  function handleComplexityClick(btn, value) {
+    if (!btn || saving) return;
+    value = parseInt(value, 10);
+    if (isNaN(value) || value < 1 || value > 5) return;
+
+    var prev = parseInt(btn.getAttribute('data-prev') || btn.getAttribute('data-complexity-rating') || '0', 10) || 0;
+    if (prev === value) return;
+
+    var url = updateUrlFor(btn);
+    var token = csrfToken();
+    if (!url) {
+      toast('Missing update URL for this row.');
+      return;
+    }
+    if (!token) {
+      toast('Missing CSRF token. Reload the page.');
+      return;
+    }
+
+    saving = true;
+    btn.disabled = true;
+    setComplexityStars(btn, value);
+
+    postUpdate(url, { plan_complexity: String(value) })
+      .then(function (result) {
+        if (!result.ok) {
+          var err =
+            (result.data && (result.data.message || result.data.error)) ||
+            'Failed to save complexity (' + result.status + ').';
+          toast(err);
+          setComplexityStars(btn, prev);
+          return;
+        }
+        toast((result.data && result.data.message) || 'Complexity updated.');
+      })
+      .catch(function () {
+        toast('Failed to save. Check your connection.');
+        setComplexityStars(btn, prev);
+      })
+      .finally(function () {
+        saving = false;
+        btn.disabled = false;
+      });
+  }
+
   d.addEventListener(
     'change',
     function (e) {
@@ -338,6 +403,21 @@
         e.stopPropagation();
         handleSelectChange(t);
       }
+    },
+    true
+  );
+
+  d.addEventListener(
+    'click',
+    function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var star = t.closest('[data-star-value]');
+      var btn = t.closest('[data-complexity-select]');
+      if (!btn || !star) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handleComplexityClick(btn, star.getAttribute('data-star-value'));
     },
     true
   );
