@@ -24,7 +24,7 @@
             </div>
             <div class="shrink-0">
                 <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
-                <div class="relative flex min-w-[260px] items-center">
+                <div class="relative flex items-center">
                     <svg class="pointer-events-none absolute left-3 text-slate-500 dark:text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="search" id="lbsSearch" class="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" placeholder="Search by client, reference, job type..." autocomplete="off" aria-label="Search {{ $branchLabel }} jobs for review">
                 </div>
@@ -33,7 +33,7 @@
 
         <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
-                <table class="lbs-table w-full min-w-[1480px] table-fixed border-collapse text-sm" id="lbsTable">
+                <table class="lbs-table w-full table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
                         <col style="width: 110px">
                         <col style="width: 140px">

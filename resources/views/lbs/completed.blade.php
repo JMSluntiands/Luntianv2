@@ -65,7 +65,7 @@
 
         <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
-                <table class="lbs-table w-full min-w-[1480px] table-fixed border-collapse text-sm" id="lbsTable">
+                <table class="lbs-table w-full table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
                         <col style="width: 110px">
                         <col style="width: 140px">
