@@ -406,8 +406,8 @@ class BphJobController extends Controller
             'client_name'      => ['required', 'string', 'max:255'],
             'contact_email'    => ['required', 'email', 'max:255'],
             'notes'            => ['nullable', 'string'],
-            'assigned_to'      => ['required', 'string', 'max:50'],
-            'checked_by'       => ['required', 'string', 'max:50'],
+            'assigned_to'      => ['nullable', 'string', 'max:50'],
+            'checked_by'       => ['nullable', 'string', 'max:50'],
             'urgent_job'       => ['nullable'],
         ]);
 
@@ -481,8 +481,8 @@ class BphJobController extends Controller
                 'notes'               => $data['notes'] ?? null,
                 'created_at'          => $now,
                 'updated_at'          => $now,
-                'assigned'            => $data['assigned_to'],
-                'checked'             => $data['checked_by'],
+                'assigned'            => (($assigned = trim((string) ($data['assigned_to'] ?? ''))) !== '' ? $assigned : null),
+                'checked'             => (($checked = trim((string) ($data['checked_by'] ?? ''))) !== '' ? $checked : null),
                 'plans_files'         => json_encode($planNames),
                 'docs_files'          => json_encode($docNames),
                 'status'              => 'Allocated',

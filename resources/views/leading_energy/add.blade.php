@@ -234,8 +234,8 @@ $(function() {
                     formEl.reset();
                     notesBody.innerHTML = '';
                     $('#leadingEnergyAddForm select').each(function() { $(this).val('').trigger('change'); });
-                    $('#assigned_to').val('GM').trigger('change');
-                    $('#checked_by').val('GM').trigger('change');
+                    $('#assigned_to').val('').trigger('change');
+                    $('#checked_by').val('').trigger('change');
                     showLEAfterSavePrompt(resp.job_id);
                 } else {
                     if (window.showSuccessToast) showSuccessToast((resp && resp.message) ? resp.message : 'Failed to save job.');

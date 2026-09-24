@@ -130,16 +130,9 @@ class User extends Authenticatable
             ->values();
     }
 
-    /** Default Assigned To / Checked By when GM is eligible for that dropdown. */
+    /** Default Assigned To / Checked By selection (empty = Not allocated). */
     public static function defaultAssignmentSelection(Collection $users): string
     {
-        foreach ($users as $user) {
-            $code = strtoupper(trim((string) (is_object($user) ? ($user->unique_code ?? '') : $user)));
-            if ($code === 'GM') {
-                return 'GM';
-            }
-        }
-
         return '';
     }
 
