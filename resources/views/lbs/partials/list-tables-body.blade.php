@@ -1,12 +1,12 @@
         <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
-                <table class="lbs-table w-full min-w-[1440px] table-fixed border-collapse text-sm" id="lbsTable">
+                <table class="lbs-table w-full min-w-[1560px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
                         <col style="width: 120px">
                         <col style="width: 140px">
                         <col style="width: 260px">
-                        <col style="width: 105px">
-                        <col style="width: 125px">
+                        <col style="width: 170px">
+                        <col style="width: 140px">
                         <col style="width: 260px">
                         <col style="width: 150px">
                         <col style="width: 70px">
@@ -158,8 +158,8 @@
                                     $tableReference = $job->job_reference_no ?? $job->reference ?? '—';
                                     $clientRefDisplay = trim((string) ($job->client_reference_no ?? ''));
                                 @endphp
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Reference" data-sort="{{ $tableReference }}" style="white-space: nowrap;">{{ $tableReference }}</td>
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client reference" data-sort="{{ $clientRefDisplay }}" style="white-space: nowrap;">{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Reference" data-sort="{{ $tableReference }}" title="{{ $tableReference }}">{{ $tableReference }}</td>
+                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client reference" data-sort="{{ $clientRefDisplay }}" title="{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}">{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Type">
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->job_type }}</span>
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $job->job_request_id }}</span>
@@ -308,13 +308,13 @@
             </div>
             <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
                 <div class="max-w-full overflow-x-auto">
-                    <table class="lbs-table w-full min-w-[1440px] table-fixed border-collapse text-sm">
+                    <table class="lbs-table w-full min-w-[1560px] table-fixed border-collapse text-sm">
                         <colgroup>
                             <col style="width: 110px">
                             <col style="width: 140px">
                             <col style="width: 260px">
-                            <col style="width: 105px">
-                            <col style="width: 125px">
+                            <col style="width: 170px">
+                            <col style="width: 140px">
                             <col style="width: 260px">
                             <col style="width: 140px">
                             <col style="width: 70px">

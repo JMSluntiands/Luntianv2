@@ -1,0 +1,73 @@
+/* Column resize handles + clip overflowing fixed-table cells */
+.table-col-resize-th {
+    position: relative;
+}
+.table-col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    z-index: 5;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+}
+.table-col-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    bottom: 20%;
+    left: 3px;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+    transition: background-color 0.15s ease;
+}
+.table-col-resizable:hover .table-col-resize-handle::after,
+.table-col-resize-th:hover .table-col-resize-handle::after {
+    background: rgba(16, 185, 129, 0.55);
+}
+.table-col-resize-handle:hover::after,
+body.table-col-resizing .table-col-resize-handle::after {
+    background: rgba(16, 185, 129, 0.9);
+}
+body.table-col-resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+body.table-col-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+.lbs-table.table-fixed > thead > tr > th,
+.lbs-table.table-fixed > tbody > tr > td,
+.efficient_living-table.table-fixed > thead > tr > th,
+.efficient_living-table.table-fixed > tbody > tr > td,
+.luntian-table.table-fixed > thead > tr > th,
+.luntian-table.table-fixed > tbody > tr > td,
+.table-col-resizable > thead > tr > th,
+.table-col-resizable > tbody > tr > td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+.lbs-table.table-fixed > tbody > tr > td[data-label='Reference'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Client reference'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Client Name'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Job Type'] {
+    white-space: nowrap;
+}
+.lbs-table.table-fixed > tbody > tr > td[data-label='Priority'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Status'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Staff'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Checker'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Action'] {
+    overflow: visible;
+}
+@media (max-width: 768px) {
+    .table-col-resize-handle {
+        display: none;
+    }
+}
