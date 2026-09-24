@@ -1029,7 +1029,7 @@
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-[22rem]" id="nav-sub-job" role="region" aria-label="Job submenu">
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-96" id="nav-sub-job" role="region" aria-label="Job submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
                     @if($may('compliance.index'))
                     <a href="{{ route('compliance.index') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['compliance.index', 'compliance.create', 'compliance.edit']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Compliance</a>
