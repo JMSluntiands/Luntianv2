@@ -8,7 +8,9 @@
     @includeIf('layouts.partials.favicon')
     <script>
         (function() {
-            var t = (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || '';
+            var params = new URLSearchParams(window.location.search);
+            var fromParent = params.get('theme');
+            var t = fromParent || ((typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || '');
             var theme = (String(t).toLowerCase() === 'light') ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', theme);
         })();
@@ -208,6 +210,11 @@
         window.addEventListener('message', function (event) {
             if (event.source !== window.parent) return;
             var data = event.data || {};
+            if (data.type === 'standalone-theme') {
+                var nextTheme = data.theme === 'light' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', nextTheme);
+                return;
+            }
             if (!data.field) return;
             if (data.type === 'standalone-required') {
                 var mark = document.querySelector('[data-required-mark="' + CSS.escape(String(data.field)) + '"]');

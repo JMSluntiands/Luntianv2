@@ -95,9 +95,17 @@
     var copyBtn = document.getElementById('standaloneFormCopy');
     if (!search || !results || !panel || !title || !list || !frame || !linkBar || !link) return;
 
+    function currentTheme() {
+        return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+
     function embedUrl(url) {
         if (!url) return 'about:blank';
-        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'embed=1';
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'embed=1&theme=' + currentTheme();
+    }
+
+    function syncFrameTheme() {
+        postToFrame({ type: 'standalone-theme', theme: currentTheme() });
     }
 
     function postToFrame(message) {
@@ -315,6 +323,12 @@
         }, function (message) {
             postToFrame({ type: 'standalone-option-error', field: data.field, message: message });
         });
+    });
+
+    frame.addEventListener('load', syncFrameTheme);
+    document.addEventListener('themechange', function () {
+        if (!frame.src || frame.src === 'about:blank') return;
+        syncFrameTheme();
     });
 
     search.addEventListener('focus', function () { renderResults(search.value); });
