@@ -354,6 +354,9 @@
                             $('#lbsAddForm select').trigger('change');
                             document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
                             document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
+                            if (resp.next_reference) {
+                                $('#jobReferenceContent').text(resp.next_reference);
+                            }
                             showLbsAfterSavePrompt(resp.job_id, resp.submission_email_enabled);
                         } else {
                             if (window.showSuccessToast) showSuccessToast(resp.message || 'Failed to save job.');

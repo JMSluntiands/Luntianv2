@@ -253,6 +253,16 @@
                                     <dt class="job-details-dt">Address</dt>
                                     <dd class="job-details-dd whitespace-pre-line">{{ trim((string) ($job->address_client ?? '')) !== '' ? $job->address_client : '—' }}</dd>
                                 </div>
+                                <div class="job-details-row">
+                                    <dt class="job-details-dt">Completion Date</dt>
+                                    <dd class="job-details-dd">
+                                        @if(!empty($job->completion_date))
+                                            {{ \Carbon\Carbon::parse($job->completion_date)->timezone('Asia/Manila')->format('M d, Y h:i A') }}
+                                        @else
+                                            —
+                                        @endif
+                                    </dd>
+                                </div>
                                 @if(($jobViewModuleKey ?? '') === 'fyrs')
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">BASIX #</dt>

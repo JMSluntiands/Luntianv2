@@ -39,7 +39,6 @@
                         <col class="efficient_living-col-checker">
                         <col class="efficient_living-col-status">
                         <col class="efficient_living-col-due-date">
-                        <col class="efficient_living-col-completion-date">
                         <col class="efficient_living-col-complexity">
                     </colgroup>
                     <thead>
@@ -89,10 +88,6 @@
                                 <span class="efficient_living-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="efficient_living-th" data-sort="">
-                                <span>Completion Date</span>
-                                <span class="efficient_living-sort-icon" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="efficient_living-th" data-sort="">
                                 <span>Complexity</span>
                                 <span class="efficient_living-sort-icon" aria-hidden="true">↕</span>
                             </th>
@@ -126,9 +121,6 @@
 
                                 $dueDate1 = $due ? $due->format('F j, Y') : '—';
                                 $dueDate2 = $due ? $due->format('g:i A') : '';
-                                $completionDate1 = $completion ? $completion->format('F j, Y') : '—';
-                                $completionDate2 = $completion ? $completion->format('g:i A') : '';
-
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
@@ -192,21 +184,13 @@
                                         <span class="efficient_living-date-line2" style="color: rgb(248 113 113); margin-top: 0.15rem;">(Overdue)</span>
                                     @endif
                                 </td>
-                                <td class="efficient_living-td efficient_living-td-nowrap" data-label="Completion Date" data-sort="{{ $completion ? $completion->format('Y-m-d H:i:s') : '' }}">
-                                    <span class="efficient_living-date-line1">{{ $completionDate1 }}</span>
-                                    @if($completionDate2)
-                                        <span class="efficient_living-date-line2">{{ $completionDate2 }}</span>
-                                    @endif
-                                </td>
                                 <td class="efficient_living-td efficient_living-td-nowrap" data-label="Complexity" data-sort="{{ $complexity }}">
-                                    <span class="efficient_living-stars inline-flex items-center" data-rating="{{ $complexity }}" aria-label="{{ $complexity }} out of 5">
-                                        @include('lbs.partials.stars', ['rating' => $complexity])
-                                    </span>
+                                    @include('partials.lbs-inline-complexity-cell', ['rating' => $complexity, 'complexityModule' => 'efficient_living'])
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="efficient_living-td text-center text-slate-400" colspan="13">No Efficient Living jobs found.</td>
+                                <td class="efficient_living-td text-center text-slate-400" colspan="12">No Efficient Living jobs found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -238,7 +222,6 @@
 .efficient_living-table col.efficient_living-col-checker { width: 120px; }
 .efficient_living-table col.efficient_living-col-status { width: 170px; }
 .efficient_living-table col.efficient_living-col-due-date { width: 160px; }
-.efficient_living-table col.efficient_living-col-completion-date { width: 170px; }
 .efficient_living-table col.efficient_living-col-complexity { width: 140px; }
 .efficient_living-th { cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 1px solid rgb(51 65 85); background: rgb(30 41 59); padding: 0.75rem 1rem; text-align: left; font-weight: 600; color: rgb(148 163 184); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.04em; }
 .efficient_living-th-action { cursor: default; }

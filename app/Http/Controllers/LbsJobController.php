@@ -2105,8 +2105,8 @@ class LbsJobController extends Controller
             'job_address'      => ['required', 'string', 'max:1000'],
             'priority'         => ['required', 'integer'],
             'job_type'         => ['required', 'integer'],
-            'assigned_to'      => ['required', 'string', 'max:10'],
-            'checked_by'       => ['required', 'string', 'max:10'],
+            'assigned_to'      => ['nullable', 'string', 'max:10'],
+            'checked_by'       => ['nullable', 'string', 'max:10'],
             'notes'            => ['nullable', 'string'],
         ]);
 
@@ -2125,17 +2125,17 @@ class LbsJobController extends Controller
         $now = now('Asia/Manila');
         $isLuntianStore = $request->route()?->getName() === 'luntian.store';
 
-        // System reference: JOBSMMDD-NNN (increments per day). Duplicates append -1, -2, ...
-        $referenceValue = trim((string) ($headerRef ?: ''));
-        if ($referenceValue === '') {
-            $referenceValue = $isLuntianStore
-                ? ('JOBS'.$now->format('YmdHis'))
-                : $this->nextLbsSystemReference($now);
-        } elseif (! $isLuntianStore && ! preg_match('/^JOBS\d{4}-\d{3}(?:-\d+)*$/i', $referenceValue)) {
-            // Invalid/stale header badge (e.g. old hardcoded JOBS0823-003) — allocate a fresh sequence.
-            $referenceValue = $this->nextLbsSystemReference($now);
-        } elseif ($isLuntianStore && stripos($referenceValue, 'JOBS') !== 0) {
-            $referenceValue = 'JOBS-'.$referenceValue;
+        // LBS/EL system reference: always allocate a fresh JOBSMMDD-NNN on save.
+        // Do not trust the form badge — a stale page would keep reusing …-001.
+        if ($isLuntianStore) {
+            $referenceValue = trim((string) ($headerRef ?: ''));
+            if ($referenceValue === '') {
+                $referenceValue = 'JOBS'.$now->format('YmdHis');
+            } elseif (stripos($referenceValue, 'JOBS') !== 0) {
+                $referenceValue = 'JOBS-'.$referenceValue;
+            }
+        } else {
+            $referenceValue = $this->allocateLbsSystemReference($now);
         }
 
         $jobRequestClientCode = trim((string) ($jobRequest->client_code ?? ''));
@@ -2214,8 +2214,8 @@ class LbsJobController extends Controller
                 'client_code'         => $clientCodeForJob,
                 'job_reference_no'    => $jobReferenceNo,
                 'client_reference_no' => $data['client_reference'] ?? null,
-                'staff_id'            => $data['assigned_to'] ?? null,
-                'checker_id'          => $data['checked_by'] ?? null,
+                'staff_id'            => (($assigned = trim((string) ($data['assigned_to'] ?? ''))) !== '' ? $assigned : null),
+                'checker_id'          => (($checked = trim((string) ($data['checked_by'] ?? ''))) !== '' ? $checked : null),
                 'ncc_compliance'      => $compliance->column ?? null,
                 'job_request_id'      => $jobRequest->job_request_id ?? (string) $data['job_type'],
                 'address_client'      => $data['job_address'] ?? null,
@@ -2245,6 +2245,10 @@ class LbsJobController extends Controller
                 'status'  => 'success',
                 'message' => $successMessage,
                 'job_id'  => $jobId,
+                'reference' => $referenceValue,
+                'next_reference' => $isLuntianStore
+                    ? ('JOBS'.$now->copy()->addSecond()->format('YmdHis'))
+                    : $this->nextLbsSystemReference($now),
                 'submission_email_enabled' => EmailConfig::where('is_active', true)->exists(),
             ]);
         } catch (\Throwable $e) {
@@ -2602,19 +2606,6 @@ class LbsJobController extends Controller
         return $this->assignmentModuleForClientCode((string) ($job->client_code ?? ''));
     }
 
-    private function isWholeOfHomeCompliance(string $label): bool
-    {
-        $label = trim($label);
-        if ($label === '') {
-            return false;
-        }
-
-        return stripos($label, 'Whole of Home') !== false
-            || stripos($label, '(WOH)') !== false
-            || (bool) preg_match('/\bWOH\b/i', $label)
-            || in_array(strtolower($label), ['2022_woh', '2023_woh'], true);
-    }
-
     /**
      * Jobs created from Efficient Living add use EA_EL_* job_request_id values (client EL01).
      */
@@ -2662,9 +2653,7 @@ class LbsJobController extends Controller
      */
     private function buildAddJobFormData(Request $request, string $jobRequestClientCode): array
     {
-        $compliances = Compliance::orderBy('column')->get()
-            ->reject(fn ($c) => $this->isWholeOfHomeCompliance((string) ($c->column ?? '')))
-            ->values();
+        $compliances = Compliance::orderBy('column')->get();
         $defaultCompliance = $compliances->first(fn ($c) => strcasecmp(trim((string) ($c->column ?? '')), '2022') === 0)
             ?? $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2022') !== false)
             ?? $compliances->first();
@@ -2797,6 +2786,43 @@ class LbsJobController extends Controller
         }
 
         return $prefix.'-'.str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Allocate a unique daily LBS/EL reference, retrying if a concurrent save took the same NNN.
+     */
+    private function allocateLbsSystemReference(?\DateTimeInterface $now = null): string
+    {
+        $day = $now
+            ? \Carbon\Carbon::parse($now)->timezone('Asia/Manila')
+            : now('Asia/Manila');
+        $prefix = 'JOBS'.$day->format('md');
+        $pattern = '/^'.preg_quote($prefix, '/').'-(\d+)/i';
+
+        for ($attempt = 0; $attempt < 40; $attempt++) {
+            $candidate = $this->nextLbsSystemReference($day);
+            $taken = DB::table('jobs')->where('reference', $candidate)->exists();
+            if (! $taken) {
+                return $candidate;
+            }
+
+            // Rare race: bump past the colliding sequence explicitly.
+            $refs = DB::table('jobs')
+                ->where('reference', 'like', $prefix.'-%')
+                ->pluck('reference');
+            $max = 0;
+            foreach ($refs as $ref) {
+                if (preg_match($pattern, trim((string) $ref), $m)) {
+                    $max = max($max, (int) $m[1]);
+                }
+            }
+            $forced = $prefix.'-'.str_pad((string) ($max + 1 + $attempt), 3, '0', STR_PAD_LEFT);
+            if (! DB::table('jobs')->where('reference', $forced)->exists()) {
+                return $forced;
+            }
+        }
+
+        return $prefix.'-'.str_pad((string) ((int) $day->format('His') % 1000), 3, '0', STR_PAD_LEFT);
     }
 
     /**

@@ -390,6 +390,9 @@
                             $('#elAddForm select').trigger('change');
                             document.getElementById('plans') && document.getElementById('plans').dispatchEvent(new Event('change'));
                             document.getElementById('docs') && document.getElementById('docs').dispatchEvent(new Event('change'));
+                            if (resp.next_reference) {
+                                $('#jobReferenceContent').text(resp.next_reference);
+                            }
                             showElAfterSavePrompt(resp.job_id);
                         } else {
                             notifyElError(resp.message || 'Failed to save job.');

@@ -2109,8 +2109,8 @@ class GeneralAssemblyJobController extends Controller
             'job_address'      => ['required', 'string', 'max:1000'],
             'priority'         => ['required', 'integer'],
             'job_type'         => ['required', 'integer'],
-            'assigned_to'      => ['required', 'string', 'max:10'],
-            'checked_by'       => ['required', 'string', 'max:10'],
+            'assigned_to'      => ['nullable', 'string', 'max:10'],
+            'checked_by'       => ['nullable', 'string', 'max:10'],
             'notes'            => ['nullable', 'string'],
             'plans'            => ['nullable', 'array'],
             'plans.*'          => ['file', 'max:51200'],
@@ -2225,8 +2225,8 @@ class GeneralAssemblyJobController extends Controller
                 'client_code'         => $clientCodeForJob,
                 'job_reference_no'    => $jobReferenceNo,
                 'client_reference_no' => $data['client_reference'] ?? null,
-                'staff_id'            => $data['assigned_to'] ?? null,
-                'checker_id'          => $data['checked_by'] ?? null,
+                'staff_id'            => (($assigned = trim((string) ($data['assigned_to'] ?? ''))) !== '' ? $assigned : null),
+                'checker_id'          => (($checked = trim((string) ($data['checked_by'] ?? ''))) !== '' ? $checked : null),
                 'ncc_compliance'      => $compliance->column ?? null,
                 'job_request_id'      => $jobRequest->job_request_id ?? (string) $data['job_type'],
                 'address_client'      => $data['job_address'] ?? null,
@@ -2638,16 +2638,7 @@ class GeneralAssemblyJobController extends Controller
      */
     private function buildAddJobFormData(Request $request, string $jobRequestClientCode): array
     {
-        $compliances = Compliance::orderBy('column')->get()
-            ->reject(function ($c) {
-                $label = trim((string) ($c->column ?? ''));
-
-                return stripos($label, 'Whole of Home') !== false
-                    || stripos($label, '(WOH)') !== false
-                    || (bool) preg_match('/\bWOH\b/i', $label)
-                    || in_array(strtolower($label), ['2022_woh', '2023_woh'], true);
-            })
-            ->values();
+        $compliances = Compliance::orderBy('column')->get();
         $defaultCompliance = $compliances->first(fn ($c) => strcasecmp(trim((string) ($c->column ?? '')), '2022') === 0)
             ?? $compliances->first(fn ($c) => $c->column && stripos((string) $c->column, '2022') !== false)
             ?? $compliances->first();

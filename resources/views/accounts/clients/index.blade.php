@@ -42,7 +42,7 @@
         {{-- Table card --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[760px] border-collapse text-sm" id="acClientTable">
+                <table class="w-full min-w-[760px] border-collapse text-sm" id="acClientTable" data-col-resize>
                     <thead>
                         <tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/80">
                             <th class="px-5 py-3.5 text-left font-semibold text-slate-600 dark:text-slate-300">ID</th>

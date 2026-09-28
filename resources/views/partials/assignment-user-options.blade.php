@@ -3,17 +3,10 @@
     $showPlaceholder = (bool) ($includeSelectPlaceholder ?? false);
     $showGm = (bool) ($includeGm ?? true);
     $assignmentUserList = collect($assignmentUsers ?? []);
-
-    if ($selectedValue === '' && empty($preserveSelected)) {
-        $gmDefault = \App\Models\User::defaultAssignmentSelection($assignmentUserList);
-        if ($gmDefault !== '') {
-            $selectedValue = $gmDefault;
-        }
-    }
 @endphp
 
 @if($showPlaceholder)
-    <option value="" @selected($selectedValue === '')>{{ $placeholderLabel ?? 'Select user' }}</option>
+    <option value="" @selected($selectedValue === '')>{{ $placeholderLabel ?? 'Not allocated' }}</option>
 @endif
 
 @if($showGm)

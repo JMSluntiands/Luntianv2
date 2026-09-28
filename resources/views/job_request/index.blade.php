@@ -65,7 +65,7 @@
         {{-- Table card --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[820px] border-collapse text-sm" id="jobRequestTable">
+                <table class="w-full min-w-[820px] border-collapse text-sm" id="jobRequestTable" data-col-resize data-table-sort>
                     <colgroup>
                         <col style="width: 80px">
                         <col style="width: 160px">

@@ -1,0 +1,133 @@
+/* Column resize handles + clip overflowing fixed-table cells */
+.table-col-resize-th {
+    position: relative;
+}
+.table-col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    z-index: 5;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+    pointer-events: auto;
+}
+.table-col-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    bottom: 20%;
+    left: 2px;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+    transition: background-color 0.15s ease;
+    pointer-events: none;
+}
+.table-col-resizable:hover .table-col-resize-handle::after,
+.table-col-resize-th:hover .table-col-resize-handle::after {
+    background: rgba(16, 185, 129, 0.55);
+}
+.table-col-resize-handle:hover::after,
+body.table-col-resizing .table-col-resize-handle::after {
+    background: rgba(16, 185, 129, 0.9);
+}
+body.table-col-resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+body.table-col-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+.lbs-table.table-fixed > thead > tr > th,
+.lbs-table.table-fixed > tbody > tr > td,
+.efficient_living-table.table-fixed > thead > tr > th,
+.efficient_living-table.table-fixed > tbody > tr > td,
+.luntian-table.table-fixed > thead > tr > th,
+.luntian-table.table-fixed > tbody > tr > td,
+.table-col-resizable > thead > tr > th,
+.table-col-resizable > tbody > tr > td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+/* Interactive cells must stay clickable after resize (icons / selects). */
+.lbs-table.table-fixed > tbody > tr > td[data-label='Reference'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Client reference'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Client Name'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Job Type'] {
+    white-space: nowrap;
+}
+.lbs-table.table-fixed > tbody > tr > td[data-label='Priority'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Status'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Staff'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Checker'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Action'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Assigned To'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Checked By'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Urgent'],
+.table-col-resizable > tbody > tr > td[data-label='Priority'],
+.table-col-resizable > tbody > tr > td[data-label='Status'],
+.table-col-resizable > tbody > tr > td[data-label='Staff'],
+.table-col-resizable > tbody > tr > td[data-label='Checker'],
+.table-col-resizable > tbody > tr > td[data-label='Action'],
+.table-col-resizable > tbody > tr > td[data-label='Assigned To'],
+.table-col-resizable > tbody > tr > td[data-label='Checked By'],
+.table-col-resizable > tbody > tr > td[data-label='Urgent'],
+.table-col-resizable > tbody > tr.lbs-row-detail > td {
+    overflow: visible;
+    position: relative;
+    z-index: 2;
+}
+.table-col-resizable > tbody > tr > td[data-label='Action'] {
+    z-index: 3;
+    min-width: 7.5rem;
+}
+.table-col-resizable > tbody > tr > td[data-label='Action'] .lbs-action-icon,
+.table-col-resizable > tbody > tr > td[data-label='Action'] [data-expand-row] {
+    position: relative;
+    z-index: 4;
+    pointer-events: auto;
+}
+.table-col-resizable > tbody > tr > td[data-label='Complexity'],
+.lbs-table.table-fixed > tbody > tr > td[data-label='Complexity'] {
+    overflow: visible;
+    min-width: 7.5rem;
+}
+.lbs-inline-complexity .lbs-star.lbs-star-filled {
+    color: rgb(251 191 36);
+    cursor: pointer;
+}
+.lbs-inline-complexity .lbs-star.lbs-star-empty {
+    color: rgb(100 116 139);
+    opacity: 0.85;
+    cursor: pointer;
+}
+.dark .lbs-inline-complexity .lbs-star.lbs-star-empty,
+[data-theme="dark"] .lbs-inline-complexity .lbs-star.lbs-star-empty {
+    color: rgb(148 163 184);
+}
+.lbs-inline-complexity .lbs-star.lbs-star-filled .lbs-star-outline {
+    display: none;
+}
+.lbs-inline-complexity .lbs-star.lbs-star-empty .lbs-star-solid {
+    display: none;
+}
+.lbs-inline-complexity:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+.table-col-resizable > thead > tr > th.lbs-th-action {
+    overflow: visible;
+    min-width: 7.5rem;
+}
+@media (max-width: 768px) {
+    .table-col-resize-handle {
+        display: none;
+    }
+}

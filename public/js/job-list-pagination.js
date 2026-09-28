@@ -226,7 +226,7 @@
       var cell = row.querySelector('[data-row-num-cell]');
       if (cell) cell.textContent = String(start + i + 1);
       var next = row.nextElementSibling;
-      if (isDetailRow(next) && !next.hidden) {
+      if (isDetailRow(next) && !next.hidden && !next.hasAttribute('hidden')) {
         next.style.display = '';
       }
     });
@@ -257,6 +257,32 @@
     setTimeout(function () {
       refresh(table);
     }, 0);
+  });
+
+  // Expand chevron: show off-screen columns under the row (works with pagination display:none).
+  d.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-expand-row]') : null;
+    if (!btn) return;
+    var row = btn.closest('tr');
+    if (!row) return;
+    var next = row.nextElementSibling;
+    if (!isDetailRow(next)) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    var open = next.hidden || next.hasAttribute('hidden') || next.style.display === 'none';
+    if (open) {
+      next.hidden = false;
+      next.removeAttribute('hidden');
+      next.style.display = '';
+    } else {
+      next.hidden = true;
+      next.setAttribute('hidden', '');
+      next.style.display = 'none';
+    }
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('title', open ? 'Hide columns below' : 'Show columns below (no horizontal scroll)');
+    btn.classList.toggle('is-expanded', open);
   });
 
   w.JobListPagination = {

@@ -83,7 +83,6 @@
 .lbs-th[data-sort="desc"] .lbs-sort-icon::before { content: '↓'; font-size: 0.75rem; }
 .lbs-th:not([data-sort=""]) .lbs-sort-icon { opacity: 1; }
 /* Expand icon rotate when open */
-.lbs-action-expand[aria-expanded="true"] .lbs-expand-icon { transform: rotate(180deg); }
 /* Status badge variants (JS applies these on update/revert) */
 .lbs-badge-allocated { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 .lbs-badge-completed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
