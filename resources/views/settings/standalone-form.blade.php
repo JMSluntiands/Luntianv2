@@ -37,16 +37,20 @@
 
 @push('styles')
 <style>
-    .standalone-settings {
+    .main-wrap .content:has(.standalone-settings) {
         display: flex;
         flex-direction: column;
-        height: calc(100dvh - 5.5rem);
-        min-height: 32rem;
+        overflow: hidden;
     }
-    @media (min-width: 768px) {
-        .standalone-settings {
-            height: calc(100dvh - 6.5rem);
-        }
+    .standalone-settings {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .standalone-settings > * {
+        flex-shrink: 0;
     }
     .standalone-settings-panel {
         min-height: 0;
@@ -56,22 +60,33 @@
         display: grid;
         gap: 1rem;
         grid-template-columns: minmax(0, 1fr);
+        height: 100%;
     }
     @media (min-width: 1024px) {
         .standalone-settings-panel:not(.hidden) {
             grid-template-columns: 17.5rem minmax(0, 1fr);
         }
     }
-    .standalone-settings-fields,
+    .standalone-settings-fields {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .standalone-settings-fields > ul {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+    }
     .standalone-settings-preview {
         min-height: 0;
         overflow: hidden;
     }
-    .standalone-settings-preview,
     .standalone-settings-frame {
+        display: block;
         width: 100%;
         height: 100%;
-        min-height: 28rem;
+        min-height: 0;
     }
 </style>
 @endpush
