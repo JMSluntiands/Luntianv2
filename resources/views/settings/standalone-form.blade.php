@@ -3,7 +3,7 @@
 @section('title', 'Standalone Form')
 
 @section('content')
-    <div class="flex h-[calc(100dvh-5.5rem)] min-h-[32rem] flex-col md:h-[calc(100dvh-6.5rem)]">
+    <div class="standalone-settings flex flex-col">
         <div class="mb-4 shrink-0">
             <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Standalone Form</h1>
             <p class="text-slate-500 dark:text-slate-400">Search a form. Set each field as required, and turn it on or off.</p>
@@ -21,19 +21,60 @@
             <button type="button" id="standaloneFormCopy" class="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Copy</button>
         </div>
 
-        <div id="standaloneFormFields" class="hidden min-h-0 flex-1 grid gap-4 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
-            <div class="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+        <div id="standaloneFormFields" class="standalone-settings-panel hidden">
+            <div class="standalone-settings-fields flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="shrink-0 border-b border-slate-200 bg-slate-50/80 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 id="standaloneFormTitle" class="text-base font-semibold text-slate-800 dark:text-slate-100"></h2>
                 </div>
                 <ul id="standaloneFieldList" class="min-h-0 flex-1 divide-y divide-slate-200 overflow-y-auto dark:divide-slate-700"></ul>
             </div>
-            <div class="h-full min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
-                <iframe id="standaloneFormFrame" title="Standalone form" class="h-full min-h-[28rem] w-full border-0 bg-slate-50 dark:bg-slate-900" src="about:blank"></iframe>
+            <div class="standalone-settings-preview overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                <iframe id="standaloneFormFrame" title="Standalone form" class="standalone-settings-frame w-full border-0 bg-slate-50 dark:bg-slate-900" src="about:blank"></iframe>
             </div>
         </div>
     </div>
 @endsection
+
+@push('styles')
+<style>
+    .standalone-settings {
+        display: flex;
+        flex-direction: column;
+        height: calc(100dvh - 5.5rem);
+        min-height: 32rem;
+    }
+    @media (min-width: 768px) {
+        .standalone-settings {
+            height: calc(100dvh - 6.5rem);
+        }
+    }
+    .standalone-settings-panel {
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+    .standalone-settings-panel:not(.hidden) {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 1fr);
+    }
+    @media (min-width: 1024px) {
+        .standalone-settings-panel:not(.hidden) {
+            grid-template-columns: 17.5rem minmax(0, 1fr);
+        }
+    }
+    .standalone-settings-fields,
+    .standalone-settings-preview {
+        min-height: 0;
+        overflow: hidden;
+    }
+    .standalone-settings-preview,
+    .standalone-settings-frame {
+        width: 100%;
+        height: 100%;
+        min-height: 28rem;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
