@@ -21,6 +21,84 @@
     @include('layouts.partials.dashboard-styles')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/layout.ts'])
+    <style>
+        /* Sidebar minimize. Kept inline so it still works when the Vite build on the server is stale. */
+        .sidebar-collapse-btn { display: none; }
+        @media (min-width: 1024px) {
+            #sidebarNav,
+            .main-wrap {
+                transition-property: transform, box-shadow, width, margin, margin-left;
+                transition-duration: 250ms;
+                transition-timing-function: ease-out;
+            }
+            .sidebar-collapse-btn {
+                position: absolute;
+                right: 0.35rem;
+                top: 50%;
+                z-index: 2;
+                display: inline-flex;
+                height: 1.75rem;
+                width: 1.75rem;
+                transform: translateY(-50%);
+                cursor: pointer;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.5rem;
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                color: #475569;
+            }
+            .sidebar-collapse-btn:hover {
+                background: #f1f5f9;
+                color: #0f172a;
+            }
+            [data-theme="dark"] .sidebar-collapse-btn {
+                border-color: #334155;
+                background: #1e293b;
+                color: #cbd5e1;
+            }
+            [data-theme="dark"] .sidebar-collapse-btn:hover {
+                background: #334155;
+                color: #f8fafc;
+            }
+            html.sidebar-mini #sidebarNav {
+                width: max-content;
+                height: 3.5rem;
+            }
+            html.sidebar-mini #sidebarNav .sidebar-profile,
+            html.sidebar-mini #sidebarNav > nav {
+                display: none;
+            }
+            html.sidebar-mini #sidebarNav .sidebar-brand {
+                height: 3.5rem;
+                width: max-content;
+                flex-direction: row;
+                gap: 0.35rem;
+                padding: 0 0.65rem 0 1rem;
+            }
+            html.sidebar-mini #sidebarNav .sidebar-brand > a {
+                width: auto;
+            }
+            html.sidebar-mini .sidebar-collapse-btn {
+                position: static;
+                transform: none;
+                flex-shrink: 0;
+            }
+            html.sidebar-mini .sidebar-collapse-icon {
+                transform: rotate(180deg);
+            }
+            html.sidebar-mini #sidebarNav .sidebar-brand a span {
+                white-space: nowrap;
+            }
+            html.sidebar-mini .main-wrap {
+                margin-left: 0;
+                width: 100%;
+            }
+            html.sidebar-mini .header {
+                padding-left: calc(var(--sidebar-mini-w, 11.5rem) + 0.75rem);
+            }
+        }
+    </style>
     <link rel="stylesheet" href="{{ asset('css/table-column-resize.css') }}?v={{ @filemtime(public_path('css/table-column-resize.css')) ?: '1' }}">
     <style>
         /* Inline job-table dropdowns (always available even if Vite build is stale) */
