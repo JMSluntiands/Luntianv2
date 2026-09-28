@@ -78,6 +78,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Generic EA Form Domain
+    |--------------------------------------------------------------------------
+    |
+    | Optional dedicated domain for the public Generic EA add form routes.
+    | Example: geneaforms.luntian.com.au
+    |
+    */
+    'gen_ea_public_form_domain' => env('GEN_EA_PUBLIC_FORM_DOMAIN', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

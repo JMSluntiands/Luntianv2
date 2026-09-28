@@ -2535,15 +2535,15 @@ class GeneralAssemblyJobController extends Controller
     }
 
     /**
-     * Public LBS add form (no login required), same fields/process as dashboard add.
+     * Public Generic EA add form (no login required), same fields/process as dashboard add.
      */
     public function publicAddForm(Request $request)
     {
         return view('general-assembly.add', array_merge($this->buildAddJobFormData($request, $this->genEaClientCode()), [
             'layoutView' => 'layouts.public-form',
             'storeRoute' => route('general_assembly.public.store'),
-            'sendSlackBaseUrl' => url('/lbs/add-new/job'),
-            'sendSubmissionBaseUrl' => url('/lbs/add-new/job'),
+            'sendSlackBaseUrl' => url('/general-assembly/add-new/job'),
+            'sendSubmissionBaseUrl' => url('/general-assembly/add-new/job'),
             'listUrl' => route('general_assembly.public.add'),
             'cancelUrl' => route('general_assembly.public.add'),
         ]));

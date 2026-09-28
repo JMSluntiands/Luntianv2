@@ -59,6 +59,11 @@ Route::get('/', function () {
         return app(FyrsJobController::class)->publicAddForm();
     }
 
+    $genEaPublicHost = trim((string) config('app.gen_ea_public_form_domain', ''));
+    if ($genEaPublicHost !== '' && strcasecmp($genEaPublicHost, request()->getHost()) === 0) {
+        return redirect()->route('general_assembly.public.add');
+    }
+
     $returnTo = request()->query('return_to');
     $decodedReturn = null;
     if (is_string($returnTo) && $returnTo !== '') {
@@ -115,6 +120,20 @@ if ($lbsPublicFormDomain !== '') {
     Route::domain($lbsPublicFormDomain)->group($registerPublicLbsRoutes);
 } else {
     $registerPublicLbsRoutes();
+}
+
+$registerPublicGenEaRoutes = function () {
+    Route::get('/general-assembly/add-new', [GeneralAssemblyJobController::class, 'publicAddForm'])->name('general_assembly.public.add');
+    Route::post('/general-assembly/add-new', [GeneralAssemblyJobController::class, 'store'])->name('general_assembly.public.store');
+    Route::post('/general-assembly/add-new/job/{id}/send-slack', [GeneralAssemblyJobController::class, 'sendJobSlackNotification'])->name('general_assembly.public.job.sendSlack');
+    Route::post('/general-assembly/add-new/job/{id}/send-submission-email', [GeneralAssemblyJobController::class, 'sendJobSubmissionEmail'])->name('general_assembly.public.job.sendSubmissionEmail');
+};
+
+$genEaPublicFormDomain = trim((string) config('app.gen_ea_public_form_domain', ''));
+if ($genEaPublicFormDomain !== '') {
+    Route::domain($genEaPublicFormDomain)->group($registerPublicGenEaRoutes);
+} else {
+    $registerPublicGenEaRoutes();
 }
 
 $fyrsPublicFormDomain = trim((string) config('app.fyrs_public_form_domain', ''));
