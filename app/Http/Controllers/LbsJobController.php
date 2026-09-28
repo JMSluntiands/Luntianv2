@@ -8,6 +8,7 @@ use App\Models\JobRequest;
 use App\Models\JobModuleClient;
 use App\Models\ActivityLog;
 use App\Models\Priority;
+use App\Models\StandaloneFormSetting;
 use App\Models\Status;
 use App\Models\User;
 use App\Models\RolePermission;
@@ -2549,6 +2550,12 @@ class LbsJobController extends Controller
             'sendSubmissionBaseUrl' => url('/lbs/add-new/job'),
             'listUrl' => route('lbs.public.add'),
             'cancelUrl' => route('lbs.public.add'),
+            'standaloneRequired' => StandaloneFormSetting::requiredMap('lbs'),
+            'standaloneVisible' => StandaloneFormSetting::visibleMap('lbs'),
+            'defaultComplianceId' => null,
+            'defaultPriorityId' => null,
+            'defaultJobRequestId' => null,
+            'defaultClientAccountId' => null,
         ]));
     }
 

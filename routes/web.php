@@ -35,6 +35,7 @@ use App\Http\Controllers\NotificationSettingsController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\SlackConfigController;
+use App\Http\Controllers\StandaloneFormSettingsController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\UserAccountController;
@@ -440,6 +441,9 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/settings/notifications', [NotificationSettingsController::class, 'index'])->name('settings.notifications');
     Route::get('/dashboard/settings/permission', [PermissionController::class, 'index'])->name('settings.permission');
     Route::post('/dashboard/settings/permission', [PermissionController::class, 'store'])->name('settings.permission.store');
+    Route::get('/dashboard/settings/standalone-form', [StandaloneFormSettingsController::class, 'index'])->name('settings.standalone_form');
+    Route::post('/dashboard/settings/standalone-form/toggle', [StandaloneFormSettingsController::class, 'toggle'])->name('settings.standalone_form.toggle');
+    Route::post('/dashboard/settings/standalone-form/options', [StandaloneFormSettingsController::class, 'saveOption'])->name('settings.standalone_form.options');
 
     Route::get('/dashboard/compliance', [ComplianceController::class, 'index'])->name('compliance.index');
     Route::get('/dashboard/compliance/create', [ComplianceController::class, 'create'])->name('compliance.create');

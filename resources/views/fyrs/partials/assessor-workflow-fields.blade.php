@@ -38,14 +38,20 @@
 @endphp
 <div class="fyrs-assessor-fields space-y-5">
   <div class="grid gap-5 sm:grid-cols-2">
-    <div>
-      <label for="{{ $p }}job_date" class="{{ $labelClass }}">Date</label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'job_date'])" @include('partials.standalone-field-data', ['field' => 'job_date'])>
+      <label for="{{ $p }}job_date" class="{{ $labelClass }}">Date @include('partials.standalone-required-mark', ['field' => 'job_date'])</label>
       <input type="text" id="{{ $p }}job_date" readonly value="{{ now('Asia/Manila')->format('n/j/Y') }}"
         class="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-400"
         autocomplete="off">
     </div>
-    <div>
-      <label for="job_number" class="{{ $labelClass }}">Job Ref # <span class="text-red-500">*</span></label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'job_number'])" @include('partials.standalone-field-data', ['field' => 'job_number'])>
+      <label for="job_number" class="{{ $labelClass }}">Job Ref #
+        @if(($layoutView ?? '') === 'layouts.public-form')
+           @include('partials.standalone-required-mark', ['field' => 'job_number'])
+        @else
+          <span class="text-red-500">*</span>
+        @endif
+      </label>
       <input type="text" id="job_number" name="job_number" required value="{{ old('job_number', $g('job_number')) }}" placeholder="e.g. Saric 0030261"
         class="{{ $inputClass }}" autocomplete="off" maxlength="100">
     </div>
@@ -53,27 +59,29 @@
 
   <div class="grid gap-5 sm:grid-cols-3">
     <div>
-      <label for="{{ $p }}builder" class="{{ $labelClass }}">Builder</label>
-      <select id="{{ $p }}builder" name="builder" class="select2-single fyrs-builder-select {{ $inputClass }}" data-fyrs-builder-select>
-        <option value="">Select builder</option>
-        @foreach ($builderOptions as $builderName)
-          <option value="{{ $builderName }}" {{ (string) $builderSelectValue === $builderName ? 'selected' : '' }}>{{ $builderName }}</option>
-        @endforeach
-        <option value="__other__" {{ (string) $builderSelectValue === '__other__' ? 'selected' : '' }}>Other (add another builder)</option>
-      </select>
-      <div class="fyrs-builder-other mt-2 {{ (string) $builderSelectValue === '__other__' ? '' : 'hidden' }}" data-fyrs-builder-other>
-        <label for="{{ $p }}builder_other" class="{{ $labelClass }}">Other builder name</label>
+      <div class="@include('partials.standalone-off-class', ['field' => 'builder'])" @include('partials.standalone-field-data', ['field' => 'builder'])>
+        <label for="{{ $p }}builder" class="{{ $labelClass }}">Builder @include('partials.standalone-required-mark', ['field' => 'builder'])</label>
+        <select id="{{ $p }}builder" name="builder" class="select2-single fyrs-builder-select {{ $inputClass }}" data-fyrs-builder-select>
+          <option value="">Select builder</option>
+          @foreach ($builderOptions as $builderName)
+            <option value="{{ $builderName }}" {{ (string) $builderSelectValue === $builderName ? 'selected' : '' }}>{{ $builderName }}</option>
+          @endforeach
+          <option value="__other__" {{ (string) $builderSelectValue === '__other__' ? 'selected' : '' }}>Other (add another builder)</option>
+        </select>
+      </div>
+      <div class="fyrs-builder-other mt-2 {{ (string) $builderSelectValue === '__other__' ? '' : 'hidden' }} @include('partials.standalone-off-class', ['field' => 'builder_other'])" data-fyrs-builder-other @include('partials.standalone-field-data', ['field' => 'builder_other'])>
+        <label for="{{ $p }}builder_other" class="{{ $labelClass }}">Other builder name @include('partials.standalone-required-mark', ['field' => 'builder_other'])</label>
         <input type="text" id="{{ $p }}builder_other" name="builder_other" value="{{ $builderOtherValue }}" placeholder="Enter builder name"
           class="{{ $inputClass }}" autocomplete="off" maxlength="255">
       </div>
     </div>
-    <div>
-      <label for="{{ $p }}storeys" class="{{ $labelClass }}">Storeys</label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'storeys'])" @include('partials.standalone-field-data', ['field' => 'storeys'])>
+      <label for="{{ $p }}storeys" class="{{ $labelClass }}">Storeys @include('partials.standalone-required-mark', ['field' => 'storeys'])</label>
       <input type="text" id="{{ $p }}storeys" name="storeys" value="{{ old('storeys', $g('storeys')) }}" placeholder="e.g. 1 or 2"
         class="{{ $inputClass }}">
     </div>
-    <div>
-      <label for="{{ $p }}climate_zone" class="{{ $labelClass }}">Climate zone</label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'climate_zone'])" @include('partials.standalone-field-data', ['field' => 'climate_zone'])>
+      <label for="{{ $p }}climate_zone" class="{{ $labelClass }}">Climate zone @include('partials.standalone-required-mark', ['field' => 'climate_zone'])</label>
       <input type="text" id="{{ $p }}climate_zone" name="climate_zone" value="{{ old('climate_zone', $g('climate_zone')) }}" placeholder="e.g. 28"
         class="{{ $inputClass }}">
     </div>
@@ -92,14 +100,14 @@
     </div>
   </div>
 
-  <div>
-    <label for="{{ $p }}address" class="{{ $labelClass }}">Address</label>
+  <div class="@include('partials.standalone-off-class', ['field' => 'address'])" @include('partials.standalone-field-data', ['field' => 'address'])>
+    <label for="{{ $p }}address" class="{{ $labelClass }}">Address @include('partials.standalone-required-mark', ['field' => 'address'])</label>
     <input type="text" id="{{ $p }}address" name="address" value="{{ old('address', $g('address')) }}" placeholder="Site / job address"
       class="{{ $inputClass }}" autocomplete="off" maxlength="500">
   </div>
 
-  <div>
-    <label for="fyrs-notes-body" class="{{ $labelClass }}">Notes</label>
+  <div class="@include('partials.standalone-off-class', ['field' => 'notes'])" @include('partials.standalone-field-data', ['field' => 'notes'])>
+    <label for="fyrs-notes-body" class="{{ $labelClass }}">Notes @include('partials.standalone-required-mark', ['field' => 'notes'])</label>
     <input type="hidden" name="notes" id="fyrs_notes" autocomplete="off">
     <div class="overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
       <div class="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800/80">
@@ -113,8 +121,8 @@
   </div>
 
   <div class="grid gap-5 sm:grid-cols-2">
-    <div>
-      <label for="{{ $p }}assigned" class="{{ $labelClass }}">Staff</label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'assigned'])" @include('partials.standalone-field-data', ['field' => 'assigned'])>
+      <label for="{{ $p }}assigned" class="{{ $labelClass }}">Staff @include('partials.standalone-required-mark', ['field' => 'assigned'])</label>
       <select id="{{ $p }}assigned" name="assigned" class="select2-single {{ $inputClass }}">
         <option value="">Select staff</option>
         @foreach ($staffUsers as $staffUser)
@@ -125,16 +133,16 @@
         @endforeach
       </select>
     </div>
-    <div>
-      <label for="{{ $p }}stage" class="{{ $labelClass }}">Stage</label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'stage'])" @include('partials.standalone-field-data', ['field' => 'stage'])>
+      <label for="{{ $p }}stage" class="{{ $labelClass }}">Stage @include('partials.standalone-required-mark', ['field' => 'stage'])</label>
       <input type="text" id="{{ $p }}stage" name="stage" value="{{ old('stage', $g('stage')) }}" placeholder="e.g. for BASIX"
         class="{{ $inputClass }}">
     </div>
   </div>
 
   <div class="grid gap-5 sm:grid-cols-2">
-    <div>
-      <label for="{{ $p }}due_date" class="{{ $labelClass }}">Due date</label>
+    <div class="@include('partials.standalone-off-class', ['field' => 'due_date'])" @include('partials.standalone-field-data', ['field' => 'due_date'])>
+      <label for="{{ $p }}due_date" class="{{ $labelClass }}">Due date @include('partials.standalone-required-mark', ['field' => 'due_date'])</label>
       <input type="date" id="{{ $p }}due_date" name="due_date" value="{{ old('due_date', $g('due_date') ? \Illuminate\Support\Carbon::parse($g('due_date'))->format('Y-m-d') : '') }}"
         class="{{ $inputClass }}">
     </div>

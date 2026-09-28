@@ -7,6 +7,7 @@ use App\Models\Compliance;
 use App\Models\EmailConfig;
 use App\Models\JobRequest;
 use App\Models\Priority;
+use App\Models\StandaloneFormSetting;
 use App\Models\Status;
 use App\Models\User;
 use App\Services\JobCountsScope;
@@ -168,6 +169,8 @@ class FyrsJobController extends Controller
             'listUrl' => route('fyrs.public.add'),
             'cancelUrl' => route('fyrs.public.add'),
             'assignmentStaffUsers' => $assignmentSelect['assignmentStaffUsers'],
+            'standaloneRequired' => StandaloneFormSetting::requiredMap('fyrs'),
+            'standaloneVisible' => StandaloneFormSetting::visibleMap('fyrs'),
         ]);
     }
 

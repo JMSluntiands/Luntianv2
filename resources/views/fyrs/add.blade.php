@@ -23,9 +23,9 @@
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 @include('partials.standalone-off-class', ['field' => 'upload_files'])" @include('partials.standalone-field-data', ['field' => 'upload_files'])>
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Files</h2>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Files @include('partials.standalone-required-mark', ['field' => 'upload_files'])</h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">PDF, Word, BERS, DWG, and other job files.</p>
                 </div>
                 <div class="p-5">

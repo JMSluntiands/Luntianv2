@@ -37,13 +37,13 @@
                             <input type="text" id="reference_no" name="reference_no" value="{{ isset($duplicateJob) ? e($duplicateJob->reference_no ?? '') : '' }}" placeholder="Enter Reference Number" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
                                 class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
                         </div>
-                        <div>
-                            <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'client_reference'])" @include('partials.standalone-field-data', ['field' => 'client_reference'])>
+                            <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference @include('partials.standalone-required-mark', ['field' => 'client_reference'])</label>
                             <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Client Reference" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
                                 class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
                         </div>
-                        <div>
-                            <label for="compliance" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Compliance</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'compliance'])" @include('partials.standalone-field-data', ['field' => 'compliance'])>
+                            <label for="compliance" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Compliance @include('partials.standalone-required-mark', ['field' => 'compliance'])</label>
                             <select id="compliance" name="compliance" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
                                 <option value="">Select compliance</option>
                                 @foreach($compliances ?? [] as $c)
@@ -51,8 +51,8 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
-                            <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'client'])" @include('partials.standalone-field-data', ['field' => 'client'])>
+                            <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client @include('partials.standalone-required-mark', ['field' => 'client'])</label>
                             <select id="client" name="client" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
                                 <option value="">Select client</option>
                                 @foreach($clientAccounts ?? [] as $client)
@@ -65,19 +65,19 @@
             </div>
 
             {{-- Job Details Card --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden" data-standalone-group="job-details">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Job Details</h2>
                 </div>
                 <div class="p-5 space-y-5">
-                    <div>
-                        <label for="job_address" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Address</label>
+                    <div class="@include('partials.standalone-off-class', ['field' => 'job_address'])" @include('partials.standalone-field-data', ['field' => 'job_address'])>
+                        <label for="job_address" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Address @include('partials.standalone-required-mark', ['field' => 'job_address'])</label>
                         <input type="text" id="job_address" name="job_address" value="{{ isset($duplicateJob) ? e($duplicateJob->job_address ?? '') : '' }}" placeholder="Complete Address" autocomplete="off"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label for="priority" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'priority'])" @include('partials.standalone-field-data', ['field' => 'priority'])>
+                            <label for="priority" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Priority @include('partials.standalone-required-mark', ['field' => 'priority'])</label>
                             <select id="priority" name="priority" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
                                 <option value="">Select priority</option>
                                 @foreach($priorities ?? [] as $priority)
@@ -85,8 +85,8 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
-                            <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'job_type'])" @include('partials.standalone-field-data', ['field' => 'job_type'])>
+                            <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
                             <select id="job_type" name="job_type" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
                                 <option value="">Select job type</option>
                                 @foreach($jobRequests ?? [] as $jobRequest)
@@ -95,8 +95,8 @@
                             </select>
                         </div>
                     </div>
-                    <div>
-                        <label for="notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes</label>
+                    <div class="@include('partials.standalone-off-class', ['field' => 'notes'])" @include('partials.standalone-field-data', ['field' => 'notes'])>
+                        <label for="notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes @include('partials.standalone-required-mark', ['field' => 'notes'])</label>
                         <input type="hidden" name="notes" id="notes" autocomplete="off">
                         <div class="overflow-hidden rounded-lg border border-slate-300 dark:border-slate-600">
                             <div class="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800/80">
@@ -119,14 +119,14 @@
             </div>
 
             {{-- Attachments Card --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden" data-standalone-group="attachments">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Attachments</h2>
                 </div>
                 <div class="p-5">
                     <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Plans</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'plans'])" @include('partials.standalone-field-data', ['field' => 'plans'])>
+                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Plans @include('partials.standalone-required-mark', ['field' => 'plans'])</label>
                             <label for="plans" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
                                 <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                                 <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
@@ -137,8 +137,8 @@
                             <div id="plans-file-list" class="mt-2 min-h-0 space-y-1 text-xs text-slate-600 dark:text-slate-400"></div>
                             <button type="button" id="plans-clear" class="mt-1 hidden text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear</button>
                         </div>
-                        <div>
-                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Document</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'documents'])" @include('partials.standalone-field-data', ['field' => 'documents'])>
+                            <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload Document @include('partials.standalone-required-mark', ['field' => 'documents'])</label>
                             <label for="docs" class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 py-4 px-3 text-center transition-colors hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30">
                                 <svg class="mb-1 h-6 w-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Drag here</span>
@@ -159,20 +159,20 @@
             @endphp
 
             {{-- Assignment Card --}}
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden" data-standalone-group="assignment">
                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Assignment</h2>
                 </div>
                 <div class="p-5">
                     <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label for="assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Assigned To</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'assigned_to'])" @include('partials.standalone-field-data', ['field' => 'assigned_to'])>
+                            <label for="assigned_to" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Assigned To @include('partials.standalone-required-mark', ['field' => 'assigned_to'])</label>
                             <select id="assigned_to" name="assigned_to" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                                 @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentStaffUsers ?? [], 'selected' => $selAssigned ?? '', 'includeSelectPlaceholder' => true, 'includeGm' => false])
                             </select>
                         </div>
-                        <div>
-                            <label for="checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checked By</label>
+                        <div class="@include('partials.standalone-off-class', ['field' => 'checked_by'])" @include('partials.standalone-field-data', ['field' => 'checked_by'])>
+                            <label for="checked_by" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Checked By @include('partials.standalone-required-mark', ['field' => 'checked_by'])</label>
                             <select id="checked_by" name="checked_by" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                                 @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentCheckerUsers ?? [], 'selected' => $selChecked ?? '', 'includeSelectPlaceholder' => true, 'includeGm' => false])
                             </select>
@@ -272,6 +272,7 @@
 
             // Select2: all selects in this form become searchable dropdowns
             $('#lbsAddForm select:not(.assignment-user-select)').select2({ width: '100%', allowClear: false });
+            if (window.enhanceStandaloneDropdowns) window.enhanceStandaloneDropdowns();
             initAssignmentUserSelect2($('#lbsAddForm'));
 
             @if(isset($duplicateJob) && ($duplicateJob->notes ?? '') !== '')

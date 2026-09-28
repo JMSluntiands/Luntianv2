@@ -11,6 +11,11 @@
             var t = (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || '';
             var theme = (String(t).toLowerCase() === 'light') ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', theme);
+            try {
+                if (localStorage.getItem('sidebar-mini') === '1') {
+                    document.documentElement.classList.add('sidebar-mini');
+                }
+            } catch (e) {}
         })();
     </script>
     @include('layouts.partials.dashboard-styles')
@@ -319,6 +324,46 @@
                     if (window.matchMedia('(max-width: 1024px)').matches && e.target.closest('a')) closeSidebar();
                 });
             }
+        })();
+        (function sidebarMini() {
+            var btn = document.getElementById('sidebarCollapseToggle');
+            var sidebar = document.getElementById('sidebarNav');
+            var root = document.documentElement;
+            function syncOffset() {
+                if (!sidebar || !root.classList.contains('sidebar-mini')) {
+                    root.style.removeProperty('--sidebar-mini-w');
+                    return;
+                }
+                root.style.setProperty('--sidebar-mini-w', sidebar.offsetWidth + 'px');
+            }
+            function apply(on) {
+                root.classList.toggle('sidebar-mini', on);
+                if (btn) {
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    btn.setAttribute('aria-label', on ? 'Expand sidebar' : 'Minimize sidebar');
+                    btn.title = on ? 'Expand sidebar' : 'Minimize sidebar';
+                }
+                window.requestAnimationFrame(syncOffset);
+                window.setTimeout(function () {
+                    syncOffset();
+                    window.dispatchEvent(new Event('resize'));
+                }, 280);
+            }
+            if (btn && root.classList.contains('sidebar-mini')) {
+                btn.setAttribute('aria-pressed', 'true');
+                btn.setAttribute('aria-label', 'Expand sidebar');
+                btn.title = 'Expand sidebar';
+                syncOffset();
+            }
+            window.addEventListener('resize', syncOffset);
+            if (!btn) return;
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var on = !root.classList.contains('sidebar-mini');
+                try { localStorage.setItem('sidebar-mini', on ? '1' : '0'); } catch (err) {}
+                apply(on);
+            });
         })();
     })();
     </script>

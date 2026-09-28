@@ -8,6 +8,7 @@ use App\Models\JobRequest;
 use App\Models\JobModuleClient;
 use App\Models\ActivityLog;
 use App\Models\Priority;
+use App\Models\StandaloneFormSetting;
 use App\Models\Status;
 use App\Models\User;
 use App\Models\RolePermission;
@@ -2546,6 +2547,13 @@ class GeneralAssemblyJobController extends Controller
             'sendSubmissionBaseUrl' => url('/general-assembly/add-new/job'),
             'listUrl' => route('general_assembly.public.add'),
             'cancelUrl' => route('general_assembly.public.add'),
+            'standaloneRequired' => StandaloneFormSetting::requiredMap('general_assembly'),
+            'standaloneVisible' => StandaloneFormSetting::visibleMap('general_assembly'),
+            'defaultComplianceId' => null,
+            'defaultPriorityId' => null,
+            'defaultJobRequestId' => null,
+            'defaultClientAccountId' => null,
+            'defaultClientName' => '',
         ]));
     }
 
