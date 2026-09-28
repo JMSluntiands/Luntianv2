@@ -183,6 +183,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/lbs/list/tables', [LbsJobController::class, 'indexTablesFragment'])->name('lbs.list.tablesFragment');
     Route::get('/dashboard/lbs/job/{id}', [LbsJobController::class, 'show'])->name('lbs.job.view');
     Route::post('/dashboard/lbs/job/{id}/accept-form', [LbsJobController::class, 'acceptFormJob'])->name('lbs.job.acceptForm');
+    Route::post('/dashboard/lbs/job/{id}/decline-form', [LbsJobController::class, 'declineFormJob'])->name('lbs.job.declineForm');
     Route::put('/dashboard/lbs/job/{id}', [LbsJobController::class, 'update'])->name('lbs.job.update');
     Route::post('/dashboard/lbs/job/{id}/files', [LbsJobController::class, 'uploadFiles'])->name('lbs.job.uploadFiles');
     Route::post('/dashboard/lbs/job/{id}/file/delete', [LbsJobController::class, 'deleteFile'])->name('lbs.job.deleteFile');
@@ -206,6 +207,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/general-assembly/list/tables', [GeneralAssemblyJobController::class, 'indexTablesFragment'])->name('general_assembly.list.tablesFragment');
     Route::get('/dashboard/general-assembly/job/{id}', [GeneralAssemblyJobController::class, 'show'])->name('general_assembly.job.view');
     Route::post('/dashboard/general-assembly/job/{id}/accept-form', [GeneralAssemblyJobController::class, 'acceptFormJob'])->name('general_assembly.job.acceptForm');
+    Route::post('/dashboard/general-assembly/job/{id}/decline-form', [GeneralAssemblyJobController::class, 'declineFormJob'])->name('general_assembly.job.declineForm');
     Route::put('/dashboard/general-assembly/job/{id}', [GeneralAssemblyJobController::class, 'update'])->name('general_assembly.job.update');
     Route::post('/dashboard/general-assembly/job/{id}/files', [GeneralAssemblyJobController::class, 'uploadFiles'])->name('general_assembly.job.uploadFiles');
     Route::post('/dashboard/general-assembly/job/{id}/file/delete', [GeneralAssemblyJobController::class, 'deleteFile'])->name('general_assembly.job.deleteFile');

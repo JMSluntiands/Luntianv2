@@ -211,7 +211,7 @@
                 <div class="max-w-full overflow-x-auto">
                     <table class="lbs-table w-full table-fixed border-collapse text-sm">
                         <colgroup>
-                            <col style="width: 110px">
+                            <col style="width: 180px">
                             <col style="width: 140px">
                             <col style="width: 260px">
                             <col style="width: 170px">
@@ -275,6 +275,10 @@
                                                 <form method="POST" action="{{ route('general_assembly.job.acceptForm', ['id' => $formJob->job_id]) }}">
                                                     @csrf
                                                     <button type="submit" class="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-500">Accept</button>
+                                                </form>
+                                                <form method="POST" action="{{ route('general_assembly.job.declineForm', ['id' => $formJob->job_id]) }}" onsubmit="return confirm('Decline this submitted job?');">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-md bg-red-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-500">Decline</button>
                                                 </form>
                                             @endif
                                             <a href="{{ route('general_assembly.job.view', ['id' => $formJob->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View">

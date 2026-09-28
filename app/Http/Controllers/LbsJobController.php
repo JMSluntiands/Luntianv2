@@ -924,6 +924,37 @@ class LbsJobController extends Controller
         return redirect()->route('lbs.list')->with('success', 'Forms job accepted and moved to main list.');
     }
 
+    public function declineFormJob(int $id)
+    {
+        if (! RolePermission::userMayAccessRoute('lbs.job.acceptForm')) {
+            return redirect()->route('lbs.list')->with('error', 'You do not have permission to decline forms jobs.');
+        }
+
+        $job = DB::table('jobs')
+            ->where('job_id', $id)
+            ->where('updated_by', 'FORMS')
+            ->where('job_status', '!=', 'Declined')
+            ->first();
+
+        if (! $job) {
+            return redirect()->route('lbs.list')->with('error', 'Forms job not found or already declined.');
+        }
+
+        DB::table('jobs')
+            ->where('job_id', $id)
+            ->update(['job_status' => 'Declined']);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Forms job declined',
+            'activity_description' => 'Job declined from Forms Submitted Jobs.',
+            'updated_by'           => session('user_name') ?? 'LBS Account',
+        ]);
+
+        return redirect()->route('lbs.list')->with('success', 'Forms job declined.');
+    }
+
     public function uploadFiles(Request $request, int $id)
     {
         $job = DB::table('jobs')->where('job_id', $id)->first();
@@ -1123,7 +1154,7 @@ class LbsJobController extends Controller
             $q = DB::table('jobs as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOBS%')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined'])
                 ->where(function ($query) {
                     $query->whereNull('j.updated_by')
                         ->orWhere('j.updated_by', '!=', 'FORMS');
@@ -1161,9 +1192,8 @@ class LbsJobController extends Controller
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                     ->where('j.reference', 'like', 'JOBS%')
                     ->where('j.updated_by', '=', 'FORMS')
-                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
+                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined']);
                 JobCountsScope::applyLbsStandardJobsScope($formsQuery, 'j');
-                JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
                 $formsJobs = $formsQuery
                     ->select(
                         'j.job_id',
@@ -2227,7 +2257,7 @@ class LbsJobController extends Controller
                 'upload_files'        => json_encode($planNames),
                 'upload_project_files'=> json_encode($docNames),
                 // last_update has default CURRENT_TIMESTAMP
-                'updated_by'          => $request->route()?->getName() === 'lbs.public.store' ? 'FORMS' : null,
+                'updated_by'          => $this->isStandaloneFormSubmission($request, 'lbs.public.store', 'lbs_public_form_domain') ? 'FORMS' : null,
                 'job_status'          => 'Allocated',
                 'dwelling'            => '',
                 'client_account_id'   => $client->client_account_id,
@@ -3013,6 +3043,19 @@ class LbsJobController extends Controller
         return JobRequest::where('client_code', $clientCode)
             ->orderBy('job_request_type')
             ->get();
+    }
+
+    private function isStandaloneFormSubmission(Request $request, string $routeName, string $domainConfigKey): bool
+    {
+        if ($request->route()?->getName() === $routeName) {
+            return true;
+        }
+
+        $domain = strtolower(trim((string) config('app.'.$domainConfigKey, '')));
+        $domain = preg_replace('#^https?://#i', '', $domain) ?? $domain;
+        $domain = rtrim($domain, '/');
+
+        return $domain !== '' && strtolower($request->getHost()) === $domain;
     }
 
     /** @param \Illuminate\Database\Query\Builder $query */

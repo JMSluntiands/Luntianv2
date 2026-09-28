@@ -932,6 +932,37 @@ class GeneralAssemblyJobController extends Controller
         return redirect()->route('general_assembly.list')->with('success', 'Forms job accepted and moved to main list.');
     }
 
+    public function declineFormJob(int $id)
+    {
+        if (! RolePermission::userMayAccessRoute('general_assembly.job.acceptForm')) {
+            return redirect()->route('general_assembly.list')->with('error', 'You do not have permission to decline forms jobs.');
+        }
+
+        $job = DB::table('job_general_assembly')
+            ->where('job_id', $id)
+            ->where('updated_by', 'FORMS')
+            ->where('job_status', '!=', 'Declined')
+            ->first();
+
+        if (! $job) {
+            return redirect()->route('general_assembly.list')->with('error', 'Forms job not found or already declined.');
+        }
+
+        DB::table('job_general_assembly')
+            ->where('job_id', $id)
+            ->update(['job_status' => 'Declined']);
+
+        ActivityLog::create([
+            'job_id'               => (int) $id,
+            'activity_date'        => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type'        => 'Forms job declined',
+            'activity_description' => 'Job declined from Forms Submitted Jobs.',
+            'updated_by'           => session('user_name') ?? 'Generic EA Account',
+        ]);
+
+        return redirect()->route('general_assembly.list')->with('success', 'Forms job declined.');
+    }
+
     public function uploadFiles(Request $request, int $id)
     {
         $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
@@ -1131,7 +1162,7 @@ class GeneralAssemblyJobController extends Controller
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOB%')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived'])
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined'])
                 ->where(function ($query) {
                     $query->whereNull('j.updated_by')
                         ->orWhere('j.updated_by', '!=', 'FORMS');
@@ -1168,8 +1199,7 @@ class GeneralAssemblyJobController extends Controller
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                     ->where('j.reference', 'like', 'JOB%')
                     ->where('j.updated_by', '=', 'FORMS')
-                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived']);
-                JobCountsScope::applyJobsTableAssignment($formsQuery, 'j.staff_id', 'j.checker_id');
+                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined']);
                 $formsJobs = $formsQuery
                     ->select(
                         'j.job_id',
@@ -2238,7 +2268,7 @@ class GeneralAssemblyJobController extends Controller
                 'upload_files'        => json_encode($planNames),
                 'upload_project_files'=> json_encode($docNames),
                 // last_update has default CURRENT_TIMESTAMP
-                'updated_by'          => $request->route()?->getName() === 'general_assembly.public.store' ? 'FORMS' : null,
+                'updated_by'          => $this->isStandaloneFormSubmission($request, 'general_assembly.public.store', 'gen_ea_public_form_domain') ? 'FORMS' : null,
                 'job_status'          => 'Allocated',
                 'dwelling'            => '',
                 'client_account_id'   => $client->client_account_id,
@@ -2827,6 +2857,19 @@ class GeneralAssemblyJobController extends Controller
         }
 
         return ClientAccount::create(['client_account_name' => $name]);
+    }
+
+    private function isStandaloneFormSubmission(Request $request, string $routeName, string $domainConfigKey): bool
+    {
+        if ($request->route()?->getName() === $routeName) {
+            return true;
+        }
+
+        $domain = strtolower(trim((string) config('app.'.$domainConfigKey, '')));
+        $domain = preg_replace('#^https?://#i', '', $domain) ?? $domain;
+        $domain = rtrim($domain, '/');
+
+        return $domain !== '' && strtolower($request->getHost()) === $domain;
     }
 
     /**
