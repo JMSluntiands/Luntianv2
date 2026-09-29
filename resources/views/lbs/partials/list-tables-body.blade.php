@@ -1,3 +1,11 @@
+        <section class="list-fold" data-list-fold="jobs">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <button type="button" class="list-fold-toggle" aria-expanded="true">
+                    <svg class="list-fold-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    <h2 class="m-0 text-lg font-semibold text-slate-900 dark:text-white">Jobs</h2>
+                </button>
+            </div>
+            <div class="list-fold-body">
         <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
                 <table class="lbs-table w-full table-fixed border-collapse text-sm" id="lbsTable">
@@ -200,73 +208,52 @@
                 </table>
             </div>
         </div>
+            </div>
+        </section>
 
         @if(\App\Models\RolePermission::userMayAccessRoute('lbs.list.formsSubmitted'))
-        <div class="mt-7">
+        <section class="list-fold mt-7" data-list-fold="inquiries">
             <div class="mb-3 flex items-center justify-between gap-2">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Forms Submitted Jobs</h2>
+                <button type="button" class="list-fold-toggle" aria-expanded="true">
+                    <svg class="list-fold-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    <h2 class="m-0 text-lg font-semibold text-slate-900 dark:text-white">For Inquiries</h2>
+                </button>
                 <span class="inline-flex items-center rounded-md bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-300">Source: forms.luntian.com.au</span>
             </div>
+            <div class="list-fold-body">
             <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
                 <div class="max-w-full overflow-x-auto">
                     <table class="lbs-table w-full table-fixed border-collapse text-sm">
                         <colgroup>
                             <col style="width: 180px">
-                            <col style="width: 140px">
-                            <col style="width: 260px">
                             <col style="width: 170px">
-                            <col style="width: 140px">
+                            <col style="width: 160px">
+                            <col style="width: 160px">
+                            <col style="width: 180px">
                             <col style="width: 260px">
-                            <col style="width: 140px">
-                            <col style="width: 70px">
-                            <col style="width: 70px">
-                            <col style="width: 200px">
-                            <col style="width: 155px">
-                            <col style="width: 120px">
+                            <col style="width: 130px">
+                            <col style="width: 160px">
                         </colgroup>
                         <thead>
                             <tr>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Action</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Log Date</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Reference No.</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client Reference</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Compliance</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Reference</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client reference</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Address</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Staff</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Checker</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Status</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Due Date</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Source</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($formsJobs ?? [] as $formJob)
                                 @php
-                                    $formLog = $formJob->log_date ? \Carbon\Carbon::parse($formJob->log_date, 'Asia/Manila') : null;
                                     $priorityText = $formJob->priority ?? '';
                                     $priorityBg = $priorityColors[$priorityText] ?? null;
-                                    $status = $formJob->job_status ?? 'Allocated';
-                                    $statusBg = $statusColors[$status] ?? null;
-                                    $statusFg = $statusFontColors[$status] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
-                                    $due = null;
-                                    if ($formLog) {
-                                        $start = $formLog->copy();
-                                        $startOfDay = $start->copy()->setTime(8, 0, 0);
-                                        $cutoff = $start->copy()->setTime(15, 0, 0);
-                                        if ($start->lt($startOfDay)) {
-                                            $start = $startOfDay;
-                                        }
-                                        $isTop = str_contains(strtolower($priorityText), 'top');
-                                        if (!$isTop && $start->gt($cutoff)) {
-                                            $start = $start->copy()->addDay()->setTime(8, 0, 0);
-                                        }
-                                        if ($isTop) {
-                                            $due = $start->copy()->addHours(6);
-                                        } elseif (preg_match('/(\d+)\s*day/', strtolower($priorityText), $m)) {
-                                            $due = $start->copy()->addDays((int) ($m[1] ?? 0));
-                                        }
-                                    }
+                                    $formClientRef = trim((string) ($formJob->client_reference_no ?? ''));
+                                    $formReference = trim((string) ($formJob->job_reference_no ?: $formJob->reference ?? ''));
                                 @endphp
                                 <tr class="border-b border-slate-200 text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
                                     <td class="px-4 py-3 text-center" data-label="Action">
@@ -286,40 +273,20 @@
                                             </a>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <span class="block font-medium">{{ $formLog ? $formLog->format('F j, Y') : '—' }}</span>
-                                        @if($formLog)<span class="block text-[0.8125rem] text-slate-400">{{ $formLog->format('g:i A') }}</span>@endif
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span class="block font-medium">{{ $formJob->client_account_name ?? $formJob->client_code ?? '—' }}</span>
-                                        <span class="block text-[0.8125rem] text-slate-400">{{ $formJob->ncc_compliance ?? '' }}</span>
-                                    </td>
-                                    <td class="px-4 py-3">{{ $formJob->job_reference_no ?: '—' }}</td>
-                                    @php $formClientRef = trim((string) ($formJob->client_reference_no ?? '')); @endphp
-                                    <td class="px-4 py-3" data-label="Client reference">{{ $formClientRef !== '' ? $formClientRef : '—' }}</td>
-                                    <td class="px-4 py-3">
-                                        <span class="block font-medium">{{ $formJob->job_type ?: '—' }}</span>
-                                        <span class="block text-[0.8125rem] text-slate-400">{{ $formJob->job_request_id ?? '' }}</span>
-                                    </td>
+                                    <td class="px-4 py-3">{{ $formReference !== '' ? $formReference : '—' }}</td>
+                                    <td class="px-4 py-3">{{ $formClientRef !== '' ? $formClientRef : '—' }}</td>
+                                    <td class="px-4 py-3">{{ $formJob->ncc_compliance ?: '—' }}</td>
+                                    <td class="px-4 py-3">{{ $formJob->client_account_name ?? $formJob->client_code ?: '—' }}</td>
+                                    <td class="px-4 py-3">{{ $formJob->address_client ?: '—' }}</td>
                                     <td class="px-4 py-3">
                                         <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span>
                                     </td>
-                                    <td class="px-4 py-3"><span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $formJob->staff_id ? strtoupper($formJob->staff_id) : '--' }}</span></td>
-                                    <td class="px-4 py-3"><span class="lbs-initials inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $formJob->checker_id ? strtoupper($formJob->checker_id) : '--' }}</span></td>
-                                    <td class="px-4 py-3">
-                                        <span class="lbs-badge inline-block rounded-md border-0 px-2 py-1 text-xs font-semibold" @if($statusBg) style="background-color: {{ $statusBg }}; color: {{ $statusFg }};" @endif>{{ $status }}</span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span class="block font-medium">{{ $due ? $due->format('F j, Y') : '—' }}</span>
-                                        @if($due)<span class="block text-[0.8125rem] text-slate-400">{{ $due->format('g:i A') }}</span>@endif
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span class="inline-block rounded-md bg-cyan-500/15 px-2 py-1 text-xs font-semibold text-cyan-300">FORMS</span>
-                                    </td>
+                                    <td class="px-4 py-3">{{ $formJob->job_type ?: '—' }}</td>
+                                    <td class="px-4 py-3">{{ $formJob->job_status ?: '—' }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="12" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
+                                    <td colspan="9" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">
                                         No jobs submitted from forms yet.
                                     </td>
                                 </tr>
@@ -328,5 +295,77 @@
                     </table>
                 </div>
             </div>
-        </div>
+            </div>
+        </section>
         @endif
+
+        <section class="list-fold mt-7" data-list-fold="quotation">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <button type="button" class="list-fold-toggle" aria-expanded="true">
+                    <svg class="list-fold-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    <h2 class="m-0 text-lg font-semibold text-slate-900 dark:text-white">For Quotation</h2>
+                </button>
+            </div>
+            <div class="list-fold-body">
+                <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
+                    <div class="max-w-full overflow-x-auto">
+                        <table class="lbs-table w-full table-fixed border-collapse text-sm">
+                            <colgroup>
+                                <col style="width: 80px">
+                                <col style="width: 170px">
+                                <col style="width: 160px">
+                                <col style="width: 160px">
+                                <col style="width: 180px">
+                                <col style="width: 260px">
+                                <col style="width: 130px">
+                                <col style="width: 160px">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Action</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Reference No.</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client Reference</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Compliance</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Client</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Address</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
+                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($quotationJobs ?? [] as $quoteJob)
+                                    @php
+                                        $quoteClientRef = trim((string) ($quoteJob->client_reference_no ?? ''));
+                                        $quoteReference = trim((string) ($quoteJob->job_reference_no ?: $quoteJob->reference ?? ''));
+                                        $quotePriority = $quoteJob->priority ?? '';
+                                        $quotePriorityBg = $priorityColors[$quotePriority] ?? null;
+                                    @endphp
+                                    <tr class="border-b border-slate-200 text-slate-800 dark:border-slate-700 dark:text-slate-200">
+                                        <td class="px-4 py-3">
+                                            <a href="{{ route('lbs.job.view', ['id' => $quoteJob->job_id]) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 no-underline hover:bg-green-500/15 hover:text-green-400" title="View">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </a>
+                                        </td>
+                                        <td class="px-4 py-3">{{ $quoteReference !== '' ? $quoteReference : '—' }}</td>
+                                        <td class="px-4 py-3">{{ $quoteClientRef !== '' ? $quoteClientRef : '—' }}</td>
+                                        <td class="px-4 py-3">{{ $quoteJob->ncc_compliance ?: '—' }}</td>
+                                        <td class="px-4 py-3">{{ $quoteJob->client_account_name ?? $quoteJob->client_code ?: '—' }}</td>
+                                        <td class="px-4 py-3">{{ $quoteJob->address_client ?: '—' }}</td>
+                                        <td class="px-4 py-3">
+                                            <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($quotePriorityBg) style="background-color: {{ $quotePriorityBg }};" @endif>{{ $quotePriority ?: '—' }}</span>
+                                        </td>
+                                        <td class="px-4 py-3">{{ $quoteJob->job_type ?: '—' }}</td>
+                                        <td class="px-4 py-3">{{ $quoteJob->job_status ?: '—' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="9" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">No jobs for quotation yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>

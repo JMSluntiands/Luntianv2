@@ -94,6 +94,15 @@
                                 @endforeach
                             </select>
                         </div>
+                        @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
+                        <div class="@include('partials.standalone-off-class', ['field' => 'job_status'])" @include('partials.standalone-field-data', ['field' => 'job_status'])>
+                            <label for="job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status @include('partials.standalone-required-mark', ['field' => 'job_status'])</label>
+                            <select id="job_status" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                <option value="For Inquiries" selected>For Inquiries</option>
+                                <option value="For Quotation">For Quotation</option>
+                            </select>
+                        </div>
+                        @endif
                     </div>
                     <div class="@include('partials.standalone-off-class', ['field' => 'notes'])" @include('partials.standalone-field-data', ['field' => 'notes'])>
                         <label for="notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes @include('partials.standalone-required-mark', ['field' => 'notes'])</label>

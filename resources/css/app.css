@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 /* Dashboard theme: match login – use data-theme so dark: works */
@@ -14,6 +14,22 @@
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --text-xs: 11px;
+    --text-xs--line-height: 1.35;
+    --text-sm: 13px;
+    --text-sm--line-height: 1.4;
+    --text-base: 13px;
+    --text-base--line-height: 1.45;
+    --text-lg: 15px;
+    --text-lg--line-height: 1.4;
+    --text-xl: 16px;
+    --text-xl--line-height: 1.35;
+    --text-2xl: 18px;
+    --text-2xl--line-height: 1.3;
+    --text-3xl: 20px;
+    --text-3xl--line-height: 1.25;
+    --text-4xl: 24px;
+    --text-4xl--line-height: 1.2;
 }
 
 /* Walang white line sa taas – ireset ang margin/padding */
@@ -4003,4 +4019,3 @@ html:not([data-theme="dark"]) .page-lbs-list .lbs-data-row:hover .lbs-td {
     }
 }
 
-/* Column resize styles live in public/css/table-column-resize.css */

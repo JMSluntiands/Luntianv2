@@ -350,6 +350,7 @@ class StandaloneFormSettingsController extends Controller
             ['key' => 'job_address', 'label' => 'Job Address'],
             ['key' => 'priority', 'label' => 'Priority'],
             ['key' => 'job_type', 'label' => 'Job Type'],
+            ['key' => 'job_status', 'label' => 'Job Status'],
             ['key' => 'notes', 'label' => 'Notes'],
             ['key' => 'plans', 'label' => 'Plans'],
             ['key' => 'documents', 'label' => 'Documents'],

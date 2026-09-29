@@ -15,6 +15,7 @@
     </script>
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
+    @include('layouts.partials.site-type')
 </head>
 <body>
     <div id="app">

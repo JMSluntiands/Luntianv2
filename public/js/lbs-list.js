@@ -347,11 +347,8 @@ $(function () {
 
     if (typeof w.initTableSort === 'function') {
       w.initTableSort($table);
-    } else if (typeof w.initAllTableSorts === 'function') {
+    } else     if (typeof w.initAllTableSorts === 'function') {
       w.initAllTableSorts();
-    }
-    if (typeof w.refreshTableColumnResize === 'function') {
-      w.refreshTableColumnResize($table[0] && $table[0].parentElement ? $table[0].parentElement : document);
     }
   }
 
@@ -380,6 +377,7 @@ $(function () {
           .then(function (html) {
             $lbsListTablesInner.html(html);
             bindLbsMainTableInteractions();
+            if (typeof window.applyListFolds === 'function') window.applyListFolds($lbsListTablesInner[0]);
             if (window.JobListPagination && typeof window.JobListPagination.refreshAll === 'function') {
               window.JobListPagination.refreshAll($lbsListTablesInner[0]);
             }

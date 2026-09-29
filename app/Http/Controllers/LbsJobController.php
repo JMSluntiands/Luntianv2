@@ -1154,7 +1154,7 @@ class LbsJobController extends Controller
             $q = DB::table('jobs as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOBS%')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined'])
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined', 'For Quotation'])
                 ->where(function ($query) {
                     $query->whereNull('j.updated_by')
                         ->orWhere('j.updated_by', '!=', 'FORMS');
@@ -1192,7 +1192,7 @@ class LbsJobController extends Controller
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                     ->where('j.reference', 'like', 'JOBS%')
                     ->where('j.updated_by', '=', 'FORMS')
-                    ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined']);
+                    ->whereIn('j.job_status', ['For Inquiries', 'Allocated']);
                 JobCountsScope::applyLbsStandardJobsScope($formsQuery, 'j');
                 $formsJobs = $formsQuery
                     ->select(
@@ -1219,6 +1219,37 @@ class LbsJobController extends Controller
                     ->limit(200)
                     ->get();
             }
+
+            $quotationQuery = DB::table('jobs as j')
+                ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
+                ->where('j.reference', 'like', 'JOBS%')
+                ->where('j.job_status', 'For Quotation');
+            JobCountsScope::applyLbsStandardJobsScope($quotationQuery, 'j');
+            JobCountsScope::applyJobsTableAssignment($quotationQuery, 'j.staff_id', 'j.checker_id');
+            $quotationJobs = $quotationQuery
+                ->select(
+                    'j.job_id',
+                    'j.reference',
+                    'j.log_date',
+                    'j.client_code',
+                    'j.job_reference_no',
+                    'j.client_reference_no',
+                    'j.staff_id',
+                    'j.checker_id',
+                    'j.ncc_compliance',
+                    'j.job_request_id',
+                    'j.address_client',
+                    'j.job_type',
+                    'j.priority',
+                    'j.plan_complexity',
+                    'j.units',
+                    'j.job_status',
+                    'j.completion_date',
+                    'ca.client_account_name'
+                )
+                ->orderByDesc('j.log_date')
+                ->limit(200)
+                ->get();
         }
 
         $priorityColors = Priority::query()
@@ -1239,6 +1270,7 @@ class LbsJobController extends Controller
         return array_merge([
             'jobs' => $jobs,
             'formsJobs' => $formsJobs,
+            'quotationJobs' => $quotationJobs ?? collect(),
             'priorityColors' => $priorityColors,
             'priorityOptions' => $priorityOptions,
             'statuses' => Status::orderBy('name')->get(),
@@ -2138,6 +2170,7 @@ class LbsJobController extends Controller
             'job_type'         => ['required', 'integer'],
             'assigned_to'      => ['nullable', 'string', 'max:10'],
             'checked_by'       => ['nullable', 'string', 'max:10'],
+            'job_status'       => ['nullable', 'string', 'in:For Inquiries,For Quotation'],
             'notes'            => ['nullable', 'string'],
         ]);
 
@@ -2258,7 +2291,9 @@ class LbsJobController extends Controller
                 'upload_project_files'=> json_encode($docNames),
                 // last_update has default CURRENT_TIMESTAMP
                 'updated_by'          => $this->isStandaloneFormSubmission($request, 'lbs.public.store', 'lbs_public_form_domain') ? 'FORMS' : null,
-                'job_status'          => 'Allocated',
+                'job_status'          => $this->isStandaloneFormSubmission($request, 'lbs.public.store', 'lbs_public_form_domain')
+                    ? $this->standaloneIntakeStatus($request)
+                    : 'Allocated',
                 'dwelling'            => '',
                 'client_account_id'   => $client->client_account_id,
                 'completion_date'     => null,
@@ -3043,6 +3078,13 @@ class LbsJobController extends Controller
         return JobRequest::where('client_code', $clientCode)
             ->orderBy('job_request_type')
             ->get();
+    }
+
+    private function standaloneIntakeStatus(Request $request): string
+    {
+        return strcasecmp(trim((string) $request->input('job_status', '')), 'For Quotation') === 0
+            ? 'For Quotation'
+            : 'For Inquiries';
     }
 
     private function isStandaloneFormSubmission(Request $request, string $routeName, string $domainConfigKey): bool

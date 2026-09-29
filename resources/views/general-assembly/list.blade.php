@@ -58,8 +58,7 @@
         <div id="lbs-list-tables-refresh-root" data-refresh-url="{{ route('general_assembly.list.tablesFragment') }}">
             <div class="mb-3 flex flex-col gap-3 border-b border-slate-200 pb-3 dark:border-slate-700 sm:flex-row sm:items-end sm:justify-between">
                 <div class="min-w-0">
-                    <h2 class="m-0 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Job tables</h2>
-                    <p class="m-0 mt-0.5 max-w-xl text-sm leading-snug text-slate-600 dark:text-slate-400">Active Generic EA rows and form submissions. Use refresh to reload data without leaving this page.</p>
+                    <p class="m-0 max-w-xl text-sm leading-snug text-slate-600 dark:text-slate-400">Active Generic EA rows, inquiries, and quotations. Use refresh to reload data without leaving this page.</p>
                 </div>
                 <button type="button" id="lbsListRefreshBtn" class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:self-auto" title="Refresh tables" aria-label="Refresh job tables">
                     <svg class="ga-list-refresh-icon h-4 w-4 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
@@ -97,10 +96,55 @@
 .lbs-badge-revised { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
 .lbs-status-menu[hidden], .lbs-initials-menu[hidden] { display: none !important; }
 .lbs-status-trigger, .lbs-initials-trigger { cursor: pointer; }
+.list-fold-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.list-fold-chevron {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+.list-fold.is-collapsed .list-fold-chevron { transform: rotate(-90deg); }
+.list-fold.is-collapsed .list-fold-body { display: none; }
 </style>
 @endpush
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ asset('js/lbs-list.js') }}"></script>
+    <script>
+    (function () {
+        function applyListFolds(root) {
+            (root || document).querySelectorAll('.list-fold').forEach(function (section) {
+                var key = section.getAttribute('data-list-fold');
+                var collapsed = !!(key && localStorage.getItem('luntian.list-fold:' + key) === '1');
+                section.classList.toggle('is-collapsed', collapsed);
+                var btn = section.querySelector('.list-fold-toggle');
+                if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            });
+        }
+        window.applyListFolds = applyListFolds;
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest && e.target.closest('.list-fold-toggle');
+            if (!btn) return;
+            var section = btn.closest('.list-fold');
+            if (!section) return;
+            var collapsed = section.classList.toggle('is-collapsed');
+            btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            var key = section.getAttribute('data-list-fold');
+            if (key) localStorage.setItem('luntian.list-fold:' + key, collapsed ? '1' : '0');
+        });
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { applyListFolds(); });
+        else applyListFolds();
+    })();
+    </script>
+    <script src="{{ asset('js/lbs-list.js') }}?v={{ @filemtime(public_path('js/lbs-list.js')) ?: '1' }}"></script>
 @endpush

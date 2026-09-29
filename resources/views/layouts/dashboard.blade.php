@@ -21,6 +21,7 @@
     @include('layouts.partials.dashboard-styles')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/layout.ts'])
+    @include('layouts.partials.site-type')
     <style>
         /* Sidebar minimize. Kept inline so it still works when the Vite build on the server is stale. */
         .sidebar-collapse-btn { display: none; }
@@ -99,7 +100,6 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/table-column-resize.css') }}?v={{ @filemtime(public_path('css/table-column-resize.css')) ?: '1' }}">
     <style>
         /* Inline job-table dropdowns (always available even if Vite build is stale) */
         .lbs-initials-select {
@@ -448,15 +448,11 @@
     @include('partials.assignment-user-select2')
     @stack('scripts')
     <script src="{{ asset('js/table-sort.js') }}?v={{ @filemtime(public_path('js/table-sort.js')) ?: '1' }}"></script>
-    <script src="{{ asset('js/table-column-resize.js') }}?v={{ @filemtime(public_path('js/table-column-resize.js')) ?: '1' }}"></script>
     <script src="{{ asset('js/job-list-pagination.js') }}?v={{ @filemtime(public_path('js/job-list-pagination.js')) ?: '1' }}"></script>
     <script src="{{ asset('js/job-list-autosave.js') }}?v={{ @filemtime(public_path('js/job-list-autosave.js')) ?: '1' }}"></script>
     <script>
         if (typeof window.initAllTableSorts === 'function') {
             window.initAllTableSorts();
-        }
-        if (typeof window.initTableColumnResize === 'function') {
-            window.initTableColumnResize();
         }
         if (typeof window.JobListPagination === 'object' && window.JobListPagination.init) {
             window.JobListPagination.init();
