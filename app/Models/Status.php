@@ -8,7 +8,32 @@ class Status extends Model
 {
     public const DEFAULT_FONT_COLOR = '#333333';
 
-    protected $fillable = ['name', 'color', 'font_color'];
+    protected $fillable = ['name', 'color', 'font_color', 'show_on_form'];
+
+    protected $casts = [
+        'show_on_form' => 'boolean',
+    ];
+
+    /**
+     * Status names that standalone submissions can land in the For Inquiries table.
+     *
+     * @return list<string>
+     */
+    public static function formInquiryNames(): array
+    {
+        $names = ['For Inquiries', 'Allocated'];
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('statuses', 'show_on_form')) {
+            return $names;
+        }
+
+        $extra = static::query()
+            ->where('show_on_form', true)
+            ->where('name', '!=', 'For Quotation')
+            ->pluck('name')
+            ->all();
+
+        return array_values(array_unique(array_merge($names, $extra)));
+    }
 
     public static function resolveFontColor(?string $hex): string
     {

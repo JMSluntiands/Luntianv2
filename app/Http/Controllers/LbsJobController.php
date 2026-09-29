@@ -21,6 +21,7 @@ use App\Support\ForCheckingAttachmentValidation;
 use App\Support\JobUploadFolder;
 use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -1192,7 +1193,7 @@ class LbsJobController extends Controller
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                     ->where('j.reference', 'like', 'JOBS%')
                     ->where('j.updated_by', '=', 'FORMS')
-                    ->whereIn('j.job_status', ['For Inquiries', 'Allocated']);
+                    ->whereIn('j.job_status', Status::formInquiryNames());
                 JobCountsScope::applyLbsStandardJobsScope($formsQuery, 'j');
                 $formsJobs = $formsQuery
                     ->select(
@@ -2172,14 +2173,28 @@ class LbsJobController extends Controller
             'job_type'         => [$standalone ? 'nullable' : 'required', 'integer'],
             'assigned_to'      => ['nullable', 'string', 'max:10'],
             'checked_by'       => ['nullable', 'string', 'max:10'],
-            'job_status'       => [$standalone ? 'required' : 'nullable', 'string', 'in:For Inquiries,For Quotation'],
+            'job_status'       => [
+                $standalone ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('statuses', 'id')->where(fn ($query) => $query->where('show_on_form', true)),
+            ],
             'notes'            => ['nullable', 'string'],
         ]);
 
         $compliance = Compliance::find($data['compliance']);
-        $jobRequest = $standalone
-            ? $this->jobRequestsForVerticalClient(JobModuleClient::codeFor('lbs'))->first()
-            : JobRequest::find($data['job_type']);
+        $quotation = $standalone && strcasecmp($this->standaloneIntakeStatus($request), 'For Quotation') === 0;
+        if ($quotation && empty($data['job_type'])) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Select a job type.',
+            ], 422);
+        }
+        $lbsJobRequests = $this->jobRequestsForVerticalClient(JobModuleClient::codeFor('lbs'));
+        $jobRequest = $standalone && ! $quotation
+            ? $lbsJobRequests->first()
+            : ($standalone
+                ? $lbsJobRequests->firstWhere('id', (int) ($data['job_type'] ?? 0))
+                : JobRequest::find($data['job_type']));
         $client     = ClientAccount::find($data['client']);
 
         if (!$compliance || !$jobRequest || !$client) {
@@ -3086,9 +3101,9 @@ class LbsJobController extends Controller
 
     private function standaloneIntakeStatus(Request $request): string
     {
-        return strcasecmp(trim((string) $request->input('job_status', '')), 'For Quotation') === 0
-            ? 'For Quotation'
-            : 'For Inquiries';
+        $name = trim((string) Status::query()->where('id', (int) $request->input('job_status'))->value('name'));
+
+        return $name !== '' ? $name : 'For Inquiries';
     }
 
     private function isStandaloneFormSubmission(Request $request, string $routeName, string $domainConfigKey): bool

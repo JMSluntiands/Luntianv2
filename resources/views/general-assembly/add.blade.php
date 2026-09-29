@@ -97,11 +97,12 @@
                         </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'job_type'])" @include('partials.standalone-field-data', ['field' => 'job_type'])>
                             @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
-                                <label for="job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
-                                <select id="job_status" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                    <option value="">Select job status</option>
-                                    <option value="For Inquiries">For Inquiries</option>
-                                    <option value="For Quotation">For Quotation</option>
+                                <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type Request @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
+                                <select id="job_type" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                    <option value="">Select job type request</option>
+                                    @foreach(\App\Models\Status::query()->where('show_on_form', true)->orderBy('name')->get() as $formStatus)
+                                        <option value="{{ $formStatus->id }}">{{ $formStatus->name }}</option>
+                                    @endforeach
                                 </select>
                             @else
                                 <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
@@ -114,6 +115,17 @@
                             @endif
                         </div>
                     </div>
+                    @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
+                    <div id="quotationJobType" class="hidden">
+                        <label for="quotation_job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type <span class="text-red-500">*</span></label>
+                        <select id="quotation_job_type" name="job_type" disabled class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                            <option value="">Select job type</option>
+                            @foreach($jobRequests ?? [] as $jobRequest)
+                                <option value="{{ $jobRequest->id }}">{{ $jobRequest->job_request_type ?? '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
                     <div class="@include('partials.standalone-off-class', ['field' => 'notes'])" @include('partials.standalone-field-data', ['field' => 'notes'])>
                         <label for="notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes @include('partials.standalone-required-mark', ['field' => 'notes'])</label>
                         <input type="hidden" name="notes" id="notes" autocomplete="off">
@@ -294,6 +306,19 @@
             // Select2: all selects in this form become searchable dropdowns
             $('#lbsAddForm select:not(.assignment-user-select)').select2({ width: '100%', allowClear: false });
             if (window.enhanceStandaloneDropdowns) window.enhanceStandaloneDropdowns();
+            function syncQuotationJobType() {
+                var $status = $('#job_type');
+                var $wrap = $('#quotationJobType');
+                var $sel = $('#quotation_job_type');
+                if (!$status.length || !$wrap.length) return;
+                var text = ($status.find('option:selected').text() || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                var show = text === 'for quotation';
+                $sel.prop('disabled', !show);
+                $wrap.toggleClass('hidden', !show);
+                if (show && window.enhanceStandaloneDropdowns) window.enhanceStandaloneDropdowns();
+            }
+            $('#lbsAddForm').on('change', '#job_type', syncQuotationJobType);
+            syncQuotationJobType();
             initAssignmentUserSelect2($('#lbsAddForm'));
 
             @if(isset($duplicateJob) && ($duplicateJob->notes ?? '') !== '')

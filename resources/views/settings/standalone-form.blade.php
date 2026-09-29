@@ -162,6 +162,7 @@
         title.textContent = form.name;
         list.innerHTML = '';
         (form.fields || []).forEach(function (field) {
+            if (field.editor_only) return;
             list.appendChild(fieldRow(form.key, field));
         });
         frame.src = embedUrl(form.url || '');

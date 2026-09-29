@@ -7,9 +7,11 @@ use App\Models\JobModuleClient;
 use App\Models\JobRequest;
 use App\Models\Priority;
 use App\Models\StandaloneFormSetting;
+use App\Models\Status;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -144,6 +146,7 @@ class StandaloneFormSettingsController extends Controller
                 'fields' => array_map(function (array $field) use ($required, $visible, $key) {
                     $field['is_required'] = (bool) ($required[$field['key']] ?? false);
                     $field['is_visible'] = (bool) ($visible[$field['key']] ?? true);
+                    $field['editor_only'] = (bool) ($field['editor_only'] ?? false);
                     $field['options'] = $this->isDropdownField($key, $field['key'])
                         ? $this->optionsFor($key, $field['key'])
                         : null;
@@ -171,7 +174,7 @@ class StandaloneFormSettingsController extends Controller
 
     private function isDropdownField(string $formKey, string $fieldKey): bool
     {
-        return in_array($fieldKey, ['compliance', 'priority'], true)
+        return in_array($fieldKey, ['compliance', 'priority', 'job_type', 'quotation_job_type'], true)
             && in_array($formKey, ['lbs', 'general_assembly'], true);
     }
 
@@ -206,6 +209,20 @@ class StandaloneFormSettingsController extends Controller
                 ->all();
         }
 
+        if ($fieldKey === 'job_type') {
+            return Status::query()
+                ->where('show_on_form', true)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Status $row) => [
+                    'id' => (int) $row->id,
+                    'label' => trim((string) $row->name),
+                ])
+                ->filter(fn (array $row) => $row['label'] !== '')
+                ->values()
+                ->all();
+        }
+
         return $this->jobRequestsForForm($formKey)
             ->map(fn (JobRequest $row) => [
                 'id' => (int) $row->id,
@@ -228,6 +245,26 @@ class StandaloneFormSettingsController extends Controller
 
         if ($fieldKey === 'priority') {
             Priority::query()->create(['name' => $label]);
+
+            return;
+        }
+
+        if ($fieldKey === 'job_type') {
+            $existing = Status::query()
+                ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($label)])
+                ->first();
+            if ($existing) {
+                $existing->update(['show_on_form' => true]);
+
+                return;
+            }
+
+            Status::query()->create([
+                'name' => $label,
+                'color' => '#64748b',
+                'font_color' => '#333333',
+                'show_on_form' => true,
+            ]);
 
             return;
         }
@@ -268,11 +305,31 @@ class StandaloneFormSettingsController extends Controller
             return;
         }
 
+        if ($fieldKey === 'job_type') {
+            $row = Status::query()->where('show_on_form', true)->find($id);
+            if (! $row) {
+                throw new \InvalidArgumentException('That option was not found.');
+            }
+            $oldName = trim((string) $row->name);
+            $row->update(['name' => $label]);
+            if ($oldName !== '' && strcasecmp($oldName, $label) !== 0) {
+                DB::table('job_general_assembly')->where('job_status', $oldName)->update(['job_status' => $label]);
+                DB::table('jobs')->where('job_status', $oldName)->update(['job_status' => $label]);
+            }
+
+            return;
+        }
+
         $row = $this->jobRequestsForForm($formKey)->firstWhere('id', $id);
         if (! $row) {
             throw new \InvalidArgumentException('That option was not found.');
         }
+        $oldLabel = trim((string) $row->job_request_type);
         $row->update(['job_request_type' => $label]);
+        if ($oldLabel !== '' && strcasecmp($oldLabel, $label) !== 0) {
+            DB::table('job_general_assembly')->where('job_type', $oldLabel)->update(['job_type' => $label]);
+            DB::table('jobs')->where('job_type', $oldLabel)->update(['job_type' => $label]);
+        }
     }
 
     private function deleteDropdownOption(string $formKey, string $fieldKey, int $id): void
@@ -285,6 +342,16 @@ class StandaloneFormSettingsController extends Controller
             $row = Compliance::query()->find($id);
         } elseif ($fieldKey === 'priority') {
             $row = Priority::query()->find($id);
+        } elseif ($fieldKey === 'job_type') {
+            $row = Status::query()->where('show_on_form', true)->find($id);
+            if ($row) {
+                $name = trim((string) $row->name);
+                $used = ($name !== '' && DB::table('job_general_assembly')->where('job_status', $name)->exists())
+                    || ($name !== '' && DB::table('jobs')->where('job_status', $name)->exists());
+                if ($used) {
+                    throw new \InvalidArgumentException('That option is still used, so it cannot be removed.');
+                }
+            }
         } else {
             $row = $this->jobRequestsForForm($formKey)->firstWhere('id', $id);
         }
@@ -349,7 +416,8 @@ class StandaloneFormSettingsController extends Controller
             ['key' => 'compliance', 'label' => 'Compliance'],
             ['key' => 'job_address', 'label' => 'Job Address'],
             ['key' => 'priority', 'label' => 'Priority'],
-            ['key' => 'job_type', 'label' => 'Job Status'],
+            ['key' => 'job_type', 'label' => 'Job Type Request'],
+            ['key' => 'quotation_job_type', 'label' => 'Job Type', 'editor_only' => true],
             ['key' => 'notes', 'label' => 'Notes'],
             ['key' => 'plans', 'label' => 'Plans'],
             ['key' => 'documents', 'label' => 'Documents'],
@@ -368,7 +436,7 @@ class StandaloneFormSettingsController extends Controller
             ),
             'general_assembly' => array_map(
                 fn (array $field) => $field['key'] === 'job_type'
-                    ? ['key' => 'job_type', 'label' => 'Job Status']
+                    ? ['key' => 'job_type', 'label' => 'Job Type Request']
                     : $field,
                 array_merge(
                     [

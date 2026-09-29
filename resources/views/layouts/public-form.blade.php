@@ -236,7 +236,7 @@
         window.enhanceStandaloneDropdowns = function () {
             if (!window.jQuery) return;
             var $ = window.jQuery;
-            var ids = ['compliance', 'priority', 'job_type'];
+            var ids = ['compliance', 'priority', 'job_type', 'quotation_job_type'];
             var holdOpen = false;
             var reopenField = null;
 

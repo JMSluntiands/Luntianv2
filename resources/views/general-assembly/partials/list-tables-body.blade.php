@@ -318,6 +318,7 @@
                                 <col style="width: 200px">
                                 <col style="width: 260px">
                                 <col style="width: 130px">
+                                <col style="width: 220px">
                                 <col style="width: 140px">
                             </colgroup>
                             <thead>
@@ -330,6 +331,7 @@
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Email</th>
                                     <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Address</th>
                                     <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
+                                    <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
                                 <th class="whitespace-nowrap border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
                                 </tr>
                             </thead>
@@ -355,11 +357,12 @@
                                         <td class="px-4 py-3">
                                             <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($quotePriorityBg) style="background-color: {{ $quotePriorityBg }};" @endif>{{ $quotePriority ?: '—' }}</span>
                                         </td>
+                                        <td class="px-4 py-3">{{ $quoteJob->job_type ?: '—' }}</td>
                                         <td class="whitespace-nowrap px-4 py-3">{{ $quoteJob->job_status ?: '—' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">No jobs for quotation yet.</td>
+                                        <td colspan="10" class="px-4 py-4 text-center text-slate-400 dark:text-slate-500">No jobs for quotation yet.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

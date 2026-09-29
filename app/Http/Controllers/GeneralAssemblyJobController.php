@@ -22,6 +22,7 @@ use App\Support\JobUploadFolder;
 use App\Support\LegacyDbJoin;
 use App\Support\LbsJobStatusFlow;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
@@ -1203,7 +1204,7 @@ class GeneralAssemblyJobController extends Controller
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                     ->where('j.reference', 'like', 'JOB%')
                     ->where('j.updated_by', '=', 'FORMS')
-                    ->whereIn('j.job_status', ['For Inquiries', 'Allocated']);
+                    ->whereIn('j.job_status', Status::formInquiryNames());
                 $formsJobs = $formsQuery
                     ->select(
                         'j.job_id',
@@ -2190,7 +2191,11 @@ class GeneralAssemblyJobController extends Controller
             'job_type'         => [$standalone ? 'nullable' : 'required', 'integer'],
             'assigned_to'      => ['nullable', 'string', 'max:10'],
             'checked_by'       => ['nullable', 'string', 'max:10'],
-            'job_status'       => [$standalone ? 'required' : 'nullable', 'string', 'in:For Inquiries,For Quotation'],
+            'job_status'       => [
+                $standalone ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('statuses', 'id')->where(fn ($query) => $query->where('show_on_form', true)),
+            ],
             'notes'            => ['nullable', 'string'],
             'plans'            => ['nullable', 'array'],
             'plans.*'          => ['file', 'max:51200'],
@@ -2210,7 +2215,14 @@ class GeneralAssemblyJobController extends Controller
         $compliance = Compliance::find($data['compliance']);
         $jobRequestQuery = JobRequest::query()
             ->whereRaw('UPPER(TRIM(client_code)) = ?', [$this->genEaClientCode()]);
-        $jobRequest = $standalone
+        $quotation = $standalone && strcasecmp($this->standaloneIntakeStatus($request), 'For Quotation') === 0;
+        if ($quotation && empty($data['job_type'])) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Select a job type.',
+            ], 422);
+        }
+        $jobRequest = $standalone && ! $quotation
             ? (clone $jobRequestQuery)->orderBy('id')->first()
             : (clone $jobRequestQuery)->where('id', $data['job_type'])->first();
         $client = $this->resolveOrCreateClientAccount($data['client']);
@@ -2914,9 +2926,9 @@ class GeneralAssemblyJobController extends Controller
 
     private function standaloneIntakeStatus(Request $request): string
     {
-        return strcasecmp(trim((string) $request->input('job_status', '')), 'For Quotation') === 0
-            ? 'For Quotation'
-            : 'For Inquiries';
+        $name = trim((string) Status::query()->where('id', (int) $request->input('job_status'))->value('name'));
+
+        return $name !== '' ? $name : 'For Inquiries';
     }
 
     private function isStandaloneFormSubmission(Request $request, string $routeName, string $domainConfigKey): bool
