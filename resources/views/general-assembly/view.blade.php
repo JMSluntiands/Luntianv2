@@ -205,6 +205,10 @@
                                     <dd class="job-details-dd">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</dd>
                                 </div>
                                 <div class="job-details-row">
+                                    <dt class="job-details-dt">Email</dt>
+                                    <dd class="job-details-dd">{{ trim((string) ($job->client_email ?? '')) !== '' ? $job->client_email : '—' }}</dd>
+                                </div>
+                                <div class="job-details-row">
                                     <dt class="job-details-dt">Compliance</dt>
                                     <dd class="job-details-dd">{{ $job->ncc_compliance ?? '—' }}</dd>
                                 </div>

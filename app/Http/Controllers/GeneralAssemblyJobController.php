@@ -46,6 +46,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.client_code',
                 'j.job_reference_no',
                 'j.client_reference_no',
+                'j.client_email',
                 'j.staff_id',
                 'j.checker_id',
                 'j.ncc_compliance',
@@ -205,6 +206,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.client_code',
                 'j.job_reference_no',
                 'j.client_reference_no',
+                'j.client_email',
                 'j.staff_id',
                 'j.checker_id',
                 'j.ncc_compliance',
@@ -299,6 +301,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.client_code',
                 'j.job_reference_no',
                 'j.client_reference_no',
+                'j.client_email',
                 'j.staff_id',
                 'j.checker_id',
                 'j.ncc_compliance',
@@ -1176,6 +1179,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1208,6 +1212,7 @@ class GeneralAssemblyJobController extends Controller
                         'j.client_code',
                         'j.job_reference_no',
                         'j.client_reference_no',
+                'j.client_email',
                         'j.staff_id',
                         'j.checker_id',
                         'j.ncc_compliance',
@@ -1239,6 +1244,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1337,6 +1343,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1486,6 +1493,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1628,6 +1636,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.client_code',
                 'j.job_reference_no',
                 'j.client_reference_no',
+                'j.client_email',
                 'j.staff_id',
                 'j.checker_id',
                 'j.ncc_compliance',
@@ -1675,6 +1684,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.client_code',
                 'j.job_reference_no',
                 'j.client_reference_no',
+                'j.client_email',
                 'j.staff_id',
                 'j.checker_id',
                 'j.ncc_compliance',
@@ -1714,6 +1724,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.client_code',
                 'j.job_reference_no',
                 'j.client_reference_no',
+                'j.client_email',
                 'j.staff_id',
                 'j.checker_id',
                 'j.ncc_compliance',
@@ -1751,6 +1762,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1822,6 +1834,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -1890,6 +1903,7 @@ class GeneralAssemblyJobController extends Controller
                     'j.client_code',
                     'j.job_reference_no',
                     'j.client_reference_no',
+                'j.client_email',
                     'j.staff_id',
                     'j.checker_id',
                     'j.ncc_compliance',
@@ -2163,17 +2177,20 @@ class GeneralAssemblyJobController extends Controller
 
     public function store(Request $request)
     {
+        $standalone = $this->isStandaloneFormSubmission($request, 'general_assembly.public.store', 'gen_ea_public_form_domain');
+
         $data = $request->validate([
             'reference_no'     => ['nullable', 'string', 'max:255'],
             'client_reference' => ['nullable', 'string', 'max:255'],
             'compliance'       => ['required', 'integer'],
             'client'           => ['required', 'string', 'max:255'],
+            'client_email'     => ['nullable', 'email', 'max:255'],
             'job_address'      => ['required', 'string', 'max:1000'],
             'priority'         => ['required', 'integer'],
-            'job_type'         => ['required', 'integer'],
+            'job_type'         => [$standalone ? 'nullable' : 'required', 'integer'],
             'assigned_to'      => ['nullable', 'string', 'max:10'],
             'checked_by'       => ['nullable', 'string', 'max:10'],
-            'job_status'       => ['nullable', 'string', 'in:For Inquiries,For Quotation'],
+            'job_status'       => [$standalone ? 'required' : 'nullable', 'string', 'in:For Inquiries,For Quotation'],
             'notes'            => ['nullable', 'string'],
             'plans'            => ['nullable', 'array'],
             'plans.*'          => ['file', 'max:51200'],
@@ -2191,10 +2208,11 @@ class GeneralAssemblyJobController extends Controller
         }
 
         $compliance = Compliance::find($data['compliance']);
-        $jobRequest = JobRequest::query()
-            ->where('id', $data['job_type'])
-            ->whereRaw('UPPER(TRIM(client_code)) = ?', [$this->genEaClientCode()])
-            ->first();
+        $jobRequestQuery = JobRequest::query()
+            ->whereRaw('UPPER(TRIM(client_code)) = ?', [$this->genEaClientCode()]);
+        $jobRequest = $standalone
+            ? (clone $jobRequestQuery)->orderBy('id')->first()
+            : (clone $jobRequestQuery)->where('id', $data['job_type'])->first();
         $client = $this->resolveOrCreateClientAccount($data['client']);
 
         if (!$compliance || !$jobRequest || !$client) {
@@ -2288,6 +2306,7 @@ class GeneralAssemblyJobController extends Controller
                 'client_code'         => $clientCodeForJob,
                 'job_reference_no'    => $jobReferenceNo,
                 'client_reference_no' => $data['client_reference'] ?? null,
+                'client_email'        => trim((string) ($data['client_email'] ?? '')) !== '' ? trim((string) $data['client_email']) : null,
                 'staff_id'            => (($assigned = trim((string) ($data['assigned_to'] ?? ''))) !== '' ? $assigned : null),
                 'checker_id'          => (($checked = trim((string) ($data['checked_by'] ?? ''))) !== '' ? $checked : null),
                 'ncc_compliance'      => $compliance->column ?? null,

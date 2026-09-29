@@ -171,7 +171,7 @@ class StandaloneFormSettingsController extends Controller
 
     private function isDropdownField(string $formKey, string $fieldKey): bool
     {
-        return in_array($fieldKey, ['compliance', 'priority', 'job_type'], true)
+        return in_array($fieldKey, ['compliance', 'priority'], true)
             && in_array($formKey, ['lbs', 'general_assembly'], true);
     }
 
@@ -349,8 +349,7 @@ class StandaloneFormSettingsController extends Controller
             ['key' => 'compliance', 'label' => 'Compliance'],
             ['key' => 'job_address', 'label' => 'Job Address'],
             ['key' => 'priority', 'label' => 'Priority'],
-            ['key' => 'job_type', 'label' => 'Job Type'],
-            ['key' => 'job_status', 'label' => 'Job Status'],
+            ['key' => 'job_type', 'label' => 'Job Status'],
             ['key' => 'notes', 'label' => 'Notes'],
             ['key' => 'plans', 'label' => 'Plans'],
             ['key' => 'documents', 'label' => 'Documents'],
@@ -367,13 +366,19 @@ class StandaloneFormSettingsController extends Controller
                 ],
                 array_slice($jobFields, 2)
             ),
-            'general_assembly' => array_merge(
-                [
-                    ['key' => 'client_reference', 'label' => 'Client Reference'],
-                    ['key' => 'compliance', 'label' => 'Compliance'],
-                    ['key' => 'client', 'label' => 'Client Name'],
-                ],
-                array_slice($jobFields, 2)
+            'general_assembly' => array_map(
+                fn (array $field) => $field['key'] === 'job_type'
+                    ? ['key' => 'job_type', 'label' => 'Job Status']
+                    : $field,
+                array_merge(
+                    [
+                        ['key' => 'client_reference', 'label' => 'Client Reference'],
+                        ['key' => 'compliance', 'label' => 'Compliance'],
+                        ['key' => 'client', 'label' => 'Client Name'],
+                        ['key' => 'email', 'label' => 'Email'],
+                    ],
+                    array_slice($jobFields, 2)
+                )
             ),
             'fyrs' => [
                 ['key' => 'job_date', 'label' => 'Date'],

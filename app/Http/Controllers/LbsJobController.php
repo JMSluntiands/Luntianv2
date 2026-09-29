@@ -2160,6 +2160,8 @@ class LbsJobController extends Controller
 
     public function store(Request $request)
     {
+        $standalone = $this->isStandaloneFormSubmission($request, 'lbs.public.store', 'lbs_public_form_domain');
+
         $data = $request->validate([
             'reference_no'     => ['nullable', 'string', 'max:255'],
             'client_reference' => ['nullable', 'string', 'max:255'],
@@ -2167,15 +2169,17 @@ class LbsJobController extends Controller
             'client'           => ['required', 'integer'],
             'job_address'      => ['required', 'string', 'max:1000'],
             'priority'         => ['required', 'integer'],
-            'job_type'         => ['required', 'integer'],
+            'job_type'         => [$standalone ? 'nullable' : 'required', 'integer'],
             'assigned_to'      => ['nullable', 'string', 'max:10'],
             'checked_by'       => ['nullable', 'string', 'max:10'],
-            'job_status'       => ['nullable', 'string', 'in:For Inquiries,For Quotation'],
+            'job_status'       => [$standalone ? 'required' : 'nullable', 'string', 'in:For Inquiries,For Quotation'],
             'notes'            => ['nullable', 'string'],
         ]);
 
         $compliance = Compliance::find($data['compliance']);
-        $jobRequest = JobRequest::find($data['job_type']);
+        $jobRequest = $standalone
+            ? $this->jobRequestsForVerticalClient(JobModuleClient::codeFor('lbs'))->first()
+            : JobRequest::find($data['job_type']);
         $client     = ClientAccount::find($data['client']);
 
         if (!$compliance || !$jobRequest || !$client) {

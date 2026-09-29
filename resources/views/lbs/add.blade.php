@@ -86,23 +86,23 @@
                             </select>
                         </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'job_type'])" @include('partials.standalone-field-data', ['field' => 'job_type'])>
-                            <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
-                            <select id="job_type" name="job_type" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="">Select job type</option>
-                                @foreach($jobRequests ?? [] as $jobRequest)
-                                    <option value="{{ $jobRequest->id }}" {{ $selJobRequest !== null && (int) $selJobRequest === (int) $jobRequest->id ? 'selected' : '' }}>{{ $jobRequest->job_request_type ?? '' }}</option>
-                                @endforeach
-                            </select>
+                            @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
+                                <label for="job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
+                                <select id="job_status" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                    <option value="">Select job status</option>
+                                    <option value="For Inquiries">For Inquiries</option>
+                                    <option value="For Quotation">For Quotation</option>
+                                </select>
+                            @else
+                                <label for="job_type" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Type @include('partials.standalone-required-mark', ['field' => 'job_type'])</label>
+                                <select id="job_type" name="job_type" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
+                                    <option value="">Select job type</option>
+                                    @foreach($jobRequests ?? [] as $jobRequest)
+                                        <option value="{{ $jobRequest->id }}" {{ $selJobRequest !== null && (int) $selJobRequest === (int) $jobRequest->id ? 'selected' : '' }}>{{ $jobRequest->job_request_type ?? '' }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
-                        @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
-                        <div class="@include('partials.standalone-off-class', ['field' => 'job_status'])" @include('partials.standalone-field-data', ['field' => 'job_status'])>
-                            <label for="job_status" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Status @include('partials.standalone-required-mark', ['field' => 'job_status'])</label>
-                            <select id="job_status" name="job_status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" autocomplete="off">
-                                <option value="For Inquiries" selected>For Inquiries</option>
-                                <option value="For Quotation">For Quotation</option>
-                            </select>
-                        </div>
-                        @endif
                     </div>
                     <div class="@include('partials.standalone-off-class', ['field' => 'notes'])" @include('partials.standalone-field-data', ['field' => 'notes'])>
                         <label for="notes-body" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Notes @include('partials.standalone-required-mark', ['field' => 'notes'])</label>
