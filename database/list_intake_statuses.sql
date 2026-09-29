@@ -12,3 +12,12 @@ INSERT INTO statuses (name, color, font_color, created_at, updated_at)
 SELECT 'For Quotation', '#f59e0b', '#333333', NOW(), NOW()
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM statuses WHERE name = 'For Quotation');
+
+-- Older standalone submissions were saved as Allocated. Move them into For Inquiries.
+UPDATE job_general_assembly
+SET job_status = 'For Inquiries'
+WHERE updated_by = 'FORMS' AND job_status = 'Allocated';
+
+UPDATE jobs
+SET job_status = 'For Inquiries'
+WHERE updated_by = 'FORMS' AND job_status = 'Allocated' AND reference LIKE 'JOBS%';

@@ -232,6 +232,7 @@
                             <col style="width: 260px">
                             <col style="width: 130px">
                             <col style="width: 160px">
+                            <col style="width: 140px">
                         </colgroup>
                         <thead>
                             <tr>
@@ -243,7 +244,7 @@
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Address</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
                                 <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
+                                <th class="whitespace-nowrap border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -280,7 +281,7 @@
                                         <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($priorityBg) style="background-color: {{ $priorityBg }};" @endif>{{ $priorityText ?: '—' }}</span>
                                     </td>
                                     <td class="px-4 py-3">{{ $formJob->job_type ?: '—' }}</td>
-                                    <td class="px-4 py-3">{{ $formJob->job_status ?: '—' }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">{{ ($formJob->job_status === 'Allocated' ? 'For Inquiries' : ($formJob->job_status ?: '—')) }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -317,6 +318,7 @@
                                 <col style="width: 260px">
                                 <col style="width: 130px">
                                 <col style="width: 160px">
+                                <col style="width: 140px">
                             </colgroup>
                             <thead>
                                 <tr>
@@ -328,7 +330,7 @@
                                     <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Address</th>
                                     <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Priority</th>
                                     <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Type</th>
-                                <th class="border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
+                                <th class="whitespace-nowrap border-b border-slate-200 bg-slate-100 px-4 py-3 text-left font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Job Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -353,7 +355,7 @@
                                             <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($quotePriorityBg) style="background-color: {{ $quotePriorityBg }};" @endif>{{ $quotePriority ?: '—' }}</span>
                                         </td>
                                         <td class="px-4 py-3">{{ $quoteJob->job_type ?: '—' }}</td>
-                                        <td class="px-4 py-3">{{ $quoteJob->job_status ?: '—' }}</td>
+                                        <td class="whitespace-nowrap px-4 py-3">{{ $quoteJob->job_status ?: '—' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
