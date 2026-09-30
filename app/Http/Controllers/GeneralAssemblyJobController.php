@@ -2400,7 +2400,7 @@ class GeneralAssemblyJobController extends Controller
             'client'           => ['required', 'string', 'max:255'],
             'client_email'     => ['nullable', 'email', 'max:255'],
             'job_address'      => ['required', 'string', 'max:1000'],
-            'priority'         => ['required', 'integer'],
+            'priority'         => [$standalone && ! $this->standaloneSettingRequires('general_assembly', 'priority') ? 'nullable' : 'required', 'integer'],
             'job_type'         => [$standalone ? 'nullable' : 'required', 'integer'],
             'assigned_to'      => ['nullable', 'string', 'max:10'],
             'checked_by'       => ['nullable', 'string', 'max:10'],
@@ -2473,14 +2473,14 @@ class GeneralAssemblyJobController extends Controller
             ], 422);
         }
 
-        // Map priority ID -> name string (e.g. "High 1 day") if available
-        $priorityText = (string) $data['priority'];
-        try {
-            $priorityModel = \App\Models\Priority::find($data['priority']);
-            if ($priorityModel && $priorityModel->name) {
-                $priorityText = $priorityModel->name;
+        $priorityText = '';
+        if (! empty($data['priority'])) {
+            try {
+                $priorityModel = \App\Models\Priority::find($data['priority']);
+                $priorityText = $priorityModel->name ?? (string) $data['priority'];
+            } catch (\Throwable) {
+                $priorityText = (string) $data['priority'];
             }
-        } catch (\Throwable) {
         }
 
         try {
@@ -3149,6 +3149,21 @@ class GeneralAssemblyJobController extends Controller
         $name = trim((string) Status::query()->where('id', (int) $request->input('job_status'))->value('name'));
 
         return $name !== '' ? $name : 'For Inquiries';
+    }
+
+    private function standaloneSettingRequires(string $formKey, string $field): bool
+    {
+        $visible = StandaloneFormSetting::visibleMap($formKey);
+        if (array_key_exists($field, $visible) && $visible[$field] === false) {
+            return false;
+        }
+
+        $required = StandaloneFormSetting::requiredMap($formKey);
+        if (array_key_exists($field, $required)) {
+            return $required[$field] === true;
+        }
+
+        return true;
     }
 
     private function isStandaloneFormSubmission(Request $request, string $routeName, string $domainConfigKey): bool
