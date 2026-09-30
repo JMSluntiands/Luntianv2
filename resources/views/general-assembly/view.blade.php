@@ -172,15 +172,17 @@
             }
 
             $quotationStatus = strtolower(trim((string) ($job->job_status ?? '')));
-            $showQuotationFiles = in_array($quotationStatus, ['for quotation', 'quotation sent', 'quotation accepted'], true);
-            $quotationFiles = ['email_thread' => '', 'quote' => ''];
-            if ($showQuotationFiles && !empty($job->quotation_files)) {
+            $canEditQuotationFiles = in_array($quotationStatus, ['for quotation', 'quotation sent', 'quotation accepted'], true);
+            $quotationFiles = ['email_thread' => '', 'quote' => '', 'client_confirmation' => ''];
+            if (!empty($job->quotation_files)) {
                 $decodedQuote = json_decode((string) $job->quotation_files, true);
                 if (is_array($decodedQuote)) {
                     $quotationFiles['email_thread'] = trim((string) ($decodedQuote['email_thread'] ?? ''));
                     $quotationFiles['quote'] = trim((string) ($decodedQuote['quote'] ?? ''));
+                    $quotationFiles['client_confirmation'] = trim((string) ($decodedQuote['client_confirmation'] ?? ''));
                 }
             }
+            $showQuotationFiles = $canEditQuotationFiles || $quotationFiles['email_thread'] !== '' || $quotationFiles['quote'] !== '' || $quotationFiles['client_confirmation'] !== '';
         @endphp
 
         @php
@@ -357,7 +359,17 @@
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Checker</dt>
                                     <dd class="job-details-dd">
-                                        @if($checkerLabel !== '—')
+                                        @if($canEditDetailsUi && $permEditAssignment && $permBtnEditAssignment)
+                                            <select id="jobViewCheckerSelect" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" data-prev="{{ $checkerCode }}" aria-label="Checker">
+                                                <option value="" @selected($checkerCode === '')>Not allocated</option>
+                                                @foreach($assignmentCheckerUsers ?? [] as $checkerUser)
+                                                    @php $checkerOption = strtoupper(trim((string) ($checkerUser->unique_code ?? ''))); @endphp
+                                                    @if($checkerOption !== '')
+                                                        <option value="{{ $checkerOption }}" @selected(strtoupper($checkerCode) === $checkerOption)>{{ $checkerOption }}</option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                        @elseif($checkerLabel !== '—')
                                             <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $checkerLabel }}</span>
                                         @else
                                             —
@@ -593,16 +605,16 @@
                                 <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Quotation</h2>
                             </div>
                             <div class="space-y-4">
-                                @foreach(['email_thread' => 'Email Thread', 'quote' => 'Quote'] as $quoteSlot => $quoteSlotLabel)
+                                @foreach(['email_thread' => 'Correspondence', 'quote' => 'Quote', 'client_confirmation' => 'Client Confirmation Email'] as $quoteSlot => $quoteSlotLabel)
                                     @php
                                         $quoteStored = $quotationFiles[$quoteSlot] ?? '';
-                                        $quoteDisplay = $quoteStored !== '' ? (preg_replace('/^(?:email-thread|quote)__/', '', $quoteStored) ?: $quoteStored) : '';
+                                        $quoteDisplay = $quoteStored !== '' ? (preg_replace('/^(?:email-thread|quote|client-confirmation)__/', '', $quoteStored) ?: $quoteStored) : '';
                                         $quoteUrl = $quoteStored !== '' ? route($jobFileRouteName, ['id' => $jobId, 'file' => $quoteStored]) : '';
                                     @endphp
                                     <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-600 dark:bg-slate-800/30">
                                         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                                             <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $quoteSlotLabel }}</div>
-                                            @if($permUpload && $permBtnAddFiles)
+                                            @if($canEditQuotationFiles && $permUpload && $permBtnAddFiles)
                                                 <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
                                                     <span data-quotation-upload-label>{{ $quoteStored !== '' ? 'Replace' : 'Upload' }}</span>
                                                     <input type="file" data-quotation-upload="{{ $quoteSlot }}" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.eml,.msg,.zip" style="display:none">
@@ -620,7 +632,7 @@
                                                         <a href="{{ $quoteUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
                                                         <a href="{{ $quoteUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                                                     @endif
-                                                    @if($permDeleteFile && $permBtnDeleteFiles)
+                                                    @if($canEditQuotationFiles && $permDeleteFile && $permBtnDeleteFiles)
                                                         <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="{{ $quoteSlot }}" data-job-file-name="{{ $quoteStored }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
                                                     @endif
                                                 </div>
@@ -1191,7 +1203,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
         input.addEventListener('change', function() {
             var file = this.files && this.files[0];
             var slot = this.getAttribute('data-quotation-upload') || '';
-            if (!file || (slot !== 'email_thread' && slot !== 'quote')) {
+            if (!file || (slot !== 'email_thread' && slot !== 'quote' && slot !== 'client_confirmation')) {
                 this.value = '';
                 return;
             }
@@ -1629,6 +1641,39 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             });
         });
     }
+    var jobViewCheckerSelect = document.getElementById('jobViewCheckerSelect');
+    if (jobViewCheckerSelect) {
+        jobViewCheckerSelect.addEventListener('change', function() {
+            var select = this;
+            var prev = String(select.getAttribute('data-prev') || '');
+            var val = String(select.value || '');
+            if (val === prev) return;
+            select.disabled = true;
+            var formData = new URLSearchParams();
+            formData.append('_token', csrfToken);
+            formData.append('checker_id', val);
+            fetch(updateUrl, {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).then(function(r) {
+                return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: {} }; });
+            }).then(function(result) {
+                select.disabled = false;
+                var msg = (result.data && result.data.message) || (result.ok ? 'Checker updated.' : 'Failed to update checker.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (!result.ok) {
+                    select.value = prev;
+                    return;
+                }
+                select.setAttribute('data-prev', val);
+            }).catch(function() {
+                select.disabled = false;
+                select.value = prev;
+                if (window.showSuccessToast) showSuccessToast('Failed to update checker.');
+            });
+        });
+    }
     document.querySelectorAll('[data-status-wrap]').forEach(function(wrap) {
         var trigger = wrap.querySelector('[data-status-trigger]');
         var menu = wrap.querySelector('.lbs-status-menu');
@@ -1788,7 +1833,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                             if (window.showSuccessToast) showSuccessToast(msg);
                             if (result.ok) {
                                 if (listItem) listItem.remove();
-                                if (section === 'email_thread' || section === 'quote') {
+                                if (section === 'email_thread' || section === 'quote' || section === 'client_confirmation') {
                                     setTimeout(function() { window.location.reload(); }, 600);
                                 }
                                 if (section === 'plans' && jobViewFilesData.planFiles) {

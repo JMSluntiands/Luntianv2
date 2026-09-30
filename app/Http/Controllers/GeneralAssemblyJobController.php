@@ -577,6 +577,7 @@ class GeneralAssemblyJobController extends Controller
             $oldClient = ClientAccount::find($job->client_account_id);
         }
 
+        $moveAcceptedQuotation = false;
         if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
             $new = trim((string) $data['job_status']);
             if ($new !== $job->job_status) {
@@ -584,21 +585,30 @@ class GeneralAssemblyJobController extends Controller
                     && strcasecmp($new, 'Quotation Sent') === 0;
                 $quotationAccepted = strcasecmp((string) ($job->job_status ?? ''), 'Quotation Sent') === 0
                     && strcasecmp($new, 'Quotation Accepted') === 0;
-                if ($quotationSent) {
+                if ($quotationSent || $quotationAccepted) {
                     $quoteFiles = $this->quotationFileMap($job);
                     $missingQuoteFiles = [];
-                    if ($quoteFiles['email_thread'] === '') {
-                        $missingQuoteFiles[] = 'Email Thread';
+                    if ($quotationSent) {
+                        if ($quoteFiles['email_thread'] === '') {
+                            $missingQuoteFiles[] = 'Correspondence';
+                        }
+                        if ($quoteFiles['quote'] === '') {
+                            $missingQuoteFiles[] = 'Quote';
+                        }
                     }
-                    if ($quoteFiles['quote'] === '') {
-                        $missingQuoteFiles[] = 'Quote';
+                    if ($quotationAccepted && $quoteFiles['client_confirmation'] === '') {
+                        $missingQuoteFiles[] = 'Client Confirmation Email';
                     }
                     if ($missingQuoteFiles !== []) {
                         return response()->json([
                             'status' => 'error',
-                            'message' => 'Upload '.implode(' and ', $missingQuoteFiles).' before changing the status to Quotation Sent.',
+                            'message' => 'Upload '.implode(' and ', $missingQuoteFiles).' before changing the status to '.($quotationAccepted ? 'Quotation Accepted' : 'Quotation Sent').'.',
                         ], 422);
                     }
+                }
+                if ($quotationAccepted) {
+                    $new = 'Allocated';
+                    $moveAcceptedQuotation = true;
                 }
                 if (! $quotationSent && ! $quotationAccepted && ! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
                     return response()->json([
@@ -612,6 +622,11 @@ class GeneralAssemblyJobController extends Controller
                     'old'   => $job->job_status,
                     'new'   => $new,
                 ];
+                if ($quotationAccepted) {
+                    $update['staff_id'] = null;
+                    $update['checker_id'] = null;
+                    $update['updated_by'] = null;
+                }
                 if (strcasecmp($new, 'Completed') === 0) {
                     $update['completion_date'] = now('Asia/Manila')->format('Y-m-d H:i:s');
                 } elseif (strcasecmp((string) ($job->job_status ?? ''), 'Completed') === 0) {
@@ -747,6 +762,10 @@ class GeneralAssemblyJobController extends Controller
                 }
             }
         }
+        if ($moveAcceptedQuotation) {
+            $data['staff_id'] = null;
+            $data['checker_id'] = null;
+        }
         if (array_key_exists('staff_id', $data)) {
             $new = $data['staff_id'] ? trim((string) $data['staff_id']) : null;
             $old = $job->staff_id ? trim((string) $job->staff_id) : null;
@@ -759,7 +778,7 @@ class GeneralAssemblyJobController extends Controller
                 ];
             }
         }
-        if ($this->jobAcceptsQuotationFiles($job)) {
+        if ($this->jobAcceptsQuotationFiles($job) || $moveAcceptedQuotation) {
             $data['checker_id'] = null;
         }
         if (array_key_exists('checker_id', $data)) {
@@ -1003,7 +1022,19 @@ class GeneralAssemblyJobController extends Controller
     }
 
     /**
-     * @return array{email_thread: string, quote: string}
+     * @return array<string, array{label: string, prefix: string}>
+     */
+    private function quotationSlots(): array
+    {
+        return [
+            'email_thread' => ['label' => 'Correspondence', 'prefix' => 'email-thread__'],
+            'quote' => ['label' => 'Quote', 'prefix' => 'quote__'],
+            'client_confirmation' => ['label' => 'Client Confirmation Email', 'prefix' => 'client-confirmation__'],
+        ];
+    }
+
+    /**
+     * @return array{email_thread: string, quote: string, client_confirmation: string}
      */
     private function quotationFileMap(object $job): array
     {
@@ -1015,10 +1046,12 @@ class GeneralAssemblyJobController extends Controller
             $decoded = [];
         }
 
-        return [
-            'email_thread' => trim((string) ($decoded['email_thread'] ?? '')),
-            'quote' => trim((string) ($decoded['quote'] ?? '')),
-        ];
+        $map = [];
+        foreach ($this->quotationSlots() as $section => $slot) {
+            $map[$section] = trim((string) ($decoded[$section] ?? ''));
+        }
+
+        return $map;
     }
 
     private function jobAcceptsQuotationFiles(object $job): bool
@@ -1045,9 +1078,10 @@ class GeneralAssemblyJobController extends Controller
             ], 422);
         }
 
+        $slots = $this->quotationSlots();
         $original = $file->getClientOriginalName() ?: $file->hashName();
         $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original) ?: $file->hashName();
-        $prefix = $section === 'email_thread' ? 'email-thread__' : 'quote__';
+        $prefix = $slots[$section]['prefix'] ?? 'quote__';
         if (! str_starts_with($safeName, $prefix)) {
             $safeName = $prefix.$safeName;
         }
@@ -1069,7 +1103,7 @@ class GeneralAssemblyJobController extends Controller
             'quotation_files' => json_encode($map),
         ]);
 
-        $label = $section === 'email_thread' ? 'Email Thread' : 'Quote';
+        $label = $this->quotationSlots()[$section]['label'] ?? 'Quote';
         ActivityLog::create([
             'job_id' => $id,
             'activity_date' => now('Asia/Manila')->format('Y-m-d H:i:s'),
@@ -1113,7 +1147,7 @@ class GeneralAssemblyJobController extends Controller
             Storage::disk('local')->delete($storagePath);
         }
 
-        $label = $section === 'email_thread' ? 'Email Thread' : 'Quote';
+        $label = $this->quotationSlots()[$section]['label'] ?? 'Quote';
         $now = now('Asia/Manila');
         $log = ActivityLog::create([
             'job_id' => $id,
@@ -1143,13 +1177,13 @@ class GeneralAssemblyJobController extends Controller
         }
 
         $request->validate([
-            'section' => ['required', 'string', 'in:plans,documents,email_thread,quote'],
+            'section' => ['required', 'string', 'in:plans,documents,email_thread,quote,client_confirmation'],
             'files'   => ['required', 'array'],
             'files.*' => ['file', 'max:51200'],
         ]);
 
         $section = $request->input('section');
-        if (in_array($section, ['email_thread', 'quote'], true)) {
+        if (array_key_exists($section, $this->quotationSlots())) {
             return $this->saveQuotationFile($request, $job, $id, $section);
         }
         $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
@@ -1207,12 +1241,12 @@ class GeneralAssemblyJobController extends Controller
         }
 
         $request->validate([
-            'section'   => ['required', 'string', 'in:plans,documents,email_thread,quote'],
+            'section'   => ['required', 'string', 'in:plans,documents,email_thread,quote,client_confirmation'],
             'file_name' => ['required', 'string', 'max:500'],
         ]);
 
         $section = $request->input('section');
-        if (in_array($section, ['email_thread', 'quote'], true)) {
+        if (array_key_exists($section, $this->quotationSlots())) {
             return $this->deleteQuotationFile($request, $job, $id, $section);
         }
         $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';

@@ -28,7 +28,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Client Details</h2>
-                    <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef }}</span>
+                    <span id="jobReferenceContent" @if(($layoutView ?? '') === 'layouts.public-form') style="display:none" @endif class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef }}</span>
                 </div>
                 <div class="p-5">
                     <input type="hidden" id="reference_no_hidden" name="reference_no" value="{{ e($preRef) }}">
@@ -56,7 +56,6 @@
                                     <option value="{{ e($clientName) }}"></option>
                                 @endforeach
                             </datalist>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Type freely; previously used client names will appear as suggestions.</p>
                         </div>
                         @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
                         <div class="@include('partials.standalone-off-class', ['field' => 'email'])" @include('partials.standalone-field-data', ['field' => 'email'])>
