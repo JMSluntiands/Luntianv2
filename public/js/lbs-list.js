@@ -597,7 +597,8 @@ $(function () {
           })
           .fail(function (xhr) {
             var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';
-            if (window.showSuccessToast) window.showSuccessToast(msg);
+            if (window.showErrorToast) window.showErrorToast(msg);
+            else if (window.showSuccessToast) window.showSuccessToast(msg);
             if (isSelect) $el.val(prevText);
             else $el.removeClass('lbs-status-updating').text(prevText);
             if ($detail.length && $badge.length) {

@@ -1650,7 +1650,8 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                             trigger.textContent = prevText;
                         }
                         var msg = (result.data && result.data.message) || (result.ok ? 'Status updated successfully.' : 'Something went wrong.');
-                        if (window.showSuccessToast) showSuccessToast(msg);
+                        if (!result.ok && window.showErrorToast) showErrorToast(msg);
+                        else if (window.showSuccessToast) showSuccessToast(msg);
                         if (result.ok) setTimeout(function() { trigger.classList.remove('lbs-status-success'); window.location.reload(); }, 2500);
                     }).catch(function() {
                         trigger.classList.remove('lbs-status-updating');

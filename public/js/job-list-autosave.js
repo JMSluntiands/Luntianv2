@@ -14,7 +14,15 @@
     return meta ? String(meta.getAttribute('content') || '') : '';
   }
 
-  function toast(msg) {
+  function toast(msg, variant) {
+    if ((variant === 'danger' || variant === 'error') && typeof w.showErrorToast === 'function') {
+      w.showErrorToast(msg);
+      return;
+    }
+    if (variant === 'warning' && typeof w.showWarningToast === 'function') {
+      w.showWarningToast(msg);
+      return;
+    }
     if (typeof w.showSuccessToast === 'function') w.showSuccessToast(msg);
     else w.alert(msg);
   }
@@ -234,7 +242,7 @@
           var err =
             (result.data && (result.data.message || result.data.error)) ||
             'Failed to save (' + result.status + ').';
-          toast(err);
+          toast(err, 'danger');
           select.value = prev;
           if (isPriority) applyPriorityColor(select, prev);
           return;

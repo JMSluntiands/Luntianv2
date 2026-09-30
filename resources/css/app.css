@@ -1668,6 +1668,33 @@ html[data-theme="dark"] #appErrorToast {
 .app-toast-error.app-toast-exit {
     animation: app-toast-out 0.28s ease forwards;
 }
+
+#appWarningToast,
+.app-toast-warning {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    max-width: 22rem;
+    background: #d97706;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    animation: app-toast-in 0.3s ease;
+}
+html[data-theme="dark"] .app-toast-warning,
+html[data-theme="dark"] #appWarningToast {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.35), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+}
+.app-toast-warning.app-toast-exit {
+    animation: app-toast-out 0.28s ease forwards;
+}
 .app-toast-icon {
     flex-shrink: 0;
     font-size: 1.25rem;
