@@ -23,7 +23,6 @@
                         <col style="width: 120px">
                         <col style="width: 140px">
                         <col style="width: 260px">
-                        <col style="width: 170px">
                         <col style="width: 140px">
                         <col style="width: 260px">
                         <col style="width: 150px">
@@ -44,10 +43,6 @@
                             </th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
                                 <span>Client</span>
-                                <span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span>
-                            </th>
-                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
-                                <span>Reference</span>
                                 <span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span>
                             </th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort="">
@@ -162,10 +157,8 @@
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $job->ncc_compliance ?? '' }}</span>
                                 </td>
                                 @php
-                                    $tableReference = $job->job_reference_no ?? $job->reference ?? '—';
                                     $clientRefDisplay = trim((string) ($job->client_reference_no ?? ''));
                                 @endphp
-                                <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Reference" data-sort="{{ $tableReference }}" title="{{ $tableReference }}">{{ $tableReference }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client reference" data-sort="{{ $clientRefDisplay }}" title="{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}">{{ $clientRefDisplay !== '' ? $clientRefDisplay : '—' }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Type">
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->job_type }}</span>
@@ -209,7 +202,7 @@
                             </tr>
 @empty
                             <tr>
-                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="12">
+                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="11">
                                     No Generic EA jobs found.
                                 </td>
                             </tr>

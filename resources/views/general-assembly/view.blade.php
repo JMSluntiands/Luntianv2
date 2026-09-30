@@ -131,7 +131,7 @@
             <div class="min-w-0">
                 <h1 class="m-0 mb-1 text-[1.625rem] font-bold tracking-tight text-slate-800 dark:text-white">Job Details</h1>
                 <p class="m-0 text-sm text-slate-500 dark:text-slate-400">
-                    Reference Number: <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ $jobReferenceDisplay }}</span>
+                    Reference Number: <span class="font-medium text-slate-700 dark:text-slate-300">{{ $jobReferenceDisplay }}</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
@@ -248,11 +248,11 @@
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Job Reference Number</dt>
-                                    <dd class="job-details-dd font-mono">{{ trim((string) ($job->job_reference_no ?? '')) !== '' ? $job->job_reference_no : '—' }}</dd>
+                                    <dd class="job-details-dd">{{ trim((string) ($job->job_reference_no ?? '')) !== '' ? $job->job_reference_no : '—' }}</dd>
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Client Reference Number</dt>
-                                    <dd class="job-details-dd font-mono">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</dd>
+                                    <dd class="job-details-dd">{{ trim((string) ($job->client_reference_no ?? '')) !== '' ? $job->client_reference_no : '—' }}</dd>
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Client</dt>
