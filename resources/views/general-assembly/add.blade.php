@@ -274,6 +274,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(function() {
+            var isPublicForm = {{ ($layoutView ?? '') === 'layouts.public-form' ? 'true' : 'false' }};
             var notesBody = document.getElementById('lbs-notes-body');
             var noteBtns = document.querySelectorAll('.lbs-notes-btn');
 
@@ -440,7 +441,7 @@
                     },
                     success: function(resp) {
                         if (resp.status === 'success') {
-                            if (window.showSuccessToast) showSuccessToast(resp.message || 'Job saved.');
+                            if (!isPublicForm && window.showSuccessToast) showSuccessToast(resp.message || 'Job saved.');
                             formEl.reset();
                             $('#lbs-notes-body').empty();
                             $('#lbsAddForm select').trigger('change');
@@ -469,7 +470,28 @@
                 });
             });
 
+            function showPublicRequestReceived() {
+                var $overlay = $(
+                    '<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">' +
+                        '<div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-700 dark:bg-slate-800">' +
+                            '<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">' +
+                                '<svg class="h-7 w-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
+                            '</div>' +
+                            '<p class="text-base font-medium leading-relaxed text-slate-800 dark:text-slate-100">We\'ve got your request! Our team will review your details and be in touch soon</p>' +
+                            '<button type="button" data-close class="mt-6 w-full cursor-pointer rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500">OK</button>' +
+                        '</div>' +
+                    '</div>'
+                );
+                $('body').append($overlay);
+                $overlay.on('click', '[data-close]', function() { $overlay.remove(); });
+                $overlay.on('click', function(e) { if (e.target === this) $overlay.remove(); });
+            }
+
             function showLbsAfterSavePrompt(jobId, submissionEmailEnabled) {
+                if (isPublicForm) {
+                    showPublicRequestReceived();
+                    return;
+                }
                 var submissionEmailOn = submissionEmailEnabled !== false;
                 var sendSlackUrl = '{{ $sendSlackBaseUrl ?? url('dashboard/general-assembly/job') }}' + '/' + jobId + '/send-slack';
                 var sendUrl = '{{ $sendSubmissionBaseUrl ?? url('dashboard/general-assembly/job') }}' + '/' + jobId + '/send-submission-email';
