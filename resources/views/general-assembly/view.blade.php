@@ -134,6 +134,17 @@
                     $docFiles = $decoded;
                 }
             }
+
+            $quotationStatus = strtolower(trim((string) ($job->job_status ?? '')));
+            $showQuotationFiles = in_array($quotationStatus, ['for quotation', 'quotation sent'], true);
+            $quotationFiles = ['email_thread' => '', 'quote' => ''];
+            if ($showQuotationFiles && !empty($job->quotation_files)) {
+                $decodedQuote = json_decode((string) $job->quotation_files, true);
+                if (is_array($decodedQuote)) {
+                    $quotationFiles['email_thread'] = trim((string) ($decodedQuote['email_thread'] ?? ''));
+                    $quotationFiles['quote'] = trim((string) ($decodedQuote['quote'] ?? ''));
+                }
+            }
         @endphp
 
         @php
@@ -366,7 +377,7 @@
                 {{-- Section: Files (col-4 each = 3 columns) --}}
                 <div class="space-y-4">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Files</h2>
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 {{ $showQuotationFiles ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }}">
                         @if($permCardPlans)
                         {{-- Plans --}}
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50" id="jobViewPlansCard">
@@ -520,6 +531,53 @@
                     </ul>
                 @endif
             </section>
+                        @endif
+
+                        @if($showQuotationFiles)
+                        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                            <div class="mb-4">
+                                <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Quotation</h2>
+                            </div>
+                            <div class="space-y-4">
+                                @foreach(['email_thread' => 'Email Thread', 'quote' => 'Quote'] as $quoteSlot => $quoteSlotLabel)
+                                    @php
+                                        $quoteStored = $quotationFiles[$quoteSlot] ?? '';
+                                        $quoteDisplay = $quoteStored !== '' ? (preg_replace('/^(?:email-thread|quote)__/', '', $quoteStored) ?: $quoteStored) : '';
+                                        $quoteUrl = $quoteStored !== '' ? route($jobFileRouteName, ['id' => $jobId, 'file' => $quoteStored]) : '';
+                                    @endphp
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-600 dark:bg-slate-800/30">
+                                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                            <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $quoteSlotLabel }}</div>
+                                            @if($permUpload && $permBtnAddFiles)
+                                                <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                                                    <span data-quotation-upload-label>{{ $quoteStored !== '' ? 'Replace' : 'Upload' }}</span>
+                                                    <input type="file" data-quotation-upload="{{ $quoteSlot }}" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.eml,.msg,.zip" style="display:none">
+                                                </label>
+                                            @endif
+                                        </div>
+                                        @if($quoteStored !== '')
+                                            <div class="job-view-file-item flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800/50">
+                                                <div class="flex min-w-0 items-center gap-2">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4z"/></svg></span>
+                                                    <span class="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ $quoteDisplay }}</span>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-1.5">
+                                                    @if($permDownloadFile)
+                                                        <a href="{{ $quoteUrl }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="Download" aria-label="Download" download><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></a>
+                                                        <a href="{{ $quoteUrl }}" target="_blank" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" title="View" aria-label="View"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                                    @endif
+                                                    @if($permDeleteFile && $permBtnDeleteFiles)
+                                                        <button type="button" class="job-view-file-btn-delete inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" data-job-file-type="{{ $quoteSlot }}" data-job-file-name="{{ $quoteStored }}" title="Delete" aria-label="Delete"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @else
+                                            <p class="m-0 text-sm text-slate-500 dark:text-slate-400">No file yet.</p>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </section>
                         @endif
 
                     </div>
@@ -1075,6 +1133,41 @@ html[data-theme="dark"] .job-view-comment-btn.active {
     document.querySelectorAll('[data-job-view-add-files]').forEach(function(btn) {
         btn.addEventListener('click', function() { openAddFilesModal(this.getAttribute('data-add-title')); });
     });
+    document.querySelectorAll('[data-quotation-upload]').forEach(function(input) {
+        input.addEventListener('change', function() {
+            var file = this.files && this.files[0];
+            var slot = this.getAttribute('data-quotation-upload') || '';
+            if (!file || (slot !== 'email_thread' && slot !== 'quote')) {
+                this.value = '';
+                return;
+            }
+            var label = this.parentElement ? this.parentElement.querySelector('[data-quotation-upload-label]') : null;
+            var previous = label ? label.textContent : 'Upload';
+            if (label) label.textContent = 'Uploading...';
+            var formData = new FormData();
+            formData.append('_token', csrfToken);
+            formData.append('section', slot);
+            formData.append('files[]', file);
+            fetch(uploadFilesUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: formData
+            }).then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: false, data: { message: 'Upload failed.' } }; }); }).then(function(result) {
+                var msg = (result.data && result.data.message) || (result.ok ? 'File uploaded.' : 'Upload failed.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (result.ok) {
+                    setTimeout(function() { window.location.reload(); }, 700);
+                    return;
+                }
+                if (label) label.textContent = previous.trim() || 'Upload';
+                input.value = '';
+            }).catch(function() {
+                if (window.showSuccessToast) showSuccessToast('Upload failed.');
+                if (label) label.textContent = previous.trim() || 'Upload';
+                input.value = '';
+            });
+        });
+    });
     (function() {
         var input = document.getElementById('jobViewAddFilesInput');
         var selectedWrap = document.getElementById('jobViewModalSelectedWrap');
@@ -1607,6 +1700,9 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                             if (window.showSuccessToast) showSuccessToast(msg);
                             if (result.ok) {
                                 if (listItem) listItem.remove();
+                                if (section === 'email_thread' || section === 'quote') {
+                                    setTimeout(function() { window.location.reload(); }, 600);
+                                }
                                 if (section === 'plans' && jobViewFilesData.planFiles) {
                                     jobViewFilesData.planFiles = (jobViewFilesData.planFiles || []).filter(function(n) { return n !== fileName; });
                                 } else if (section === 'documents' && jobViewFilesData.docFiles) {

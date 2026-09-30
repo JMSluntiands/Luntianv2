@@ -61,6 +61,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.notes',
                 'j.upload_files',
                 'j.upload_project_files',
+                'j.quotation_files',
                 'j.client_account_id',
                 'ca.client_account_name'
             )
@@ -575,7 +576,25 @@ class GeneralAssemblyJobController extends Controller
         if (array_key_exists('job_status', $data) && $data['job_status'] !== null) {
             $new = trim((string) $data['job_status']);
             if ($new !== $job->job_status) {
-                if (! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
+                $quotationSent = strcasecmp((string) ($job->job_status ?? ''), 'For Quotation') === 0
+                    && strcasecmp($new, 'Quotation Sent') === 0;
+                if ($quotationSent) {
+                    $quoteFiles = $this->quotationFileMap($job);
+                    $missingQuoteFiles = [];
+                    if ($quoteFiles['email_thread'] === '') {
+                        $missingQuoteFiles[] = 'Email Thread';
+                    }
+                    if ($quoteFiles['quote'] === '') {
+                        $missingQuoteFiles[] = 'Quote';
+                    }
+                    if ($missingQuoteFiles !== []) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Upload '.implode(' and ', $missingQuoteFiles).' before changing the status to Quotation Sent.',
+                        ], 422);
+                    }
+                }
+                if (! $quotationSent && ! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
                     return response()->json([
                         'status' => 'error',
                         'message' => 'Invalid status change. Jobs advance one step at a time: ' . LbsJobStatusFlow::describeFlow() . '.',
@@ -967,6 +986,139 @@ class GeneralAssemblyJobController extends Controller
         return redirect()->route('general_assembly.list')->with('success', 'Forms job declined.');
     }
 
+    /**
+     * @return array{email_thread: string, quote: string}
+     */
+    private function quotationFileMap(object $job): array
+    {
+        $decoded = [];
+        if (isset($job->quotation_files) && is_string($job->quotation_files) && $job->quotation_files !== '') {
+            $decoded = json_decode($job->quotation_files, true) ?: [];
+        }
+        if (! is_array($decoded)) {
+            $decoded = [];
+        }
+
+        return [
+            'email_thread' => trim((string) ($decoded['email_thread'] ?? '')),
+            'quote' => trim((string) ($decoded['quote'] ?? '')),
+        ];
+    }
+
+    private function jobAcceptsQuotationFiles(object $job): bool
+    {
+        $status = strtolower(trim((string) ($job->job_status ?? '')));
+
+        return in_array($status, ['for quotation', 'quotation sent'], true);
+    }
+
+    private function saveQuotationFile(Request $request, object $job, int $id, string $section)
+    {
+        if (! $this->jobAcceptsQuotationFiles($job)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Quotation files can only be added on a For Quotation job.',
+            ], 422);
+        }
+
+        $file = $request->file('files.0') ?: ($request->file('files')[0] ?? null);
+        if (! $file || ! $file->isValid()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Choose a file to upload.',
+            ], 422);
+        }
+
+        $original = $file->getClientOriginalName() ?: $file->hashName();
+        $safeName = preg_replace('/[^A-Za-z0-9\-\_\.\(\) ]/', '_', $original) ?: $file->hashName();
+        $prefix = $section === 'email_thread' ? 'email-thread__' : 'quote__';
+        if (! str_starts_with($safeName, $prefix)) {
+            $safeName = $prefix.$safeName;
+        }
+
+        $map = $this->quotationFileMap($job);
+        $previous = $map[$section] ?? '';
+        $folderName = JobUploadFolder::lbsFolderName($job, $id);
+        Storage::disk('local')->putFileAs('ga-documents/'.$folderName, $file, $safeName);
+
+        if ($previous !== '' && $previous !== $safeName) {
+            $oldPath = JobUploadFolder::gaStoragePath($job, $id, $previous);
+            if ($oldPath) {
+                Storage::disk('local')->delete($oldPath);
+            }
+        }
+
+        $map[$section] = $safeName;
+        DB::table('job_general_assembly')->where('job_id', $id)->update([
+            'quotation_files' => json_encode($map),
+        ]);
+
+        $label = $section === 'email_thread' ? 'Email Thread' : 'Quote';
+        ActivityLog::create([
+            'job_id' => $id,
+            'activity_date' => now('Asia/Manila')->format('Y-m-d H:i:s'),
+            'activity_type' => 'Files uploaded',
+            'activity_description' => 'Quotation '.$label.': '.$safeName,
+            'updated_by' => session('user_name') ?? 'Generic EA Account',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $label.' uploaded.',
+            'file' => $safeName,
+        ]);
+    }
+
+    private function deleteQuotationFile(Request $request, object $job, int $id, string $section)
+    {
+        if (! $this->jobAcceptsQuotationFiles($job)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Quotation files can only be changed on a For Quotation job.',
+            ], 422);
+        }
+
+        $fileName = (string) $request->input('file_name');
+        $map = $this->quotationFileMap($job);
+        if (($map[$section] ?? '') !== $fileName) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'File not found.',
+            ], 404);
+        }
+
+        $map[$section] = '';
+        DB::table('job_general_assembly')->where('job_id', $id)->update([
+            'quotation_files' => json_encode($map),
+        ]);
+
+        $storagePath = JobUploadFolder::gaStoragePath($job, $id, $fileName);
+        if ($storagePath) {
+            Storage::disk('local')->delete($storagePath);
+        }
+
+        $label = $section === 'email_thread' ? 'Email Thread' : 'Quote';
+        $now = now('Asia/Manila');
+        $log = ActivityLog::create([
+            'job_id' => $id,
+            'activity_date' => $now->format('Y-m-d H:i:s'),
+            'activity_type' => 'File deleted',
+            'activity_description' => 'Quotation '.$label.': '.$fileName,
+            'updated_by' => session('user_name') ?? 'Generic EA Account',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'File removed.',
+            'log' => [
+                'activity_date' => $log->activity_date,
+                'activity_type' => $log->activity_type,
+                'activity_description' => $log->activity_description,
+                'updated_by' => $log->updated_by,
+            ],
+        ]);
+    }
+
     public function uploadFiles(Request $request, int $id)
     {
         $job = DB::table('job_general_assembly')->where('job_id', $id)->first();
@@ -975,12 +1127,15 @@ class GeneralAssemblyJobController extends Controller
         }
 
         $request->validate([
-            'section' => ['required', 'string', 'in:plans,documents'],
+            'section' => ['required', 'string', 'in:plans,documents,email_thread,quote'],
             'files'   => ['required', 'array'],
             'files.*' => ['file', 'max:51200'],
         ]);
 
         $section = $request->input('section');
+        if (in_array($section, ['email_thread', 'quote'], true)) {
+            return $this->saveQuotationFile($request, $job, $id, $section);
+        }
         $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
         $current = $job->{$column};
         $list = is_string($current) ? (json_decode($current, true) ?? []) : [];
@@ -1036,11 +1191,14 @@ class GeneralAssemblyJobController extends Controller
         }
 
         $request->validate([
-            'section'   => ['required', 'string', 'in:plans,documents'],
+            'section'   => ['required', 'string', 'in:plans,documents,email_thread,quote'],
             'file_name' => ['required', 'string', 'max:500'],
         ]);
 
         $section = $request->input('section');
+        if (in_array($section, ['email_thread', 'quote'], true)) {
+            return $this->deleteQuotationFile($request, $job, $id, $section);
+        }
         $column = $section === 'plans' ? 'upload_files' : 'upload_project_files';
         $current = $job->{$column};
         $list = is_string($current) ? (json_decode($current, true) ?? []) : [];
@@ -1166,7 +1324,7 @@ class GeneralAssemblyJobController extends Controller
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOB%')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined', 'For Quotation'])
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined', 'For Quotation', 'Quotation Sent'])
                 ->where(function ($query) {
                     $query->whereNull('j.updated_by')
                         ->orWhere('j.updated_by', '!=', 'FORMS');
@@ -1235,7 +1393,7 @@ class GeneralAssemblyJobController extends Controller
             $quotationQuery = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOB%')
-                ->where('j.job_status', 'For Quotation');
+                ->whereIn('j.job_status', ['For Quotation', 'Quotation Sent']);
             JobCountsScope::applyJobsTableAssignment($quotationQuery, 'j.staff_id', 'j.checker_id');
             $quotationJobs = $quotationQuery
                 ->select(
@@ -2603,9 +2761,11 @@ class GeneralAssemblyJobController extends Controller
             }
         }
 
+        $quotationNames = array_values(array_filter($this->quotationFileMap($job)));
         $allowed = in_array($fileName, $planFiles, true)
             || in_array($fileName, $docFiles, true)
-            || in_array($fileName, $checkerFiles, true);
+            || in_array($fileName, $checkerFiles, true)
+            || in_array($fileName, $quotationNames, true);
 
         if (!$allowed) {
             abort(404);

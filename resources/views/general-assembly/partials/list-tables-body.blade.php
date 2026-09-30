@@ -349,8 +349,11 @@
                                         $quoteClientRef = trim((string) ($quoteJob->client_reference_no ?? ''));
                                         $quotePriority = $quoteJob->priority ?? '';
                                         $quotePriorityBg = $priorityColors[$quotePriority] ?? null;
+                                        $quoteStatus = trim((string) ($quoteJob->job_status ?: 'For Quotation'));
+                                        $quoteStatusBg = $statusColors[$quoteStatus] ?? null;
+                                        $quoteStatusFg = $statusFontColors[$quoteStatus] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
                                     @endphp
-                                    <tr class="border-b border-slate-200 text-slate-800 dark:border-slate-700 dark:text-slate-200">
+                                    <tr class="lbs-data-row border-b border-slate-200 text-slate-800 dark:border-slate-700 dark:text-slate-200" data-job-id="{{ $quoteJob->job_id }}" data-update-url="{{ route('general_assembly.job.update', ['id' => $quoteJob->job_id], false) }}">
                                         <td class="px-4 py-3">
                                             <a href="{{ route('general_assembly.job.view', ['id' => $quoteJob->job_id]) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 no-underline hover:bg-green-500/15 hover:text-green-400" title="View">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -366,7 +369,16 @@
                                             <span class="lbs-priority inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold" @if($quotePriorityBg) style="background-color: {{ $quotePriorityBg }};" @endif>{{ $quotePriority ?: '—' }}</span>
                                         </td>
                                         <td class="px-4 py-3">{{ $quoteJob->job_type ?: '—' }}</td>
-                                        <td class="whitespace-nowrap px-4 py-3">{{ $quoteJob->job_status ?: '—' }}</td>
+                                        <td class="whitespace-nowrap px-4 py-3">
+                                            @include('partials.lbs-inline-status-cell', [
+                                                'status' => $quoteStatus,
+                                                'statusBg' => $quoteStatusBg,
+                                                'statusFg' => $quoteStatusFg,
+                                                'statusOptions' => ['Quotation Sent'],
+                                                'canEditStatus' => true,
+                                                'reference' => $quoteJob->reference ?? '',
+                                            ])
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
