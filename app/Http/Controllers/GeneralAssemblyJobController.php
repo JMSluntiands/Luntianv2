@@ -1367,6 +1367,7 @@ class GeneralAssemblyJobController extends Controller
     /** Jobs + badge colors for the LBS list main/forms tables (full page or AJAX fragment). */
     private function buildLbsListJobsPayload(): array
     {
+        $listTabCounts = ['jobs' => 0, 'inquiries' => 0, 'quotation' => 0];
         if (JobCountsScope::branchBlocksGeneralAssemblyList()) {
             $jobs = collect();
             $formsJobs = collect();
@@ -1475,6 +1476,29 @@ class GeneralAssemblyJobController extends Controller
                 ->orderByDesc('j.log_date')
                 ->limit(200)
                 ->get();
+
+            $allocatedCount = DB::table('job_general_assembly as j')
+                ->where('j.reference', 'like', 'JOB%')
+                ->where('j.job_status', 'Allocated')
+                ->where(function ($query) {
+                    $query->whereNull('j.updated_by')
+                        ->orWhere('j.updated_by', '!=', 'FORMS');
+                });
+            JobCountsScope::applyJobsTableAssignment($allocatedCount, 'j.staff_id', 'j.checker_id');
+
+            $quotationCount = DB::table('job_general_assembly as j')
+                ->where('j.reference', 'like', 'JOB%')
+                ->where('j.job_status', 'For Quotation');
+            JobCountsScope::applyJobsTableAssignment($quotationCount, 'j.staff_id', 'j.checker_id');
+
+            $listTabCounts = [
+                'jobs' => (int) $allocatedCount->count(),
+                'inquiries' => (int) DB::table('job_general_assembly as j')
+                    ->where('j.reference', 'like', 'JOB%')
+                    ->where('j.job_status', 'For Inquiries')
+                    ->count(),
+                'quotation' => (int) $quotationCount->count(),
+            ];
         }
 
         $priorityColors = Priority::query()
@@ -1496,6 +1520,7 @@ class GeneralAssemblyJobController extends Controller
             'jobs' => $jobs,
             'formsJobs' => $formsJobs,
             'quotationJobs' => $quotationJobs ?? collect(),
+            'listTabCounts' => $listTabCounts,
             'priorityColors' => $priorityColors,
             'priorityOptions' => $priorityOptions,
             'statuses' => Status::orderBy('name')->get(),
@@ -2393,9 +2418,14 @@ class GeneralAssemblyJobController extends Controller
     {
         $standalone = $this->isStandaloneFormSubmission($request, 'general_assembly.public.store', 'gen_ea_public_form_domain');
 
+        $request->merge([
+            'client_reference' => trim((string) $request->input('client_reference', '')),
+            'job_address' => trim((string) $request->input('job_address', '')),
+        ]);
+
         $data = $request->validate([
             'reference_no'     => ['nullable', 'string', 'max:255'],
-            'client_reference' => ['nullable', 'string', 'max:255'],
+            'client_reference' => [$standalone ? 'nullable' : 'required', 'string', 'max:255'],
             'compliance'       => ['required', 'integer'],
             'client'           => ['required', 'string', 'max:255'],
             'client_email'     => ['nullable', 'email', 'max:255'],

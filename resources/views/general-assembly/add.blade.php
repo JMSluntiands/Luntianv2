@@ -34,8 +34,8 @@
                     <input type="hidden" id="reference_no_hidden" name="reference_no" value="{{ e($preRef) }}">
                     <div class="grid gap-5 sm:grid-cols-2">
                         <div class="@include('partials.standalone-off-class', ['field' => 'client_reference'])" @include('partials.standalone-field-data', ['field' => 'client_reference'])>
-                            <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference @include('partials.standalone-required-mark', ['field' => 'client_reference'])</label>
-                            <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Street Name" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
+                            <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference @if(($layoutView ?? 'layouts.dashboard') !== 'layouts.public-form')<span class="text-red-500" aria-hidden="true">*</span>@endif @include('partials.standalone-required-mark', ['field' => 'client_reference'])</label>
+                            <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Street Name" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }} @if(($layoutView ?? 'layouts.dashboard') !== 'layouts.public-form') required @endif
                                 class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
                         </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'compliance'])" @include('partials.standalone-field-data', ['field' => 'compliance'])>
@@ -49,7 +49,7 @@
                         </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'client'])" @include('partials.standalone-field-data', ['field' => 'client'])>
                             <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Name @include('partials.standalone-required-mark', ['field' => 'client'])</label>
-                            <input type="text" id="client" name="client" value="{{ e($selClientName) }}" list="client-suggestions" placeholder="Enter client name" autocomplete="off"
+                            <input type="text" id="client" name="client" value="{{ isset($duplicateJob) ? e($duplicateJob->client_account_name ?? '') : '' }}" list="client-suggestions" placeholder="Client Name" autocomplete="off"
                                 class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                             <datalist id="client-suggestions">
                                 @foreach($suggestedClientNames ?? [] as $clientName)
@@ -75,8 +75,8 @@
                 </div>
                 <div class="p-5 space-y-5">
                     <div class="@include('partials.standalone-off-class', ['field' => 'job_address'])" @include('partials.standalone-field-data', ['field' => 'job_address'])>
-                        <label for="job_address" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Address @include('partials.standalone-required-mark', ['field' => 'job_address'])</label>
-                        <input type="text" id="job_address" name="job_address" value="{{ isset($duplicateJob) ? e($duplicateJob->job_address ?? '') : '' }}" placeholder="Complete Address" autocomplete="off"
+                        <label for="job_address" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Address @if(($layoutView ?? 'layouts.dashboard') !== 'layouts.public-form')<span class="text-red-500" aria-hidden="true">*</span>@endif @include('partials.standalone-required-mark', ['field' => 'job_address'])</label>
+                        <input type="text" id="job_address" name="job_address" value="{{ isset($duplicateJob) ? e($duplicateJob->job_address ?? '') : '' }}" placeholder="Complete Address" autocomplete="off" @if(($layoutView ?? 'layouts.dashboard') !== 'layouts.public-form') required @endif
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2">
@@ -397,6 +397,15 @@
             $btn.on('click', function(e) {
                 e.preventDefault();
 
+                var formEl = document.getElementById('lbsAddForm');
+                ['client_reference', 'job_address', 'client'].forEach(function(id) {
+                    var field = document.getElementById(id);
+                    if (field && typeof field.value === 'string') field.value = field.value.trim();
+                });
+                if (formEl && typeof formEl.reportValidity === 'function' && !formEl.reportValidity()) {
+                    return;
+                }
+
                 var plansField = document.querySelector('[data-standalone-field="plans"]');
                 var docsField = document.querySelector('[data-standalone-field="documents"]');
                 var plansOn = !plansField || !plansField.classList.contains('standalone-off');
@@ -414,7 +423,6 @@
 
                 $('#notes').val($('#lbs-notes-body').html());
 
-                var formEl = document.getElementById('lbsAddForm');
                 var formData = new FormData(formEl);
 
                 var headerRef = $('#jobReferenceContent').text().trim();

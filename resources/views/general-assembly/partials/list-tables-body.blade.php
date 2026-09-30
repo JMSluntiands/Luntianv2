@@ -1,10 +1,10 @@
         <div class="list-section-tabs" role="tablist" aria-label="Job sections">
-            <button type="button" class="list-section-tab" role="tab" data-list-section="jobs">Jobs</button>
+            <button type="button" class="list-section-tab" role="tab" data-list-section="jobs">Jobs <span class="list-section-count">{{ (int) ($listTabCounts['jobs'] ?? 0) }}</span></button>
             @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.list.formsSubmitted'))
-            <button type="button" class="list-section-tab" role="tab" data-list-section="inquiries">For Inquiries</button>
+            <button type="button" class="list-section-tab" role="tab" data-list-section="inquiries">For Inquiries <span class="list-section-count">{{ (int) ($listTabCounts['inquiries'] ?? 0) }}</span></button>
             @endif
             @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.list.quotation'))
-            <button type="button" class="list-section-tab" role="tab" data-list-section="quotation">For Quotation</button>
+            <button type="button" class="list-section-tab" role="tab" data-list-section="quotation">For Quotation <span class="list-section-count">{{ (int) ($listTabCounts['quotation'] ?? 0) }}</span></button>
             @endif
         </div>
 

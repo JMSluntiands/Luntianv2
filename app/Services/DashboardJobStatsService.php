@@ -92,6 +92,16 @@ class DashboardJobStatsService
         }
     }
 
+    /** Generic EA quotation jobs stay on the dashboard even while they are still a standalone submission. */
+    private static function applyGeneralAssemblyDashboardScope($q): void
+    {
+        $q->where(function ($w) {
+            $w->whereNull('updated_by')
+                ->orWhereRaw("UPPER(TRIM(updated_by)) != ?", ['FORMS'])
+                ->orWhereRaw("LOWER(TRIM(job_status)) IN ('for quotation', 'quotation sent')");
+        });
+    }
+
     private static function applyJobsTableDayFilter($q, string $bucket, string $start, string $end, string $date): void
     {
         if ($bucket === 'completed') {
@@ -748,7 +758,7 @@ class DashboardJobStatsService
         }
 
         $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOB%');
-        self::applyLbsPipelineExclusions($q, 'lbs');
+        self::applyGeneralAssemblyDashboardScope($q);
         $q->whereRaw('LOWER(TRIM(job_status)) = ?', [mb_strtolower(trim($statusName))]);
         JobCountsScope::applyJobsTableAssignment($q);
 
@@ -890,7 +900,7 @@ class DashboardJobStatsService
 
         $q = DB::table('job_general_assembly')->where('reference', 'like', 'JOB%');
 
-        self::applyLbsPipelineExclusions($q, 'lbs');
+        self::applyGeneralAssemblyDashboardScope($q);
 
         self::applyJobsTableDayFilter($q, $bucket, $start, $end, $dateStr);
 
