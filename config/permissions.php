@@ -54,13 +54,15 @@ return [
             'general_assembly.add' => 'Generic EA Add New',
             'general_assembly.list' => 'Generic EA List',
             'general_assembly.list.tablesFragment' => 'Generic EA List — refresh tables',
-            'general_assembly.list.formsSubmitted' => 'Generic EA Forms Submitted Jobs',
+            'general_assembly.list.formsSubmitted' => 'Generic EA For Inquiries',
+            'general_assembly.list.quotation' => 'Generic EA For Quotation',
             'general_assembly.completed' => 'Generic EA Completed',
             'general_assembly.review' => 'Generic EA For Review',
             'general_assembly.mailbox' => 'Generic EA Mailbox',
             'general_assembly.trash' => 'Generic EA Archive',
             'general_assembly.job.view' => 'Generic EA View Job',
             'general_assembly.job.acceptForm' => 'Generic EA Accept Forms Job',
+            'general_assembly.job.declineForm' => 'Generic EA Decline Forms Job',
             'general_assembly.job.update' => 'Generic EA Update Job',
             'general_assembly.job.uploadFiles' => 'Generic EA Add Job Files',
             'general_assembly.job.deleteFile' => 'Generic EA Delete File',
@@ -273,6 +275,9 @@ return [
             'settings.slack_config.toggle' => 'Slack switches (new job / assignment)',
             'settings.notifications' => 'Notification Controls Page',
             'settings.permission' => 'Permission',
+            'settings.standalone_form' => 'Standalone Form',
+            'settings.standalone_form.toggle' => 'Standalone Form Required and Visibility',
+            'settings.standalone_form.options' => 'Standalone Form Dropdown Options',
         ],
         /*
          * UI-only toggles (no HTTP route): job detail cards and actions, scoped per product line (LBS / BPH / Efficient Living).
@@ -575,7 +580,7 @@ return [
         'general_assembly' => [
             'label' => 'Generic EA',
             'sidebar' => [
-                'general_assembly.add', 'general_assembly.list', 'general_assembly.list.formsSubmitted', 'general_assembly.completed', 'general_assembly.review', 'general_assembly.mailbox', 'general_assembly.trash', 'general_assembly.job.view',
+                'general_assembly.add', 'general_assembly.list', 'general_assembly.list.formsSubmitted', 'general_assembly.list.quotation', 'general_assembly.completed', 'general_assembly.review', 'general_assembly.mailbox', 'general_assembly.trash', 'general_assembly.job.view',
                 'job_view.general_assembly.edit_assigned',
             ],
             'card' => [
@@ -591,7 +596,7 @@ return [
                 'job_view.general_assembly.card.activity',
             ],
             'buttons' => [
-                'general_assembly.job.acceptForm',
+                'general_assembly.job.acceptForm', 'general_assembly.job.declineForm',
                 'general_assembly.job.update', 'general_assembly.job.uploadFiles', 'general_assembly.job.deleteFile', 'general_assembly.job.file', 'general_assembly.job.checkerUploads',
                 'general_assembly.job.runComment', 'general_assembly.job.comment', 'general_assembly.job.archive', 'general_assembly.job.restore', 'general_assembly.job.sendSlack',
                 'general_assembly.job.sendSubmissionEmail', 'general_assembly.job.emailPreview', 'general_assembly.job.sendMailboxEmail',
@@ -909,6 +914,7 @@ return [
                 'settings.jotform_config', 'settings.jotform_config.toggle',
                 'settings.email_config', 'settings.email_config.toggle', 'settings.slack_config', 'settings.slack_config.toggle',
                 'settings.notifications', 'settings.permission',
+                'settings.standalone_form', 'settings.standalone_form.toggle', 'settings.standalone_form.options',
                 'compliance.index', 'priority.index', 'status.index', 'job_request.index', 'job_module_client.index', 'job_module_client.update', 'client.index',
                 'announcement.index', 'announcement.create', 'announcement.store', 'announcement.edit', 'announcement.update', 'announcement.destroy',
                 'branch.index', 'branch.archive',

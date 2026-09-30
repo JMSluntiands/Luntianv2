@@ -150,6 +150,9 @@ class GeneralAssemblyJobController extends Controller
         $checkerUploads = $checkerUploadsQuery->get();
 
         $assignmentSelect = User::assignmentSelectLists($this->assignmentModuleForJob($job));
+        if (in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent'], true)) {
+            $assignmentSelect['assignmentStaffUsers'] = User::assignmentUsersForSelect('general_assembly_quotation', 'staff');
+        }
 
         $runComments = DB::table('run_comments')
             ->where('job_id', (int) $job->job_id)
@@ -753,6 +756,9 @@ class GeneralAssemblyJobController extends Controller
                 ];
             }
         }
+        if ($this->jobAcceptsQuotationFiles($job)) {
+            $data['checker_id'] = null;
+        }
         if (array_key_exists('checker_id', $data)) {
             $new = $data['checker_id'] ? trim((string) $data['checker_id']) : null;
             $old = $job->checker_id ? trim((string) $job->checker_id) : null;
@@ -957,7 +963,7 @@ class GeneralAssemblyJobController extends Controller
 
     public function declineFormJob(int $id)
     {
-        if (! RolePermission::userMayAccessRoute('general_assembly.job.acceptForm')) {
+        if (! RolePermission::userMayAccessRoute('general_assembly.job.declineForm')) {
             return redirect()->route('general_assembly.list')->with('error', 'You do not have permission to decline forms jobs.');
         }
 
@@ -2470,6 +2476,13 @@ class GeneralAssemblyJobController extends Controller
                 $jobReferenceNo = preg_replace('/-1$/', '', $referenceValue);
             }
 
+            $isStandaloneIntake = $this->isStandaloneFormSubmission($request, 'general_assembly.public.store', 'gen_ea_public_form_domain');
+            $intakeStatus = $isStandaloneIntake ? $this->standaloneIntakeStatus($request) : 'Allocated';
+            $checkedBy = trim((string) ($data['checked_by'] ?? ''));
+            if (strcasecmp($intakeStatus, 'For Quotation') === 0 || strcasecmp($intakeStatus, 'Quotation Sent') === 0) {
+                $checkedBy = '';
+            }
+
             $jobId = DB::table('job_general_assembly')->insertGetId([
                 'reference'           => $referenceValue,
                 'log_date'            => $now->format('Y-m-d H:i:s'),
@@ -2478,7 +2491,7 @@ class GeneralAssemblyJobController extends Controller
                 'client_reference_no' => $data['client_reference'] ?? null,
                 'client_email'        => trim((string) ($data['client_email'] ?? '')) !== '' ? trim((string) $data['client_email']) : null,
                 'staff_id'            => (($assigned = trim((string) ($data['assigned_to'] ?? ''))) !== '' ? $assigned : null),
-                'checker_id'          => (($checked = trim((string) ($data['checked_by'] ?? ''))) !== '' ? $checked : null),
+                'checker_id'          => $checkedBy !== '' ? $checkedBy : null,
                 'ncc_compliance'      => $compliance->column ?? null,
                 'job_request_id'      => $jobRequest->job_request_id ?? (string) $data['job_type'],
                 'address_client'      => $data['job_address'] ?? null,
@@ -2489,10 +2502,8 @@ class GeneralAssemblyJobController extends Controller
                 'upload_files'        => json_encode($planNames),
                 'upload_project_files'=> json_encode($docNames),
                 // last_update has default CURRENT_TIMESTAMP
-                'updated_by'          => $this->isStandaloneFormSubmission($request, 'general_assembly.public.store', 'gen_ea_public_form_domain') ? 'FORMS' : null,
-                'job_status'          => $this->isStandaloneFormSubmission($request, 'general_assembly.public.store', 'gen_ea_public_form_domain')
-                    ? $this->standaloneIntakeStatus($request)
-                    : 'Allocated',
+                'updated_by'          => $isStandaloneIntake ? 'FORMS' : null,
+                'job_status'          => $intakeStatus,
                 'dwelling'            => '',
                 'client_account_id'   => $client->client_account_id,
                 'completion_date'     => null,

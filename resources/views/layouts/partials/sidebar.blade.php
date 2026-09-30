@@ -118,13 +118,14 @@
         || $may('settings.slack_config')
         || $may('settings.notifications')
         || $may('settings.permission')
+        || $may('settings.standalone_form')
         || $showJobMasterNav
         || $showBranchNav
         || $showAccountsNav
         || $showBphEmailNav
         || $showAmtEmailNav;
     $showNotificationControls = $may('settings.notifications');
-    $settingsOpen = in_array($active, ['settings.jotform_config', 'settings.email_config', 'settings.slack_config', 'settings.notifications']);
+    $settingsOpen = in_array($active, ['settings.jotform_config', 'settings.email_config', 'settings.slack_config', 'settings.notifications', 'settings.standalone_form']);
 @endphp
 <aside id="sidebarNav" role="navigation" aria-label="Main navigation" class="sidebar fixed left-0 top-0 z-50 flex h-screen w-60 flex-col overflow-hidden border-r border-slate-200 bg-white py-0 shadow-sm transition-[transform,box-shadow] duration-250 ease-out dark:border-slate-700/50 dark:bg-slate-900 dark:shadow-slate-950/30 -translate-x-full lg:translate-x-0">
     <div class="sidebar-brand relative flex h-14 w-full flex-shrink-0 items-center justify-center border-b border-slate-200 bg-slate-50/50 px-4 dark:border-slate-700 dark:bg-slate-800/50">
@@ -1023,7 +1024,7 @@
             Permission
         </a>
         @endif
-        @if($showSettingsColumn)
+        @if($may('settings.standalone_form'))
         <a href="{{ route('settings.standalone_form') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ ($active ?? '') === 'settings.standalone_form' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-[15px] dark:pl-[15px]' : '' }}">
             <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Standalone Form

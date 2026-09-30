@@ -73,6 +73,9 @@
                     @php
                         $currentStatus = trim($job->job_status ?? '');
                         $editModalNextStatuses = \App\Support\LbsJobStatusFlow::nextAllowedLabels($currentStatus, $statuses ?? []);
+                        if (strcasecmp($currentStatus, 'For Quotation') === 0) {
+                            $editModalNextStatuses = ['Quotation Sent'];
+                        }
                     @endphp
                     <select id="edit-job-status" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
                         <option value="{{ $currentStatus }}" selected @if(count($editModalNextStatuses) > 0) disabled @endif>{{ $currentStatus !== '' ? $currentStatus : '—' }}</option>
@@ -139,12 +142,14 @@
                         @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentStaffUsers ?? ($assignmentUsers ?? []), 'selected' => $selAssignedRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => 'Not allocated', 'preserveSelected' => true, 'includeGm' => false])
                     </select>
                 </div>
+                @if(! in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent'], true))
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="edit-job-checker">Checker</label>
                     <select id="edit-job-checker" class="select2-single assignment-user-select w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200" autocomplete="off">
                         @include('partials.assignment-user-options', ['assignmentUsers' => $assignmentCheckerUsers ?? ($assignmentUsers ?? []), 'selected' => $selCheckerRaw, 'includeSelectPlaceholder' => true, 'placeholderLabel' => 'Not allocated', 'preserveSelected' => true, 'includeGm' => false])
                     </select>
                 </div>
+                @endif
                 @endif
             </div>
             <div class="job-view-edit-form job-view-edit-form-notes" id="jobViewEditFormNotes" hidden>

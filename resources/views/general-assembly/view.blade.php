@@ -158,6 +158,9 @@
             $canEditDetails = !$isEfficientLivingView && !in_array($lowerStatus, ['completed', 'for review', 'for email confirmation'], true);
             // One-step status flow (LBS); Efficient Living: inline status only from Allocated
             $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
+            if (strcasecmp(trim((string) $rawStatus), 'For Quotation') === 0) {
+                $inlineStatusOptions = ['Quotation Sent'];
+            }
             if (($isEfficientLivingView || $isLuntianView) && $lowerStatus !== 'allocated') {
                 $inlineStatusOptions = [];
             }
@@ -282,6 +285,7 @@
                             $assignedLabel = $assignedCode !== '' ? strtoupper($assignedCode) : '—';
                             $checkerCode = trim((string) ($job->checker_id ?? ''));
                             $checkerLabel = $checkerCode !== '' ? strtoupper($checkerCode) : '—';
+                            $hideQuotationChecker = in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent'], true);
                         @endphp
                         <section class="job-details-card rounded-xl border shadow-sm {{ $detailTopColClass }}" id="jobAssignmentCard">
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
@@ -294,13 +298,24 @@
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Staff</dt>
                                     <dd class="job-details-dd">
-                                        @if($assignedLabel !== '—')
+                                        @if($canEditDetailsUi && $permEditAssignment && $permBtnEditAssignment)
+                                            <select id="jobViewStaffSelect" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" data-prev="{{ $assignedCode }}" aria-label="Staff">
+                                                <option value="" @selected($assignedCode === '')>Not allocated</option>
+                                                @foreach($assignmentStaffUsers ?? [] as $staffUser)
+                                                    @php $staffCode = strtoupper(trim((string) ($staffUser->unique_code ?? ''))); @endphp
+                                                    @if($staffCode !== '')
+                                                        <option value="{{ $staffCode }}" @selected(strtoupper($assignedCode) === $staffCode)>{{ $staffCode }}</option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                        @elseif($assignedLabel !== '—')
                                             <span class="inline-block rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200">{{ $assignedLabel }}</span>
                                         @else
                                             —
                                         @endif
                                     </dd>
                                 </div>
+                                @if(! $hideQuotationChecker)
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Checker</dt>
                                     <dd class="job-details-dd">
@@ -311,6 +326,7 @@
                                         @endif
                                     </dd>
                                 </div>
+                                @endif
                             </dl>
                         </section>
                         @endif
@@ -1542,6 +1558,39 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             });
         });
     });
+    var jobViewStaffSelect = document.getElementById('jobViewStaffSelect');
+    if (jobViewStaffSelect) {
+        jobViewStaffSelect.addEventListener('change', function() {
+            var select = this;
+            var prev = String(select.getAttribute('data-prev') || '');
+            var val = String(select.value || '');
+            if (val === prev) return;
+            select.disabled = true;
+            var formData = new URLSearchParams();
+            formData.append('_token', csrfToken);
+            formData.append('staff_id', val);
+            fetch(updateUrl, {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).then(function(r) {
+                return r.json().then(function(data) { return { ok: r.ok, data: data }; }).catch(function() { return { ok: r.ok, data: {} }; });
+            }).then(function(result) {
+                select.disabled = false;
+                var msg = (result.data && result.data.message) || (result.ok ? 'Staff updated.' : 'Failed to update staff.');
+                if (window.showSuccessToast) showSuccessToast(msg);
+                if (!result.ok) {
+                    select.value = prev;
+                    return;
+                }
+                select.setAttribute('data-prev', val);
+            }).catch(function() {
+                select.disabled = false;
+                select.value = prev;
+                if (window.showSuccessToast) showSuccessToast('Failed to update staff.');
+            });
+        });
+    }
     document.querySelectorAll('[data-status-wrap]').forEach(function(wrap) {
         var trigger = wrap.querySelector('[data-status-trigger]');
         var menu = wrap.querySelector('.lbs-status-menu');

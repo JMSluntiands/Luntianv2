@@ -24,6 +24,8 @@ final class AddJobModules
             }
         }
 
+        $options['general_assembly_quotation'] = 'Generic EA - For Quote';
+
         return $options;
     }
 

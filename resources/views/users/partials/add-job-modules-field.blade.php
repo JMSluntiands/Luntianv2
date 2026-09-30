@@ -38,6 +38,7 @@
         </p>
         <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             @foreach($moduleOptions as $key => $label)
+                @continue($key === 'general_assembly_quotation')
                 <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700 transition-colors hover:border-violet-300 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:border-violet-600">
                     <input
                         type="checkbox"

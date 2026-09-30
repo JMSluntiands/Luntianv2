@@ -3,7 +3,9 @@
             @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.list.formsSubmitted'))
             <button type="button" class="list-section-tab" role="tab" data-list-section="inquiries">For Inquiries</button>
             @endif
+            @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.list.quotation'))
             <button type="button" class="list-section-tab" role="tab" data-list-section="quotation">For Quotation</button>
+            @endif
         </div>
 
         <section class="list-fold" data-list-fold="jobs">
@@ -270,6 +272,8 @@
                                                     @csrf
                                                     <button type="submit" class="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-500">Accept</button>
                                                 </form>
+                                            @endif
+                                            @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.job.declineForm'))
                                                 <form method="POST" action="{{ route('general_assembly.job.declineForm', ['id' => $formJob->job_id]) }}" onsubmit="return confirm('Decline this submitted job?');">
                                                     @csrf
                                                     <button type="submit" class="rounded-md bg-red-600 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-500">Decline</button>
@@ -306,6 +310,7 @@
         </section>
         @endif
 
+        @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.list.quotation'))
         <section class="list-fold mt-7" data-list-fold="quotation">
             <div class="mb-3 flex items-center justify-between gap-2">
                 <button type="button" class="list-fold-toggle" aria-expanded="true">
@@ -391,3 +396,4 @@
                 </div>
             </div>
         </section>
+        @endif
