@@ -115,6 +115,46 @@
 }
 .list-fold.is-collapsed .list-fold-chevron { transform: rotate(-90deg); }
 .list-fold.is-collapsed .list-fold-body { display: none; }
+.list-section-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+}
+.list-section-tab {
+    min-width: 8.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.45rem 0.9rem;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+}
+.list-section-tab:hover { background: #f8fafc; }
+.list-section-tab.is-active {
+    border-color: #059669;
+    background: #059669;
+    color: #fff;
+}
+[data-theme="dark"] .list-section-tab {
+    border-color: #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .list-section-tab:hover { background: #334155; }
+[data-theme="dark"] .list-section-tab.is-active {
+    border-color: #059669;
+    background: #059669;
+    color: #fff;
+}
+.page-ga-list .list-fold { display: none; margin-top: 0; }
+.page-ga-list .list-fold[data-list-fold="jobs"] { display: block; }
+.page-ga-list .list-section-tabs:has(.is-active) ~ .list-fold { display: none; }
+.page-ga-list .list-section-tabs:has(.is-active) ~ .list-fold.is-section-active { display: block; }
+.page-ga-list .list-fold.is-section-active .list-fold-body { display: block; }
+.page-ga-list .list-fold-toggle { display: none; }
 </style>
 @endpush
 
@@ -122,6 +162,23 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
     (function () {
+        function applyListSections(root) {
+            var scope = root || document;
+            var tabs = scope.querySelectorAll('.list-section-tab');
+            if (!tabs.length) return;
+            var saved = 'jobs';
+            try { saved = localStorage.getItem('luntian.ga-list-section') || 'jobs'; } catch (err) {}
+            var names = Array.prototype.map.call(tabs, function (tab) { return tab.getAttribute('data-list-section'); });
+            if (names.indexOf(saved) === -1) saved = names[0] || 'jobs';
+            Array.prototype.forEach.call(tabs, function (tab) {
+                var on = tab.getAttribute('data-list-section') === saved;
+                tab.classList.toggle('is-active', on);
+                tab.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            scope.querySelectorAll('.list-fold').forEach(function (section) {
+                section.classList.toggle('is-section-active', section.getAttribute('data-list-fold') === saved);
+            });
+        }
         function applyListFolds(root) {
             (root || document).querySelectorAll('.list-fold').forEach(function (section) {
                 var key = section.getAttribute('data-list-fold');
@@ -130,9 +187,17 @@
                 var btn = section.querySelector('.list-fold-toggle');
                 if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
             });
+            applyListSections(root);
         }
         window.applyListFolds = applyListFolds;
         document.addEventListener('click', function (e) {
+            var tab = e.target.closest && e.target.closest('.list-section-tab');
+            if (tab) {
+                var name = tab.getAttribute('data-list-section');
+                try { localStorage.setItem('luntian.ga-list-section', name); } catch (err) {}
+                applyListSections(tab.closest('#lbs-list-tables-inner') || document);
+                return;
+            }
             var btn = e.target.closest && e.target.closest('.list-fold-toggle');
             if (!btn) return;
             var section = btn.closest('.list-fold');

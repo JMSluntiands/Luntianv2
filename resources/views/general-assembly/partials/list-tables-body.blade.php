@@ -1,3 +1,11 @@
+        <div class="list-section-tabs" role="tablist" aria-label="Job sections">
+            <button type="button" class="list-section-tab" role="tab" data-list-section="jobs">Jobs</button>
+            @if(\App\Models\RolePermission::userMayAccessRoute('general_assembly.list.formsSubmitted'))
+            <button type="button" class="list-section-tab" role="tab" data-list-section="inquiries">For Inquiries</button>
+            @endif
+            <button type="button" class="list-section-tab" role="tab" data-list-section="quotation">For Quotation</button>
+        </div>
+
         <section class="list-fold" data-list-fold="jobs">
             <div class="mb-3 flex items-center justify-between gap-2">
                 <button type="button" class="list-fold-toggle" aria-expanded="true">
