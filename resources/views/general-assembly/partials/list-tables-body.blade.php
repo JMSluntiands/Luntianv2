@@ -355,6 +355,11 @@
                                         $quotePriority = $quoteJob->priority ?? '';
                                         $quotePriorityBg = $priorityColors[$quotePriority] ?? null;
                                         $quoteStatus = trim((string) ($quoteJob->job_status ?: 'For Quotation'));
+                                        $quoteNextStatus = match (strtolower($quoteStatus)) {
+                                            'for quotation' => 'Quotation Sent',
+                                            'quotation sent' => 'Quotation Accepted',
+                                            default => null,
+                                        };
                                         $quoteStatusBg = $statusColors[$quoteStatus] ?? null;
                                         $quoteStatusFg = $statusFontColors[$quoteStatus] ?? \App\Models\Status::DEFAULT_FONT_COLOR;
                                     @endphp
@@ -379,8 +384,8 @@
                                                 'status' => $quoteStatus,
                                                 'statusBg' => $quoteStatusBg,
                                                 'statusFg' => $quoteStatusFg,
-                                                'statusOptions' => ['Quotation Sent'],
-                                                'canEditStatus' => true,
+                                                'statusOptions' => $quoteNextStatus ? [$quoteNextStatus] : [],
+                                                'canEditStatus' => $quoteNextStatus !== null,
                                                 'reference' => $quoteJob->reference ?? '',
                                             ])
                                         </td>

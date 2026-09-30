@@ -77,12 +77,48 @@
             $permComment = $permJobUpdate && $permBtnSendComment;
         }
     @endphp
+    @php
+        $listSectionStatus = strtolower(trim((string) ($job->job_status ?? '')));
+        $listSectionUpdatedBy = strtoupper(trim((string) ($job->updated_by ?? '')));
+        $listSectionLabel = 'Jobs';
+        $listSectionUrl = route($listRouteName, ['section' => 'jobs']);
+        if (in_array($listSectionStatus, ['for quotation', 'quotation sent', 'quotation accepted'], true)) {
+            $listSectionLabel = 'For Quotation';
+            $listSectionUrl = route($listRouteName, ['section' => 'quotation']);
+        } elseif (
+            $listSectionStatus === 'for inquiries'
+            || (
+                $listSectionUpdatedBy === 'FORMS'
+                && $listSectionStatus !== 'declined'
+                && in_array(trim((string) ($job->job_status ?? '')), \App\Models\Status::formInquiryNames(), true)
+            )
+        ) {
+            $listSectionLabel = 'For Inquiries';
+            $listSectionUrl = route($listRouteName, ['section' => 'inquiries']);
+        } elseif (in_array($listSectionStatus, ['for review', 'for email confirmation'], true) && $listRouteName === 'general_assembly.list') {
+            $listSectionLabel = 'For Review';
+            $listSectionUrl = route('general_assembly.review');
+        } elseif ($listSectionStatus === 'completed' && $listRouteName === 'general_assembly.list') {
+            $listSectionLabel = 'Completed';
+            $listSectionUrl = route('general_assembly.completed');
+        } elseif ($listSectionStatus === 'archived' && $listRouteName === 'general_assembly.list') {
+            $listSectionLabel = 'Trash';
+            $listSectionUrl = route('general_assembly.trash');
+        }
+        $listSectionOnJobList = in_array($listSectionLabel, ['Jobs', 'For Inquiries', 'For Quotation'], true);
+    @endphp
     <div class="min-h-0 w-full max-w-full">
         {{-- Breadcrumb --}}
         <nav class="mb-6 flex flex-wrap items-center gap-1 text-sm" aria-label="Breadcrumb">
             <a href="{{ route('dashboard') }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Home</a>
             <span class="text-slate-400 dark:text-slate-500">/</span>
-            <a href="{{ route($listRouteName) }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Job List</a>
+            @if($listSectionOnJobList)
+                <a href="{{ $listSectionUrl }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Job List</a>
+                <span class="text-slate-400 dark:text-slate-500">/</span>
+                <a href="{{ $listSectionUrl }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">{{ $listSectionLabel }}</a>
+            @else
+                <a href="{{ $listSectionUrl }}" class="text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">{{ $listSectionLabel }}</a>
+            @endif
             <span class="text-slate-400 dark:text-slate-500">/</span>
             <span class="font-medium text-slate-800 dark:text-white">Job {{ $jobReferenceDisplay }}</span>
         </nav>
@@ -105,7 +141,7 @@
                         Archive this job
                     </button>
                 @endif
-                <a href="{{ route($listRouteName) }}" class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600">
+                <a href="{{ $listSectionUrl }}" class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back to List
                 </a>
@@ -136,7 +172,7 @@
             }
 
             $quotationStatus = strtolower(trim((string) ($job->job_status ?? '')));
-            $showQuotationFiles = in_array($quotationStatus, ['for quotation', 'quotation sent'], true);
+            $showQuotationFiles = in_array($quotationStatus, ['for quotation', 'quotation sent', 'quotation accepted'], true);
             $quotationFiles = ['email_thread' => '', 'quote' => ''];
             if ($showQuotationFiles && !empty($job->quotation_files)) {
                 $decodedQuote = json_decode((string) $job->quotation_files, true);
@@ -160,6 +196,8 @@
             $inlineStatusOptions = \App\Support\LbsJobStatusFlow::nextAllowedLabels($rawStatus, $statuses ?? []);
             if (strcasecmp(trim((string) $rawStatus), 'For Quotation') === 0) {
                 $inlineStatusOptions = ['Quotation Sent'];
+            } elseif (strcasecmp(trim((string) $rawStatus), 'Quotation Sent') === 0) {
+                $inlineStatusOptions = ['Quotation Accepted'];
             }
             if (($isEfficientLivingView || $isLuntianView) && $lowerStatus !== 'allocated') {
                 $inlineStatusOptions = [];
@@ -285,7 +323,7 @@
                             $assignedLabel = $assignedCode !== '' ? strtoupper($assignedCode) : '—';
                             $checkerCode = trim((string) ($job->checker_id ?? ''));
                             $checkerLabel = $checkerCode !== '' ? strtoupper($checkerCode) : '—';
-                            $hideQuotationChecker = in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent'], true);
+                            $hideQuotationChecker = in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent', 'quotation accepted'], true);
                         @endphp
                         <section class="job-details-card rounded-xl border shadow-sm {{ $detailTopColClass }}" id="jobAssignmentCard">
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-600 dark:bg-slate-700/40">
@@ -1905,8 +1943,6 @@ html[data-theme="dark"] .job-view-comment-btn.active {
             } else if (formAssignment && !formAssignment.hidden) {
                 var av = $('#edit-job-assigned').val();
                 payload.staff_id = av !== undefined && av !== null ? av : '';
-                var cv = $('#edit-job-checker').val();
-                payload.checker_id = cv !== undefined && cv !== null ? cv : '';
             } else if (!formNotes.hidden) {
                 var notesBody = document.getElementById('jobViewEditNotesBody');
                 payload.notes = notesBody ? notesBody.innerHTML : '';

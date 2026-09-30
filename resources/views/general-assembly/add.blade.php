@@ -31,16 +31,11 @@
                     <span id="jobReferenceContent" class="rounded-lg bg-slate-200/80 px-3 py-1.5 font-mono text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">{{ $preRef }}</span>
                 </div>
                 <div class="p-5">
+                    <input type="hidden" id="reference_no_hidden" name="reference_no" value="{{ e($preRef) }}">
                     <div class="grid gap-5 sm:grid-cols-2">
-                        <div>
-                            <label for="reference_no" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Job Reference Number</label>
-                            <input type="text" id="reference_no" value="{{ e($preRef) }}" readonly disabled autocomplete="off" aria-label="Auto-generated Generic EA reference number"
-                                class="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 font-mono text-slate-800 placeholder-slate-400 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-100">
-                            <input type="hidden" id="reference_no_hidden" name="reference_no" value="{{ e($preRef) }}">
-                        </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'client_reference'])" @include('partials.standalone-field-data', ['field' => 'client_reference'])>
                             <label for="client_reference" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Reference @include('partials.standalone-required-mark', ['field' => 'client_reference'])</label>
-                            <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Client Reference" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
+                            <input type="text" id="client_reference" name="client_reference" value="{{ isset($duplicateJob) ? e($duplicateJob->client_reference ?? '') : '' }}" placeholder="Enter Street Name" autocomplete="off" {{ isset($duplicateJob) ? 'readonly' : '' }}
                                 class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 {{ isset($duplicateJob) ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-700/50' : '' }}">
                         </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'compliance'])" @include('partials.standalone-field-data', ['field' => 'compliance'])>
@@ -451,7 +446,6 @@
                             var nextRef = (resp.next_reference || '').trim();
                             if (nextRef) {
                                 $('#jobReferenceContent').text(nextRef);
-                                $('#reference_no').val(nextRef);
                                 $('#reference_no_hidden').val(nextRef);
                             }
                             showLbsAfterSavePrompt(resp.job_id, resp.submission_email_enabled);

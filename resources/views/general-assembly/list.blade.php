@@ -162,6 +162,12 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
     (function () {
+        try {
+            var fromUrl = new URLSearchParams(window.location.search).get('section');
+            if (fromUrl === 'jobs' || fromUrl === 'inquiries' || fromUrl === 'quotation') {
+                localStorage.setItem('luntian.ga-list-section', fromUrl);
+            }
+        } catch (err) {}
         function applyListSections(root) {
             var scope = root || document;
             var tabs = scope.querySelectorAll('.list-section-tab');

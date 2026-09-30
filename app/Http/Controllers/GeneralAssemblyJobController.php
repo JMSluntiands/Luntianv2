@@ -57,6 +57,7 @@ class GeneralAssemblyJobController extends Controller
                 'j.priority',
                 'j.plan_complexity',
                 'j.job_status',
+                'j.updated_by',
                 'j.completion_date',
                 'j.notes',
                 'j.upload_files',
@@ -150,7 +151,7 @@ class GeneralAssemblyJobController extends Controller
         $checkerUploads = $checkerUploadsQuery->get();
 
         $assignmentSelect = User::assignmentSelectLists($this->assignmentModuleForJob($job));
-        if (in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent'], true)) {
+        if (in_array(strtolower(trim((string) ($job->job_status ?? ''))), ['for quotation', 'quotation sent', 'quotation accepted'], true)) {
             $assignmentSelect['assignmentStaffUsers'] = User::assignmentUsersForSelect('general_assembly_quotation', 'staff');
         }
 
@@ -581,6 +582,8 @@ class GeneralAssemblyJobController extends Controller
             if ($new !== $job->job_status) {
                 $quotationSent = strcasecmp((string) ($job->job_status ?? ''), 'For Quotation') === 0
                     && strcasecmp($new, 'Quotation Sent') === 0;
+                $quotationAccepted = strcasecmp((string) ($job->job_status ?? ''), 'Quotation Sent') === 0
+                    && strcasecmp($new, 'Quotation Accepted') === 0;
                 if ($quotationSent) {
                     $quoteFiles = $this->quotationFileMap($job);
                     $missingQuoteFiles = [];
@@ -597,7 +600,7 @@ class GeneralAssemblyJobController extends Controller
                         ], 422);
                     }
                 }
-                if (! $quotationSent && ! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
+                if (! $quotationSent && ! $quotationAccepted && ! LbsJobStatusFlow::isValidTransition((string) ($job->job_status ?? ''), $new)) {
                     return response()->json([
                         'status' => 'error',
                         'message' => 'Invalid status change. Jobs advance one step at a time: ' . LbsJobStatusFlow::describeFlow() . '.',
@@ -946,9 +949,16 @@ class GeneralAssemblyJobController extends Controller
             return redirect()->route('general_assembly.list')->with('error', 'Forms job not found or already accepted.');
         }
 
+        $acceptedStatus = strcasecmp((string) ($job->job_status ?? ''), 'For Inquiries') === 0
+            ? 'Allocated'
+            : $job->job_status;
+
         DB::table('job_general_assembly')
             ->where('job_id', $id)
-            ->update(['updated_by' => null]);
+            ->update([
+                'updated_by' => null,
+                'job_status' => $acceptedStatus,
+            ]);
 
         ActivityLog::create([
             'job_id'               => (int) $id,
@@ -1015,7 +1025,7 @@ class GeneralAssemblyJobController extends Controller
     {
         $status = strtolower(trim((string) ($job->job_status ?? '')));
 
-        return in_array($status, ['for quotation', 'quotation sent'], true);
+        return in_array($status, ['for quotation', 'quotation sent', 'quotation accepted'], true);
     }
 
     private function saveQuotationFile(Request $request, object $job, int $id, string $section)
@@ -1330,7 +1340,7 @@ class GeneralAssemblyJobController extends Controller
             $q = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOB%')
-                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined', 'For Quotation', 'Quotation Sent'])
+                ->whereNotIn('j.job_status', ['For Review', 'For Email Confirmation', 'Completed', 'Archived', 'Declined', 'For Quotation', 'Quotation Sent', 'Quotation Accepted', 'For Inquiries'])
                 ->where(function ($query) {
                     $query->whereNull('j.updated_by')
                         ->orWhere('j.updated_by', '!=', 'FORMS');
@@ -1367,8 +1377,13 @@ class GeneralAssemblyJobController extends Controller
                 $formsQuery = DB::table('job_general_assembly as j')
                     ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                     ->where('j.reference', 'like', 'JOB%')
-                    ->where('j.updated_by', '=', 'FORMS')
-                    ->whereIn('j.job_status', Status::formInquiryNames());
+                    ->where(function ($query) {
+                        $query->where(function ($forms) {
+                            $forms->where('j.updated_by', '=', 'FORMS')
+                                ->whereIn('j.job_status', Status::formInquiryNames());
+                        })->orWhere('j.job_status', 'For Inquiries');
+                    })
+                    ->where('j.job_status', '!=', 'Declined');
                 $formsJobs = $formsQuery
                     ->select(
                         'j.job_id',
@@ -1399,7 +1414,7 @@ class GeneralAssemblyJobController extends Controller
             $quotationQuery = DB::table('job_general_assembly as j')
                 ->leftJoin('client_accounts as ca', 'ca.client_account_id', '=', 'j.client_account_id')
                 ->where('j.reference', 'like', 'JOB%')
-                ->whereIn('j.job_status', ['For Quotation', 'Quotation Sent']);
+                ->whereIn('j.job_status', ['For Quotation', 'Quotation Sent', 'Quotation Accepted']);
             JobCountsScope::applyJobsTableAssignment($quotationQuery, 'j.staff_id', 'j.checker_id');
             $quotationJobs = $quotationQuery
                 ->select(
