@@ -49,13 +49,8 @@
                         </div>
                         <div class="@include('partials.standalone-off-class', ['field' => 'client'])" @include('partials.standalone-field-data', ['field' => 'client'])>
                             <label for="client" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Name @include('partials.standalone-required-mark', ['field' => 'client'])</label>
-                            <input type="text" id="client" name="client" value="{{ isset($duplicateJob) ? e($duplicateJob->client_account_name ?? '') : '' }}" list="client-suggestions" placeholder="Client Name" autocomplete="off"
+                            <input type="text" id="client" name="client" value="{{ isset($duplicateJob) ? e($duplicateJob->client_account_name ?? '') : '' }}" placeholder="Client Name" autocomplete="off"
                                 class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500">
-                            <datalist id="client-suggestions">
-                                @foreach($suggestedClientNames ?? [] as $clientName)
-                                    <option value="{{ e($clientName) }}"></option>
-                                @endforeach
-                            </datalist>
                         </div>
                         @if(($layoutView ?? 'layouts.dashboard') === 'layouts.public-form')
                         <div class="@include('partials.standalone-off-class', ['field' => 'email'])" @include('partials.standalone-field-data', ['field' => 'email'])>
