@@ -52,6 +52,7 @@ return [
         ],
         'Generic EA' => [
             'general_assembly.add' => 'Generic EA Add New',
+            'general_assembly.store' => 'Generic EA Save Job',
             'general_assembly.list' => 'Generic EA List',
             'general_assembly.list.tablesFragment' => 'Generic EA List — refresh tables',
             'general_assembly.list.formsSubmitted' => 'Generic EA For Inquiries',
@@ -580,7 +581,7 @@ return [
         'general_assembly' => [
             'label' => 'Generic EA',
             'sidebar' => [
-                'general_assembly.add', 'general_assembly.list', 'general_assembly.list.formsSubmitted', 'general_assembly.list.quotation', 'general_assembly.completed', 'general_assembly.review', 'general_assembly.mailbox', 'general_assembly.trash', 'general_assembly.job.view',
+                'general_assembly.add', 'general_assembly.store', 'general_assembly.list', 'general_assembly.list.formsSubmitted', 'general_assembly.list.quotation', 'general_assembly.completed', 'general_assembly.review', 'general_assembly.mailbox', 'general_assembly.trash', 'general_assembly.job.view',
                 'job_view.general_assembly.edit_assigned',
             ],
             'card' => [

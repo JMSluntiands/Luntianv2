@@ -157,6 +157,9 @@ class CheckPagePermission
                     'job_module_client.index',
                     'job_request.index',
                 ],
+                'general_assembly.store' => [
+                    'general_assembly.add',
+                ],
             ];
             if (isset($routePermissionAlternates[$routeName])) {
                 foreach ($routePermissionAlternates[$routeName] as $altRoute) {
