@@ -457,8 +457,25 @@
                     },
                     error: function(xhr) {
                         var msg = 'Unexpected error while saving.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
-                        if (window.showSuccessToast) showSuccessToast(msg);
+                        var json = xhr && xhr.responseJSON;
+                        if (json && typeof json.message === 'string' && json.message) {
+                            msg = json.message;
+                        } else if (json && json.errors) {
+                            var firstKey = Object.keys(json.errors)[0];
+                            if (firstKey && json.errors[firstKey] && json.errors[firstKey][0]) msg = json.errors[firstKey][0];
+                        } else if (xhr && xhr.responseText) {
+                            try {
+                                var parsed = JSON.parse(xhr.responseText);
+                                if (parsed && typeof parsed.message === 'string' && parsed.message) msg = parsed.message;
+                            } catch (e) {
+                                var title = String(xhr.responseText).match(/<title>([^<]+)<\/title>/i);
+                                if (title && title[1]) {
+                                    msg = title[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#039;/g, "'").trim();
+                                }
+                            }
+                        }
+                        if (window.showErrorToast) showErrorToast(msg);
+                        else if (window.showSuccessToast) showSuccessToast(msg);
                     },
                     complete: function() {
                         $btn.prop('disabled', false).removeClass('is-loading').html(originalBtnHtml);
