@@ -69,6 +69,7 @@
         // Luntian reuses LBS file/comment API routes.
         // Allow download when the user can view any of the file cards, even if they can't upload/delete.
         if ($isLuntianView) {
+            $permArchive = $permBtnArchiveJob;
             $permUpload = $permJobUpdate && $permBtnAddFiles;
             $permDeleteFile = $permJobUpdate && $permBtnDeleteFiles;
             $permDownloadFile = $permJobUpdate && ($permCardPlans || $permCardDocuments || $permCardChecker);
@@ -135,7 +136,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                @if(!$isArchived && !$isEfficientLivingView && !$isLuntianView && $permArchive && $permBtnArchiveJob)
+                @if(!$isArchived && !$isEfficientLivingView && $permArchive && $permBtnArchiveJob)
                     <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" id="jobViewArchiveJobBtn" aria-label="Archive this job">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                         Archive this job
@@ -449,7 +450,7 @@
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50" id="jobViewPlansCard">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Plans</h2>
-                    @if($isAllocated && $permUpload && $permBtnAddFiles)
+                    @if($permUpload && $permBtnAddFiles)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Plans">Add Files</button>
                     @endif
                 </div>
@@ -488,7 +489,7 @@
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="m-0 text-lg font-semibold text-slate-800 dark:text-white">Documents</h2>
-                    @if($isAllocated && $permUpload && $permBtnAddFiles)
+                    @if($permUpload && $permBtnAddFiles)
                         <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600" data-job-view-add-files data-add-title="Documents">Add Files</button>
                     @endif
                 </div>

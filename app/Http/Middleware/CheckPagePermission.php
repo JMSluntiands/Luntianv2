@@ -65,6 +65,14 @@ class CheckPagePermission
                     'job_view.efficient_living.button.comments.job.send',
                     'job_view.luntian.button.comments.job.send',
                 ],
+                'lbs.job.archive' => [
+                    'job_view.lbs.button.archive_job',
+                    'job_view.luntian.button.archive_job',
+                ],
+                'general_assembly.job.archive' => [
+                    'job_view.general_assembly.button.archive_job',
+                    'job_view.luntian.button.archive_job',
+                ],
                 'lbs.job.checkerUploads' => [
                     'job_view.lbs.button.checker_uploads.add',
                     'job_view.efficient_living.button.checker_uploads.add',

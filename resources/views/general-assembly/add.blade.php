@@ -419,6 +419,20 @@
                 $('#notes').val($('#lbs-notes-body').html());
 
                 var formData = new FormData(formEl);
+                function safeUploadName(name) {
+                    var base = String(name || 'file').replace(/[^A-Za-z0-9._() -]/g, '_').replace(/_+/g, '_');
+                    return base.replace(/^[\s._]+|[\s._]+$/g, '') || 'file';
+                }
+                function replaceUploadFiles(fieldName, inputId) {
+                    formData.delete(fieldName);
+                    var input = document.getElementById(inputId);
+                    if (!input || !input.files) return;
+                    Array.prototype.forEach.call(input.files, function(file) {
+                        formData.append(fieldName, file, safeUploadName(file.name));
+                    });
+                }
+                replaceUploadFiles('plans[]', 'plans');
+                replaceUploadFiles('docs[]', 'docs');
 
                 var headerRef = $('#jobReferenceContent').text().trim();
                 if (headerRef) {

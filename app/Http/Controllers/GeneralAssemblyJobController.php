@@ -919,12 +919,16 @@ class GeneralAssemblyJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
+        $trashRoute = $this->isLuntianJob($job)
+            ? 'luntian.trash'
+            : ($this->isEfficientLivingJob($job) ? 'efficient_living.trash' : 'general_assembly.trash');
+
         $currentStatus = $job->job_status ?? '';
         if (strtolower($currentStatus) === 'archived') {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Job is already archived.',
-                'redirect' => route('general_assembly.trash'),
+                'redirect' => route($trashRoute),
             ]);
         }
 
@@ -943,7 +947,7 @@ class GeneralAssemblyJobController extends Controller
             return response()->json([
                 'status'   => 'success',
                 'message'  => 'Job archived successfully.',
-                'redirect' => route('general_assembly.trash'),
+                'redirect' => route($trashRoute),
             ]);
         } catch (\Throwable $e) {
             return response()->json([

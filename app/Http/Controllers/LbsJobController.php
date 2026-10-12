@@ -861,12 +861,18 @@ class LbsJobController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
 
+        $trashRoute = match ($this->resolveLbsJobProduct($job)) {
+            'luntian' => 'luntian.trash',
+            'efficient_living' => 'efficient_living.trash',
+            default => 'lbs.trash',
+        };
+
         $currentStatus = $job->job_status ?? '';
         if (strtolower($currentStatus) === 'archived') {
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Job is already archived.',
-                'redirect' => route('lbs.trash'),
+                'redirect' => route($trashRoute),
             ]);
         }
 
@@ -885,7 +891,7 @@ class LbsJobController extends Controller
             return response()->json([
                 'status'   => 'success',
                 'message'  => 'Job archived successfully.',
-                'redirect' => route('lbs.trash'),
+                'redirect' => route($trashRoute),
             ]);
         } catch (\Throwable $e) {
             return response()->json([
