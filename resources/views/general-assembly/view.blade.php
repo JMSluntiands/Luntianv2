@@ -245,7 +245,7 @@
                             <dl class="job-details-dl">
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Log Date</dt>
-                                    <dd class="job-details-dd">@if(!empty($job->log_date)){{ \Carbon\Carbon::parse($job->log_date)->format('M d, Y h:i A') }}@else—@endif</dd>
+                                    <dd class="job-details-dd">@if(!empty($job->log_date)){{ \Carbon\Carbon::parse($job->log_date, 'Asia/Manila')->format('M d, Y h:i A') }}@else—@endif</dd>
                                 </div>
                                 <div class="job-details-row">
                                     <dt class="job-details-dt">Job Reference Number</dt>
@@ -310,7 +310,7 @@
                                     <dt class="job-details-dt">Completion Date</dt>
                                     <dd class="job-details-dd">
                                         @if(!empty($job->completion_date))
-                                            {{ \Carbon\Carbon::parse($job->completion_date)->timezone('Asia/Manila')->format('M d, Y h:i A') }}
+                                            {{ \Carbon\Carbon::parse($job->completion_date, 'Asia/Manila')->format('M d, Y h:i A') }}
                                         @else
                                             —
                                         @endif
