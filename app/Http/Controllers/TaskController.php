@@ -193,6 +193,7 @@ class TaskController extends Controller
                     $items[] = [
                         'id' => 'tag:'.(string) ($tag->key ?? ''),
                         'title' => (string) ($tag->notes ?? ''),
+                        'author' => $author,
                         'initial' => $initial,
                         'message' => (string) ($tag->notes ?? ''),
                         'job_number' => $jobNumber,

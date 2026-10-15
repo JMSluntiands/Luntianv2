@@ -369,6 +369,9 @@
         if (notificationBtn && notificationDropdown) {
             notificationBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
+                if (window.Notification && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
                 notificationDropdown.classList.toggle('show');
                 notificationBtn.setAttribute('aria-expanded', notificationDropdown.classList.contains('show'));
                 if (notificationDropdown.classList.contains('show') && dropdown) dropdown.classList.remove('show');
@@ -391,8 +394,9 @@
             var seen = null;
             var soundUrl = list.getAttribute('data-notify-sound') || '';
             var sound = soundUrl ? new Audio(soundUrl) : null;
-            var soundUnlocked = false;
+            var audioCtx = null;
             var pendingSound = false;
+            var pendingItem = null;
             if (sound) sound.preload = 'auto';
 
             function csrf() {
@@ -400,39 +404,130 @@
                 return meta ? meta.getAttribute('content') : '';
             }
 
-            function playSound() {
-                if (!sound) return;
-                try { sound.currentTime = 0; } catch (e) {}
-                sound.volume = 1;
-                var attempt = sound.play();
-                if (attempt && attempt.then) {
-                    attempt.then(function () { soundUnlocked = true; }).catch(function () { pendingSound = true; });
+            function ensureAudio() {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return null;
+                if (!audioCtx) audioCtx = new Ctx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                return audioCtx;
+            }
+
+            function playSynth() {
+                var ctx = ensureAudio();
+                if (!ctx || ctx.state !== 'running') return false;
+                var start = ctx.currentTime;
+                [830.61, 1244.51].forEach(function (freq, index) {
+                    var osc = ctx.createOscillator();
+                    var overtone = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    var at = start + index * 0.13;
+                    osc.type = 'triangle';
+                    overtone.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, at);
+                    osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq * 0.72), at + 0.2);
+                    overtone.frequency.setValueAtTime(freq * 2, at);
+                    gain.gain.setValueAtTime(0.001, at);
+                    gain.gain.exponentialRampToValueAtTime(0.55, at + 0.012);
+                    gain.gain.exponentialRampToValueAtTime(0.001, at + 0.32);
+                    osc.connect(gain);
+                    overtone.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(at);
+                    overtone.start(at);
+                    osc.stop(at + 0.34);
+                    overtone.stop(at + 0.34);
+                });
+                return true;
+            }
+
+            function showOsNotification(item) {
+                if (!window.Notification || Notification.permission !== 'granted' || !item) return;
+                var lines = [];
+                if (item.message) lines.push(item.message);
+                if (item.job_number) lines.push(item.job_number);
+                try {
+                    new Notification(item.author || 'Tagged you', { body: lines.join('\n') });
+                } catch (e) {}
+            }
+
+            function playAlert(item) {
+                var heard = false;
+                if (sound) {
+                    try { sound.currentTime = 0; } catch (e) {}
+                    sound.volume = 1;
+                    var attempt = sound.play();
+                    if (attempt && attempt.then) {
+                        attempt.then(function () { heard = true; }).catch(function () {});
+                    } else {
+                        heard = true;
+                    }
+                }
+                if (playSynth()) heard = true;
+                showOsNotification(item);
+                if (!heard) {
+                    pendingSound = true;
+                    pendingItem = item || null;
                 }
             }
 
             function unlockSound() {
-                if (!sound) return;
+                ensureAudio();
+                if (window.Notification && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+                if (sound) {
+                    var prev = sound.volume;
+                    sound.volume = 0.01;
+                    var attempt = sound.play();
+                    var finish = function () {
+                        sound.pause();
+                        try { sound.currentTime = 0; } catch (e) {}
+                        sound.volume = prev || 1;
+                    };
+                    if (attempt && attempt.then) attempt.then(finish).catch(function () {});
+                }
                 if (pendingSound) {
                     pendingSound = false;
-                    soundUnlocked = true;
-                    playSound();
+                    var item = pendingItem;
+                    pendingItem = null;
+                    playAlert(item);
+                }
+            }
+
+            var enableBtn = document.getElementById('enableNotificationsBtn');
+            function refreshPermissionButton() {
+                if (!enableBtn) return;
+                if (!window.Notification || Notification.permission === 'granted') {
+                    enableBtn.hidden = true;
                     return;
                 }
-                if (soundUnlocked) return;
-                sound.volume = 0;
-                var attempt = sound.play();
-                var finish = function () {
-                    sound.pause();
-                    try { sound.currentTime = 0; } catch (e) {}
-                    sound.volume = 1;
-                    soundUnlocked = true;
-                    if (pendingSound) {
-                        pendingSound = false;
-                        playSound();
+                enableBtn.hidden = false;
+                if (Notification.permission === 'denied') {
+                    enableBtn.textContent = 'Notifications are blocked. Allow them in the address bar lock icon.';
+                    enableBtn.disabled = true;
+                }
+            }
+            refreshPermissionButton();
+            if (enableBtn) {
+                enableBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    ensureAudio();
+                    if (!window.Notification) {
+                        enableBtn.textContent = 'This browser will not ask on this address.';
+                        return;
                     }
-                };
-                if (attempt && attempt.then) attempt.then(finish).catch(function () {});
-                else finish();
+                    if (Notification.permission !== 'default') {
+                        refreshPermissionButton();
+                        return;
+                    }
+                    var ask = Notification.requestPermission();
+                    if (ask && ask.then) {
+                        ask.then(function () { refreshPermissionButton(); });
+                    } else {
+                        refreshPermissionButton();
+                    }
+                });
             }
 
             document.addEventListener('pointerdown', unlockSound);
@@ -460,15 +555,25 @@
                     }
                     var content = document.createElement('div');
                     content.className = 'notification-item-content min-w-0 flex-1';
+                    if (item.author) {
+                        var who = document.createElement('div');
+                        who.className = 'truncate font-semibold text-slate-800 dark:text-slate-100';
+                        who.textContent = item.author;
+                        content.appendChild(who);
+                    }
                     var title = document.createElement('div');
-                    title.className = 'notification-item-title truncate font-medium text-slate-800 dark:text-slate-200';
+                    title.className = 'notification-item-title truncate text-slate-600 dark:text-slate-300';
                     title.textContent = item.message || item.title || '';
                     content.appendChild(title);
-                    var detail = item.job_number || (!item.initial ? item.time : '');
-                    if (detail) {
+                    if (item.job_number) {
+                        var jobLine = document.createElement('p');
+                        jobLine.className = 'notification-item-time text-xs text-slate-500 dark:text-slate-400';
+                        jobLine.textContent = item.job_number;
+                        content.appendChild(jobLine);
+                    } else if (!item.author && item.time) {
                         var time = document.createElement('p');
                         time.className = 'notification-item-time text-xs text-slate-500 dark:text-slate-400';
-                        time.textContent = detail;
+                        time.textContent = item.time;
                         content.appendChild(time);
                     }
                     link.appendChild(content);
@@ -552,8 +657,11 @@
                 var items = data.items || [];
                 var ids = items.map(function (item) { return item.id; });
                 if (seen) {
-                    var fresh = ids.some(function (id) { return seen.indexOf(id) === -1; });
-                    if (fresh) playSound();
+                    var freshItem = null;
+                    items.forEach(function (item) {
+                        if (!freshItem && seen.indexOf(item.id) === -1) freshItem = item;
+                    });
+                    if (freshItem) playAlert(freshItem);
                 }
                 seen = ids;
                 renderCount(badge, Number(data.count) || 0);

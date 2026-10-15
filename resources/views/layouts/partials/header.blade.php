@@ -96,7 +96,10 @@
                     <a href="{{ route('task_management.job_notes') }}" class="notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50" role="menuitem">
                         <span class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-500 text-xs font-bold text-white">{{ $tagInitial }}</span>
                         <div class="notification-item-content min-w-0 flex-1">
-                            <div class="notification-item-title truncate font-medium text-slate-800 dark:text-slate-200">{{ $tagNote->notes }}</div>
+                            @if($tagAuthor !== '')
+                            <div class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ $tagAuthor }}</div>
+                            @endif
+                            <div class="notification-item-title truncate text-slate-600 dark:text-slate-300">{{ $tagNote->notes }}</div>
                             @if($tagJobNumber !== '')
                             <p class="notification-item-time text-xs text-slate-500 dark:text-slate-400">{{ $tagJobNumber }}</p>
                             @endif
@@ -104,6 +107,9 @@
                     </a>
                     @endforeach
                     @endif
+                </div>
+                <div class="border-t border-slate-200 px-4 py-2.5 dark:border-slate-700">
+                    <button type="button" id="enableNotificationsBtn" class="w-full cursor-pointer rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">Allow notifications</button>
                 </div>
                 @if(\Illuminate\Support\Facades\Route::has('task_management.job_notes'))
                 <div class="notification-dropdown-footer border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
