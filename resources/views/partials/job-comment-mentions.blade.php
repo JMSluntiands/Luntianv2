@@ -150,6 +150,12 @@
     html[data-theme="dark"] .job-comment-replying {
         color: #93c5fd;
     }
+    [id^="discussion-"] {
+        scroll-margin-top: 5rem;
+    }
+    .job-comment-target {
+        box-shadow: 0 0 0 2px #2563eb;
+    }
 </style>
 <script>
 (function () {
@@ -445,5 +451,16 @@
         var banner = section.querySelector('.job-comment-replying');
         if (banner) banner.remove();
     });
+
+    var commentHash = window.location.hash || '';
+    if (commentHash.indexOf('#discussion-') === 0) {
+        var commentEl = document.getElementById(decodeURIComponent(commentHash.slice(1)));
+        if (commentEl) {
+            commentEl.classList.add('job-comment-target');
+            setTimeout(function () {
+                commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 80);
+        }
+    }
 })();
 </script>

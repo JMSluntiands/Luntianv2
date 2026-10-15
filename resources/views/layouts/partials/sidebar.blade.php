@@ -167,19 +167,43 @@
         </a>
         @endif
         @if(\Illuminate\Support\Facades\Route::has('task_management') && ($may('task_management') || $may('task_management.view_all') || $may('task_management.view_self') || $may('dashboard')))
+        @php
+            $jobNotesUnreadCount = 0;
+            try {
+                $noteUserId = (int) session('user_id', 0);
+                $noteCode = $noteUserId > 0
+                    ? strtoupper(trim((string) (\App\Models\User::query()->where('id', $noteUserId)->value('unique_code') ?? '')))
+                    : '';
+                if ($noteCode !== '') {
+                    $jobNotesUnreadCount = \App\Services\AllocatedJobsTaskFeed::unreadTaggedCount($noteUserId, $noteCode);
+                }
+            } catch (\Throwable) {
+                $jobNotesUnreadCount = 0;
+            }
+        @endphp
         <div class="group nav-dropdown {{ $taskOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $taskOpen ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}" aria-expanded="{{ $taskOpen ? 'true' : 'false' }}" aria-controls="nav-sub-task-management">
                 <span class="flex items-center gap-2.5">
                     <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                     Task Management
                 </span>
-                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <span class="flex items-center gap-2">
+                    @if($jobNotesUnreadCount > 0)
+                    <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $jobNotesUnreadCount }}</span>
+                    @endif
+                    <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </span>
             </button>
             <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-task-management" role="region" aria-label="Task Management submenu">
                 <div class="space-y-0.5 py-1 pb-2 pl-1">
                     <a href="{{ route('task_management') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Task Database</a>
                     @if(\Illuminate\Support\Facades\Route::has('task_management.job_notes'))
-                    <a href="{{ route('task_management.job_notes') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management.job_notes' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Job Notes</a>
+                    <a href="{{ route('task_management.job_notes') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management.job_notes' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
+                        <span class="nav-subitem-label">Job Notes</span>
+                        @if($jobNotesUnreadCount > 0)
+                        <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $jobNotesUnreadCount }}</span>
+                        @endif
+                    </a>
                     @endif
                 </div>
             </div>

@@ -662,7 +662,7 @@
                 <h2 class="mb-4 text-lg font-semibold text-slate-800 dark:text-white">Run Comments</h2>
                 <ul class="mb-6 space-y-4" id="runCommentsList">
                     @forelse($runComments as $runComment)
-                        <li class="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+                        <li id="discussion-run-{{ (int) ($runComment->run_comment_id ?? 0) }}" class="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
                             @php
                                 $initial = strtoupper(mb_substr($runComment->name ?? 'L', 0, 1));
                                 $showProfileRun = (($runComment->name ?? '') === (session('user_name') ?? '')) && session('user_profile_image');
@@ -707,7 +707,7 @@
                 <h2 class="mb-4 text-lg font-semibold text-slate-800 dark:text-white">Comments</h2>
                 <ul class="mb-6 space-y-4" id="jobCommentsList">
                     @forelse($jobComments as $comment)
-                        <li class="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+                        <li id="discussion-job-{{ (int) ($comment->comment_id ?? 0) }}" class="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
                             @php
                                 $initial = strtoupper(mb_substr($comment->username ?? 'L', 0, 1));
                                 $showProfileComment = (($comment->username ?? '') === (session('user_name') ?? '')) && session('user_profile_image');

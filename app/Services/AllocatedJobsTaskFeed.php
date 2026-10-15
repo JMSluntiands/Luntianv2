@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class AllocatedJobsTaskFeed
 {
+    private static ?Collection $taggedMentionCache = null;
     /**
      * @return Collection<int, object{
      *   key: string,
@@ -502,6 +503,10 @@ class AllocatedJobsTaskFeed
      */
     public static function taggedMentions(): Collection
     {
+        if (self::$taggedMentionCache !== null) {
+            return self::$taggedMentionCache;
+        }
+
         $hits = collect();
         foreach ([
             ['run_comments', 'run_comment_id', 'jobs'],
@@ -524,9 +529,11 @@ class AllocatedJobsTaskFeed
                 if ($jobId <= 0) {
                     continue;
                 }
+                $kind = str_contains($table, 'run_comment') ? 'run' : 'job';
                 foreach (self::mentionCodes((string) ($row->message ?? '')) as $code) {
                     $hits->push((object) [
                         'family' => $family,
+                        'kind' => $kind,
                         'comment_id' => (int) ($row->{$idColumn} ?? 0),
                         'job_id' => $jobId,
                         'code' => $code,
@@ -540,7 +547,7 @@ class AllocatedJobsTaskFeed
         $latest = [];
         foreach ($hits as $hit) {
             $key = $hit->family.':'.$hit->job_id.':'.$hit->code;
-            if (! isset($latest[$key]) || $hit->comment_id > $latest[$key]->comment_id) {
+            if (! isset($latest[$key]) || self::commentSortKey($hit) >= self::commentSortKey($latest[$key])) {
                 $latest[$key] = $hit;
             }
         }
@@ -559,9 +566,12 @@ class AllocatedJobsTaskFeed
                 continue;
             }
 
+            $anchor = 'discussion-'.$hit->kind.'-'.$hit->comment_id;
+            $viewUrl = self::viewUrlForModule((string) $job->module, $hit->job_id);
             $out->push((object) [
                 'key' => $cacheKey.':'.$hit->code,
                 'family' => $hit->family,
+                'comment_anchor' => $anchor,
                 'module' => $job->module,
                 'client' => $job->client,
                 'reference' => $job->reference,
@@ -570,17 +580,66 @@ class AllocatedJobsTaskFeed
                 'tagged' => $hit->code,
                 'created_at' => $hit->created_at,
                 'job_id' => $hit->job_id,
-                'view_url' => self::viewUrlForModule((string) $job->module, $hit->job_id),
-                'sort_at' => sprintf('%010d', $hit->comment_id),
+                'view_url' => $viewUrl ? $viewUrl.'#'.$anchor : null,
+                'sort_at' => sprintf('%010d', self::commentSortKey($hit)),
             ]);
         }
 
-        return $out->sortByDesc(fn (object $row) => $row->sort_at)->values();
+        return self::$taggedMentionCache = $out->sortByDesc(fn (object $row) => $row->sort_at)->values();
+    }
+
+    public static function unreadTaggedForUser(int $userId, string $code): Collection
+    {
+        $code = strtoupper(trim($code));
+        if ($userId <= 0 || $code === '') {
+            return collect();
+        }
+
+        $rows = self::taggedMentions()->filter(function (object $row) use ($code) {
+            return strtoupper(trim((string) ($row->tagged ?? ''))) === $code;
+        })->values();
+        if ($rows->isEmpty() || ! Schema::hasTable('job_mention_reads')) {
+            return $rows;
+        }
+
+        $readKeys = [];
+        $reads = DB::table('job_mention_reads')
+            ->where('user_id', $userId)
+            ->where('tagged_code', $code)
+            ->get(['family', 'job_id', 'tagged_code']);
+        foreach ($reads as $read) {
+            $readKeys[$read->family.':'.(int) $read->job_id.':'.strtoupper((string) $read->tagged_code)] = true;
+        }
+
+        return $rows->filter(function (object $row) use ($readKeys) {
+            $key = ($row->family ?? '').':'.(int) ($row->job_id ?? 0).':'.strtoupper((string) ($row->tagged ?? ''));
+
+            return ! isset($readKeys[$key]);
+        })->values();
+    }
+
+    public static function unreadTaggedCount(int $userId, string $code): int
+    {
+        return self::unreadTaggedForUser($userId, $code)->count();
     }
 
     /**
      * @return list<string>
      */
+    private static function commentSortKey(object $hit): int
+    {
+        $created = trim((string) ($hit->created_at ?? ''));
+        if ($created !== '') {
+            try {
+                return \Carbon\Carbon::parse($created, 'Asia/Manila')->getTimestamp();
+            } catch (\Throwable) {
+                // Fall through to the comment id when the stored date is not parseable.
+            }
+        }
+
+        return (int) ($hit->comment_id ?? 0);
+    }
+
     private static function mentionCodes(string $html): array
     {
         if (! preg_match_all('/data-code=(["\'])([^"\']+)\1/i', $html, $matches)) {
