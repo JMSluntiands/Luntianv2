@@ -541,16 +541,28 @@ class AllocatedJobsTaskFeed
                 continue;
             }
 
+            $columns = [$idColumn, 'job_id', 'message', 'created_at'];
+            if (Schema::hasColumn($table, 'name')) {
+                $columns[] = 'name';
+            }
+            if (Schema::hasColumn($table, 'username')) {
+                $columns[] = 'username';
+            }
+
             $rows = DB::table($table)
                 ->where('message', 'like', '%data-code=%')
                 ->orderByDesc($idColumn)
                 ->limit(400)
-                ->get([$idColumn, 'job_id', 'message', 'created_at']);
+                ->get($columns);
 
             foreach ($rows as $row) {
                 $jobId = (int) ($row->job_id ?? 0);
                 if ($jobId <= 0) {
                     continue;
+                }
+                $author = trim((string) ($row->name ?? ''));
+                if ($author === '') {
+                    $author = trim((string) ($row->username ?? ''));
                 }
                 $kind = str_contains($table, 'run_comment') ? 'run' : 'job';
                 foreach (self::mentionCodes((string) ($row->message ?? '')) as $code) {
@@ -560,6 +572,7 @@ class AllocatedJobsTaskFeed
                         'comment_id' => (int) ($row->{$idColumn} ?? 0),
                         'job_id' => $jobId,
                         'code' => $code,
+                        'author' => $author,
                         'notes' => self::plainNote((string) ($row->message ?? '')),
                         'created_at' => (string) ($row->created_at ?? ''),
                     ]);
@@ -600,6 +613,7 @@ class AllocatedJobsTaskFeed
                 'reference' => $job->reference,
                 'status' => $job->status,
                 'notes' => $hit->notes !== '' ? $hit->notes : '@'.$hit->code,
+                'author' => (string) ($hit->author ?? ''),
                 'tagged' => $hit->code,
                 'created_at' => $hit->created_at,
                 'job_id' => $hit->job_id,

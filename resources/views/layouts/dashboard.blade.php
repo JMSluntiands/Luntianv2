@@ -389,55 +389,54 @@
             var jobNotesUrl = list.getAttribute('data-job-notes-url') || '';
             var readUrl = list.getAttribute('data-job-notes-read-url') || '';
             var seen = null;
-            var audioCtx = null;
+            var soundUrl = list.getAttribute('data-notify-sound') || '';
+            var sound = soundUrl ? new Audio(soundUrl) : null;
+            var soundUnlocked = false;
             var pendingSound = false;
+            if (sound) sound.preload = 'auto';
 
             function csrf() {
                 var meta = document.querySelector('meta[name="csrf-token"]');
                 return meta ? meta.getAttribute('content') : '';
             }
 
-            function unlockAudio() {
-                var Ctx = window.AudioContext || window.webkitAudioContext;
-                if (!Ctx) return;
-                if (!audioCtx) audioCtx = new Ctx();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                if (pendingSound && audioCtx.state === 'running') {
-                    pendingSound = false;
-                    playChime();
+            function playSound() {
+                if (!sound) return;
+                try { sound.currentTime = 0; } catch (e) {}
+                sound.volume = 1;
+                var attempt = sound.play();
+                if (attempt && attempt.then) {
+                    attempt.then(function () { soundUnlocked = true; }).catch(function () { pendingSound = true; });
                 }
             }
 
-            function playChime() {
-                var Ctx = window.AudioContext || window.webkitAudioContext;
-                if (!Ctx) return;
-                if (!audioCtx) audioCtx = new Ctx();
-                if (audioCtx.state !== 'running') {
-                    pendingSound = true;
-                    audioCtx.resume();
+            function unlockSound() {
+                if (!sound) return;
+                if (pendingSound) {
+                    pendingSound = false;
+                    soundUnlocked = true;
+                    playSound();
                     return;
                 }
-                var start = audioCtx.currentTime;
-                [784, 1046].forEach(function (freq, index) {
-                    var osc = audioCtx.createOscillator();
-                    var gain = audioCtx.createGain();
-                    var at = start + index * 0.11;
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.0001, at);
-                    gain.gain.exponentialRampToValueAtTime(0.12, at + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(at);
-                    osc.stop(at + 0.24);
-                });
+                if (soundUnlocked) return;
+                sound.volume = 0;
+                var attempt = sound.play();
+                var finish = function () {
+                    sound.pause();
+                    try { sound.currentTime = 0; } catch (e) {}
+                    sound.volume = 1;
+                    soundUnlocked = true;
+                    if (pendingSound) {
+                        pendingSound = false;
+                        playSound();
+                    }
+                };
+                if (attempt && attempt.then) attempt.then(finish).catch(function () {});
+                else finish();
             }
 
-            document.addEventListener('pointerdown', unlockAudio);
-            document.addEventListener('keydown', unlockAudio);
+            document.addEventListener('pointerdown', unlockSound);
+            document.addEventListener('keydown', unlockSound);
 
             function renderBell(items) {
                 list.replaceChildren();
@@ -453,16 +452,23 @@
                     link.href = item.href || jobNotesUrl;
                     link.className = 'notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50';
                     link.setAttribute('role', 'menuitem');
+                    if (item.initial) {
+                        var avatar = document.createElement('span');
+                        avatar.className = 'mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-500 text-xs font-bold text-white';
+                        avatar.textContent = item.initial;
+                        link.appendChild(avatar);
+                    }
                     var content = document.createElement('div');
                     content.className = 'notification-item-content min-w-0 flex-1';
                     var title = document.createElement('div');
-                    title.className = 'notification-item-title font-medium text-slate-800 dark:text-slate-200';
-                    title.textContent = item.title || '';
+                    title.className = 'notification-item-title truncate font-medium text-slate-800 dark:text-slate-200';
+                    title.textContent = item.message || item.title || '';
                     content.appendChild(title);
-                    if (item.time) {
+                    var detail = item.job_number || (!item.initial ? item.time : '');
+                    if (detail) {
                         var time = document.createElement('p');
                         time.className = 'notification-item-time text-xs text-slate-500 dark:text-slate-400';
-                        time.textContent = item.time;
+                        time.textContent = detail;
                         content.appendChild(time);
                     }
                     link.appendChild(content);
@@ -547,7 +553,7 @@
                 var ids = items.map(function (item) { return item.id; });
                 if (seen) {
                     var fresh = ids.some(function (id) { return seen.indexOf(id) === -1; });
-                    if (fresh) playChime();
+                    if (fresh) playSound();
                 }
                 seen = ids;
                 renderCount(badge, Number(data.count) || 0);

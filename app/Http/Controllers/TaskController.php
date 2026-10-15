@@ -184,9 +184,18 @@ class TaskController extends Controller
                 $tags = AllocatedJobsTaskFeed::unreadTaggedForUser($userId, $code);
                 $tagCount = $tags->count();
                 foreach ($tags as $tag) {
+                    $author = trim((string) ($tag->author ?? ''));
+                    $initial = $author !== '' ? mb_strtoupper(mb_substr($author, 0, 1)) : 'L';
+                    $jobNumber = trim((string) ($tag->reference ?? ''));
+                    if ($jobNumber === '—') {
+                        $jobNumber = '';
+                    }
                     $items[] = [
                         'id' => 'tag:'.(string) ($tag->key ?? ''),
-                        'title' => 'Tagged you in this job',
+                        'title' => (string) ($tag->notes ?? ''),
+                        'initial' => $initial,
+                        'message' => (string) ($tag->notes ?? ''),
+                        'job_number' => $jobNumber,
                         'time' => (string) ($tag->created_at ?? ''),
                         'href' => route('task_management.job_notes'),
                         'note' => [

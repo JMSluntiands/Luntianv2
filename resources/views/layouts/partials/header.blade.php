@@ -70,7 +70,7 @@
             </button>
             <div class="notification-dropdown absolute right-0 top-full z-[100] mt-2 max-h-[400px] min-w-[320px] max-w-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl opacity-0 invisible pointer-events-none transition-all duration-200 -translate-y-1 dark:border-slate-700 dark:bg-slate-800 dark:shadow-xl dark:shadow-black/20" id="notificationDropdown" role="menu" aria-label="Notifications menu">
                 <div class="notification-dropdown-title border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Notifications</div>
-                <div class="notification-dropdown-list max-h-[280px] overflow-y-auto" id="notificationList" data-notifications-url="{{ \Illuminate\Support\Facades\Route::has('notifications.live') ? route('notifications.live') : '' }}" data-job-notes-url="{{ \Illuminate\Support\Facades\Route::has('task_management.job_notes') ? route('task_management.job_notes') : '' }}" data-job-notes-read-url="{{ \Illuminate\Support\Facades\Route::has('task_management.job_notes.read') ? route('task_management.job_notes.read') : '' }}">
+                <div class="notification-dropdown-list max-h-[280px] overflow-y-auto" id="notificationList" data-notifications-url="{{ \Illuminate\Support\Facades\Route::has('notifications.live') ? route('notifications.live') : '' }}" data-job-notes-url="{{ \Illuminate\Support\Facades\Route::has('task_management.job_notes') ? route('task_management.job_notes') : '' }}" data-job-notes-read-url="{{ \Illuminate\Support\Facades\Route::has('task_management.job_notes.read') ? route('task_management.job_notes.read') : '' }}" data-notify-sound="{{ asset('sounds/tag-notify.wav') }}">
                     @if($replyNotifications->isEmpty() && $tagNotifications->isEmpty())
                     <div class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">No notifications</div>
                     @else
@@ -85,11 +85,20 @@
                     </a>
                     @endforeach
                     @foreach($tagNotifications as $tagNote)
+                    @php
+                        $tagAuthor = trim((string) ($tagNote->author ?? ''));
+                        $tagInitial = $tagAuthor !== '' ? mb_strtoupper(mb_substr($tagAuthor, 0, 1)) : 'L';
+                        $tagJobNumber = trim((string) ($tagNote->reference ?? ''));
+                        if ($tagJobNumber === '—') {
+                            $tagJobNumber = '';
+                        }
+                    @endphp
                     <a href="{{ route('task_management.job_notes') }}" class="notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50" role="menuitem">
+                        <span class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-500 text-xs font-bold text-white">{{ $tagInitial }}</span>
                         <div class="notification-item-content min-w-0 flex-1">
-                            <div class="notification-item-title font-medium text-slate-800 dark:text-slate-200">Tagged you in this job</div>
-                            @if(trim((string) ($tagNote->created_at ?? '')) !== '')
-                            <p class="notification-item-time text-xs text-slate-500 dark:text-slate-400">{{ $tagNote->created_at }}</p>
+                            <div class="notification-item-title truncate font-medium text-slate-800 dark:text-slate-200">{{ $tagNote->notes }}</div>
+                            @if($tagJobNumber !== '')
+                            <p class="notification-item-time text-xs text-slate-500 dark:text-slate-400">{{ $tagJobNumber }}</p>
                             @endif
                         </div>
                     </a>
