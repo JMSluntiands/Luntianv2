@@ -190,6 +190,14 @@ class TaskController extends Controller
             })->values();
         }
 
+        $readKeys = $this->jobMentionReadKeys((int) session('user_id', 0));
+        $rows = $rows->map(function (object $row) use ($readKeys) {
+            $key = ($row->family ?? '').':'.(int) ($row->job_id ?? 0).':'.strtoupper((string) ($row->tagged ?? ''));
+            $row->is_read = isset($readKeys[$key]);
+
+            return $row;
+        });
+
         $perPage = 25;
         $page = max(1, (int) $request->query('page', 1));
         $notes = new LengthAwarePaginator(
@@ -205,6 +213,61 @@ class TaskController extends Controller
             'notes' => $notes,
             'search' => $search,
         ]);
+    }
+
+    public function markJobNoteRead(Request $request)
+    {
+        if (! $this->mayViewAllTasks() && ! $this->mayViewSelfTasks()) {
+            return $this->deny($request, 'You do not have permission to view job notes.');
+        }
+
+        $data = $request->validate([
+            'family' => ['required', Rule::in(['jobs', 'bph'])],
+            'job_id' => ['required', 'integer', 'min:1'],
+            'tagged' => ['required', 'string', 'max:32'],
+        ]);
+
+        $uid = (int) session('user_id', 0);
+        $code = strtoupper(trim($data['tagged']));
+        if ($uid <= 0 || $code === '') {
+            return redirect()->route('task_management.job_notes');
+        }
+
+        if (! $this->mayViewAllTasks()) {
+            $own = strtoupper(trim((string) (User::query()->where('id', $uid)->value('unique_code') ?? '')));
+            if ($own === '' || $own !== $code) {
+                return $this->deny($request, 'You do not have permission to open this job note.');
+            }
+        }
+
+        $this->ensureJobMentionReadsTable();
+        $now = now();
+        DB::table('job_mention_reads')->updateOrInsert(
+            [
+                'user_id' => $uid,
+                'family' => $data['family'],
+                'job_id' => (int) $data['job_id'],
+                'tagged_code' => $code,
+            ],
+            [
+                'read_at' => $now,
+                'updated_at' => $now,
+                'created_at' => $now,
+            ]
+        );
+
+        $match = AllocatedJobsTaskFeed::taggedMentions()->first(function (object $row) use ($data, $code) {
+            return ($row->family ?? '') === $data['family']
+                && (int) ($row->job_id ?? 0) === (int) $data['job_id']
+                && strtoupper((string) ($row->tagged ?? '')) === $code
+                && ! empty($row->view_url);
+        });
+
+        if ($match) {
+            return redirect()->to($match->view_url);
+        }
+
+        return redirect()->route('task_management.job_notes');
     }
 
     public function store(Request $request)
@@ -645,6 +708,44 @@ class TaskController extends Controller
             'status' => $status !== null && $status !== '' ? $status : null,
             'assignee' => $assignee !== null && $assignee !== '' ? $assignee : null,
         ], static fn ($v) => $v !== null && $v !== '');
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function jobMentionReadKeys(int $userId): array
+    {
+        if ($userId <= 0 || ! Schema::hasTable('job_mention_reads')) {
+            return [];
+        }
+
+        $keys = [];
+        $rows = DB::table('job_mention_reads')
+            ->where('user_id', $userId)
+            ->get(['family', 'job_id', 'tagged_code']);
+        foreach ($rows as $row) {
+            $keys[$row->family.':'.(int) $row->job_id.':'.strtoupper((string) $row->tagged_code)] = true;
+        }
+
+        return $keys;
+    }
+
+    private function ensureJobMentionReadsTable(): void
+    {
+        if (Schema::hasTable('job_mention_reads')) {
+            return;
+        }
+
+        Schema::create('job_mention_reads', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->index();
+            $table->string('family', 16);
+            $table->unsignedBigInteger('job_id');
+            $table->string('tagged_code', 32);
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+            $table->unique(['user_id', 'family', 'job_id', 'tagged_code'], 'job_mention_reads_unique');
+        });
     }
 
     private function mayViewAllTasks(): bool

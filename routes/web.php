@@ -159,6 +159,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/task-management', [TaskController::class, 'index'])->name('task_management');
     Route::get('/dashboard/task-management/job-notes', [TaskController::class, 'jobNotes'])->name('task_management.job_notes');
+    Route::post('/dashboard/task-management/job-notes/read', [TaskController::class, 'markJobNoteRead'])->name('task_management.job_notes.read');
     Route::post('/dashboard/task-management', [TaskController::class, 'store'])->name('task_management.store');
     Route::put('/dashboard/task-management/{id}', [TaskController::class, 'update'])->name('task_management.update');
     Route::delete('/dashboard/task-management/{id}', [TaskController::class, 'destroy'])->name('task_management.destroy');

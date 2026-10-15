@@ -29,6 +29,7 @@
                             <th class="px-4 py-3">Reference</th>
                             <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3">Comment</th>
+                            <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -44,12 +45,29 @@
                                         <span class="text-slate-700 dark:text-slate-200">{{ $row->reference }}</span>
                                     @endif
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-slate-600 dark:text-slate-300">{{ $row->status !== '' ? $row->status : '—' }}</td>
+                                <td class="whitespace-nowrap px-4 py-3">
+                                    @if(!empty($row->is_read))
+                                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">Read</span>
+                                    @else
+                                        <span class="text-slate-600 dark:text-slate-300">{{ $row->status !== '' ? $row->status : '—' }}</span>
+                                    @endif
+                                </td>
                                 <td class="max-w-xl px-4 py-3 text-slate-600 dark:text-slate-300">{{ $row->notes }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-right">
+                                    @if(!empty($row->view_url))
+                                        <form method="POST" action="{{ route('task_management.job_notes.read') }}">
+                                            @csrf
+                                            <input type="hidden" name="family" value="{{ $row->family }}">
+                                            <input type="hidden" name="job_id" value="{{ $row->job_id }}">
+                                            <input type="hidden" name="tagged" value="{{ $row->tagged }}">
+                                            <button type="submit" class="inline-flex cursor-pointer items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">View job</button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-10 text-center text-slate-500 dark:text-slate-400">No tagged jobs yet.</td>
+                                <td colspan="7" class="px-4 py-10 text-center text-slate-500 dark:text-slate-400">No tagged jobs yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

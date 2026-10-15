@@ -561,6 +561,7 @@ class AllocatedJobsTaskFeed
 
             $out->push((object) [
                 'key' => $cacheKey.':'.$hit->code,
+                'family' => $hit->family,
                 'module' => $job->module,
                 'client' => $job->client,
                 'reference' => $job->reference,

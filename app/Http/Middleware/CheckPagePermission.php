@@ -111,6 +111,13 @@ class CheckPagePermission
                     'task_management.view_self',
                     'dashboard',
                 ],
+                'task_management.job_notes.read' => [
+                    'task_management.job_notes',
+                    'task_management',
+                    'task_management.view_all',
+                    'task_management.view_self',
+                    'dashboard',
+                ],
                 'task_management.view_all' => [
                     'task_management',
                 ],
