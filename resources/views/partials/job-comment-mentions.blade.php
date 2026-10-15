@@ -47,6 +47,25 @@
         return strcasecmp($a['name'], $b['name']);
     });
     $viewerId = (int) session('user_id', 0);
+    $viewerCode = $viewerId > 0
+        ? strtoupper(trim((string) (\App\Models\User::query()->where('id', $viewerId)->value('unique_code') ?? '')))
+        : '';
+    if ($viewerId > 0 && $viewerCode !== '' && !empty($jobId) && \Illuminate\Support\Facades\Schema::hasTable('job_mention_reads')) {
+        $mentionReadNow = now();
+        \Illuminate\Support\Facades\DB::table('job_mention_reads')->updateOrInsert(
+            [
+                'user_id' => $viewerId,
+                'family' => !empty($isBphView) ? 'bph' : 'jobs',
+                'job_id' => (int) $jobId,
+                'tagged_code' => $viewerCode,
+            ],
+            [
+                'read_at' => $mentionReadNow,
+                'updated_at' => $mentionReadNow,
+                'created_at' => $mentionReadNow,
+            ]
+        );
+    }
     if ($viewerId > 0 && !empty($jobId) && \Illuminate\Support\Facades\Schema::hasTable('discussion_reply_notifications')) {
         \Illuminate\Support\Facades\DB::table('discussion_reply_notifications')
             ->where('user_id', $viewerId)

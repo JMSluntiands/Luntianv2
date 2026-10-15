@@ -198,7 +198,7 @@ class TaskController extends Controller
                         'message' => (string) ($tag->notes ?? ''),
                         'job_number' => $jobNumber,
                         'time' => (string) ($tag->created_at ?? ''),
-                        'href' => route('task_management.job_notes'),
+                        'href' => ! empty($tag->view_url) ? (string) $tag->view_url : route('task_management.job_notes'),
                         'note' => [
                             'key' => (string) ($tag->key ?? ''),
                             'tagged' => (string) ($tag->tagged ?? ''),

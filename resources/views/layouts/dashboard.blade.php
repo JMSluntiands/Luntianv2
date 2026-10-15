@@ -465,8 +465,17 @@
                 return true;
             }
 
+            function browserNotifyOn() {
+                try {
+                    var saved = localStorage.getItem('luntian-browser-notify');
+                    if (saved === '0') return false;
+                    if (saved === '1') return !window.Notification || Notification.permission === 'granted';
+                } catch (e) {}
+                return !!(window.Notification && Notification.permission === 'granted');
+            }
+
             function showOsNotification(item) {
-                if (!window.Notification || Notification.permission !== 'granted' || !item) return;
+                if (!browserNotifyOn() || !window.Notification || Notification.permission !== 'granted' || !item) return;
                 var lines = [];
                 if (item.message) lines.push(item.message);
                 if (item.job_number) lines.push(item.job_number);
@@ -475,7 +484,28 @@
                 } catch (e) {}
             }
 
+            window.playNotificationChime = function () {
+                armAudio();
+                var ctx = ensureAudio();
+                var playNow = function () {
+                    playSynth();
+                    if (!sound) return;
+                    try { sound.currentTime = 0; } catch (e) {}
+                    sound.volume = 1;
+                    var attempt = sound.play();
+                    if (attempt && attempt.catch) attempt.catch(function () {});
+                };
+                if (ctx && ctx.state !== 'running') {
+                    var resumed = ctx.resume();
+                    if (resumed && resumed.then) resumed.then(playNow).catch(playNow);
+                    else playNow();
+                    return;
+                }
+                playNow();
+            };
+
             function playAlert(item) {
+                if (!browserNotifyOn()) return;
                 showOsNotification(item);
                 var ctx = ensureAudio();
                 var playNow = function () {
@@ -554,13 +584,23 @@
                         enableBtn.textContent = 'This browser will not ask on this address.';
                         return;
                     }
+                    if (Notification.permission === 'granted') {
+                        try { localStorage.setItem('luntian-browser-notify', '1'); } catch (e) {}
+                        refreshPermissionButton();
+                        return;
+                    }
                     if (Notification.permission !== 'default') {
                         refreshPermissionButton();
                         return;
                     }
                     var ask = Notification.requestPermission();
                     if (ask && ask.then) {
-                        ask.then(function () { refreshPermissionButton(); });
+                        ask.then(function (result) {
+                            if (result === 'granted') {
+                                try { localStorage.setItem('luntian-browser-notify', '1'); } catch (e) {}
+                            }
+                            refreshPermissionButton();
+                        });
                     } else {
                         refreshPermissionButton();
                     }

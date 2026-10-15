@@ -14,7 +14,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Notification Controls</h1>
-                <p class="text-slate-500 dark:text-slate-400">Turn Email and Slack sending on or off. Configuration details stay in their own pages.</p>
+                <p class="text-slate-500 dark:text-slate-400">Turn Email, Slack, and browser notifications on or off. Configuration details stay in their own pages.</p>
             </div>
         </div>
 
@@ -91,5 +91,106 @@
         </div>
         @endif
         @endif
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">Browser notifications</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Status: <span class="font-medium" id="browserNotificationStatus">OFF</span></p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" id="browserNotificationHint">Plays a sound on this browser when you are tagged.</p>
+                </div>
+                <button type="button" id="browserNotificationToggle" class="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500">Turn ON</button>
+            </div>
+        </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var statusEl = document.getElementById('browserNotificationStatus');
+    var hintEl = document.getElementById('browserNotificationHint');
+    var button = document.getElementById('browserNotificationToggle');
+    if (!statusEl || !button) return;
+    var storageKey = 'luntian-browser-notify';
+
+    function saved() {
+        try { return localStorage.getItem(storageKey); } catch (e) { return null; }
+    }
+
+    function save(value) {
+        try { localStorage.setItem(storageKey, value); } catch (e) {}
+    }
+
+    function permission() {
+        return window.Notification ? Notification.permission : 'unsupported';
+    }
+
+    function isOn() {
+        if (saved() === '0') return false;
+        if (saved() === '1') return permission() === 'granted';
+        return permission() === 'granted';
+    }
+
+    function paint() {
+        var state = permission();
+        var on = isOn();
+        if (state === 'unsupported') {
+            statusEl.textContent = 'OFF';
+            hintEl.textContent = 'This browser will not ask for notifications on this address.';
+            button.textContent = 'Turn ON';
+            button.disabled = true;
+            button.className = 'inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white opacity-60';
+            return;
+        }
+        if (state === 'denied') {
+            statusEl.textContent = 'BLOCKED';
+            hintEl.textContent = 'Allow notifications in the address bar lock icon, then refresh.';
+            button.textContent = 'Turn ON';
+            button.disabled = true;
+            button.className = 'inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white opacity-60';
+            return;
+        }
+        button.disabled = false;
+        statusEl.textContent = on ? 'ON' : 'OFF';
+        hintEl.textContent = 'Plays a sound on this browser when you are tagged.';
+        button.textContent = on ? 'Turn OFF' : 'Turn ON';
+        button.className = on
+            ? 'inline-flex cursor-pointer items-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500'
+            : 'inline-flex cursor-pointer items-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500';
+    }
+
+    function finishOn() {
+        if (permission() !== 'granted') {
+            paint();
+            return;
+        }
+        save('1');
+        paint();
+        if (window.armNotificationSound) window.armNotificationSound();
+        if (window.playNotificationChime) window.playNotificationChime();
+    }
+
+    button.addEventListener('click', function () {
+        if (isOn()) {
+            save('0');
+            paint();
+            return;
+        }
+        if (!window.Notification) {
+            paint();
+            return;
+        }
+        if (permission() === 'granted') {
+            finishOn();
+            return;
+        }
+        var ask = Notification.requestPermission();
+        if (ask && ask.then) ask.then(finishOn);
+        else finishOn();
+    });
+
+    paint();
+})();
+</script>
+@endpush
