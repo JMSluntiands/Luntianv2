@@ -639,20 +639,56 @@ class AllocatedJobsTaskFeed
             return $rows;
         }
 
-        $readKeys = [];
+        self::ensureMentionSeenColumn();
         $reads = DB::table('job_mention_reads')
             ->where('user_id', $userId)
             ->where('tagged_code', $code)
-            ->get(['family', 'job_id', 'tagged_code']);
+            ->get(['family', 'job_id', 'tagged_code', 'read_at', 'seen_comment']);
+        $readState = [];
         foreach ($reads as $read) {
-            $readKeys[$read->family.':'.(int) $read->job_id.':'.strtoupper((string) $read->tagged_code)] = true;
+            $readState[$read->family.':'.(int) $read->job_id.':'.strtoupper((string) $read->tagged_code)] = $read;
         }
 
-        return $rows->filter(function (object $row) use ($readKeys) {
+        return $rows->filter(function (object $row) use ($readState) {
             $key = ($row->family ?? '').':'.(int) ($row->job_id ?? 0).':'.strtoupper((string) ($row->tagged ?? ''));
+            $read = $readState[$key] ?? null;
+            if ($read === null) {
+                return true;
+            }
 
-            return ! isset($readKeys[$key]);
+            return self::mentionIsUnread($row, (string) ($read->seen_comment ?? ''), $read->read_at ?? null);
         })->values();
+    }
+
+    public static function mentionIsUnread(object $row, string $seenComment, mixed $readAt): bool
+    {
+        $anchor = (string) ($row->comment_anchor ?? '');
+        if ($seenComment !== '') {
+            return $anchor === '' || $anchor !== $seenComment;
+        }
+
+        if ($readAt === null || $readAt === '') {
+            return true;
+        }
+
+        try {
+            $readTs = \Carbon\Carbon::parse($readAt)->getTimestamp();
+        } catch (\Throwable) {
+            return true;
+        }
+
+        return self::commentSortKey($row) > $readTs;
+    }
+
+    public static function ensureMentionSeenColumn(): void
+    {
+        if (! Schema::hasTable('job_mention_reads') || Schema::hasColumn('job_mention_reads', 'seen_comment')) {
+            return;
+        }
+
+        Schema::table('job_mention_reads', function ($table) {
+            $table->string('seen_comment', 80)->nullable();
+        });
     }
 
     public static function unreadTaggedCount(int $userId, string $code): int

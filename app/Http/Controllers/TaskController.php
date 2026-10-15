@@ -191,7 +191,7 @@ class TaskController extends Controller
                         $jobNumber = '';
                     }
                     $items[] = [
-                        'id' => 'tag:'.(string) ($tag->key ?? ''),
+                        'id' => 'tag:'.(string) ($tag->key ?? '').':'.(string) ($tag->comment_anchor ?? ''),
                         'title' => (string) ($tag->notes ?? ''),
                         'author' => $author,
                         'initial' => $initial,
@@ -261,10 +261,15 @@ class TaskController extends Controller
             })->values();
         }
 
-        $readKeys = $this->jobMentionReadKeys($uid);
-        $rows = $rows->map(function (object $row) use ($readKeys) {
+        $readState = $this->jobMentionReadState($uid);
+        $rows = $rows->map(function (object $row) use ($readState) {
             $key = ($row->family ?? '').':'.(int) ($row->job_id ?? 0).':'.strtoupper((string) ($row->tagged ?? ''));
-            $row->is_read = isset($readKeys[$key]);
+            $read = $readState[$key] ?? null;
+            $row->is_read = $read !== null && ! AllocatedJobsTaskFeed::mentionIsUnread(
+                $row,
+                (string) ($read->seen_comment ?? ''),
+                $read->read_at ?? null
+            );
 
             return $row;
         });
@@ -310,7 +315,15 @@ class TaskController extends Controller
         }
 
         $this->ensureJobMentionReadsTable();
+        AllocatedJobsTaskFeed::ensureMentionSeenColumn();
         $now = now();
+        $match = AllocatedJobsTaskFeed::taggedMentions()->first(function (object $row) use ($data, $code) {
+            return ($row->family ?? '') === $data['family']
+                && (int) ($row->job_id ?? 0) === (int) $data['job_id']
+                && strtoupper((string) ($row->tagged ?? '')) === $code
+                && ! empty($row->view_url);
+        });
+
         DB::table('job_mention_reads')->updateOrInsert(
             [
                 'user_id' => $uid,
@@ -319,20 +332,14 @@ class TaskController extends Controller
                 'tagged_code' => $code,
             ],
             [
+                'seen_comment' => $match ? (string) ($match->comment_anchor ?? '') : '',
                 'read_at' => $now,
                 'updated_at' => $now,
                 'created_at' => $now,
             ]
         );
 
-        $match = AllocatedJobsTaskFeed::taggedMentions()->first(function (object $row) use ($data, $code) {
-            return ($row->family ?? '') === $data['family']
-                && (int) ($row->job_id ?? 0) === (int) $data['job_id']
-                && strtoupper((string) ($row->tagged ?? '')) === $code
-                && ! empty($row->view_url);
-        });
-
-        if ($match) {
+        if ($match && ! empty($match->view_url)) {
             return redirect()->to($match->view_url);
         }
 
@@ -782,18 +789,19 @@ class TaskController extends Controller
     /**
      * @return array<string, true>
      */
-    private function jobMentionReadKeys(int $userId): array
+    private function jobMentionReadState(int $userId): array
     {
         if ($userId <= 0 || ! Schema::hasTable('job_mention_reads')) {
             return [];
         }
 
+        AllocatedJobsTaskFeed::ensureMentionSeenColumn();
         $keys = [];
         $rows = DB::table('job_mention_reads')
             ->where('user_id', $userId)
-            ->get(['family', 'job_id', 'tagged_code']);
+            ->get(['family', 'job_id', 'tagged_code', 'read_at', 'seen_comment']);
         foreach ($rows as $row) {
-            $keys[$row->family.':'.(int) $row->job_id.':'.strtoupper((string) $row->tagged_code)] = true;
+            $keys[$row->family.':'.(int) $row->job_id.':'.strtoupper((string) $row->tagged_code)] = $row;
         }
 
         return $keys;
