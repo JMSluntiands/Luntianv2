@@ -166,13 +166,11 @@ class TaskController extends Controller
             $rows = collect();
         }
 
-        if (! $this->mayViewAllTasks() && $this->mayViewSelfTasks()) {
-            $uid = (int) session('user_id', 0);
-            $code = strtoupper(trim((string) (User::query()->where('id', $uid)->value('unique_code') ?? '')));
-            $rows = $rows->filter(function (object $row) use ($code) {
-                return $code !== '' && strtoupper(trim((string) ($row->tagged ?? ''))) === $code;
-            })->values();
-        }
+        $uid = (int) session('user_id', 0);
+        $code = strtoupper(trim((string) (User::query()->where('id', $uid)->value('unique_code') ?? '')));
+        $rows = $rows->filter(function (object $row) use ($code) {
+            return $code !== '' && strtoupper(trim((string) ($row->tagged ?? ''))) === $code;
+        })->values();
 
         if ($search !== '') {
             $needle = mb_strtolower($search);
@@ -190,7 +188,7 @@ class TaskController extends Controller
             })->values();
         }
 
-        $readKeys = $this->jobMentionReadKeys((int) session('user_id', 0));
+        $readKeys = $this->jobMentionReadKeys($uid);
         $rows = $rows->map(function (object $row) use ($readKeys) {
             $key = ($row->family ?? '').':'.(int) ($row->job_id ?? 0).':'.strtoupper((string) ($row->tagged ?? ''));
             $row->is_read = isset($readKeys[$key]);
@@ -233,11 +231,9 @@ class TaskController extends Controller
             return redirect()->route('task_management.job_notes');
         }
 
-        if (! $this->mayViewAllTasks()) {
-            $own = strtoupper(trim((string) (User::query()->where('id', $uid)->value('unique_code') ?? '')));
-            if ($own === '' || $own !== $code) {
-                return $this->deny($request, 'You do not have permission to open this job note.');
-            }
+        $own = strtoupper(trim((string) (User::query()->where('id', $uid)->value('unique_code') ?? '')));
+        if ($own === '' || $own !== $code) {
+            return $this->deny($request, 'You do not have permission to open this job note.');
         }
 
         $this->ensureJobMentionReadsTable();

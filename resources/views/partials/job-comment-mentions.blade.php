@@ -124,6 +124,32 @@
         font-size: 13px;
         color: #64748b;
     }
+    .job-comment-reply {
+        display: inline-flex;
+        margin-top: 6px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 600;
+        color: #2563eb;
+        cursor: pointer;
+    }
+    .job-comment-reply:hover {
+        text-decoration: underline;
+    }
+    html[data-theme="dark"] .job-comment-reply {
+        color: #93c5fd;
+    }
+    .job-comment-replying {
+        margin-bottom: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #2563eb;
+    }
+    html[data-theme="dark"] .job-comment-replying {
+        color: #93c5fd;
+    }
 </style>
 <script>
 (function () {
@@ -351,6 +377,73 @@
         if (menu.contains(event.target)) return;
         if (currentEditor && currentEditor.contains(event.target)) return;
         closeMenu();
+    });
+})();
+</script>
+<script>
+(function () {
+    function taggedComment(li) {
+        var message = li.querySelector('.prose');
+        if (!message) return false;
+        return !!message.querySelector('.job-mention, [data-code]');
+    }
+
+    function addReplyButton(li) {
+        if (!taggedComment(li) || li.querySelector('.job-comment-reply')) return;
+        var section = li.closest('section');
+        if (!section || !section.querySelector('.job-view-comment-body')) return;
+        var body = li.querySelector('.min-w-0');
+        if (!body) return;
+        var author = '';
+        var nameEl = body.querySelector('p');
+        if (nameEl) author = nameEl.textContent.trim();
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'job-comment-reply';
+        button.textContent = 'Reply';
+        button.setAttribute('data-author', author);
+        body.appendChild(button);
+    }
+
+    function scan() {
+        document.querySelectorAll('#runCommentsList > li, #jobCommentsList > li').forEach(addReplyButton);
+    }
+
+    function showReplying(section, author) {
+        var editor = section.querySelector('.job-view-comment-body');
+        if (!editor) return;
+        var banner = section.querySelector('.job-comment-replying');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.className = 'job-comment-replying';
+            editor.parentNode.insertBefore(banner, editor);
+        }
+        banner.textContent = author ? 'Replying to ' + author : 'Replying';
+        editor.focus();
+        editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    scan();
+    ['runCommentsList', 'jobCommentsList'].forEach(function (id) {
+        var list = document.getElementById(id);
+        if (!list || typeof MutationObserver === 'undefined') return;
+        new MutationObserver(scan).observe(list, { childList: true });
+    });
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest('.job-comment-reply');
+        if (!button) return;
+        var section = button.closest('section');
+        if (!section) return;
+        showReplying(section, button.getAttribute('data-author') || '');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('#runCommentSendBtn, #jobCommentSendBtn')) return;
+        var section = event.target.closest('section');
+        if (!section) return;
+        var banner = section.querySelector('.job-comment-replying');
+        if (banner) banner.remove();
     });
 })();
 </script>

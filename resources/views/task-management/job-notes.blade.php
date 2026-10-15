@@ -9,7 +9,7 @@
         <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
                 <h1 class="mb-1 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Job Notes</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Jobs where a staff or checker was tagged in Discussion.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Jobs where you were tagged in Discussion.</p>
             </div>
             <form method="get" action="{{ route('task_management.job_notes') }}" class="flex items-center gap-2">
                 <input type="search" name="q" value="{{ $search }}" placeholder="Search notes, client, reference"
