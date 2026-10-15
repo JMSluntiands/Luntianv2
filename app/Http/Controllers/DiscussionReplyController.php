@@ -6,6 +6,7 @@ use App\Services\AllocatedJobsTaskFeed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class DiscussionReplyController extends Controller
@@ -99,6 +100,40 @@ class DiscussionReplyController extends Controller
         }
 
         return redirect()->route('task_management.job_notes');
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+        ]);
+
+        $file = $request->file('image');
+        $ext = strtolower((string) ($file->getClientOriginalExtension() ?: $file->extension() ?: 'png'));
+        if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+            $ext = 'png';
+        }
+        $name = bin2hex(random_bytes(16)).'.'.$ext;
+        $file->storeAs('discussion-images', $name, 'local');
+
+        return response()->json([
+            'status' => 'success',
+            'url' => route('discussion.image', ['file' => $name]),
+        ]);
+    }
+
+    public function image(string $file)
+    {
+        if (! preg_match('/^[A-Za-z0-9._-]+$/', $file)) {
+            abort(404);
+        }
+
+        $path = 'discussion-images/'.$file;
+        if (! Storage::disk('local')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($path);
     }
 
     private function notifyOthers(object $parent, string $source, int $parentId, int $jobId, int $replyId, string $createdAt): void

@@ -476,11 +476,12 @@
 
             function showOsNotification(item) {
                 if (!browserNotifyOn() || !window.Notification || Notification.permission !== 'granted' || !item) return;
-                var lines = [];
-                if (item.message) lines.push(item.message);
-                if (item.job_number) lines.push(item.job_number);
+                var who = item.code || item.initial;
+                var title = who
+                    ? who + ' tagged you in ' + (item.job_number || 'this job')
+                    : (item.title || item.author || 'Tagged you');
                 try {
-                    new Notification(item.author || 'Tagged you', { body: lines.join('\n') });
+                    new Notification(title);
                 } catch (e) {}
             }
 
@@ -632,22 +633,16 @@
                     }
                     var content = document.createElement('div');
                     content.className = 'notification-item-content min-w-0 flex-1';
-                    if (item.author) {
-                        var who = document.createElement('div');
-                        who.className = 'truncate font-semibold text-slate-800 dark:text-slate-100';
-                        who.textContent = item.author;
-                        content.appendChild(who);
-                    }
                     var title = document.createElement('div');
-                    title.className = 'notification-item-title truncate text-slate-600 dark:text-slate-300';
-                    title.textContent = item.message || item.title || '';
+                    title.className = 'notification-item-title font-medium text-slate-800 dark:text-slate-100';
+                    var who = item.code || item.initial;
+                    if (who) {
+                        title.textContent = who + ' tagged you in ' + (item.job_number || 'this job');
+                    } else {
+                        title.textContent = item.title || item.message || '';
+                    }
                     content.appendChild(title);
-                    if (item.job_number) {
-                        var jobLine = document.createElement('p');
-                        jobLine.className = 'notification-item-time text-xs text-slate-500 dark:text-slate-400';
-                        jobLine.textContent = item.job_number;
-                        content.appendChild(jobLine);
-                    } else if (!item.author && item.time) {
+                    if (!item.initial && item.time) {
                         var time = document.createElement('p');
                         time.className = 'notification-item-time text-xs text-slate-500 dark:text-slate-400';
                         time.textContent = item.time;

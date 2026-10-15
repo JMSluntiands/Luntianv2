@@ -519,6 +519,33 @@ class AllocatedJobsTaskFeed
     }
 
     /**
+     * @return array<string, string>
+     */
+    private static function authorCodeMap(): array
+    {
+        if (! Schema::hasTable('users') || ! Schema::hasColumn('users', 'unique_code')) {
+            return [];
+        }
+
+        $map = [];
+        $users = DB::table('users')->get(['fullname', 'username', 'unique_code']);
+        foreach ($users as $user) {
+            $code = strtoupper(trim((string) ($user->unique_code ?? '')));
+            if ($code === '') {
+                continue;
+            }
+            foreach (['fullname', 'username'] as $column) {
+                $name = strtolower(trim((string) ($user->{$column} ?? '')));
+                if ($name !== '' && ! isset($map[$name])) {
+                    $map[$name] = $code;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * Jobs mentioned with @code in Discussion comments.
      * One row per tagged person per job, using the latest comment.
      *
@@ -589,6 +616,7 @@ class AllocatedJobsTaskFeed
         }
 
         $jobs = [];
+        $authorCodes = self::authorCodeMap();
         $out = collect();
         foreach ($latest as $hit) {
             $cacheKey = $hit->family.':'.$hit->job_id;
@@ -604,6 +632,7 @@ class AllocatedJobsTaskFeed
 
             $anchor = 'discussion-'.$hit->kind.'-'.$hit->comment_id;
             $viewUrl = self::viewUrlForModule((string) $job->module, $hit->job_id);
+            $authorKey = strtolower(trim((string) ($hit->author ?? '')));
             $out->push((object) [
                 'key' => $cacheKey.':'.$hit->code,
                 'family' => $hit->family,
@@ -614,6 +643,7 @@ class AllocatedJobsTaskFeed
                 'status' => $job->status,
                 'notes' => $hit->notes !== '' ? $hit->notes : '@'.$hit->code,
                 'author' => (string) ($hit->author ?? ''),
+                'author_code' => $authorCodes[$authorKey] ?? '',
                 'tagged' => $hit->code,
                 'created_at' => $hit->created_at,
                 'job_id' => $hit->job_id,

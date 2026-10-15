@@ -185,15 +185,20 @@ class TaskController extends Controller
                 $tagCount = $tags->count();
                 foreach ($tags as $tag) {
                     $author = trim((string) ($tag->author ?? ''));
-                    $initial = $author !== '' ? mb_strtoupper(mb_substr($author, 0, 1)) : 'L';
+                    $staffCode = strtoupper(trim((string) ($tag->author_code ?? '')));
+                    $initial = $staffCode !== ''
+                        ? mb_strtoupper(mb_substr($staffCode, 0, 1))
+                        : ($author !== '' ? mb_strtoupper(mb_substr($author, 0, 1)) : 'L');
                     $jobNumber = trim((string) ($tag->reference ?? ''));
                     if ($jobNumber === '—') {
                         $jobNumber = '';
                     }
+                    $who = $staffCode !== '' ? $staffCode : $initial;
                     $items[] = [
                         'id' => 'tag:'.(string) ($tag->key ?? '').':'.(string) ($tag->comment_anchor ?? ''),
-                        'title' => (string) ($tag->notes ?? ''),
+                        'title' => $who.' tagged you in '.($jobNumber !== '' ? $jobNumber : 'this job'),
                         'author' => $author,
+                        'code' => $who,
                         'initial' => $initial,
                         'message' => (string) ($tag->notes ?? ''),
                         'job_number' => $jobNumber,

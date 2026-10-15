@@ -102,6 +102,67 @@
         font-weight: 600;
         color: #2563eb;
     }
+    .job-comment-image {
+        display: block;
+        max-width: min(100%, 420px);
+        height: auto;
+        margin-top: 8px;
+        border-radius: 8px;
+    }
+    .job-comment-image-draft {
+        position: relative;
+        display: inline-block;
+        max-width: min(100%, 420px);
+        margin-top: 8px;
+    }
+    .job-comment-image-draft .job-comment-image {
+        margin-top: 0;
+    }
+    .job-comment-image-remove {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        border: 0;
+        border-radius: 6px;
+        padding: 4px 8px;
+        background: rgba(15, 23, 42, 0.86);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+    }
+    .job-comment-image-remove:hover {
+        background: #b91c1c;
+    }
+    .job-comment-image-loading {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 6px 0;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .job-comment-image-loading::before {
+        content: '';
+        width: 14px;
+        height: 14px;
+        border: 2px solid #cbd5e1;
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: job-comment-image-spin 0.7s linear infinite;
+    }
+    @keyframes job-comment-image-spin {
+        to { transform: rotate(360deg); }
+    }
+    html[data-theme="dark"] .job-comment-image-loading {
+        background: #1e293b;
+        color: #cbd5e1;
+    }
     html[data-theme="dark"] .job-mention {
         color: #93c5fd;
     }
@@ -550,10 +611,156 @@
         threads[key].push(reply);
     });
 
+    var imageUploadUrl = @json(\Illuminate\Support\Facades\Route::has('discussion.image.store') ? route('discussion.image.store') : '');
+
     function csrf() {
         var meta = document.querySelector('meta[name="csrf-token"]');
         return meta ? meta.getAttribute('content') : '';
     }
+
+    function clipboardImage(event) {
+        var data = event.clipboardData;
+        if (!data) return null;
+        var items = data.items || [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].kind === 'file' && items[i].type.indexOf('image/') === 0) {
+                return items[i].getAsFile();
+            }
+        }
+        var files = data.files || [];
+        for (var f = 0; f < files.length; f++) {
+            if (files[f].type && files[f].type.indexOf('image/') === 0) return files[f];
+        }
+        return null;
+    }
+
+    function placeNode(editor, node) {
+        var sel = window.getSelection();
+        if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).startContainer)) {
+            var range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(node);
+            range.setStartAfter(node);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            return;
+        }
+        editor.appendChild(node);
+    }
+
+    function draftImage(url) {
+        var wrap = document.createElement('span');
+        wrap.className = 'job-comment-image-draft';
+        wrap.setAttribute('contenteditable', 'false');
+        var image = document.createElement('img');
+        image.src = url;
+        image.alt = '';
+        image.className = 'job-comment-image';
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'job-comment-image-remove';
+        remove.textContent = 'Delete';
+        remove.setAttribute('aria-label', 'Delete image');
+        remove.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+        remove.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var next = wrap.nextSibling;
+            wrap.remove();
+            if (next && next.nodeType === 3 && next.textContent === ' ') next.remove();
+        });
+        wrap.appendChild(image);
+        wrap.appendChild(remove);
+        return wrap;
+    }
+
+    function unwrapDraftImages(box) {
+        if (!box) return;
+        box.querySelectorAll('.job-comment-image-draft').forEach(function (draft) {
+            var image = draft.querySelector('img');
+            if (image && draft.parentNode) draft.parentNode.insertBefore(image, draft);
+            draft.remove();
+        });
+    }
+
+    function insertImage(editor, url, loading) {
+        editor.focus();
+        var draft = draftImage(url);
+        var space = document.createTextNode(' ');
+        if (loading && loading.parentNode) {
+            loading.parentNode.insertBefore(draft, loading);
+            loading.parentNode.insertBefore(space, loading);
+            loading.remove();
+            return;
+        }
+        placeNode(editor, draft);
+        if (draft.parentNode) draft.parentNode.insertBefore(space, draft.nextSibling);
+    }
+
+    function insertLoading(editor) {
+        editor.focus();
+        var note = document.createElement('span');
+        note.className = 'job-comment-image-loading';
+        note.setAttribute('contenteditable', 'false');
+        note.textContent = 'Uploading image…';
+        placeNode(editor, note);
+        return note;
+    }
+
+    document.querySelectorAll('.job-view-comment-body').forEach(function (editor) {
+        editor.addEventListener('paste', function (event) {
+            var image = clipboardImage(event);
+            event.preventDefault();
+            if (!image) {
+                var text = event.clipboardData ? event.clipboardData.getData('text/plain') : '';
+                document.execCommand('insertText', false, text);
+                return;
+            }
+            if (!imageUploadUrl) return;
+            var loading = insertLoading(editor);
+            var body = new FormData();
+            body.append('image', image, image.name || 'snip.png');
+            body.append('_token', csrf());
+            fetch(imageUploadUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' },
+                body: body,
+                credentials: 'same-origin'
+            }).then(function (response) {
+                return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+            }).then(function (result) {
+                if (!result.ok || !result.data || !result.data.url) {
+                    if (loading) loading.remove();
+                    if (window.showSuccessToast) showSuccessToast('Could not paste the image.');
+                    return;
+                }
+                insertImage(editor, result.data.url, loading);
+            }).catch(function () {
+                if (loading) loading.remove();
+                if (window.showSuccessToast) showSuccessToast('Could not paste the image.');
+            });
+        });
+    });
+
+    ['runCommentSendBtn', 'jobCommentSendBtn'].forEach(function (id) {
+        var button = document.getElementById(id);
+        if (!button) return;
+        button.addEventListener('click', function (event) {
+            var editor = button.closest('.job-view-comment-editor');
+            var box = editor ? editor.querySelector('.job-view-comment-body') : null;
+            if (box && box.querySelector('.job-comment-image-loading')) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (window.showSuccessToast) showSuccessToast('Still uploading the image.');
+                return;
+            }
+            unwrapDraftImages(box);
+        }, true);
+    });
 
     function taggedComment(li) {
         var message = li.querySelector('.prose');

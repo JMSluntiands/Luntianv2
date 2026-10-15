@@ -1337,7 +1337,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
         sendBtn.addEventListener('click', function() {
             var html = bodyEl.innerHTML || '';
             var text = html.replace(/<[^>]*>/g, '').trim();
-            if (!text) return;
+            if (!text && !/<img\b/i.test(html)) return;
             sendBtn.disabled = true;
             var formData = new URLSearchParams();
             formData.append('_token', csrfToken);
@@ -1402,7 +1402,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
         sendBtn.addEventListener('click', function() {
             var html = bodyEl.innerHTML || '';
             var text = html.replace(/<[^>]*>/g, '').trim();
-            if (!text) return;
+            if (!text && !/<img\b/i.test(html)) return;
             sendBtn.disabled = true;
             var formData = new URLSearchParams();
             formData.append('_token', csrfToken);
@@ -1555,7 +1555,7 @@ html[data-theme="dark"] .job-view-comment-btn.active {
     bindRichTextToolbar('.job-view-comment-editor', '.job-view-comment-body');
     bindRichTextToolbar('.job-view-modal-notes-editor', '.job-view-modal-notes-body');
     bindRichTextToolbar('#jobViewEditFormNotes .rounded-xl.border', '#jobViewEditNotesBody');
-    document.querySelectorAll('.job-view-comment-body, .job-view-modal-notes-body').forEach(function(body) {
+    document.querySelectorAll('.job-view-modal-notes-body').forEach(function(body) {
         body.addEventListener('paste', function(e) { e.preventDefault(); var t = e.clipboardData.getData('text/plain'); document.execCommand('insertText', false, t); });
     });
     function closeAllLbsMenus() {

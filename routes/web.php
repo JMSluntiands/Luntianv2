@@ -195,6 +195,8 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/lbs/job/{id}/file/{file}', [LbsJobController::class, 'downloadFile'])->name('lbs.job.file');
     Route::post('/dashboard/lbs/job/{id}/checker-uploads', [LbsJobController::class, 'uploadCheckerFiles'])->name('lbs.job.checkerUploads');
     Route::post('/dashboard/discussion/reply', [\App\Http\Controllers\DiscussionReplyController::class, 'store'])->name('discussion.reply');
+    Route::post('/dashboard/discussion/image', [\App\Http\Controllers\DiscussionReplyController::class, 'uploadImage'])->name('discussion.image.store');
+    Route::get('/dashboard/discussion/image/{file}', [\App\Http\Controllers\DiscussionReplyController::class, 'image'])->name('discussion.image');
     Route::get('/dashboard/discussion/reply-notification/{id}', [\App\Http\Controllers\DiscussionReplyController::class, 'open'])->name('discussion.reply.open');
     Route::post('/dashboard/lbs/job/{id}/run-comment', [LbsJobController::class, 'addRunComment'])->name('lbs.job.runComment');
     Route::post('/dashboard/lbs/job/{id}/comment', [LbsJobController::class, 'addJobComment'])->name('lbs.job.comment');

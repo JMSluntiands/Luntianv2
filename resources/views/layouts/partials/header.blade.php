@@ -87,7 +87,9 @@
                     @foreach($tagNotifications as $tagNote)
                     @php
                         $tagAuthor = trim((string) ($tagNote->author ?? ''));
-                        $tagInitial = $tagAuthor !== '' ? mb_strtoupper(mb_substr($tagAuthor, 0, 1)) : 'L';
+                        $tagCode = strtoupper(trim((string) ($tagNote->author_code ?? '')));
+                        $tagInitial = $tagCode !== '' ? mb_strtoupper(mb_substr($tagCode, 0, 1)) : ($tagAuthor !== '' ? mb_strtoupper(mb_substr($tagAuthor, 0, 1)) : 'L');
+                        $tagWho = $tagCode !== '' ? $tagCode : $tagInitial;
                         $tagJobNumber = trim((string) ($tagNote->reference ?? ''));
                         if ($tagJobNumber === '—') {
                             $tagJobNumber = '';
@@ -96,13 +98,7 @@
                     <a href="{{ !empty($tagNote->view_url) ? $tagNote->view_url : route('task_management.job_notes') }}" class="notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50" role="menuitem">
                         <span class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-500 text-xs font-bold text-white">{{ $tagInitial }}</span>
                         <div class="notification-item-content min-w-0 flex-1">
-                            @if($tagAuthor !== '')
-                            <div class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ $tagAuthor }}</div>
-                            @endif
-                            <div class="notification-item-title truncate text-slate-600 dark:text-slate-300">{{ $tagNote->notes }}</div>
-                            @if($tagJobNumber !== '')
-                            <p class="notification-item-time text-xs text-slate-500 dark:text-slate-400">{{ $tagJobNumber }}</p>
-                            @endif
+                            <div class="notification-item-title font-medium text-slate-800 dark:text-slate-100">{{ $tagWho }} tagged you in {{ $tagJobNumber !== '' ? $tagJobNumber : 'this job' }}</div>
                         </div>
                     </a>
                     @endforeach
