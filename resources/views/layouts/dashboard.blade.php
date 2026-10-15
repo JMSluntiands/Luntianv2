@@ -369,6 +369,7 @@
         if (notificationBtn && notificationDropdown) {
             notificationBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
+                if (window.armNotificationSound) window.armNotificationSound();
                 if (window.Notification && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
@@ -412,6 +413,30 @@
                 return audioCtx;
             }
 
+            function armAudio() {
+                var ctx = ensureAudio();
+                if (!ctx) return;
+                try {
+                    var buffer = ctx.createBuffer(1, 1, 22050);
+                    var src = ctx.createBufferSource();
+                    src.buffer = buffer;
+                    src.connect(ctx.destination);
+                    src.start(0);
+                } catch (e) {}
+                if (sound && !pendingSound) {
+                    var previous = sound.volume;
+                    sound.volume = 0.01;
+                    var attempt = sound.play();
+                    var finish = function () {
+                        sound.pause();
+                        try { sound.currentTime = 0; } catch (err) {}
+                        sound.volume = previous || 1;
+                    };
+                    if (attempt && attempt.then) attempt.then(finish).catch(function () {});
+                }
+            }
+            window.armNotificationSound = armAudio;
+
             function playSynth() {
                 var ctx = ensureAudio();
                 if (!ctx || ctx.state !== 'running') return false;
@@ -451,27 +476,39 @@
             }
 
             function playAlert(item) {
-                var heard = false;
-                if (sound) {
-                    try { sound.currentTime = 0; } catch (e) {}
-                    sound.volume = 1;
-                    var attempt = sound.play();
-                    if (attempt && attempt.then) {
-                        attempt.then(function () { heard = true; }).catch(function () {});
-                    } else {
-                        heard = true;
-                    }
-                }
-                if (playSynth()) heard = true;
                 showOsNotification(item);
-                if (!heard) {
-                    pendingSound = true;
-                    pendingItem = item || null;
+                var ctx = ensureAudio();
+                var playNow = function () {
+                    var heard = playSynth();
+                    if (sound) {
+                        try { sound.currentTime = 0; } catch (e) {}
+                        sound.volume = 1;
+                        var attempt = sound.play();
+                        if (attempt && attempt.then) {
+                            attempt.then(function () { heard = true; }).catch(function () {
+                                if (!heard) {
+                                    pendingSound = true;
+                                    pendingItem = item || null;
+                                }
+                            });
+                        }
+                    }
+                    if (!heard && (!ctx || ctx.state !== 'running')) {
+                        pendingSound = true;
+                        pendingItem = item || null;
+                    }
+                };
+                if (ctx && ctx.state !== 'running') {
+                    var resumed = ctx.resume();
+                    if (resumed && resumed.then) resumed.then(playNow).catch(playNow);
+                    else playNow();
+                    return;
                 }
+                playNow();
             }
 
             function unlockSound() {
-                ensureAudio();
+                armAudio();
                 if (window.Notification && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
@@ -512,7 +549,7 @@
                 enableBtn.addEventListener('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();
-                    ensureAudio();
+                    armAudio();
                     if (!window.Notification) {
                         enableBtn.textContent = 'This browser will not ask on this address.';
                         return;

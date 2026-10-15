@@ -1249,10 +1249,10 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                     }
                     var wrap = document.createElement('div');
                     wrap.className = 'min-w-0 flex-1';
-                    wrap.innerHTML = '<p class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200"></p><div class="prose prose-sm max-w-none text-slate-700 dark:prose-invert dark:text-slate-300"></div><span class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>';
+                    wrap.innerHTML = '<p class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200"></p><div class="prose prose-sm max-w-none text-slate-700 dark:prose-invert dark:text-slate-300"></div><span class="job-comment-time mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>';
                     wrap.querySelector('p').textContent = name;
                     wrap.querySelector('.prose').innerHTML = c.message || '';
-                    wrap.querySelector('span').textContent = created;
+                    wrap.querySelector('.job-comment-time').textContent = created;
                     li.appendChild(avatar);
                     li.appendChild(wrap);
                     list.insertBefore(li, list.firstChild);
@@ -1314,10 +1314,10 @@ html[data-theme="dark"] .job-view-comment-btn.active {
                     }
                     var wrap = document.createElement('div');
                     wrap.className = 'min-w-0 flex-1';
-                    wrap.innerHTML = '<p class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200"></p><div class="prose prose-sm max-w-none text-slate-700 dark:prose-invert dark:text-slate-300"></div><span class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>';
+                    wrap.innerHTML = '<p class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200"></p><div class="prose prose-sm max-w-none text-slate-700 dark:prose-invert dark:text-slate-300"></div><span class="job-comment-time mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>';
                     wrap.querySelector('p').textContent = name;
                     wrap.querySelector('.prose').innerHTML = c.message || '';
-                    wrap.querySelector('span').textContent = created;
+                    wrap.querySelector('.job-comment-time').textContent = created;
                     li.appendChild(avatar);
                     li.appendChild(wrap);
                     list.insertBefore(li, list.firstChild);
