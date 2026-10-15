@@ -2160,4 +2160,5 @@ html[data-theme="dark"] .job-view-comment-btn.active {
         initAssignmentUserSelect2($('.job-view-modal'));
     });
     </script>
+    @include('partials.job-comment-mentions')
 @endpush

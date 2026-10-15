@@ -153,6 +153,60 @@ class TaskController extends Controller
         ]);
     }
 
+    public function jobNotes(Request $request)
+    {
+        if (! $this->mayViewAllTasks() && ! $this->mayViewSelfTasks()) {
+            return $this->deny($request, 'You do not have permission to view job notes.');
+        }
+
+        $search = trim((string) $request->query('q', ''));
+        try {
+            $rows = AllocatedJobsTaskFeed::taggedMentions();
+        } catch (\Throwable) {
+            $rows = collect();
+        }
+
+        if (! $this->mayViewAllTasks() && $this->mayViewSelfTasks()) {
+            $uid = (int) session('user_id', 0);
+            $code = strtoupper(trim((string) (User::query()->where('id', $uid)->value('unique_code') ?? '')));
+            $rows = $rows->filter(function (object $row) use ($code) {
+                return $code !== '' && strtoupper(trim((string) ($row->tagged ?? ''))) === $code;
+            })->values();
+        }
+
+        if ($search !== '') {
+            $needle = mb_strtolower($search);
+            $rows = $rows->filter(function (object $row) use ($needle) {
+                $hay = mb_strtolower(implode(' ', [
+                    (string) ($row->tagged ?? ''),
+                    (string) ($row->module ?? ''),
+                    (string) ($row->client ?? ''),
+                    (string) ($row->reference ?? ''),
+                    (string) ($row->status ?? ''),
+                    (string) ($row->notes ?? ''),
+                ]));
+
+                return str_contains($hay, $needle);
+            })->values();
+        }
+
+        $perPage = 25;
+        $page = max(1, (int) $request->query('page', 1));
+        $notes = new LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values(),
+            $rows->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view('task-management.job-notes', [
+            'sidebar_active' => 'task_management.job_notes',
+            'notes' => $notes,
+            'search' => $search,
+        ]);
+    }
+
     public function store(Request $request)
     {
         if (! $this->mayManageTasks()) {

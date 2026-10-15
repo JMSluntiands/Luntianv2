@@ -14,6 +14,7 @@
     $lcHomeBuilderOpen = in_array($active, ['lc_home_builder.add', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.trash']) || str_starts_with((string)$active, 'lc_home_builder.');
     $efficientLivingOpen = in_array($active, ['efficient_living.add', 'efficient_living.list', 'efficient_living.completed', 'efficient_living.review', 'efficient_living.mailbox', 'efficient_living.trash']) || str_starts_with((string)$active, 'efficient_living.');
     $leadingEnergyOpen = in_array($active, ['leading_energy.add', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash']) || str_starts_with((string)$active, 'leading_energy.');
+    $taskOpen = in_array($active, ['task_management', 'task_management.job_notes'], true);
     $jobOpen = in_array($active, ['compliance.index', 'compliance.create', 'compliance.edit', 'priority.index', 'priority.create', 'priority.edit', 'status.index', 'status.create', 'status.edit', 'job_request.index', 'job_request.create', 'job_request.edit', 'job_module_client.index', 'client.index', 'client.create', 'client.edit']) || str_starts_with((string)$active, 'compliance.') || str_starts_with((string)$active, 'priority.') || str_starts_with((string)$active, 'status.') || str_starts_with((string)$active, 'job_request.') || str_starts_with((string)$active, 'job_module_client.') || str_starts_with((string)$active, 'client.');
     $branchOpen = in_array($active, ['branch.index', 'branch.create', 'branch.edit', 'branch.archive']) || str_starts_with((string)$active, 'branch.');
     $accountsOpen = in_array($active, ['users.index', 'users.create', 'users.edit', 'users.archive', 'accounts.clients.index', 'accounts.clients.create', 'accounts.clients.edit']) || str_starts_with((string)$active, 'users.') || str_starts_with((string)$active, 'accounts.clients.');
@@ -166,10 +167,23 @@
         </a>
         @endif
         @if(\Illuminate\Support\Facades\Route::has('task_management') && ($may('task_management') || $may('task_management.view_all') || $may('task_management.view_self') || $may('dashboard')))
-        <a href="{{ route('task_management') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:ring-inset dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}">
-            <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-            Task Management
-        </a>
+        <div class="group nav-dropdown {{ $taskOpen ? 'open' : '' }}" data-dropdown>
+            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $taskOpen ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}" aria-expanded="{{ $taskOpen ? 'true' : 'false' }}" aria-controls="nav-sub-task-management">
+                <span class="flex items-center gap-2.5">
+                    <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    Task Management
+                </span>
+                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-task-management" role="region" aria-label="Task Management submenu">
+                <div class="space-y-0.5 py-1 pb-2 pl-1">
+                    <a href="{{ route('task_management') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Task Database</a>
+                    @if(\Illuminate\Support\Facades\Route::has('task_management.job_notes'))
+                    <a href="{{ route('task_management.job_notes') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management.job_notes' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Job Notes</a>
+                    @endif
+                </div>
+            </div>
+        </div>
         @endif
         @if(\Illuminate\Support\Facades\Route::has('forum_thread') && ($may('forum_thread') || $may('dashboard')))
         <a href="{{ route('forum_thread') }}" class="nav-item flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:ring-inset dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['forum_thread', 'forum_thread.store'], true) || str_starts_with((string) $active, 'forum_thread.') ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 dark:pl-[15px] pl-[15px]' : '' }}">
