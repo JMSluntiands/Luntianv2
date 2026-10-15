@@ -46,6 +46,14 @@
 
         return strcasecmp($a['name'], $b['name']);
     });
+    $discussionReplies = [];
+    if (!empty($jobId) && \Illuminate\Support\Facades\Schema::hasTable('discussion_replies')) {
+        $discussionReplies = \Illuminate\Support\Facades\DB::table('discussion_replies')
+            ->where('job_id', (int) $jobId)
+            ->orderBy('id')
+            ->get(['source', 'parent_id', 'author_name', 'message', 'created_at'])
+            ->all();
+    }
 @endphp
 <style>
     .job-mention {
@@ -141,14 +149,116 @@
     html[data-theme="dark"] .job-comment-reply {
         color: #93c5fd;
     }
-    .job-comment-replying {
-        margin-bottom: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #2563eb;
+    .job-thread {
+        margin-top: 8px;
     }
-    html[data-theme="dark"] .job-comment-replying {
-        color: #93c5fd;
+    .job-thread-summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        padding: 2px 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        color: #1264a3;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .job-thread-summary:hover {
+        text-decoration: underline;
+    }
+    html[data-theme="dark"] .job-thread-summary {
+        color: #7dd3fc;
+    }
+    .job-thread-avatars {
+        display: inline-flex;
+        align-items: center;
+    }
+    .job-thread-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        margin-left: -6px;
+        border: 2px solid #fff;
+        border-radius: 9999px;
+        background: #64748b;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .job-thread-avatar:first-child {
+        margin-left: 0;
+    }
+    html[data-theme="dark"] .job-thread-avatar {
+        border-color: #1e293b;
+    }
+    .job-thread-panel {
+        margin-top: 8px;
+        padding-left: 8px;
+        border-left: 2px solid #e2e8f0;
+    }
+    html[data-theme="dark"] .job-thread-panel {
+        border-left-color: #475569;
+    }
+    .job-thread-item {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .job-thread-item-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    html[data-theme="dark"] .job-thread-item-name {
+        color: #f1f5f9;
+    }
+    .job-thread-item-text,
+    .job-thread-item-time {
+        font-size: 13px;
+        color: #334155;
+    }
+    .job-thread-item-time {
+        display: block;
+        margin-top: 2px;
+        font-size: 11px;
+        color: #64748b;
+    }
+    html[data-theme="dark"] .job-thread-item-text {
+        color: #e2e8f0;
+    }
+    .job-thread-form {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .job-thread-input {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        padding: 6px 10px;
+        font-size: 13px;
+        color: #0f172a;
+    }
+    html[data-theme="dark"] .job-thread-input {
+        border-color: #475569;
+        background: #0f172a;
+        color: #f8fafc;
+    }
+    .job-thread-send {
+        border: 0;
+        border-radius: 8px;
+        background: #2563eb;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
     }
     [id^="discussion-"] {
         scroll-margin-top: 5rem;
@@ -388,45 +498,150 @@
 </script>
 <script>
 (function () {
+    var replyUrl = @json(\Illuminate\Support\Facades\Route::has('discussion.reply') ? route('discussion.reply') : '');
+    var jobId = @json((int) ($jobId ?? 0));
+    var isBph = @json(!empty($isBphView));
+    var savedReplies = @json($discussionReplies ?? []);
+    var threads = {};
+    savedReplies.forEach(function (reply) {
+        var key = reply.source + ':' + reply.parent_id;
+        if (!threads[key]) threads[key] = [];
+        threads[key].push(reply);
+    });
+
+    function csrf() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
     function taggedComment(li) {
         var message = li.querySelector('.prose');
         if (!message) return false;
         return !!message.querySelector('.job-mention, [data-code]');
     }
 
+    function threadInfo(li) {
+        var match = (li.id || '').match(/^discussion-(run|job)-(\d+)$/);
+        if (!match) return null;
+        var source = match[1] === 'run'
+            ? (isBph ? 'bph_run_comments' : 'run_comments')
+            : (isBph ? 'bph_comments' : 'comments');
+        return { source: source, parentId: match[2], key: source + ':' + match[2] };
+    }
+
+    function initial(name) {
+        var text = String(name || 'L').trim();
+        return text ? text.charAt(0).toUpperCase() : 'L';
+    }
+
+    function replyLabel(count) {
+        return count === 1 ? '1 reply' : count + ' replies';
+    }
+
+    function paintSummary(thread, replies) {
+        var summary = thread.querySelector('.job-thread-summary');
+        var avatars = thread.querySelector('.job-thread-avatars');
+        var count = thread.querySelector('.job-thread-count');
+        if (!summary || !avatars || !count) return;
+        if (!replies.length) {
+            summary.hidden = true;
+            return;
+        }
+        summary.hidden = false;
+        var seen = {};
+        var faces = [];
+        replies.forEach(function (reply) {
+            var name = reply.author_name || 'LUNTIAN';
+            if (seen[name] || faces.length >= 5) return;
+            seen[name] = true;
+            faces.push(name);
+        });
+        avatars.innerHTML = faces.map(function (name) {
+            var safe = String(name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            return '<span class="job-thread-avatar" title="' + safe + '">' + initial(name) + '</span>';
+        }).join('');
+        count.textContent = replyLabel(replies.length);
+    }
+
+    function paintList(thread, replies) {
+        var list = thread.querySelector('.job-thread-list');
+        if (!list) return;
+        list.innerHTML = replies.map(function (reply) {
+            var name = reply.author_name || 'LUNTIAN';
+            return '<div class="job-thread-item">' +
+                '<span class="job-thread-avatar">' + initial(name) + '</span>' +
+                '<div><div class="job-thread-item-name"></div><div class="job-thread-item-text"></div><span class="job-thread-item-time"></span></div>' +
+                '</div>';
+        }).join('');
+        var items = list.querySelectorAll('.job-thread-item');
+        replies.forEach(function (reply, index) {
+            var item = items[index];
+            if (!item) return;
+            item.querySelector('.job-thread-item-name').textContent = reply.author_name || 'LUNTIAN';
+            item.querySelector('.job-thread-item-text').textContent = reply.message || '';
+            item.querySelector('.job-thread-item-time').textContent = reply.created_at || '';
+        });
+    }
+
+    function ensureThread(li) {
+        var info = threadInfo(li);
+        var body = li.querySelector('.min-w-0');
+        if (!info || !body) return null;
+        var thread = body.querySelector('.job-thread');
+        if (thread) return thread;
+        thread = document.createElement('div');
+        thread.className = 'job-thread';
+        thread.innerHTML = '<button type="button" class="job-thread-summary" hidden><span class="job-thread-avatars"></span><span class="job-thread-count"></span></button>' +
+            '<div class="job-thread-panel" hidden><div class="job-thread-list"></div>' +
+            '<form class="job-thread-form"><input type="text" class="job-thread-input" placeholder="Reply..." maxlength="5000"><button type="submit" class="job-thread-send">Reply</button></form></div>';
+        body.appendChild(thread);
+        return thread;
+    }
+
+    function refreshThread(li) {
+        var info = threadInfo(li);
+        var thread = ensureThread(li);
+        if (!info || !thread) return;
+        var replies = threads[info.key] || [];
+        paintSummary(thread, replies);
+        paintList(thread, replies);
+    }
+
+    function openThread(li) {
+        var thread = ensureThread(li);
+        if (!thread) return;
+        refreshThread(li);
+        var panel = thread.querySelector('.job-thread-panel');
+        if (panel) panel.hidden = false;
+        var input = thread.querySelector('.job-thread-input');
+        if (input) input.focus();
+    }
+
     function addReplyButton(li) {
-        if (!taggedComment(li) || li.querySelector('.job-comment-reply')) return;
+        if (!taggedComment(li)) return;
+        var info = threadInfo(li);
         var section = li.closest('section');
-        if (!section || !section.querySelector('.job-view-comment-body')) return;
+        var canReply = !!(section && section.querySelector('.job-view-comment-body'));
+        var replies = info && threads[info.key] ? threads[info.key] : [];
+        if (!canReply && !replies.length) return;
         var body = li.querySelector('.min-w-0');
         if (!body) return;
-        var author = '';
-        var nameEl = body.querySelector('p');
-        if (nameEl) author = nameEl.textContent.trim();
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'job-comment-reply';
-        button.textContent = 'Reply';
-        button.setAttribute('data-author', author);
-        body.appendChild(button);
+        if (canReply && !li.querySelector('.job-comment-reply')) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'job-comment-reply';
+            button.textContent = 'Reply';
+            body.appendChild(button);
+        }
+        refreshThread(li);
+        if (!canReply) {
+            var form = li.querySelector('.job-thread-form');
+            if (form) form.hidden = true;
+        }
     }
 
     function scan() {
         document.querySelectorAll('#runCommentsList > li, #jobCommentsList > li').forEach(addReplyButton);
-    }
-
-    function showReplying(section, author) {
-        var editor = section.querySelector('.job-view-comment-body');
-        if (!editor) return;
-        var banner = section.querySelector('.job-comment-replying');
-        if (!banner) {
-            banner = document.createElement('div');
-            banner.className = 'job-comment-replying';
-            editor.parentNode.insertBefore(banner, editor);
-        }
-        banner.textContent = author ? 'Replying to ' + author : 'Replying';
-        editor.focus();
-        editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     scan();
@@ -437,19 +652,52 @@
     });
 
     document.addEventListener('click', function (event) {
-        var button = event.target.closest('.job-comment-reply');
-        if (!button) return;
-        var section = button.closest('section');
-        if (!section) return;
-        showReplying(section, button.getAttribute('data-author') || '');
+        var replyButton = event.target.closest('.job-comment-reply');
+        if (replyButton) {
+            var li = replyButton.closest('li');
+            if (li) openThread(li);
+            return;
+        }
+        var summary = event.target.closest('.job-thread-summary');
+        if (!summary) return;
+        var panel = summary.parentNode.querySelector('.job-thread-panel');
+        if (panel) panel.hidden = !panel.hidden;
     });
 
-    document.addEventListener('click', function (event) {
-        if (!event.target.closest('#runCommentSendBtn, #jobCommentSendBtn')) return;
-        var section = event.target.closest('section');
-        if (!section) return;
-        var banner = section.querySelector('.job-comment-replying');
-        if (banner) banner.remove();
+    document.addEventListener('submit', function (event) {
+        var form = event.target.closest('.job-thread-form');
+        if (!form) return;
+        event.preventDefault();
+        var li = form.closest('li');
+        var info = li ? threadInfo(li) : null;
+        var input = form.querySelector('.job-thread-input');
+        var message = input ? input.value.trim() : '';
+        if (!info || !message || !replyUrl) return;
+        var send = form.querySelector('.job-thread-send');
+        if (send) send.disabled = true;
+        var body = new URLSearchParams();
+        body.append('_token', csrf());
+        body.append('source', info.source);
+        body.append('parent_id', info.parentId);
+        body.append('job_id', String(jobId));
+        body.append('message', message);
+        fetch(replyUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        }).then(function (response) {
+            return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+        }).then(function (result) {
+            if (send) send.disabled = false;
+            if (!result.ok || !result.data || !result.data.reply) return;
+            if (!threads[info.key]) threads[info.key] = [];
+            threads[info.key].push(result.data.reply);
+            input.value = '';
+            refreshThread(li);
+            openThread(li);
+        }).catch(function () {
+            if (send) send.disabled = false;
+        });
     });
 
     var commentHash = window.location.hash || '';
