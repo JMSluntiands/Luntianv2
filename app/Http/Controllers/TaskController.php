@@ -153,6 +153,69 @@ class TaskController extends Controller
         ]);
     }
 
+    public function liveNotifications()
+    {
+        $userId = (int) session('user_id', 0);
+        $code = $userId > 0
+            ? strtoupper(trim((string) (User::query()->where('id', $userId)->value('unique_code') ?? '')))
+            : '';
+        $items = [];
+        $tagCount = 0;
+
+        try {
+            if ($userId > 0 && Schema::hasTable('discussion_reply_notifications')) {
+                $replies = DB::table('discussion_reply_notifications')
+                    ->where('user_id', $userId)
+                    ->whereNull('read_at')
+                    ->orderByDesc('id')
+                    ->limit(30)
+                    ->get();
+                foreach ($replies as $reply) {
+                    $items[] = [
+                        'id' => 'reply:'.(int) $reply->id,
+                        'title' => 'Replied in this thread',
+                        'time' => (string) ($reply->created_at ?? ''),
+                        'href' => route('discussion.reply.open', $reply->id),
+                    ];
+                }
+            }
+
+            if ($code !== '') {
+                $tags = AllocatedJobsTaskFeed::unreadTaggedForUser($userId, $code);
+                $tagCount = $tags->count();
+                foreach ($tags as $tag) {
+                    $items[] = [
+                        'id' => 'tag:'.(string) ($tag->key ?? ''),
+                        'title' => 'Tagged you in this job',
+                        'time' => (string) ($tag->created_at ?? ''),
+                        'href' => route('task_management.job_notes'),
+                        'note' => [
+                            'key' => (string) ($tag->key ?? ''),
+                            'tagged' => (string) ($tag->tagged ?? ''),
+                            'module' => (string) ($tag->module ?? ''),
+                            'client' => (string) ($tag->client ?? ''),
+                            'reference' => (string) ($tag->reference ?? ''),
+                            'status' => (string) ($tag->status ?? ''),
+                            'notes' => (string) ($tag->notes ?? ''),
+                            'view_url' => (string) ($tag->view_url ?? ''),
+                            'family' => (string) ($tag->family ?? ''),
+                            'job_id' => (int) ($tag->job_id ?? 0),
+                        ],
+                    ];
+                }
+            }
+        } catch (\Throwable) {
+            $items = [];
+            $tagCount = 0;
+        }
+
+        return response()->json([
+            'count' => count($items),
+            'tag_count' => $tagCount,
+            'items' => $items,
+        ]);
+    }
+
     public function jobNotes(Request $request)
     {
         if (! $this->mayViewAllTasks() && ! $this->mayViewSelfTasks()) {

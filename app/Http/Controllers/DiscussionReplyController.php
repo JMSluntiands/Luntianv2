@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AllocatedJobsTaskFeed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -51,6 +52,12 @@ class DiscussionReplyController extends Controller
             'created_at' => $createdAt,
         ]);
 
+        try {
+            $this->notifyOthers($parent, $data['source'], (int) $data['parent_id'], (int) $data['job_id'], (int) $id, $createdAt);
+        } catch (\Throwable) {
+            // The reply is already saved. A notification failure should not block it.
+        }
+
         return response()->json([
             'status' => 'success',
             'reply' => [
@@ -62,6 +69,138 @@ class DiscussionReplyController extends Controller
                 'created_at' => $createdAt,
             ],
         ]);
+    }
+
+    public function open(int $id)
+    {
+        $userId = (int) session('user_id', 0);
+        if ($userId <= 0 || ! Schema::hasTable('discussion_reply_notifications')) {
+            abort(404);
+        }
+
+        $row = DB::table('discussion_reply_notifications')
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
+        if (! $row) {
+            abort(404);
+        }
+
+        if ($row->read_at === null) {
+            DB::table('discussion_reply_notifications')
+                ->where('id', $id)
+                ->update(['read_at' => now()]);
+        }
+
+        $target = trim((string) ($row->target_url ?? ''));
+        $appUrl = rtrim((string) url('/'), '/');
+        if ($target !== '' && str_starts_with($target, $appUrl)) {
+            return redirect()->to($target);
+        }
+
+        return redirect()->route('task_management.job_notes');
+    }
+
+    private function notifyOthers(object $parent, string $source, int $parentId, int $jobId, int $replyId, string $createdAt): void
+    {
+        $this->ensureNotificationsTable();
+        $actorId = (int) session('user_id', 0);
+        $recipientIds = $this->recipientIds($parent, $source, $parentId, $jobId, $actorId);
+        if ($recipientIds === []) {
+            return;
+        }
+
+        $target = AllocatedJobsTaskFeed::discussionAnchorUrl($source, $jobId, $parentId);
+        $rows = [];
+        foreach ($recipientIds as $userId) {
+            $rows[] = [
+                'user_id' => $userId,
+                'reply_id' => $replyId,
+                'job_id' => $jobId,
+                'target_url' => $target,
+                'created_at' => $createdAt,
+                'read_at' => null,
+            ];
+        }
+
+        DB::table('discussion_reply_notifications')->insert($rows);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function recipientIds(object $parent, string $source, int $parentId, int $jobId, int $actorId): array
+    {
+        if (! Schema::hasTable('users')) {
+            return [];
+        }
+
+        $codes = [];
+        if (preg_match_all('/data-code=(["\'])([^"\']+)\1/i', (string) ($parent->message ?? ''), $matches)) {
+            foreach ($matches[2] as $code) {
+                $code = strtoupper(trim(html_entity_decode((string) $code, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                if ($code !== '') {
+                    $codes[$code] = true;
+                }
+            }
+        }
+
+        $names = [];
+        foreach (['name', 'username'] as $column) {
+            $value = mb_strtolower(trim((string) ($parent->{$column} ?? '')));
+            if ($value !== '') {
+                $names[$value] = true;
+            }
+        }
+        if (Schema::hasTable('discussion_replies')) {
+            $authors = DB::table('discussion_replies')
+                ->where('source', $source)
+                ->where('parent_id', $parentId)
+                ->where('job_id', $jobId)
+                ->pluck('author_name');
+            foreach ($authors as $author) {
+                $value = mb_strtolower(trim((string) $author));
+                if ($value !== '') {
+                    $names[$value] = true;
+                }
+            }
+        }
+
+        $ids = [];
+        $users = DB::table('users')->get(['id', 'unique_code', 'fullname', 'username']);
+        foreach ($users as $user) {
+            $userId = (int) $user->id;
+            if ($userId <= 0 || $userId === $actorId) {
+                continue;
+            }
+            $code = strtoupper(trim((string) ($user->unique_code ?? '')));
+            $full = mb_strtolower(trim((string) ($user->fullname ?? '')));
+            $username = mb_strtolower(trim((string) ($user->username ?? '')));
+            if (($code !== '' && isset($codes[$code])) || ($full !== '' && isset($names[$full])) || ($username !== '' && isset($names[$username]))) {
+                $ids[$userId] = $userId;
+            }
+        }
+
+        return array_values($ids);
+    }
+
+    private function ensureNotificationsTable(): void
+    {
+        if (Schema::hasTable('discussion_reply_notifications')) {
+            return;
+        }
+
+        Schema::create('discussion_reply_notifications', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('reply_id');
+            $table->unsignedBigInteger('job_id');
+            $table->string('target_url', 500)->nullable();
+            $table->string('created_at', 50)->nullable();
+            $table->timestamp('read_at')->nullable();
+            $table->unique(['user_id', 'reply_id']);
+            $table->index(['user_id', 'read_at']);
+        });
     }
 
     private function ensureTable(): void

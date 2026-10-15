@@ -46,6 +46,14 @@
 
         return strcasecmp($a['name'], $b['name']);
     });
+    $viewerId = (int) session('user_id', 0);
+    if ($viewerId > 0 && !empty($jobId) && \Illuminate\Support\Facades\Schema::hasTable('discussion_reply_notifications')) {
+        \Illuminate\Support\Facades\DB::table('discussion_reply_notifications')
+            ->where('user_id', $viewerId)
+            ->where('job_id', (int) $jobId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+    }
     $discussionReplies = [];
     if (!empty($jobId) && \Illuminate\Support\Facades\Schema::hasTable('discussion_replies')) {
         $discussionReplies = \Illuminate\Support\Facades\DB::table('discussion_replies')

@@ -380,6 +380,200 @@
                 }
             });
         }
+        (function () {
+            var list = document.getElementById('notificationList');
+            var badge = document.getElementById('notificationCount');
+            if (!list || !badge) return;
+            var liveUrl = list.getAttribute('data-notifications-url') || '';
+            if (!liveUrl) return;
+            var jobNotesUrl = list.getAttribute('data-job-notes-url') || '';
+            var readUrl = list.getAttribute('data-job-notes-read-url') || '';
+            var seen = null;
+            var audioCtx = null;
+            var pendingSound = false;
+
+            function csrf() {
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                return meta ? meta.getAttribute('content') : '';
+            }
+
+            function unlockAudio() {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                if (!audioCtx) audioCtx = new Ctx();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (pendingSound && audioCtx.state === 'running') {
+                    pendingSound = false;
+                    playChime();
+                }
+            }
+
+            function playChime() {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                if (!audioCtx) audioCtx = new Ctx();
+                if (audioCtx.state !== 'running') {
+                    pendingSound = true;
+                    audioCtx.resume();
+                    return;
+                }
+                var start = audioCtx.currentTime;
+                [784, 1046].forEach(function (freq, index) {
+                    var osc = audioCtx.createOscillator();
+                    var gain = audioCtx.createGain();
+                    var at = start + index * 0.11;
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.0001, at);
+                    gain.gain.exponentialRampToValueAtTime(0.12, at + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(at);
+                    osc.stop(at + 0.24);
+                });
+            }
+
+            document.addEventListener('pointerdown', unlockAudio);
+            document.addEventListener('keydown', unlockAudio);
+
+            function renderBell(items) {
+                list.replaceChildren();
+                if (!items.length) {
+                    var empty = document.createElement('div');
+                    empty.className = 'px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400';
+                    empty.textContent = 'No notifications';
+                    list.appendChild(empty);
+                    return;
+                }
+                items.forEach(function (item) {
+                    var link = document.createElement('a');
+                    link.href = item.href || jobNotesUrl;
+                    link.className = 'notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50';
+                    link.setAttribute('role', 'menuitem');
+                    var content = document.createElement('div');
+                    content.className = 'notification-item-content min-w-0 flex-1';
+                    var title = document.createElement('div');
+                    title.className = 'notification-item-title font-medium text-slate-800 dark:text-slate-200';
+                    title.textContent = item.title || '';
+                    content.appendChild(title);
+                    if (item.time) {
+                        var time = document.createElement('p');
+                        time.className = 'notification-item-time text-xs text-slate-500 dark:text-slate-400';
+                        time.textContent = item.time;
+                        content.appendChild(time);
+                    }
+                    link.appendChild(content);
+                    list.appendChild(link);
+                });
+            }
+
+            function renderCount(el, count) {
+                if (!el) return;
+                el.textContent = String(count);
+                if (count > 0) el.hidden = false;
+                else el.hidden = true;
+            }
+
+            function addJobNote(note) {
+                var body = document.querySelector('[data-job-notes-live="1"]');
+                if (!body || !note || !note.key) return;
+                var already = false;
+                body.querySelectorAll('[data-note-key]').forEach(function (row) {
+                    if (row.getAttribute('data-note-key') === note.key) already = true;
+                });
+                if (already) return;
+                var empty = body.querySelector('td[colspan]');
+                if (empty && empty.parentNode) empty.parentNode.remove();
+                var row = document.createElement('tr');
+                row.className = 'align-top';
+                row.setAttribute('data-note-key', note.key);
+                function cell(className, text) {
+                    var td = document.createElement('td');
+                    td.className = className;
+                    td.textContent = text;
+                    return td;
+                }
+                row.appendChild(cell('whitespace-nowrap px-4 py-3 font-semibold text-blue-700 dark:text-blue-300', note.tagged ? '@' + note.tagged : ''));
+                row.appendChild(cell('whitespace-nowrap px-4 py-3 font-medium text-slate-700 dark:text-slate-200', note.module || ''));
+                row.appendChild(cell('px-4 py-3 text-slate-700 dark:text-slate-200', note.client || ''));
+                var ref = document.createElement('td');
+                ref.className = 'whitespace-nowrap px-4 py-3';
+                if (note.view_url) {
+                    var refLink = document.createElement('a');
+                    refLink.href = note.view_url;
+                    refLink.className = 'font-medium text-emerald-700 no-underline hover:underline dark:text-emerald-400';
+                    refLink.textContent = note.reference || '';
+                    ref.appendChild(refLink);
+                } else {
+                    ref.textContent = note.reference || '';
+                }
+                row.appendChild(ref);
+                row.appendChild(cell('whitespace-nowrap px-4 py-3 text-slate-600 dark:text-slate-300', note.status || '—'));
+                row.appendChild(cell('max-w-xl px-4 py-3 text-slate-600 dark:text-slate-300', note.notes || ''));
+                var action = document.createElement('td');
+                action.className = 'whitespace-nowrap px-4 py-3 text-right';
+                if (note.view_url && readUrl) {
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = readUrl;
+                    var token = document.createElement('input');
+                    token.type = 'hidden';
+                    token.name = '_token';
+                    token.value = csrf();
+                    form.appendChild(token);
+                    [['family', note.family], ['job_id', String(note.job_id || '')], ['tagged', note.tagged || '']].forEach(function (pair) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = pair[0];
+                        input.value = pair[1];
+                        form.appendChild(input);
+                    });
+                    var button = document.createElement('button');
+                    button.type = 'submit';
+                    button.className = 'inline-flex cursor-pointer items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500';
+                    button.textContent = 'View job';
+                    form.appendChild(button);
+                    action.appendChild(form);
+                }
+                row.appendChild(action);
+                body.insertBefore(row, body.firstChild);
+            }
+
+            function apply(data) {
+                var items = data.items || [];
+                var ids = items.map(function (item) { return item.id; });
+                if (seen) {
+                    var fresh = ids.some(function (id) { return seen.indexOf(id) === -1; });
+                    if (fresh) playChime();
+                }
+                seen = ids;
+                renderCount(badge, Number(data.count) || 0);
+                document.querySelectorAll('[data-job-notes-count]').forEach(function (el) {
+                    renderCount(el, Number(data.tag_count) || 0);
+                });
+                renderBell(items);
+                items.forEach(function (item) {
+                    if (item.note) addJobNote(item.note);
+                });
+            }
+
+            function poll() {
+                if (document.visibilityState === 'hidden') return;
+                fetch(liveUrl, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                    .then(function (response) { return response.ok ? response.json() : null; })
+                    .then(function (data) { if (data) apply(data); })
+                    .catch(function () {});
+            }
+
+            poll();
+            setInterval(poll, 5000);
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') poll();
+            });
+        })();
         var logoutModal = document.getElementById('logoutModal');
         var logoutBtn = document.getElementById('logoutBtn');
         var logoutModalCancel = document.getElementById('logoutModalCancel');

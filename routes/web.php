@@ -159,6 +159,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/task-management', [TaskController::class, 'index'])->name('task_management');
     Route::get('/dashboard/task-management/job-notes', [TaskController::class, 'jobNotes'])->name('task_management.job_notes');
+    Route::get('/dashboard/notifications', [TaskController::class, 'liveNotifications'])->name('notifications.live');
     Route::post('/dashboard/task-management/job-notes/read', [TaskController::class, 'markJobNoteRead'])->name('task_management.job_notes.read');
     Route::post('/dashboard/task-management', [TaskController::class, 'store'])->name('task_management.store');
     Route::put('/dashboard/task-management/{id}', [TaskController::class, 'update'])->name('task_management.update');
@@ -194,6 +195,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/lbs/job/{id}/file/{file}', [LbsJobController::class, 'downloadFile'])->name('lbs.job.file');
     Route::post('/dashboard/lbs/job/{id}/checker-uploads', [LbsJobController::class, 'uploadCheckerFiles'])->name('lbs.job.checkerUploads');
     Route::post('/dashboard/discussion/reply', [\App\Http\Controllers\DiscussionReplyController::class, 'store'])->name('discussion.reply');
+    Route::get('/dashboard/discussion/reply-notification/{id}', [\App\Http\Controllers\DiscussionReplyController::class, 'open'])->name('discussion.reply.open');
     Route::post('/dashboard/lbs/job/{id}/run-comment', [LbsJobController::class, 'addRunComment'])->name('lbs.job.runComment');
     Route::post('/dashboard/lbs/job/{id}/comment', [LbsJobController::class, 'addJobComment'])->name('lbs.job.comment');
     Route::get('/dashboard/lbs/completed', [LbsJobController::class, 'completed'])->name('lbs.completed');

@@ -38,6 +38,7 @@
         @yield('header_extra')
         @php
             $tagNotifications = collect();
+            $replyNotifications = collect();
             if (\Illuminate\Support\Facades\Route::has('task_management.job_notes')) {
                 try {
                     $noteUserId = (int) session('user_id', 0);
@@ -47,22 +48,43 @@
                     if ($noteCode !== '') {
                         $tagNotifications = \App\Services\AllocatedJobsTaskFeed::unreadTaggedForUser($noteUserId, $noteCode);
                     }
+                    if ($noteUserId > 0 && \Illuminate\Support\Facades\Schema::hasTable('discussion_reply_notifications')) {
+                        $replyNotifications = \Illuminate\Support\Facades\DB::table('discussion_reply_notifications')
+                            ->where('user_id', $noteUserId)
+                            ->whereNull('read_at')
+                            ->orderByDesc('id')
+                            ->limit(30)
+                            ->get();
+                    }
                 } catch (\Throwable) {
                     $tagNotifications = collect();
+                    $replyNotifications = collect();
                 }
             }
+            $bellCount = $tagNotifications->count() + $replyNotifications->count();
         @endphp
         <div class="notification-wrap relative">
             <button type="button" class="icon-btn relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" id="notificationBtn" aria-label="Notifications" aria-expanded="false" aria-haspopup="true">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                @if($tagNotifications->isNotEmpty())
-                <span class="absolute right-0.5 top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">{{ $tagNotifications->count() }}</span>
-                @endif
+                <span id="notificationCount" @if($bellCount < 1) hidden @endif class="absolute right-0.5 top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">{{ $bellCount }}</span>
             </button>
             <div class="notification-dropdown absolute right-0 top-full z-[100] mt-2 max-h-[400px] min-w-[320px] max-w-[380px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl opacity-0 invisible pointer-events-none transition-all duration-200 -translate-y-1 dark:border-slate-700 dark:bg-slate-800 dark:shadow-xl dark:shadow-black/20" id="notificationDropdown" role="menu" aria-label="Notifications menu">
                 <div class="notification-dropdown-title border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Notifications</div>
-                <div class="notification-dropdown-list max-h-[280px] overflow-y-auto">
-                    @forelse($tagNotifications as $tagNote)
+                <div class="notification-dropdown-list max-h-[280px] overflow-y-auto" id="notificationList" data-notifications-url="{{ \Illuminate\Support\Facades\Route::has('notifications.live') ? route('notifications.live') : '' }}" data-job-notes-url="{{ \Illuminate\Support\Facades\Route::has('task_management.job_notes') ? route('task_management.job_notes') : '' }}" data-job-notes-read-url="{{ \Illuminate\Support\Facades\Route::has('task_management.job_notes.read') ? route('task_management.job_notes.read') : '' }}">
+                    @if($replyNotifications->isEmpty() && $tagNotifications->isEmpty())
+                    <div class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">No notifications</div>
+                    @else
+                    @foreach($replyNotifications as $replyNote)
+                    <a href="{{ route('discussion.reply.open', $replyNote->id) }}" class="notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50" role="menuitem">
+                        <div class="notification-item-content min-w-0 flex-1">
+                            <div class="notification-item-title font-medium text-slate-800 dark:text-slate-200">Replied in this thread</div>
+                            @if(trim((string) ($replyNote->created_at ?? '')) !== '')
+                            <p class="notification-item-time text-xs text-slate-500 dark:text-slate-400">{{ $replyNote->created_at }}</p>
+                            @endif
+                        </div>
+                    </a>
+                    @endforeach
+                    @foreach($tagNotifications as $tagNote)
                     <a href="{{ route('task_management.job_notes') }}" class="notification-item flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/50" role="menuitem">
                         <div class="notification-item-content min-w-0 flex-1">
                             <div class="notification-item-title font-medium text-slate-800 dark:text-slate-200">Tagged you in this job</div>
@@ -71,9 +93,8 @@
                             @endif
                         </div>
                     </a>
-                    @empty
-                    <div class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">No notifications</div>
-                    @endforelse
+                    @endforeach
+                    @endif
                 </div>
                 @if(\Illuminate\Support\Facades\Route::has('task_management.job_notes'))
                 <div class="notification-dropdown-footer border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">

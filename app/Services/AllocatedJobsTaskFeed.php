@@ -259,6 +259,29 @@ class AllocatedJobsTaskFeed
         return route($route, ['id' => $jobId]);
     }
 
+    public static function discussionAnchorUrl(string $source, int $jobId, int $parentId): ?string
+    {
+        if ($jobId <= 0 || $parentId <= 0) {
+            return null;
+        }
+
+        $job = str_starts_with($source, 'bph_')
+            ? self::findBphFamilyJob($jobId)
+            : self::findJobsFamilyJob($jobId);
+        if ($job === null) {
+            return null;
+        }
+
+        $url = self::viewUrlForModule((string) $job->module, $jobId);
+        if ($url === null) {
+            return null;
+        }
+
+        $kind = str_contains($source, 'run_comment') ? 'run' : 'job';
+
+        return $url.'#discussion-'.$kind.'-'.$parentId;
+    }
+
     /**
      * @return array<string, int>
      */

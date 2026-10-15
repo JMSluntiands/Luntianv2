@@ -32,9 +32,9 @@
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800" @if($search === '' && $notes->currentPage() === 1) data-job-notes-live="1" @endif>
                         @forelse($notes as $row)
-                            <tr class="align-top">
+                            <tr class="align-top" data-note-key="{{ $row->key }}">
                                 <td class="whitespace-nowrap px-4 py-3 font-semibold text-blue-700 dark:text-blue-300">{{ '@'.$row->tagged }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ $row->module }}</td>
                                 <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ $row->client }}</td>

@@ -188,9 +188,7 @@
                     Task Management
                 </span>
                 <span class="flex items-center gap-2">
-                    @if($jobNotesUnreadCount > 0)
-                    <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $jobNotesUnreadCount }}</span>
-                    @endif
+                    <span data-job-notes-count @if($jobNotesUnreadCount < 1) hidden @endif class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $jobNotesUnreadCount }}</span>
                     <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </span>
             </button>
@@ -200,9 +198,7 @@
                     @if(\Illuminate\Support\Facades\Route::has('task_management.job_notes'))
                     <a href="{{ route('task_management.job_notes') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'task_management.job_notes' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
                         <span class="nav-subitem-label">Job Notes</span>
-                        @if($jobNotesUnreadCount > 0)
-                        <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $jobNotesUnreadCount }}</span>
-                        @endif
+                        <span data-job-notes-count @if($jobNotesUnreadCount < 1) hidden @endif class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $jobNotesUnreadCount }}</span>
                     </a>
                     @endif
                 </div>
