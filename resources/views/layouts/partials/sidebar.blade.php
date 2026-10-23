@@ -214,8 +214,7 @@
         <div class="group nav-dropdown {{ $lbsOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $lbsOpen ? 'true' : 'false' }}" aria-controls="nav-sub-lbs">
                 <span class="flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'lbs', 'class' => 'h-5 w-5 flex-shrink-0 opacity-90'])
-                    LBS
+                    @include('layouts.partials.client-logo-icon', ['key' => 'lbs', 'class' => 'h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'LBS'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -283,8 +282,7 @@
         <div class="group nav-dropdown {{ $gaOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $gaOpen ? 'true' : 'false' }}" aria-controls="nav-sub-general-assembly">
                 <span class="flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'general_assembly', 'class' => 'h-5 w-5 flex-shrink-0 opacity-90'])
-                    {{ \App\Models\RolePermission::GENERIC_ASSESSMENT_NAME }}
+                    @include('layouts.partials.client-logo-icon', ['key' => 'general_assembly', 'class' => 'h-5 w-5 flex-shrink-0 opacity-90', 'label' => \App\Models\RolePermission::GENERIC_ASSESSMENT_NAME])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -352,8 +350,7 @@
         <div class="group nav-dropdown {{ $luntianOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $luntianOpen ? 'true' : 'false' }}" aria-controls="nav-sub-luntian">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'luntian', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    Luntian
+                    @include('layouts.partials.client-logo-icon', ['key' => 'luntian', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'Luntian'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -421,8 +418,7 @@
         <div class="group nav-dropdown {{ $bphOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $bphOpen ? 'true' : 'false' }}" aria-controls="nav-sub-bph">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'bph', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    BPH
+                    @include('layouts.partials.client-logo-icon', ['key' => 'bph', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'BPH'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -490,8 +486,7 @@
         <div class="group nav-dropdown {{ $efficientLivingOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $efficientLivingOpen ? 'true' : 'false' }}" aria-controls="nav-sub-efficient-living">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'efficient_living', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    Efficient Living
+                    @include('layouts.partials.client-logo-icon', ['key' => 'efficient_living', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'Efficient Living'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -559,8 +554,7 @@
         <div class="group nav-dropdown {{ $bluinqOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $bluinqOpen ? 'true' : 'false' }}" aria-controls="nav-sub-bluinq">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'bluinq', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    BluInq
+                    @include('layouts.partials.client-logo-icon', ['key' => 'bluinq', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'BluInq'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -628,8 +622,7 @@
         <div class="group nav-dropdown {{ $amtOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $amtOpen ? 'true' : 'false' }}" aria-controls="nav-sub-amt">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'amt', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    A&amp;M
+                    @include('layouts.partials.client-logo-icon', ['key' => 'amt', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'A&M'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -706,8 +699,7 @@
         <div class="group nav-dropdown {{ $fyrsOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $fyrsOpen ? 'true' : 'false' }}" aria-controls="nav-sub-fyrs">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'fyrs', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    Redistar
+                    @include('layouts.partials.client-logo-icon', ['key' => 'fyrs', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'Redistar'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -751,8 +743,7 @@
         <div class="group nav-dropdown {{ $cspOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $cspOpen ? 'true' : 'false' }}" aria-controls="nav-sub-csp">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'csp', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    CSP
+                    @include('layouts.partials.client-logo-icon', ['key' => 'csp', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'CSP'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -820,8 +811,7 @@
         <div class="group nav-dropdown {{ $nhOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $nhOpen ? 'true' : 'false' }}" aria-controls="nav-sub-nh">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'nh', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    NH
+                    @include('layouts.partials.client-logo-icon', ['key' => 'nh', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'NH'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -889,8 +879,7 @@
         <div class="group nav-dropdown {{ $lcHomeBuilderOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $lcHomeBuilderOpen ? 'true' : 'false' }}" aria-controls="nav-sub-lc-home-builder">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'lc_home_builder', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    LC Home Builder
+                    @include('layouts.partials.client-logo-icon', ['key' => 'lc_home_builder', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'LC Home Builder'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -958,8 +947,7 @@
         <div class="group nav-dropdown {{ $leadingEnergyOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $leadingEnergyOpen ? 'true' : 'false' }}" aria-controls="nav-sub-leading-energy">
                 <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'leading_energy', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90'])
-                    Leading Energy
+                    @include('layouts.partials.client-logo-icon', ['key' => 'leading_energy', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'Leading Energy'])
                 </span>
                 <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
