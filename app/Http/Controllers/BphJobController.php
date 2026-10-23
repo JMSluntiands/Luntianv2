@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\RolePermission;
 use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackNewJobNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
 use App\Support\ForCheckingAttachmentValidation;
@@ -545,48 +546,18 @@ class BphJobController extends Controller
         $assigned = $job->assigned ?? '';
         $checked = $job->checked ?? '';
 
-        try {
-            $slackMessage = [
-                'text' => '🆕 New BPH Job Submitted',
-                'attachments' => [
-                    [
-                        'color' => '#0d9488',
-                        'fields' => [
-                            ['title' => 'BPH Ref #', 'value' => $reference, 'short' => true],
-                            ['title' => 'Job Number', 'value' => $jobNum, 'short' => true],
-                            ['title' => 'Client Name', 'value' => $clientName, 'short' => true],
-                            ['title' => 'Status', 'value' => $status, 'short' => true],
-                            ['title' => 'Urgent', 'value' => $urgent, 'short' => true],
-                            ['title' => 'NCC', 'value' => $ncc, 'short' => true],
-                            ['title' => 'Job Type', 'value' => $jobType, 'short' => false],
-                            ['title' => 'Contact Email', 'value' => $contact, 'short' => false],
-                            ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
-                            ['title' => 'Checked By', 'value' => $checked, 'short' => true],
-                        ],
-                        'footer' => 'Luntian BPH Job Management',
-                        'ts' => time(),
-                    ],
-                ],
-            ];
-
-            $ch = curl_init($slackWebhook);
-            curl_setopt_array($ch, [
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode($slackMessage),
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 5,
-            ]);
-            curl_exec($ch);
-            $slackError = curl_error($ch);
-            curl_close($ch);
-
-            if ($slackError) {
-                \Log::warning('BPH Slack notification failed', ['error' => $slackError, 'job_bph_id' => $id]);
-            }
-        } catch (\Throwable $e) {
-            \Log::warning('BPH Slack exception', ['message' => $e->getMessage(), 'job_bph_id' => $id]);
-        }
+        SlackNewJobNotifier::send($this->slackProductLabelForPipelineJob($job), [
+            'Reference' => $reference,
+            'Job Number' => $jobNum,
+            'Client' => $clientName,
+            'Job Type' => $jobType,
+            'Urgent' => $urgent,
+            'NCC' => $ncc,
+            'Contact Email' => $contact,
+            'Status' => $status,
+            'Staff' => $assigned,
+            'Checker' => $checked,
+        ], route($this->pipelineJobSlackViewRouteName($job), ['id' => $id]), $id);
 
         return response()->json(['status' => 'success']);
     }

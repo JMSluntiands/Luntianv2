@@ -118,7 +118,7 @@ class DiscussionReplyController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'url' => route('discussion.image', ['file' => $name]),
+            'url' => route('discussion.image', ['file' => $name], false),
         ]);
     }
 

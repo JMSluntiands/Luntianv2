@@ -282,8 +282,42 @@
             });
     }
 
+    var FILTERS_STORAGE_KEY = 'dashboard_chart_filters';
+
+    function storeFilters() {
+        try {
+            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({
+                client: locked ? '' : (clientSel ? clientSel.value : ''),
+                status: statusSel ? statusSel.value : '',
+                staff: staffSel ? staffSel.value : ''
+            }));
+        } catch (e) {}
+    }
+
+    function applyStored(sel, value) {
+        if (!sel || typeof value !== 'string' || value === '') return false;
+        var match = Array.prototype.some.call(sel.options, function (o) { return o.value === value; });
+        if (match) sel.value = value;
+        return match;
+    }
+
+    function restoreFilters() {
+        var saved;
+        try {
+            saved = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) || '{}') || {};
+        } catch (e) {
+            return false;
+        }
+        var restored = false;
+        if (!locked && applyStored(clientSel, saved.client)) restored = true;
+        if (applyStored(statusSel, saved.status)) restored = true;
+        if (applyStored(staffSel, saved.staff)) restored = true;
+        return restored;
+    }
+
     function onFilterChange(el) {
         pulseSelect(el);
+        storeFilters();
         fetchChart();
     }
 
@@ -298,10 +332,14 @@
             if (staffSel) staffSel.value = '';
             pulseSelect(statusSel);
             pulseSelect(staffSel);
+            storeFilters();
             fetchChart();
         });
     }
 
+    if (restoreFilters()) {
+        fetchChart();
+    }
     toggleClear();
 })();
 </script>

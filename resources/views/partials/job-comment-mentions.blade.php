@@ -618,20 +618,22 @@
         return meta ? meta.getAttribute('content') : '';
     }
 
-    function clipboardImage(event) {
-        var data = event.clipboardData;
-        if (!data) return null;
+    function imageFiles(data) {
+        if (!data) return [];
+        var found = [];
+        var files = data.files || [];
+        for (var f = 0; f < files.length; f++) {
+            if (files[f].type && files[f].type.indexOf('image/') === 0) found.push(files[f]);
+        }
+        if (found.length) return found;
         var items = data.items || [];
         for (var i = 0; i < items.length; i++) {
             if (items[i].kind === 'file' && items[i].type.indexOf('image/') === 0) {
-                return items[i].getAsFile();
+                var file = items[i].getAsFile();
+                if (file) found.push(file);
             }
         }
-        var files = data.files || [];
-        for (var f = 0; f < files.length; f++) {
-            if (files[f].type && files[f].type.indexOf('image/') === 0) return files[f];
-        }
-        return null;
+        return found;
     }
 
     function placeNode(editor, node) {
@@ -711,38 +713,97 @@
         return note;
     }
 
+    function uploadImage(editor, image) {
+        var loading = insertLoading(editor);
+        var body = new FormData();
+        body.append('image', image, image.name || 'snip.png');
+        body.append('_token', csrf());
+        return fetch(imageUploadUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' },
+            body: body,
+            credentials: 'same-origin'
+        }).then(function (response) {
+            return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+        }).then(function (result) {
+            if (!result.ok || !result.data || !result.data.url) {
+                if (loading) loading.remove();
+                var message = result.data && result.data.errors && result.data.errors.image ? result.data.errors.image[0] : 'Could not add the image.';
+                if (window.showSuccessToast) showSuccessToast(message);
+                return;
+            }
+            insertImage(editor, result.data.url, loading);
+        }).catch(function () {
+            if (loading) loading.remove();
+            if (window.showSuccessToast) showSuccessToast('Could not add the image.');
+        });
+    }
+
+    function uploadImages(editor, images) {
+        if (!imageUploadUrl || !images.length) return;
+        images.reduce(function (chain, image) {
+            return chain.then(function () { return uploadImage(editor, image); });
+        }, Promise.resolve());
+    }
+
+    function addPictureButton(editor) {
+        var wrap = editor.closest('.job-view-comment-editor');
+        var toolbar = wrap ? wrap.querySelector('.job-view-comment-btn') : null;
+        toolbar = toolbar ? toolbar.parentNode : null;
+        if (!toolbar || !imageUploadUrl) return;
+        var picker = document.createElement('input');
+        picker.type = 'file';
+        picker.accept = 'image/jpeg,image/png,image/gif,image/webp';
+        picker.multiple = true;
+        picker.hidden = true;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'rounded p-1.5 text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-600';
+        button.title = 'Add pictures (you can also paste or drop them)';
+        button.setAttribute('aria-label', 'Add pictures');
+        button.innerHTML = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+        button.addEventListener('mousedown', function (event) { event.preventDefault(); });
+        button.addEventListener('click', function () { picker.click(); });
+        picker.addEventListener('change', function () {
+            var images = imageFiles({ files: picker.files });
+            picker.value = '';
+            uploadImages(editor, images);
+        });
+        toolbar.appendChild(button);
+        toolbar.appendChild(picker);
+    }
+
     document.querySelectorAll('.job-view-comment-body').forEach(function (editor) {
+        addPictureButton(editor);
         editor.addEventListener('paste', function (event) {
-            var image = clipboardImage(event);
+            var images = imageFiles(event.clipboardData);
             event.preventDefault();
-            if (!image) {
+            if (!images.length) {
                 var text = event.clipboardData ? event.clipboardData.getData('text/plain') : '';
                 document.execCommand('insertText', false, text);
                 return;
             }
-            if (!imageUploadUrl) return;
-            var loading = insertLoading(editor);
-            var body = new FormData();
-            body.append('image', image, image.name || 'snip.png');
-            body.append('_token', csrf());
-            fetch(imageUploadUrl, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' },
-                body: body,
-                credentials: 'same-origin'
-            }).then(function (response) {
-                return response.json().then(function (data) { return { ok: response.ok, data: data }; });
-            }).then(function (result) {
-                if (!result.ok || !result.data || !result.data.url) {
-                    if (loading) loading.remove();
-                    if (window.showSuccessToast) showSuccessToast('Could not paste the image.');
-                    return;
+            uploadImages(editor, images);
+        });
+        editor.addEventListener('dragover', function (event) {
+            if (event.dataTransfer && Array.prototype.indexOf.call(event.dataTransfer.types || [], 'Files') !== -1) {
+                event.preventDefault();
+            }
+        });
+        editor.addEventListener('drop', function (event) {
+            var images = imageFiles(event.dataTransfer);
+            if (!images.length) return;
+            event.preventDefault();
+            editor.focus();
+            if (document.caretRangeFromPoint) {
+                var range = document.caretRangeFromPoint(event.clientX, event.clientY);
+                if (range && editor.contains(range.startContainer)) {
+                    var sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
                 }
-                insertImage(editor, result.data.url, loading);
-            }).catch(function () {
-                if (loading) loading.remove();
-                if (window.showSuccessToast) showSuccessToast('Could not paste the image.');
-            });
+            }
+            uploadImages(editor, images);
         });
     });
 

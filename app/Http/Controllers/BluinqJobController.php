@@ -10,6 +10,7 @@ use App\Models\Priority;
 use App\Models\Status;
 use App\Models\User;
 use App\Services\JobCountsScope;
+use App\Services\SlackNewJobNotifier;
 use App\Services\SlackWebhookResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -420,48 +421,18 @@ class BluinqJobController extends Controller
         $assigned = $job->assigned ?? '';
         $checked = $job->checked ?? '';
 
-        try {
-            $slackMessage = [
-                'text' => '🆕 New BluInq Job Submitted',
-                'attachments' => [
-                    [
-                        'color' => '#0d9488',
-                        'fields' => [
-                            ['title' => 'BluInq Ref #', 'value' => $reference, 'short' => true],
-                            ['title' => 'Job Number', 'value' => $jobNum, 'short' => true],
-                            ['title' => 'Client Name', 'value' => $clientName, 'short' => true],
-                            ['title' => 'Status', 'value' => $status, 'short' => true],
-                            ['title' => 'Urgent', 'value' => $urgent, 'short' => true],
-                            ['title' => 'NCC', 'value' => $ncc, 'short' => true],
-                            ['title' => 'Job Type', 'value' => $jobType, 'short' => false],
-                            ['title' => 'Contact Email', 'value' => $contact, 'short' => false],
-                            ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
-                            ['title' => 'Checked By', 'value' => $checked, 'short' => true],
-                        ],
-                        'footer' => 'Luntian BluInq Job Management',
-                        'ts' => time(),
-                    ],
-                ],
-            ];
-
-            $ch = curl_init($slackWebhook);
-            curl_setopt_array($ch, [
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode($slackMessage),
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 5,
-            ]);
-            curl_exec($ch);
-            $slackError = curl_error($ch);
-            curl_close($ch);
-
-            if ($slackError) {
-                \Log::warning('BluInq Slack notification failed', ['error' => $slackError, 'job_bph_id' => $id]);
-            }
-        } catch (\Throwable $e) {
-            \Log::warning('BluInq Slack exception', ['message' => $e->getMessage(), 'job_bph_id' => $id]);
-        }
+        SlackNewJobNotifier::send('BluInq', [
+            'Reference' => $reference,
+            'Job Number' => $jobNum,
+            'Client' => $clientName,
+            'Job Type' => $jobType,
+            'Urgent' => $urgent,
+            'NCC' => $ncc,
+            'Contact Email' => $contact,
+            'Status' => $status,
+            'Staff' => $assigned,
+            'Checker' => $checked,
+        ], route('bluinq.view', ['id' => $id]), $id);
 
         return response()->json(['status' => 'success']);
     }

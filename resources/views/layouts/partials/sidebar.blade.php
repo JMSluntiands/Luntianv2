@@ -87,15 +87,13 @@
     $showEfficientLivingNav = $showJobNavFromConfig('efficient_living');
     $showBluinqNav = $showJobNavFromConfig('bluinq');
     $roleNormForNav = strtolower(trim((string) ($userRole ?? '')));
-    $showAmtNav = $showJobNavFromConfig('amt', [
-        'amt.job.sendSlack', 'amt.job.sendSubmissionEmail', 'amt.job.emailPreview', 'amt.job.sendMailboxEmail',
-    ]) || $roleNormForNav === 'admin';
     $showFyrsNav = $showJobNavFromConfig('fyrs', [
         'fyrs.job.sendSlack', 'fyrs.job.sendSubmissionEmail', 'fyrs.job.emailPreview', 'fyrs.job.sendMailboxEmail',
         'fyrs.job.uploadFiles', 'fyrs.job.deleteFile', 'fyrs.job.file', 'fyrs.job.mergeFile', 'fyrs.job.printCompliance',
         'fyrs.job.checkerUploads', 'fyrs.job.runComment', 'fyrs.job.comment', 'fyrs.job.archive',
     ]) || $roleNormForNav === 'admin';
-    // CSP, NH, LC Home Builder, and Leading Energy are hidden from the sidebar; their pages still exist.
+    // A&M, CSP, NH, LC Home Builder, and Leading Energy are hidden from the sidebar; their pages still exist.
+    $showAmtNav = false;
     $showCspNav = false;
     $showNhNav = false;
     $showLcHomeBuilderNav = false;
@@ -105,7 +103,7 @@
     $showBranchNav = $anyMay(['branch.index', 'branch.archive']);
     $showAccountsNav = $anyMay(['users.index', 'accounts.clients.index', 'users.archive']);
     $showBphEmailNav = $showJobNavFromConfig('bph_email');
-    $showAmtEmailNav = $showJobNavFromConfig('amt_email');
+    $showAmtEmailNav = false;
     $announcementRoutes = \App\Models\RolePermission::allowedRoutesForRole((string) ($userRole ?? ''), session('user_branch'));
     $showAnnouncementNav = in_array('announcement.index', $announcementRoutes, true);
     $showReportsNav = $may('reports') || $may('hr') || $may('timesheet');

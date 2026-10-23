@@ -225,14 +225,16 @@
                                         </button>
                                         <span class="mx-1 h-5 w-px bg-slate-300 dark:bg-slate-600"></span>
                                         <button type="button" class="forum-rt-btn rounded px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700" data-cmd="createLink" title="Link">Link</button>
-                                        <button type="button" class="rounded px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700" id="forumToolbarImageBtn" title="Cover image">Image</button>
+                                        <button type="button" class="rounded px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700" id="forumToolbarImageBtn" title="Insert pictures into the text (you can also paste or drop them)">Pictures</button>
+                                        <input type="file" id="forumInlineImageInput" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp" multiple class="hidden">
                                     </div>
                                     <input type="hidden" name="body" id="forumPostBody" value="">
                                     <div
                                         id="forumPostEditor"
                                         contenteditable="true"
                                         data-placeholder="Write the announcement details..."
-                                        class="min-h-[140px] bg-white px-3.5 py-3 text-sm text-slate-800 focus:outline-none dark:bg-slate-900/50 dark:text-slate-100 [&:empty::before]:pointer-events-none [&:empty::before]:text-slate-400 [&:empty::before]:content-[attr(data-placeholder)] dark:[&:empty::before]:text-slate-500"
+                                        data-upload-url="{{ route('forum_thread.inline_image') }}"
+                                        class="min-h-[140px] bg-white px-3.5 py-3 text-sm text-slate-800 focus:outline-none dark:bg-slate-900/50 dark:text-slate-100 [&_img]:my-2 [&_img]:block [&_img]:max-h-72 [&_img]:max-w-full [&_img]:rounded-lg [&_img.is-uploading]:opacity-50 [&:empty::before]:pointer-events-none [&:empty::before]:text-slate-400 [&:empty::before]:content-[attr(data-placeholder)] dark:[&:empty::before]:text-slate-500"
                                     >{!! old('body') !!}</div>
                                 </div>
                             </div>
@@ -336,12 +338,12 @@
                                 @if($postTitle !== '')
                                     <h3 class="mt-3 text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ $postTitle }}</h3>
                                 @endif
-                                @if(trim(strip_tags((string) $post->body)) !== '')
+                                @if(trim(strip_tags((string) $post->body)) !== '' || stripos((string) $post->body, '<img') !== false)
                                     @php
                                         $rawBody = (string) $post->body;
-                                        $looksRich = (bool) preg_match('/<(p|br|div|ul|ol|li|b|strong|i|em|u|a)\b/i', $rawBody);
+                                        $looksRich = (bool) preg_match('/<(p|br|div|ul|ol|li|b|strong|i|em|u|a|img)\b/i', $rawBody);
                                     @endphp
-                                    <div class="forum-post-body mt-2 break-words text-sm leading-relaxed text-slate-800 dark:text-slate-200 [&_a]:text-sky-600 [&_a]:underline dark:[&_a]:text-sky-400 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:my-1">
+                                    <div class="forum-post-body mt-2 break-words text-sm leading-relaxed text-slate-800 dark:text-slate-200 [&_a]:text-sky-600 [&_a]:underline dark:[&_a]:text-sky-400 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_p]:my-1 [&_img]:my-2 [&_img]:block [&_img]:max-h-[28rem] [&_img]:max-w-full [&_img]:cursor-zoom-in [&_img]:rounded-lg [&_img]:border [&_img]:border-slate-200 dark:[&_img]:border-slate-700">
                                         {!! $looksRich ? $rawBody : nl2br(e($rawBody)) !!}
                                     </div>
                                 @endif
@@ -468,6 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function isEmptyHtml(html) {
         var tmp = document.createElement('div');
         tmp.innerHTML = html || '';
+        if (tmp.querySelector('img')) return false;
         var text = (tmp.textContent || tmp.innerText || '').replace(/\u00a0/g, ' ').trim();
         return text === '';
     }
@@ -532,20 +535,184 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    if (toolbarImageBtn && input) {
+    var inlineInput = document.getElementById('forumInlineImageInput');
+    var savedRange = null;
+    var pendingUploads = 0;
+
+    function rememberCaret() {
+        var sel = window.getSelection();
+        if (editor && sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            savedRange = sel.getRangeAt(0).cloneRange();
+        }
+    }
+
+    function insertNodeAtCaret(node) {
+        if (!editor) return;
+        var range = savedRange;
+        if (!range || !editor.contains(range.commonAncestorContainer)) {
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+        }
+        range.deleteContents();
+        range.insertNode(node);
+        range.setStartAfter(node);
+        range.collapse(true);
+        var sel = window.getSelection();
+        if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+        savedRange = range.cloneRange();
+    }
+
+    function csrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function uploadInlineImage(file) {
+        if (!editor || !file) return;
+        var placeholder = document.createElement('img');
+        placeholder.className = 'is-uploading';
+        placeholder.alt = '';
+        placeholder.src = URL.createObjectURL(file);
+        insertNodeAtCaret(placeholder);
+        pendingUploads++;
+        syncBody();
+
+        compressImage(file).then(function (ready) {
+            var fd = new FormData();
+            fd.append('image', ready);
+            return fetch(editor.getAttribute('data-upload-url'), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+                body: fd
+            }).then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (data) {
+                    if (!res.ok || !data.url) {
+                        var msg = data.message || (data.errors && data.errors.image && data.errors.image[0]) || 'Could not upload the picture.';
+                        throw new Error(msg);
+                    }
+                    return data.url;
+                });
+            });
+        }).then(function (url) {
+            URL.revokeObjectURL(placeholder.src);
+            placeholder.src = url;
+            placeholder.classList.remove('is-uploading');
+            placeholder.removeAttribute('class');
+        }).catch(function (err) {
+            URL.revokeObjectURL(placeholder.src);
+            placeholder.remove();
+            toast((err && err.message) || 'Could not upload the picture.');
+        }).then(function () {
+            pendingUploads = Math.max(0, pendingUploads - 1);
+            syncBody();
+        });
+    }
+
+    function imageFilesFrom(list) {
+        return Array.prototype.filter.call(list || [], function (f) {
+            return f && /^image\//i.test(f.type || '');
+        });
+    }
+
+    if (toolbarImageBtn && inlineInput) {
+        toolbarImageBtn.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            rememberCaret();
+        });
         toolbarImageBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            input.click();
+            inlineInput.click();
+        });
+        inlineInput.addEventListener('change', function () {
+            imageFilesFrom(inlineInput.files).forEach(uploadInlineImage);
+            inlineInput.value = '';
         });
     }
 
     if (editor) {
         ['focus', 'keyup', 'mouseup', 'input'].forEach(function (evt) {
             editor.addEventListener(evt, function () {
+                rememberCaret();
                 syncBody();
                 updateRtActiveState();
             });
         });
+
+        editor.addEventListener('paste', function (e) {
+            var cd = e.clipboardData;
+            var files = imageFilesFrom(cd && cd.files);
+            if (!files.length && cd && cd.items) {
+                Array.prototype.forEach.call(cd.items, function (item) {
+                    if (item.kind === 'file' && /^image\//i.test(item.type)) {
+                        var f = item.getAsFile();
+                        if (f) files.push(f);
+                    }
+                });
+            }
+            if (files.length) {
+                e.preventDefault();
+                rememberCaret();
+                files.forEach(uploadInlineImage);
+                return;
+            }
+            window.setTimeout(adoptPastedImages, 0);
+        });
+
+        editor.addEventListener('dragover', function (e) {
+            if (e.dataTransfer && Array.prototype.some.call(e.dataTransfer.types || [], function (t) { return t === 'Files'; })) {
+                e.preventDefault();
+            }
+        });
+        editor.addEventListener('drop', function (e) {
+            var files = imageFilesFrom(e.dataTransfer && e.dataTransfer.files);
+            if (!files.length) return;
+            e.preventDefault();
+            var range = null;
+            if (document.caretRangeFromPoint) {
+                range = document.caretRangeFromPoint(e.clientX, e.clientY);
+            } else if (document.caretPositionFromPoint) {
+                var pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                if (pos) {
+                    range = document.createRange();
+                    range.setStart(pos.offsetNode, pos.offset);
+                }
+            }
+            if (range && editor.contains(range.commonAncestorContainer)) savedRange = range;
+            files.forEach(uploadInlineImage);
+        });
+
+        syncBody();
+    }
+
+    // Pictures pasted as HTML (e.g. copied from a web page) point elsewhere; re-upload embedded ones and drop the rest.
+    function adoptPastedImages() {
+        if (!editor) return;
+        var dropped = 0;
+        editor.querySelectorAll('img').forEach(function (img) {
+            var src = img.getAttribute('src') || '';
+            if (img.classList.contains('is-uploading') || src.indexOf('/dashboard/forum-thread/image/inline_') !== -1) return;
+            if (/^data:image\//i.test(src)) {
+                fetch(src).then(function (r) { return r.blob(); }).then(function (blob) {
+                    var marker = document.createElement('span');
+                    img.replaceWith(marker);
+                    var range = document.createRange();
+                    range.selectNode(marker);
+                    savedRange = range;
+                    uploadInlineImage(new File([blob], 'pasted.' + ((blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg')), { type: blob.type || 'image/png' }));
+                }).catch(function () { img.remove(); });
+                return;
+            }
+            img.remove();
+            dropped++;
+        });
+        if (dropped) {
+            toast('Some pasted pictures could not be copied. Use "Copy image" and paste again, or add them with the Pictures button.');
+        }
         syncBody();
     }
 
@@ -695,6 +862,11 @@ document.addEventListener('DOMContentLoaded', function () {
             var hasTitle = titleInput && titleInput.value.trim() !== '';
             var hasText = body && !isEmptyHtml(body.value);
             var hasImage = input && input.files && input.files.length > 0;
+            if (pendingUploads > 0) {
+                e.preventDefault();
+                toast('Please wait for the pictures to finish uploading.');
+                return;
+            }
             if (!hasTitle) {
                 e.preventDefault();
                 toast('Please enter a title.');
@@ -707,6 +879,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    document.querySelectorAll('.forum-post-body').forEach(function (bodyEl) {
+        bodyEl.addEventListener('click', function (e) {
+            var img = e.target && e.target.closest ? e.target.closest('img') : null;
+            if (img && img.src) window.open(img.src, '_blank', 'noopener');
+        });
+    });
 
     /* ---- Bulletin layout: list ↔ composer / detail ---- */
     var composerPanel = document.getElementById('bulletinComposerPanel') || document.getElementById('bulletinEmptyPanel');

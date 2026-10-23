@@ -133,6 +133,37 @@
                 </div>
             </div>
 
+            @if(\Illuminate\Support\Facades\Schema::hasColumn('slack_configs', 'new_job_branches'))
+                @php
+                    $savedBranches = $config?->new_job_branches;
+                    $checkedBranches = old('new_job_branches_submitted')
+                        ? (array) old('new_job_branches', [])
+                        : (is_array($savedBranches) ? $savedBranches : \App\Services\SlackNewJobNotifier::BRANCHES);
+                @endphp
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">New job branches</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Only checked branches send a Slack message when a new job is added.</p>
+                        </div>
+                        <div class="flex gap-2 text-xs">
+                            <button type="button" data-branch-toggle="1" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Select all</button>
+                            <button type="button" data-branch-toggle="0" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Clear</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2 p-5 sm:grid-cols-2 md:grid-cols-3">
+                        <input type="hidden" name="new_job_branches_submitted" value="1">
+                        @foreach(\App\Services\SlackNewJobNotifier::BRANCHES as $branch)
+                            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50">
+                                <input type="checkbox" name="new_job_branches[]" value="{{ $branch }}" class="slack-branch-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                    @checked(in_array($branch, $checkedBranches, true))>
+                                <span>{{ $branch }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="flex flex-wrap items-center gap-3">
                 <button type="submit" id="slackSubmitBtn"
                     class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
@@ -156,6 +187,12 @@
             var form = document.getElementById('slackConfigForm');
             var btn = document.getElementById('slackSubmitBtn');
             if (!form || !btn) return;
+            form.querySelectorAll('[data-branch-toggle]').forEach(function(toggle) {
+                toggle.addEventListener('click', function() {
+                    var on = toggle.getAttribute('data-branch-toggle') === '1';
+                    form.querySelectorAll('.slack-branch-checkbox').forEach(function(cb) { cb.checked = on; });
+                });
+            });
             form.addEventListener('submit', function() {
                 btn.disabled = true;
                 btn.innerHTML = '<span class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true"></span>Saving...';

@@ -152,6 +152,10 @@ class CheckPagePermission
                     'forum_thread.post',
                     'forum_thread',
                 ],
+                'forum_thread.inline_image' => [
+                    'forum_thread.post',
+                    'forum_thread',
+                ],
                 'forum_thread.pin' => [
                     'forum_thread.post',
                     'forum_thread',

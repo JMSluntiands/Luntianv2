@@ -15,6 +15,7 @@ use App\Models\RolePermission;
 use App\Models\EmailConfig;
 use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackNewJobNotifier;
 use App\Services\SlackWebhookResolver;
 use App\Support\FecUnitsValidation;
 use App\Support\ForCheckingAttachmentValidation;
@@ -2641,56 +2642,29 @@ class GeneralAssemblyJobController extends Controller
         $checked = $job->checker_id ?? '';
 
         $jobProduct = $this->resolveLbsJobProduct($job);
-        $slackHeadline = '🆕 New Generic EA Job Submitted';
-        $refFieldTitle = 'GA Ref #';
-        $slackFooter = match ($jobProduct) {
-            'efficient_living' => 'Luntian Efficient Living Job Management',
-            'luntian' => 'Luntian Job Management',
-            default => 'Luntian LBS Job Management',
+        $branch = match ($jobProduct) {
+            'efficient_living' => 'Efficient Living',
+            'luntian' => 'Luntian',
+            default => 'Gen EA',
+        };
+        $viewRoute = match ($jobProduct) {
+            'efficient_living' => 'efficient_living.job.view',
+            'luntian' => 'luntian.job.view',
+            default => 'general_assembly.job.view',
         };
 
-        try {
-            $slackMessage = [
-                'text' => $slackHeadline,
-                'attachments' => [
-                    [
-                        'color' => '#f57c00',
-                        'fields' => [
-                            ['title' => $refFieldTitle, 'value' => $reference, 'short' => true],
-                            ['title' => 'Client Ref #', 'value' => $client_ref, 'short' => true],
-                            ['title' => 'Account Client', 'value' => $client_account_name, 'short' => true],
-                            ['title' => 'Status', 'value' => $status, 'short' => true],
-                            ['title' => 'NCC Compliance', 'value' => $complianceLabel, 'short' => true],
-                            ['title' => 'Job Type', 'value' => $job_request_type, 'short' => true],
-                            ['title' => 'Priority', 'value' => $priorityLabel, 'short' => true],
-                            ['title' => 'Address', 'value' => $address, 'short' => false],
-                            ['title' => 'Assigned To', 'value' => $assigned, 'short' => true],
-                            ['title' => 'Checked By', 'value' => $checked, 'short' => true],
-                        ],
-                        'footer' => $slackFooter,
-                        'ts' => time(),
-                    ],
-                ],
-            ];
-
-            $ch = curl_init($slackWebhook);
-            curl_setopt_array($ch, [
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode($slackMessage),
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 5,
-            ]);
-            curl_exec($ch);
-            $slackError = curl_error($ch);
-            curl_close($ch);
-
-            if ($slackError) {
-                \Log::warning('LBS Slack notification failed', ['error' => $slackError, 'job_id' => $id]);
-            }
-        } catch (\Throwable $e) {
-            \Log::warning('LBS Slack exception', ['message' => $e->getMessage(), 'job_id' => $id]);
-        }
+        SlackNewJobNotifier::send($branch, [
+            'Reference' => $reference,
+            'Client Ref #' => $client_ref,
+            'Client' => $client_account_name,
+            'Job Type' => $job_request_type,
+            'Priority' => $priorityLabel,
+            'NCC Compliance' => $complianceLabel,
+            'Address' => $address,
+            'Status' => $status,
+            'Staff' => $assigned,
+            'Checker' => $checked,
+        ], route($viewRoute, ['id' => $id]), $id);
 
         return response()->json(['status' => 'success']);
     }

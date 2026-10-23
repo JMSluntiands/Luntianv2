@@ -36,6 +36,8 @@ return [
         'lbs_webhook' => env('LBS_SLACK_WEBHOOK_URL'),
         'lbs_webhook_new_job' => env('LBS_SLACK_NEW_JOB_WEBHOOK_URL'),
         'lbs_webhook_assignment' => env('LBS_SLACK_ASSIGNMENT_WEBHOOK_URL'),
+        'job_link_base_url' => env('SLACK_JOB_LINK_BASE_URL', 'https://prodv2.luntian.com.au'),
+        'job_link_hosts' => ['jms.luntian.com.au', 'prodv2.luntian.com.au'],
     ],
 
 ];

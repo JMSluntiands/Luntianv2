@@ -108,7 +108,7 @@ class ForumThreadController extends Controller
                 'avatar' => $avatar,
                 'title' => $title,
                 'excerpt' => $plain,
-                'has_image' => trim((string) ($post->image_path ?? '')) !== '',
+                'has_image' => trim((string) ($post->image_path ?? '')) !== '' || stripos((string) $post->body, '<img') !== false,
                 'status' => $post->normalizeType(),
                 'is_pinned' => $post->isPinned(),
                 'comments_count' => (int) $post->comments_count,
@@ -212,6 +212,38 @@ class ForumThreadController extends Controller
             ->with('success', $postType === ForumPost::TYPE_ANNOUNCEMENT ? 'Announcement posted.' : 'Discussion posted.');
     }
 
+    public function uploadInlineImage(Request $request)
+    {
+        if (! RolePermission::userMayAccessRoute('forum_thread.post')) {
+            return $this->deny($request, 'You do not have permission to create posts.');
+        }
+
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:4096'],
+        ], [
+            'image.uploaded' => 'The image failed to upload. Try a picture under 4MB.',
+            'image.image' => 'Only JPG, PNG, GIF, or WebP pictures can be added.',
+            'image.mimes' => 'Only JPG, PNG, GIF, or WebP pictures can be added.',
+            'image.max' => 'Each picture must be 4MB or smaller.',
+        ]);
+
+        $uploaded = $request->file('image');
+        $ext = strtolower($uploaded->getClientOriginalExtension() ?: $uploaded->extension() ?: 'png');
+        if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+            $ext = 'png';
+        }
+        $name = 'inline_'.now('Asia/Manila')->format('YmdHis').'_'.Str::lower(Str::random(10)).'.'.$ext;
+        $stored = $uploaded->storeAs('forum', $name, 'public');
+        if (! $stored) {
+            return response()->json(['status' => 'error', 'message' => 'Could not save the picture. Please try again.'], 500);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'url' => route('forum_thread.image', ['path' => $name], false),
+        ]);
+    }
+
     public function togglePin(Request $request, int $id)
     {
         $isAdmin = strtolower(trim((string) session('user_role', ''))) === 'admin';
@@ -248,6 +280,9 @@ class ForumThreadController extends Controller
 
         if ($post->image_path && Storage::disk('public')->exists($post->image_path)) {
             Storage::disk('public')->delete($post->image_path);
+        }
+        foreach (self::inlineImageNames((string) $post->body) as $inlineName) {
+            Storage::disk('public')->delete('forum/'.$inlineName);
         }
 
         $post->comments()->delete();
@@ -345,8 +380,16 @@ class ForumThreadController extends Controller
             return '';
         }
 
-        $allowed = '<p><br><b><strong><i><em><u><ul><ol><li><div><span><a>';
+        $allowed = '<p><br><b><strong><i><em><u><ul><ol><li><div><span><a><img>';
         $clean = strip_tags($html, $allowed);
+        // Only pictures uploaded through the composer are kept; their tags are rebuilt with no other attributes.
+        $clean = preg_replace_callback('/<img\b([^>]*)>/i', static function (array $m): string {
+            $name = self::inlineImageNameFromAttrs($m[1] ?? '');
+
+            return $name === null
+                ? ''
+                : '<img src="'.e(route('forum_thread.image', ['path' => $name], false)).'" alt="" loading="lazy">';
+        }, $clean) ?? $clean;
         $clean = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? $clean;
         $clean = preg_replace('/\s(href|src)\s*=\s*("\s*javascript:[^"]*"|\'\s*javascript:[^\']*\'|javascript:[^\s>]+)/i', '', $clean) ?? $clean;
         // Keep only safe href on anchors
@@ -366,8 +409,36 @@ class ForumThreadController extends Controller
         return trim($clean);
     }
 
+    private static function inlineImageNameFromAttrs(string $attrs): ?string
+    {
+        if (! preg_match('/\bsrc\s*=\s*("([^"]*)"|\'([^\']*)\')/i', $attrs, $sm)) {
+            return null;
+        }
+        $src = html_entity_decode(trim((string) (($sm[2] ?? '') !== '' ? $sm[2] : ($sm[3] ?? ''))), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (! preg_match('#^(?:https?://[^/]+)?(?:/[^?\#]*)?/dashboard/forum-thread/image/(inline_[A-Za-z0-9._-]+)$#', $src, $nm)) {
+            return null;
+        }
+
+        return Storage::disk('public')->exists('forum/'.$nm[1]) ? $nm[1] : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function inlineImageNames(string $html): array
+    {
+        if (! preg_match_all('#/dashboard/forum-thread/image/(inline_[A-Za-z0-9._-]+)#', $html, $m)) {
+            return [];
+        }
+
+        return array_values(array_unique($m[1]));
+    }
+
     private function isEmptyHtml(string $html): bool
     {
+        if (stripos($html, '<img') !== false) {
+            return false;
+        }
         $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         $text = preg_replace('/\x{00A0}|\s+/u', '', $text) ?? $text;
 

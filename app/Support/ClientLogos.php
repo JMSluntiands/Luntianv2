@@ -26,7 +26,6 @@ class ClientLogos
             'bph' => 'BPH',
             'efficient_living' => 'Efficient Living',
             'bluinq' => 'BluInq',
-            'amt' => 'A&M',
             'fyrs' => 'Redistar',
         ];
     }

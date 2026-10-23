@@ -8,6 +8,7 @@ use App\Models\JobRequest;
 use App\Models\User;
 use App\Services\JobCountsScope;
 use App\Services\SlackAssignmentNotifier;
+use App\Services\SlackNewJobNotifier;
 use App\Support\FecUnitsValidation;
 use App\Support\ForCheckingAttachmentValidation;
 use Illuminate\Http\Request;
@@ -167,6 +168,19 @@ class LcHomeBuilderJobController extends Controller
         if (!$job) {
             return response()->json(['status' => 'error', 'message' => 'Job not found.'], 404);
         }
+
+        SlackNewJobNotifier::send('LC Home Builder', [
+            'Reference' => $job->reference ?? '',
+            'Job Number' => $job->job_number ?? '',
+            'Client' => $job->client_name ?? '',
+            'Job Type' => $job->job_type ?? '',
+            'Urgent' => $job->urgent ?? '',
+            'NCC' => $job->ncc ?? '',
+            'Contact Email' => $job->contact_email ?? '',
+            'Status' => $job->status ?? '',
+            'Staff' => $job->assigned ?? '',
+            'Checker' => $job->checked ?? '',
+        ], route('lc_home_builder.list'), $id);
 
         return response()->json(['status' => 'success']);
     }

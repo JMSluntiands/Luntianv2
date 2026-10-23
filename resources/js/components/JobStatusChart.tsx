@@ -117,6 +117,26 @@ type ChartFilters = {
   staff: string;
 };
 
+const FILTERS_STORAGE_KEY = 'dashboard_chart_filters';
+
+function readStoredFilters(): ChartFilters {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) ?? '{}') as Partial<ChartFilters>;
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    return { client: str(raw.client), status: str(raw.status), staff: str(raw.staff) };
+  } catch {
+    return { client: '', status: '', staff: '' };
+  }
+}
+
+function storeFilters(filters: ChartFilters): void {
+  try {
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // ignore
+  }
+}
+
 function FilterField({
   label,
   value,
@@ -183,16 +203,22 @@ export default function JobStatusChart() {
   const [filterOptions, setFilterOptions] = useState<ChartFilterOptions>(() =>
     normalizeFilterOptions(initialChart?.filterOptions)
   );
-  const [clientFilter, setClientFilter] = useState(() => branchFilterLocked);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [staffFilter, setStaffFilter] = useState('');
+  const storedFilters = useMemo(() => readStoredFilters(), []);
+  const [clientFilter, setClientFilter] = useState(() => branchFilterLocked || storedFilters.client);
+  const [statusFilter, setStatusFilter] = useState(storedFilters.status);
+  const [staffFilter, setStaffFilter] = useState(storedFilters.staff);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [chartRenderKey, setChartRenderKey] = useState(0);
   const [chartPhase, setChartPhase] = useState<'idle' | 'exit' | 'enter'>('enter');
   const [filterPulse, setFilterPulse] = useState({ client: 0, status: 0, staff: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
-  const skipInitialFilterFetch = useRef(Boolean(initialChart?.branches?.length));
+  const skipInitialFilterFetch = useRef(
+    Boolean(initialChart?.branches?.length) &&
+      !(storedFilters.client && !branchFilterLocked) &&
+      !storedFilters.status &&
+      !storedFilters.staff
+  );
   const fetchAbortRef = useRef<AbortController | null>(null);
   const fetchGenRef = useRef(0);
 
@@ -248,6 +274,13 @@ export default function JobStatusChart() {
         setBranches(Array.isArray(body.branches) ? body.branches : []);
         const opts = normalizeFilterOptions(body.filterOptions);
         setFilterOptions(opts);
+        const keepIfOffered = (offered: ChartFilterOption[]) => (current: string) => {
+          if (!current || offered.length === 0) {
+            return current;
+          }
+          const allowed = new Set(offered.map((o) => o.value.toUpperCase()));
+          return allowed.has(current.toUpperCase()) ? current : '';
+        };
         setStaffFilter((current) => {
           if (!current) {
             return current;
@@ -255,6 +288,10 @@ export default function JobStatusChart() {
           const allowed = new Set(opts.staff.map((s) => s.value.toUpperCase()));
           return allowed.has(current.toUpperCase()) ? current : '';
         });
+        setStatusFilter(keepIfOffered(opts.statuses));
+        if (!branchFilterLocked) {
+          setClientFilter(keepIfOffered(opts.clients));
+        }
         if (bumpAnimation) {
           setChartRenderKey((k) => k + 1);
           setChartPhase('enter');
@@ -278,7 +315,7 @@ export default function JobStatusChart() {
         }
       }
     },
-    [chartBase]
+    [chartBase, branchFilterLocked]
   );
 
   const pulseFilter = (field: 'client' | 'status' | 'staff') => {
@@ -336,6 +373,14 @@ export default function JobStatusChart() {
       fetchAbortRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    storeFilters({
+      client: branchFilterLocked ? '' : clientFilter,
+      status: statusFilter,
+      staff: staffFilter,
+    });
+  }, [branchFilterLocked, clientFilter, statusFilter, staffFilter]);
 
   useEffect(() => {
     if (skipInitialFilterFetch.current) {

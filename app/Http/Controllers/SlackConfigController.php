@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SlackConfig;
+use App\Services\SlackNewJobNotifier;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +33,8 @@ class SlackConfigController extends Controller
         $rules = [
             'webhook_new_job_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_new_job_url'), 'url')],
             'webhook_assignment_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_assignment_url'), 'url')],
+            'new_job_branches' => ['nullable', 'array'],
+            'new_job_branches.*' => ['string', Rule::in(SlackNewJobNotifier::BRANCHES)],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -48,6 +51,14 @@ class SlackConfigController extends Controller
             if (array_key_exists($key, $data) && $data[$key] === '') {
                 $data[$key] = null;
             }
+        }
+        unset($data['new_job_branches']);
+        if ($request->boolean('new_job_branches_submitted') && Schema::hasColumn('slack_configs', 'new_job_branches')) {
+            $checked = (array) $request->input('new_job_branches', []);
+            $data['new_job_branches'] = array_values(array_filter(
+                SlackNewJobNotifier::BRANCHES,
+                fn (string $branch) => in_array($branch, $checked, true)
+            ));
         }
         $data['name'] = 'LBS Notifications';
 
