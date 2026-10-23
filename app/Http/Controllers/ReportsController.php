@@ -451,7 +451,7 @@ class ReportsController extends Controller
                 'job_type' => $g['job_type'],
                 'checked_units' => $g['checked_units'],
                 'modeled_units' => $g['modeled_units'],
-                'units' => $g['checked_units'] + $g['modeled_units'],
+                'units' => $g['modeled_units'],
             ]);
 
         if ($limit !== null && $limit > 0) {
