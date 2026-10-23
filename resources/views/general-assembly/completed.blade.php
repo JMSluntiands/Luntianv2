@@ -69,6 +69,7 @@
                     <colgroup>
                         <col style="width: 110px">
                         <col style="width: 140px">
+                        <col style="width: 150px">
                         <col style="width: 200px">
                         <col style="width: 100px">
                         <col style="width: 170px">
@@ -84,6 +85,7 @@
                         <tr>
                             <th class="lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort=""><span>Action</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Log Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Completion Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client Name</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>{{ (!$isLuntianPage && !$isEfficientLivingPage) ? 'Client Reference' : 'Reference' }}</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
@@ -102,6 +104,9 @@
                                 $log = $job->log_date ? \Carbon\Carbon::parse($job->log_date, 'Asia/Manila') : null;
                                 $logDate1 = $log ? $log->format('F j, Y') : '—';
                                 $logDate2 = $log ? $log->format('g:i A') : '';
+                                $completion = $job->completion_date ? \Carbon\Carbon::parse($job->completion_date, 'Asia/Manila') : null;
+                                $completionDate1 = $completion ? $completion->format('F j, Y') : '—';
+                                $completionDate2 = $completion ? $completion->format('g:i A') : '';
 
                                 $priorityText = $job->priority ?? '';
                                 $priorityLower = strtolower($priorityText);
@@ -159,6 +164,7 @@
                                     </div>
                                 </td>
                                 <td class="lbs-td lbs-td-log-date border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Log Date" data-sort="{{ $job->log_date }}"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $logDate1 }}</span>@if($logDate2)<span class="block text-[0.8125rem] text-slate-400">{{ $logDate2 }}</span>@endif</td>
+                                <td class="lbs-td lbs-td-completion-date border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Completion Date" data-sort="{{ $job->completion_date }}"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $completionDate1 }}</span>@if($completionDate2)<span class="block text-[0.8125rem] text-slate-400">{{ $completionDate2 }}</span>@endif</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client"><span class="block font-medium text-slate-800 dark:text-slate-200">{{ $job->client_account_name ?? $job->client_code ?? '—' }}</span><span class="block text-[0.8125rem] text-slate-400">{{ $job->ncc_compliance ?? '' }}</span></td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client Name" style="white-space: nowrap;">{{ $job->client_code ?? $clientCodeFallback }}</td>
                                 @php
@@ -199,7 +205,7 @@
                             </tr>
 @empty
                             <tr>
-                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="12">No completed {{ $branchLabel }} jobs found.</td>
+                                <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="13">No completed {{ $branchLabel }} jobs found.</td>
                             </tr>
                         @endforelse
                     </tbody>

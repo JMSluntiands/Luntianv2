@@ -15,6 +15,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\ClientAccountController;
 use App\Http\Controllers\ClientEmailAmtController;
+use App\Http\Controllers\ClientLogoController;
 use App\Http\Controllers\ClientEmailBphController;
 use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\CspJobController;
@@ -453,6 +454,9 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/settings/standalone-form', [StandaloneFormSettingsController::class, 'index'])->name('settings.standalone_form');
     Route::post('/dashboard/settings/standalone-form/toggle', [StandaloneFormSettingsController::class, 'toggle'])->name('settings.standalone_form.toggle');
     Route::post('/dashboard/settings/standalone-form/options', [StandaloneFormSettingsController::class, 'saveOption'])->name('settings.standalone_form.options');
+    Route::get('/dashboard/settings/logo-management', [ClientLogoController::class, 'index'])->name('settings.logo_management');
+    Route::post('/dashboard/settings/logo-management/{module}', [ClientLogoController::class, 'store'])->name('settings.logo_management.store');
+    Route::delete('/dashboard/settings/logo-management/{module}', [ClientLogoController::class, 'destroy'])->name('settings.logo_management.destroy');
 
     Route::get('/dashboard/compliance', [ComplianceController::class, 'index'])->name('compliance.index');
     Route::get('/dashboard/compliance/create', [ComplianceController::class, 'create'])->name('compliance.create');
@@ -545,3 +549,8 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::put('/dashboard/announcement/{announcement}', [AnnouncementController::class, 'update'])->name('announcement.update');
     Route::delete('/dashboard/announcement/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcement.destroy');
 });
+
+// Sidebar logos are shown to every signed-in user, so this route skips page permissions.
+Route::middleware('auth.session')
+    ->get('/dashboard/client-logo/{module}', [ClientLogoController::class, 'image'])
+    ->name('client_logo.image');

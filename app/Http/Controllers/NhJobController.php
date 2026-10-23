@@ -319,6 +319,7 @@ class NhJobController extends Controller
                 'status' => 'Completed',
                 'date' => $completedDate,
                 'updated_at' => now('Asia/Manila'),
+                'completion_date' => now('Asia/Manila'),
             ]);
 
             return response()->json([
@@ -407,6 +408,7 @@ class NhJobController extends Controller
             'status' => 'Completed',
             'date' => $completedDate,
             'updated_at' => now('Asia/Manila'),
+            'completion_date' => now('Asia/Manila'),
         ]);
 
         return response()->json([
@@ -535,6 +537,10 @@ class NhJobController extends Controller
             ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
             : $prevChecker;
         $assignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
+        if (($update['status'] ?? null) === 'Completed' && (string) ($job->status ?? '') !== 'Completed') {
+            $update['completion_date'] = now('Asia/Manila');
+        }
 
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_nh')->where('id', $id)->update($update);

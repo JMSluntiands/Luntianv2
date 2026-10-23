@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use App\Services\JobActiveTimeService;
-
 class ReportsController extends Controller
 {
     /**
@@ -47,7 +45,7 @@ class ReportsController extends Controller
         $bphFamily = [
             'job_bph' => null, // CASE for BluInq below
             'job_amt' => 'A&M',
-            'job_fyrs' => 'FYRS ENERGYWISE',
+            'job_fyrs' => 'REDISTAR',
             'job_csp' => 'CSP',
             'job_nh' => 'NH',
             'job_lc_home_builder' => 'LC Home Builder',
@@ -72,7 +70,7 @@ class ReportsController extends Controller
                 $systemExpr = "CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u}";
             } elseif ($table === 'job_fyrs') {
                 $alias = 'f';
-                $systemExpr = "CONVERT('FYRS ENERGYWISE' USING utf8mb4) COLLATE {$utf8u}";
+                $systemExpr = "CONVERT('REDISTAR' USING utf8mb4) COLLATE {$utf8u}";
             } elseif ($table === 'job_csp') {
                 $alias = 'c';
                 $systemExpr = "CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u}";
@@ -199,7 +197,8 @@ class ReportsController extends Controller
             $filterParams[] = $filters['client'];
         }
         if ($filters['staff'] !== '') {
-            $where .= ' AND LOWER(TRIM(u.user_code)) = LOWER(?)';
+            $where .= ' AND (LOWER(TRIM(u.staff_code)) = LOWER(?) OR LOWER(TRIM(u.checker_code)) = LOWER(?))';
+            $filterParams[] = $filters['staff'];
             $filterParams[] = $filters['staff'];
         }
         if ($filters['dateFrom'] !== '') {
@@ -392,7 +391,9 @@ class ReportsController extends Controller
 
     /**
      * @param  array{client: string, staff: string, dateFrom: string, dateTo: string}  $filters
-     * @return \Illuminate\Support\Collection<int, object{completion_date: mixed, user_code: mixed, job_type: mixed, units: int, time_spent_seconds: int, time_spent: string}>
+     * Each job counts toward its modeler (staff) as Modeled and its checker as Checked.
+     *
+     * @return \Illuminate\Support\Collection<int, object{completion_date: mixed, user_code: mixed, job_type: mixed, checked_units: int, modeled_units: int, units: int}>
      */
     private static function fetchGroupedRows(array $filters, ?int $limit = null): \Illuminate\Support\Collection
     {
@@ -402,81 +403,56 @@ class ReportsController extends Controller
 
         $sqlJobs = "
             SELECT
-                u.job_pk,
-                u.source_table,
                 DATE(u.completion_date) AS completion_date,
-                u.completion_date AS completion_at,
-                u.started_at,
-                NULLIF(TRIM(u.user_code), '') AS user_code,
+                NULLIF(TRIM(u.staff_code), '') AS staff_code,
+                NULLIF(TRIM(u.checker_code), '') AS checker_code,
                 u.job_type AS job_type,
                 COALESCE(u.units, 0) AS unit_val
             FROM ({$union}) u
             WHERE {$where}
-            ORDER BY DATE(u.completion_date) DESC, u.user_code ASC, u.job_type ASC
         ";
 
         $jobRows = DB::select($sqlJobs, $filterParams);
+        $onlyUser = $filters['staff'] !== '' ? strtoupper($filters['staff']) : null;
         $groups = [];
 
-        foreach ($jobRows as $job) {
-            $dateKey = (string) ($job->completion_date ?? '');
-            $userKey = (string) ($job->user_code ?? '');
-            $typeKey = (string) ($job->job_type ?? '');
-            $groupKey = $dateKey."\0".$userKey."\0".$typeKey;
-
-            $start = null;
-            $end = null;
-            try {
-                if (! empty($job->started_at)) {
-                    $start = Carbon::parse($job->started_at);
-                }
-            } catch (\Throwable $e) {
-                $start = null;
+        $add = static function (object $job, ?string $user, string $role) use (&$groups, $onlyUser): void {
+            if ($user === null || ($onlyUser !== null && strtoupper($user) !== $onlyUser)) {
+                return;
             }
-            try {
-                if (! empty($job->completion_at)) {
-                    $end = Carbon::parse($job->completion_at);
-                    // Date-only completion stamps land at 00:00 — use end of day so duration is positive
-                    if ($end->format('H:i:s') === '00:00:00') {
-                        $end = $end->copy()->endOfDay();
-                    }
-                }
-            } catch (\Throwable $e) {
-                $end = null;
-            }
-
-            $secs = JobActiveTimeService::activeSeconds(
-                (string) ($job->source_table ?? ''),
-                (int) ($job->job_pk ?? 0),
-                $start,
-                $end
-            );
-
+            $groupKey = (string) $job->completion_date."\0".strtoupper($user)."\0".(string) $job->job_type;
             if (! isset($groups[$groupKey])) {
                 $groups[$groupKey] = [
                     'completion_date' => $job->completion_date,
-                    'user_code' => $job->user_code,
+                    'user_code' => $user,
                     'job_type' => $job->job_type,
-                    'units' => 0,
-                    'time_spent_seconds' => 0,
+                    'checked_units' => 0,
+                    'modeled_units' => 0,
                 ];
             }
-            $groups[$groupKey]['units'] += (int) ($job->unit_val ?? 0);
-            $groups[$groupKey]['time_spent_seconds'] += (int) ($secs ?? 0);
+            $groups[$groupKey][$role] += (int) ($job->unit_val ?? 0);
+        };
+
+        foreach ($jobRows as $job) {
+            $add($job, $job->staff_code, 'modeled_units');
+            $add($job, $job->checker_code, 'checked_units');
         }
 
-        $collection = collect(array_values($groups))->map(function (array $g) {
-            $secs = (int) ($g['time_spent_seconds'] ?? 0);
-
-            return (object) [
+        $collection = collect(array_values($groups))
+            ->sort(function (array $a, array $b) {
+                return strcmp((string) $b['completion_date'], (string) $a['completion_date'])
+                    ?: strcasecmp((string) $a['user_code'], (string) $b['user_code'])
+                    ?: strcasecmp((string) $a['job_type'], (string) $b['job_type']);
+            })
+            ->values()
+            ->map(fn (array $g) => (object) [
                 'completion_date' => $g['completion_date'],
                 'user_code' => $g['user_code'],
                 'job_type' => $g['job_type'],
-                'units' => (int) ($g['units'] ?? 0),
-                'time_spent_seconds' => $secs,
-                'time_spent' => JobActiveTimeService::formatDuration($secs),
-            ];
-        });
+                'checked_units' => $g['checked_units'],
+                'modeled_units' => $g['modeled_units'],
+                'units' => $g['checked_units'] + $g['modeled_units'],
+            ]);
 
         if ($limit !== null && $limit > 0) {
             $collection = $collection->take($limit)->values();
@@ -558,9 +534,9 @@ class ReportsController extends Controller
             $staffSql = "
                 SELECT t.user_code AS user_code
                 FROM (
-                    SELECT DISTINCT TRIM(u.user_code) AS user_code
-                    FROM ({$union}) u
-                    WHERE u.user_code IS NOT NULL AND TRIM(u.user_code) <> ''
+                    SELECT DISTINCT TRIM(u.staff_code) AS user_code FROM ({$union}) u
+                    UNION
+                    SELECT DISTINCT TRIM(u.checker_code) AS user_code FROM ({$union}) u
                 ) t
                 WHERE t.user_code IS NOT NULL AND t.user_code <> ''
                 ORDER BY t.user_code ASC
@@ -630,7 +606,7 @@ class ReportsController extends Controller
             echo '<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>';
             echo '<table border="1">';
             echo '<thead><tr>';
-            foreach (['Date Completion', 'User', 'Job Type', 'Total Units', 'Time Spent'] as $header) {
+            foreach (['Date Completion', 'User', 'Job Type', 'Checked', 'Modeled', 'Total Units'] as $header) {
                 echo '<th>' . htmlspecialchars($header, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</th>';
             }
             echo '</tr></thead><tbody>';
@@ -640,15 +616,14 @@ class ReportsController extends Controller
                 $cdText = $cd ? Carbon::parse($cd)->format('M d, Y') : '';
                 $user = ($row->user_code !== null && trim((string) $row->user_code) !== '') ? (string) $row->user_code : '';
                 $jobType = (string) ($row->job_type ?? '');
-                $units = (int) ($row->units ?? 0);
-                $timeSpent = (string) ($row->time_spent ?? JobActiveTimeService::formatDuration((int) ($row->time_spent_seconds ?? 0)));
 
                 echo '<tr>';
                 echo '<td>' . htmlspecialchars($cdText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
                 echo '<td>' . htmlspecialchars($user, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
                 echo '<td>' . htmlspecialchars($jobType, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
-                echo '<td>' . $units . '</td>';
-                echo '<td>' . htmlspecialchars($timeSpent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>';
+                echo '<td>' . (int) ($row->checked_units ?? 0) . '</td>';
+                echo '<td>' . (int) ($row->modeled_units ?? 0) . '</td>';
+                echo '<td>' . (int) ($row->units ?? 0) . '</td>';
                 echo '</tr>';
             }
 

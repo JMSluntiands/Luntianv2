@@ -170,7 +170,7 @@ class RolePermission extends Model
      */
     public static function dashboardStatCardLabels(): array
     {
-        return ['LBS', self::GENERIC_ASSESSMENT_STAT_LABEL, 'LUNTIAN', 'BPH', 'BluInq', 'A&M', 'FYRS ENERGYWISE', 'CSP', 'NH', 'LC Home Builder', 'Efficient Living', 'Leading Energy'];
+        return ['LBS', self::GENERIC_ASSESSMENT_STAT_LABEL, 'LUNTIAN', 'BPH', 'BluInq', 'A&M', 'REDISTAR', 'CSP', 'NH', 'LC Home Builder', 'Efficient Living', 'Leading Energy'];
     }
 
     /**
@@ -198,9 +198,10 @@ class RolePermission extends Model
             'bluinq' => 'BluInq',
             'amt' => 'A&M',
             'a&m' => 'A&M',
-            'fyrs' => 'FYRS ENERGYWISE',
-            'fyrs energywise' => 'FYRS ENERGYWISE',
-            'fyrs energy wise' => 'FYRS ENERGYWISE',
+            'redistar' => 'REDISTAR',
+            'fyrs' => 'REDISTAR',
+            'fyrs energywise' => 'REDISTAR',
+            'fyrs energy wise' => 'REDISTAR',
             'csp' => 'CSP',
             'nh' => 'NH',
             'lc home builder' => 'LC Home Builder',
@@ -281,7 +282,7 @@ class RolePermission extends Model
             $allowed['A&M'] = true;
         }
         if ($anyMay(['fyrs.add', 'fyrs.list', 'fyrs.completed', 'fyrs.review', 'fyrs.mailbox', 'fyrs.trash'])) {
-            $allowed['FYRS ENERGYWISE'] = true;
+            $allowed['REDISTAR'] = true;
         }
         if ($anyMay([
             'csp.add', 'csp.store', 'csp.view', 'csp.list', 'csp.completed', 'csp.review', 'csp.mailbox', 'csp.trash',

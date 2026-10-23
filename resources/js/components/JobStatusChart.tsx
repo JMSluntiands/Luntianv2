@@ -85,8 +85,6 @@ function shortBranchLabel(label: string): string {
     'EFFICIENT LIVING': 'EL',
     BluInq: 'BluInQ',
     BLUINQ: 'BluInQ',
-    'FYRS ENERGYWISE': 'FYRS',
-    'FYRS ENERGY WISE': 'FYRS',
     'LC Home Builder': 'LC HB',
     'LC HOME BUILDER': 'LC HB',
     'Leading Energy': 'LE',

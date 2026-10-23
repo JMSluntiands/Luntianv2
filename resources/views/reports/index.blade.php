@@ -8,7 +8,7 @@
     <div class="reports-page">
         <div class="reports-header">
             <h1 class="reports-title">Reports</h1>
-            <p class="reports-subtitle">Completion dates within your range, units and active time spent (Allocated → Completed; On Hold paused) summed per day, job type, and user.</p>
+            <p class="reports-subtitle">Completion dates within your range. Units each user checked and modeled, summed per day, job type, and user.</p>
         </div>
 
         <div class="reports-top-grid">
@@ -209,11 +209,15 @@
                                 <span class="reports-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="reports-th" data-sort="">
-                                <span>Total Units</span>
+                                <span>Checked</span>
                                 <span class="reports-sort-icon" aria-hidden="true">↕</span>
                             </th>
                             <th class="reports-th" data-sort="">
-                                <span>Time Spent</span>
+                                <span>Modeled</span>
+                                <span class="reports-sort-icon" aria-hidden="true">↕</span>
+                            </th>
+                            <th class="reports-th" data-sort="">
+                                <span>Total Units</span>
                                 <span class="reports-sort-icon" aria-hidden="true">↕</span>
                             </th>
                         </tr>
@@ -231,13 +235,14 @@
                                     </td>
                                     <td class="reports-td">{{ $row->user_code !== null && trim((string) $row->user_code) !== '' ? $row->user_code : '—' }}</td>
                                     <td class="reports-td">{{ $row->job_type ?? '—' }}</td>
+                                    <td class="reports-td">{{ $row->checked_units ?? 0 }}</td>
+                                    <td class="reports-td">{{ $row->modeled_units ?? 0 }}</td>
                                     <td class="reports-td">{{ $row->units ?? 0 }}</td>
-                                    <td class="reports-td">{{ $row->time_spent ?? '—' }}</td>
                                 </tr>
                             @endforeach
                         @else
                             <tr class="reports-empty-row">
-                                <td colspan="5" class="reports-empty-cell">No data for this filter.</td>
+                                <td colspan="6" class="reports-empty-cell">No data for this filter.</td>
                             </tr>
                         @endif
                     </tbody>

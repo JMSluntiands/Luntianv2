@@ -85,7 +85,7 @@ class AllocatedJobsTaskFeed
 
         $fyrsTable = Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
         $rows = $rows->concat(self::bphStyleAllocated(
-            module: 'FYRS ENERGYWISE',
+            module: 'REDISTAR',
             table: $fyrsTable,
             extra: $fyrsTable === 'job_bph'
                 ? static function ($q): void {
@@ -191,7 +191,7 @@ class AllocatedJobsTaskFeed
 
         $fyrsTable = Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
         $rows = $rows->concat(self::bphStyleAllocated(
-            module: 'FYRS ENERGYWISE',
+            module: 'REDISTAR',
             table: $fyrsTable,
             extra: $fyrsTable === 'job_bph'
                 ? static function ($q): void {
@@ -246,7 +246,7 @@ class AllocatedJobsTaskFeed
             'bph' => 'bph.view',
             'bluinq' => 'bluinq.view',
             'a&m', 'a and m', 'amt' => 'amt.view',
-            'fyrs energywise', 'fyrs' => 'fyrs.view',
+            'redistar', 'fyrs energywise', 'fyrs' => 'fyrs.view',
             'csp' => 'csp.view',
             'leading energy' => 'leading_energy.view',
             default => null,
@@ -827,7 +827,7 @@ class AllocatedJobsTaskFeed
         foreach ([
             'job_bph' => null,
             'job_amt' => 'A&M',
-            'job_fyrs' => 'FYRS ENERGYWISE',
+            'job_fyrs' => 'REDISTAR',
             'job_csp' => 'CSP',
             'job_nh' => 'NH',
             'job_lc_home_builder' => 'LC Home Builder',
@@ -845,7 +845,7 @@ class AllocatedJobsTaskFeed
                 $module = match ($clientCode) {
                     'BLUINQ01' => 'BluInq',
                     'AMT01' => 'A&M',
-                    'FYRS01' => 'FYRS ENERGYWISE',
+                    'FYRS01' => 'REDISTAR',
                     default => 'BPH',
                 };
             }

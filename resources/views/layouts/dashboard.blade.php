@@ -284,17 +284,11 @@
     @include('layouts.partials.select2-theme')
 </head>
 <body class="overflow-x-hidden @yield('body_class', '')">
-    <div class="page-loader" id="pageLoader" aria-hidden="true" data-theme="">
-        <div class="page-loader-spinner"></div>
-        <span class="page-loader-logo">LUNTIAN</span>
-    </div>
     <script>
         (function(){
             var t = (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || '';
             var theme = (String(t).toLowerCase() === 'light') ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', theme);
-            var loader = document.getElementById('pageLoader');
-            if (loader) loader.setAttribute('data-theme', theme);
         })();
     </script>
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true" tabindex="-1"></div>
@@ -800,26 +794,39 @@
             }
             window.addEventListener('resize', setGap);
         })();
-        (function hidePageLoader() {
-            var loader = document.getElementById('pageLoader');
-            if (!loader) return;
-            var minShowMs = 450;
-            var start = Date.now();
-            function hide() {
-                var elapsed = Date.now() - start;
-                var delay = Math.max(0, minShowMs - elapsed);
-                setTimeout(function() {
-                    loader.classList.add('hide');
-                    loader.style.pointerEvents = 'none';
-                    try { document.dispatchEvent(new CustomEvent('pageLoaderHidden')); } catch (e) {}
-                    setTimeout(function() { loader.remove(); }, 350);
-                }, delay);
+        (function keepContentScrollOnReload() {
+            var content = document.querySelector('.main-wrap .content');
+            if (!content) return;
+            var key = 'contentScroll';
+            // Keep the scroll position when an edit reloads or redirects back to the same page.
+            var maxAgeMs = 30000;
+            var page = location.pathname + location.search;
+
+            window.addEventListener('beforeunload', function() {
+                try {
+                    sessionStorage.setItem(key, JSON.stringify({ page: page, top: content.scrollTop, at: Date.now() }));
+                } catch (e) {}
+            });
+
+            if (location.hash) return;
+            var saved = null;
+            try { saved = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (e) {}
+            if (!saved || saved.page !== page || !(saved.top > 0) || Date.now() - saved.at > maxAgeMs) return;
+
+            var target = saved.top;
+            function restore() {
+                if (content.scrollTop < target) content.scrollTop = target;
             }
-            if (document.readyState === 'complete') {
-                hide();
-            } else {
-                window.addEventListener('load', hide);
-            }
+            restore();
+            requestAnimationFrame(restore);
+            window.addEventListener('load', function() {
+                restore();
+                setTimeout(restore, 150);
+                setTimeout(restore, 500);
+            });
+            ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function(evt) {
+                content.addEventListener(evt, function() { target = 0; }, { once: true, passive: true });
+            });
         })();
         (function sidebarMobile() {
             var toggle = document.getElementById('sidebarToggle');

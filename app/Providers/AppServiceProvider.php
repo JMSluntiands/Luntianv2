@@ -193,9 +193,9 @@ class AppServiceProvider extends ServiceProvider
                     ")
                     ->first();
 
-                $view->with('fyrs_list_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGYWISE', (int) ($fyrsCounts->allocated_count ?? 0)));
-                $view->with('fyrs_review_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGYWISE', (int) ($fyrsCounts->review_count ?? 0)));
-                $view->with('fyrs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('FYRS ENERGYWISE', (int) ($fyrsCounts->mailbox_count ?? 0)));
+                $view->with('fyrs_list_count', JobCountsScope::sidebarCountForBranchVertical('REDISTAR', (int) ($fyrsCounts->allocated_count ?? 0)));
+                $view->with('fyrs_review_count', JobCountsScope::sidebarCountForBranchVertical('REDISTAR', (int) ($fyrsCounts->review_count ?? 0)));
+                $view->with('fyrs_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('REDISTAR', (int) ($fyrsCounts->mailbox_count ?? 0)));
 
                 // CSP sidebar badges from job_csp
                 if (\Illuminate\Support\Facades\Schema::hasTable('job_csp')) {

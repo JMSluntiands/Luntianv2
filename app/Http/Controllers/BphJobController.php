@@ -125,7 +125,7 @@ class BphJobController extends Controller
 
         return match ($this->pipelineJobTable()) {
             'job_amt' => 'A&M',
-            'job_fyrs' => 'Fyrs Energywise',
+            'job_fyrs' => 'Redistar',
             default => 'BPH',
         };
     }
@@ -236,6 +236,7 @@ class BphJobController extends Controller
                 'status' => 'Completed',
                 'date' => $completedDate,
                 'updated_at' => now('Asia/Manila'),
+                'completion_date' => now('Asia/Manila'),
             ]);
             $this->createBphActivityLog(
                 (int) $id,
@@ -349,6 +350,7 @@ class BphJobController extends Controller
             'status' => 'Completed',
             'date' => $completedDate,
             'updated_at' => now('Asia/Manila'),
+            'completion_date' => now('Asia/Manila'),
         ]);
         $this->createBphActivityLog(
             (int) $id,
@@ -890,7 +892,7 @@ class BphJobController extends Controller
             if ($this->pipelineJobTable() === 'job_fyrs') {
                 $currentStatus = (string) ($job->status ?? '');
                 if ($newStatus !== '' && ! FyrsJobStatusFlow::isValidTransition($currentStatus, $newStatus)) {
-                    $message = 'Invalid status change for Fyrs Energywise. Allowed: Allocated → Processing or Completed; Processing → Completed.';
+                    $message = 'Invalid status change for Redistar. Allowed: Allocated → Processing or Completed; Processing → Completed.';
                     if ($request->expectsJson() || $request->ajax()) {
                         return response()->json(['status' => 'error', 'message' => $message], 422);
                     }
@@ -1061,6 +1063,10 @@ class BphJobController extends Controller
             ? SlackAssignmentNotifier::normalizeCode((string) $update['checked'])
             : $prevChecker;
         $pipelineAssignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
+
+        if (($update['status'] ?? null) === 'Completed' && (string) ($job->status ?? '') !== 'Completed') {
+            $update['completion_date'] = now('Asia/Manila');
+        }
 
         $update['updated_at'] = now('Asia/Manila');
 

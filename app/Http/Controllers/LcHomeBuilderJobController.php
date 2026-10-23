@@ -250,6 +250,10 @@ class LcHomeBuilderJobController extends Controller
             : $prevChecker;
         $assignmentChanged = ($nextStaff !== $prevStaff || $nextChecker !== $prevChecker);
 
+        if (($update['status'] ?? null) === 'Completed' && (string) ($job->status ?? '') !== 'Completed') {
+            $update['completion_date'] = now('Asia/Manila');
+        }
+
         $update['updated_at'] = now('Asia/Manila');
         DB::table('job_lc_home_builder')->where('id', $id)->update($update);
 
@@ -348,6 +352,7 @@ class LcHomeBuilderJobController extends Controller
             'status' => 'Completed',
             'date' => now('Asia/Manila')->toDateString(),
             'updated_at' => now('Asia/Manila'),
+            'completion_date' => now('Asia/Manila'),
         ]);
 
         return response()->json([

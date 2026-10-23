@@ -26,6 +26,7 @@
                     <colgroup>
                         <col style="width: 110px">
                         <col style="width: 140px">
+                        <col style="width: 150px">
                         <col style="width: 110px">
                         <col style="width: 90px">
                         <col style="width: 220px">
@@ -41,6 +42,7 @@
                         <tr>
                             <th class="lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort=""><span>Action</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Log Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
+                            <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Completion Date</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Client</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Urgent</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
                             <th class="lbs-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 whitespace-nowrap dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200" data-sort=""><span>Job Type</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span></th>
@@ -69,6 +71,10 @@
                                 $log = \Carbon\Carbon::parse($logRaw, 'Asia/Manila');
                                 $logDate1 = $log->format('F j, Y');
                                 $logDate2 = $log->format('g:i A');
+                                $completionRaw = $row->completion_date ?? null;
+                                $completion = $completionRaw ? \Carbon\Carbon::parse($completionRaw, 'Asia/Manila') : null;
+                                $completionDate1 = $completion ? $completion->format('F j, Y') : '—';
+                                $completionDate2 = $completion ? $completion->format('g:i A') : '';
                                 $client = $row->client_code ?? 'LC_HB01';
                                 $urgent = strtoupper((string) ($row->urgent ?? 'NO'));
                                 $jobType1 = (string) ($row->job_type ?? '—');
@@ -106,6 +112,10 @@
                                     <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $logDate1 }}</span>
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $logDate2 }}</span>
                                 </td>
+                                <td class="lbs-td lbs-td-completion-date border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Completion Date" data-sort="{{ $completionRaw }}">
+                                    <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $completionDate1 }}</span>
+                                    <span class="block text-[0.8125rem] text-slate-400">{{ $completionDate2 }}</span>
+                                </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Client">{{ $client }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Urgent">{{ $urgent }}</td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Job Type">
@@ -127,9 +137,10 @@
                                 </td>
                             </tr>
                             <tr class="lbs-row-detail border-b border-slate-200 dark-border-slate-700" id="lbs-detail-{{ $index }}" hidden>
-                                <td colspan="12" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
+                                <td colspan="13" class="bg-slate-50 p-0 align-top dark:bg-slate-900">
                                     <div class="grid gap-x-6 gap-y-4 px-5 py-5" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Log Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $logDate1 }} {{ $logDate2 }}</span></div>
+                                        <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Completion Date</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $completionDate1 }} {{ $completionDate2 }}</span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Client</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $client }}</span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Urgent</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $urgent }}</span></div>
                                         <div class="flex flex-col gap-1.5"><span class="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-500">Job Type</span><span class="text-[0.9375rem] font-medium leading-snug text-slate-800 dark:text-slate-200">{{ $jobType1 }}</span></div>
