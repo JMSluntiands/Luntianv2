@@ -88,7 +88,7 @@
     $currentUserId = (int) ($currentUserId ?? session('user_id', 0));
     $statusFilter = $statusFilter ?? '';
     $assigneeFilter = $assigneeFilter ?? null;
-    $viewMode = in_array(($viewMode ?? 'table'), ['table', 'board'], true) ? $viewMode : 'table';
+    $viewMode = in_array(($viewMode ?? 'board'), ['table', 'board'], true) ? $viewMode : 'board';
     $queryBase = array_filter([
         'status' => $statusFilter !== '' ? $statusFilter : null,
         'assignee' => $assigneeFilter !== null ? $assigneeFilter : null,

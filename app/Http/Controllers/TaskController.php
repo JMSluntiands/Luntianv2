@@ -17,9 +17,9 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
-        $view = strtolower(trim((string) $request->query('view', 'table')));
+        $view = strtolower(trim((string) $request->query('view', 'board')));
         if (! in_array($view, ['table', 'board'], true)) {
-            $view = 'table';
+            $view = 'board';
         }
 
         $statusFilter = trim((string) $request->query('status', ''));
