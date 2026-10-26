@@ -72,17 +72,6 @@ class AllocatedJobsTaskFeed
                 }
             ));
 
-        $amtTable = Schema::hasTable('job_amt') ? 'job_amt' : 'job_bph';
-        $rows = $rows->concat(self::bphStyleAllocated(
-            module: 'A&M',
-            table: $amtTable,
-            extra: $amtTable === 'job_bph'
-                ? static function ($q): void {
-                    $q->where('client_code', 'AMT01');
-                }
-                : null
-        ));
-
         $fyrsTable = Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
         $rows = $rows->concat(self::bphStyleAllocated(
             module: 'REDISTAR',
@@ -96,9 +85,6 @@ class AllocatedJobsTaskFeed
 
         foreach ([
             'CSP' => 'job_csp',
-            'NH' => 'job_nh',
-            'LC Home Builder' => 'job_lc_home_builder',
-            'Leading Energy' => 'job_leading_energy',
         ] as $module => $table) {
             if (Schema::hasTable($table)) {
                 $rows = $rows->concat(self::bphStyleAllocated(module: $module, table: $table));
@@ -177,18 +163,6 @@ class AllocatedJobsTaskFeed
                 notesOnly: true,
             ));
 
-        $amtTable = Schema::hasTable('job_amt') ? 'job_amt' : 'job_bph';
-        $rows = $rows->concat(self::bphStyleAllocated(
-            module: 'A&M',
-            table: $amtTable,
-            extra: $amtTable === 'job_bph'
-                ? static function ($q): void {
-                    $q->where('client_code', 'AMT01');
-                }
-                : null,
-            notesOnly: true,
-        ));
-
         $fyrsTable = Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
         $rows = $rows->concat(self::bphStyleAllocated(
             module: 'REDISTAR',
@@ -203,9 +177,6 @@ class AllocatedJobsTaskFeed
 
         foreach ([
             'CSP' => 'job_csp',
-            'NH' => 'job_nh',
-            'LC Home Builder' => 'job_lc_home_builder',
-            'Leading Energy' => 'job_leading_energy',
         ] as $module => $table) {
             if (Schema::hasTable($table)) {
                 $rows = $rows->concat(self::bphStyleAllocated(module: $module, table: $table, notesOnly: true));
@@ -245,10 +216,8 @@ class AllocatedJobsTaskFeed
             'generic ea', 'general assembly', 'generic assessment' => 'general_assembly.job.view',
             'bph' => 'bph.view',
             'bluinq' => 'bluinq.view',
-            'a&m', 'a and m', 'amt' => 'amt.view',
             'redistar', 'fyrs energywise', 'fyrs' => 'fyrs.view',
             'csp' => 'csp.view',
-            'leading energy' => 'leading_energy.view',
             default => null,
         };
 
@@ -826,12 +795,8 @@ class AllocatedJobsTaskFeed
     {
         foreach ([
             'job_bph' => null,
-            'job_amt' => 'A&M',
             'job_fyrs' => 'REDISTAR',
             'job_csp' => 'CSP',
-            'job_nh' => 'NH',
-            'job_lc_home_builder' => 'LC Home Builder',
-            'job_leading_energy' => 'Leading Energy',
         ] as $table => $module) {
             if (! Schema::hasTable($table)) {
                 continue;
@@ -844,7 +809,6 @@ class AllocatedJobsTaskFeed
                 $clientCode = strtoupper(trim((string) ($row->client_code ?? '')));
                 $module = match ($clientCode) {
                     'BLUINQ01' => 'BluInq',
-                    'AMT01' => 'A&M',
                     'FYRS01' => 'REDISTAR',
                     default => 'BPH',
                 };

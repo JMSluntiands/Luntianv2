@@ -159,25 +159,6 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('bluinq_review_count', JobCountsScope::sidebarCountForBranchVertical('BluInq', (int) ($bluinqCounts->review_count ?? 0)));
                 $view->with('bluinq_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('BluInq', (int) ($bluinqCounts->mailbox_count ?? 0)));
 
-                $amtTable = \Illuminate\Support\Facades\Schema::hasTable('job_amt') ? 'job_amt' : 'job_bph';
-                $amtBase = DB::table($amtTable);
-                if ($amtTable === 'job_bph') {
-                    $amtBase->where('client_code', 'AMT01');
-                }
-                JobCountsScope::applyJobBphAssignment($amtBase);
-                JobCountsScope::applyJobBphBranchVerticalScope($amtBase);
-                $amtCounts = $amtBase
-                    ->selectRaw("
-                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
-                        SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                    ")
-                    ->first();
-
-                $view->with('amt_list_count', JobCountsScope::sidebarCountForBranchVertical('A&M', (int) ($amtCounts->allocated_count ?? 0)));
-                $view->with('amt_review_count', JobCountsScope::sidebarCountForBranchVertical('A&M', (int) ($amtCounts->review_count ?? 0)));
-                $view->with('amt_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('A&M', (int) ($amtCounts->mailbox_count ?? 0)));
-
                 $fyrsTable = \Illuminate\Support\Facades\Schema::hasTable('job_fyrs') ? 'job_fyrs' : 'job_bph';
                 $fyrsBase = DB::table($fyrsTable);
                 if ($fyrsTable === 'job_bph') {
@@ -215,67 +196,6 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('csp_list_count', 0);
                     $view->with('csp_review_count', 0);
                     $view->with('csp_mailbox_count', 0);
-                }
-
-                // NH sidebar badges from job_nh
-                if (\Illuminate\Support\Facades\Schema::hasTable('job_nh')) {
-                    $nhBase = DB::table('job_nh');
-                    JobCountsScope::applyJobBphAssignment($nhBase);
-                    $nhCounts = $nhBase
-                        ->selectRaw("
-                            SUM(CASE WHEN status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                            SUM(CASE WHEN status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                            SUM(CASE WHEN status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                        ")
-                        ->first();
-                    $view->with('nh_list_count', JobCountsScope::sidebarCountForBranchVertical('NH', (int) ($nhCounts->allocated_count ?? 0)));
-                    $view->with('nh_review_count', JobCountsScope::sidebarCountForBranchVertical('NH', (int) ($nhCounts->review_count ?? 0)));
-                    $view->with('nh_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('NH', (int) ($nhCounts->mailbox_count ?? 0)));
-                } else {
-                    $view->with('nh_list_count', 0);
-                    $view->with('nh_review_count', 0);
-                    $view->with('nh_mailbox_count', 0);
-                }
-
-                // LC Home Builder sidebar badges from job_lc_home_builder
-                if (\Illuminate\Support\Facades\Schema::hasTable('job_lc_home_builder')) {
-                    $lcBase = DB::table('job_lc_home_builder');
-                    JobCountsScope::applyJobBphAssignment($lcBase);
-                    $lcCounts = $lcBase
-                        ->selectRaw("
-                            SUM(CASE WHEN status = 'Allocated' THEN 1 ELSE 0 END) AS allocated_count,
-                            SUM(CASE WHEN status = 'For Review' THEN 1 ELSE 0 END) AS review_count,
-                            SUM(CASE WHEN status = 'For Email Confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                        ")
-                        ->first();
-                    $view->with('lc_home_builder_list_count', JobCountsScope::sidebarCountForBranchVertical('LC Home Builder', (int) ($lcCounts->allocated_count ?? 0)));
-                    $view->with('lc_home_builder_review_count', JobCountsScope::sidebarCountForBranchVertical('LC Home Builder', (int) ($lcCounts->review_count ?? 0)));
-                    $view->with('lc_home_builder_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('LC Home Builder', (int) ($lcCounts->mailbox_count ?? 0)));
-                } else {
-                    $view->with('lc_home_builder_list_count', 0);
-                    $view->with('lc_home_builder_review_count', 0);
-                    $view->with('lc_home_builder_mailbox_count', 0);
-                }
-
-                // Leading Energy sidebar badges from job_leading_energy
-                if (\Illuminate\Support\Facades\Schema::hasTable('job_leading_energy')) {
-                    $leBase = DB::table('job_leading_energy');
-                    JobCountsScope::applyJobBphAssignment($leBase);
-                    JobCountsScope::applyBranchExclusiveStatLabel($leBase, 'Leading Energy');
-                    $leadingEnergyCounts = $leBase
-                        ->selectRaw("
-                            SUM(CASE WHEN status IS NULL OR LOWER(TRIM(COALESCE(status, ''))) NOT IN ('completed', 'for review', 'for email confirmation', 'archived', 'archive') THEN 1 ELSE 0 END) AS allocated_count,
-                            SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for review' THEN 1 ELSE 0 END) AS review_count,
-                            SUM(CASE WHEN LOWER(TRIM(COALESCE(status, ''))) = 'for email confirmation' THEN 1 ELSE 0 END) AS mailbox_count
-                        ")
-                        ->first();
-                    $view->with('leading_energy_list_count', JobCountsScope::sidebarCountForBranchVertical('Leading Energy', (int) ($leadingEnergyCounts->allocated_count ?? 0)));
-                    $view->with('leading_energy_review_count', JobCountsScope::sidebarCountForBranchVertical('Leading Energy', (int) ($leadingEnergyCounts->review_count ?? 0)));
-                    $view->with('leading_energy_mailbox_count', JobCountsScope::sidebarCountForBranchVertical('Leading Energy', (int) ($leadingEnergyCounts->mailbox_count ?? 0)));
-                } else {
-                    $view->with('leading_energy_list_count', 0);
-                    $view->with('leading_energy_review_count', 0);
-                    $view->with('leading_energy_mailbox_count', 0);
                 }
                 } catch (\Throwable) {
                     // Fail silently; sidebar will use default fallback values

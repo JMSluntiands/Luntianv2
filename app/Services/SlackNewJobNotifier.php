@@ -21,11 +21,22 @@ class SlackNewJobNotifier
         'BPH',
         'BluInq',
         'Redistar',
-        'A&M',
-        'NH',
-        'LC Home Builder',
-        'Leading Energy',
     ];
+
+    /**
+     * Side-bar color of the Slack message per branch; Slack cannot color the text itself.
+     */
+    private const BRANCH_COLORS = [
+        'LBS' => '#1E88E5',
+        'Luntian' => '#2E7D32',
+        'Efficient Living' => '#00ACC1',
+        'Gen EA' => '#8E24AA',
+        'BPH' => '#F4511E',
+        'BluInq' => '#3949AB',
+        'Redistar' => '#E53935',
+    ];
+
+    private const DEFAULT_COLOR = '#757575';
 
     /**
      * @param  array<string, mixed>  $details  Label => value, in display order.
@@ -54,7 +65,14 @@ class SlackNewJobNotifier
             $ch = curl_init($webhook);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode(['text' => implode("\n", $lines)]),
+                CURLOPT_POSTFIELDS => json_encode([
+                    'attachments' => [[
+                        'color' => self::BRANCH_COLORS[$branch] ?? self::DEFAULT_COLOR,
+                        'fallback' => 'New job: '.$branch,
+                        'text' => implode("\n", $lines),
+                        'mrkdwn_in' => ['text'],
+                    ]],
+                ]),
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 5,

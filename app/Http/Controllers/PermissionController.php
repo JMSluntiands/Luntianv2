@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\DB;
 class PermissionController extends Controller
 {
     /**
+     * Job modules left out of the Permission page. Their routes stay in config/permissions.php
+     * so access is still denied to users without the permission.
+     */
+    private const HIDDEN_JOB_MODULES = ['csp'];
+
+    /**
      * @return array<string, string>
      */
     private static function routeLabelMap(): array
@@ -35,7 +41,7 @@ class PermissionController extends Controller
      */
     private static function jobModuleKeysOrdered(): array
     {
-        return array_keys(config('permissions.job_ui_modules', []));
+        return array_values(array_diff(array_keys(config('permissions.job_ui_modules', [])), self::HIDDEN_JOB_MODULES));
     }
 
     /**

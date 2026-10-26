@@ -85,10 +85,6 @@ function shortBranchLabel(label: string): string {
     'EFFICIENT LIVING': 'EL',
     BluInq: 'BluInQ',
     BLUINQ: 'BluInQ',
-    'LC Home Builder': 'LC HB',
-    'LC HOME BUILDER': 'LC HB',
-    'Leading Energy': 'LE',
-    'LEADING ENERGY': 'LE',
   };
   return map[label] ?? label;
 }

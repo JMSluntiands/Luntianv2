@@ -82,7 +82,6 @@ class BphJobController extends Controller
     private function pipelineListRouteName(): string
     {
         return match ($this->pipelineJobTable()) {
-            'job_amt' => 'amt.list',
             'job_fyrs' => 'fyrs.list',
             default => 'bph.list',
         };
@@ -91,14 +90,13 @@ class BphJobController extends Controller
     private function pipelineViewRouteName(): string
     {
         return match ($this->pipelineJobTable()) {
-            'job_amt' => 'amt.view',
             'job_fyrs' => 'fyrs.view',
             default => 'bph.view',
         };
     }
 
     /**
-     * Permission route prefix for shared update / file handlers (A&amp;M reuses BPH keys).
+     * Permission route prefix for shared update / file handlers.
      */
     private function pipelineJobViewPermissionModule(): string
     {
@@ -111,7 +109,6 @@ class BphJobController extends Controller
     private function pipelineAssignmentModule(): string
     {
         return match ($this->pipelineJobTable()) {
-            'job_amt' => 'amt',
             'job_fyrs' => 'fyrs',
             default => 'bph',
         };
@@ -125,7 +122,6 @@ class BphJobController extends Controller
         }
 
         return match ($this->pipelineJobTable()) {
-            'job_amt' => 'A&M',
             'job_fyrs' => 'Redistar',
             default => 'BPH',
         };
@@ -139,7 +135,6 @@ class BphJobController extends Controller
         }
 
         return match ($this->pipelineJobTable()) {
-            'job_amt' => 'amt.view',
             'job_fyrs' => 'fyrs.view',
             default => 'bph.view',
         };
@@ -699,7 +694,6 @@ class BphJobController extends Controller
         $id = (int) ($job->id ?? 0);
         $safeNum = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($job->job_number ?? '')) ?: 'job-' . $id;
         $prefix = match ($this->pipelineJobTable()) {
-            'job_amt' => 'A&M-Compliance-',
             'job_fyrs' => 'Fyrs-Compliance-',
             default => 'BPH-Compliance-',
         };

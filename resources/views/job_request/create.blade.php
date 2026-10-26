@@ -15,7 +15,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <h1 class="mb-1.5 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Add Job Request</h1>
-                <p class="text-slate-600 dark:text-slate-400">Create a new job request definition for any branch client (LBS, BPH, Efficient Living, CSP, NH, LC Home Builder, Leading Energy, etc.).</p>
+                <p class="text-slate-600 dark:text-slate-400">Create a new job request definition for any branch client (LBS, BPH, Efficient Living, CSP, etc.).</p>
             </div>
         </div>
 

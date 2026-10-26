@@ -94,8 +94,6 @@ class JobCountsScope
         } elseif ($label === 'BLUINQ') {
             // Mapped display label is "BluInq"; strtoupper → BLUINQ
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
-        } elseif ($label === 'A&M') {
-            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
         } elseif (in_array($label, ['REDISTAR', 'FYRS ENERGYWISE', 'FYRS ENERGY WISE'], true)) {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
         } else {
@@ -175,7 +173,7 @@ class JobCountsScope
      * Branch role: only rows for lists tied to this product line (e.g. CSP job_csp lists).
      * Uses the same mapping as dashboard stat cards.
      *
-     * @param  non-empty-string  $statCardLabel  e.g. CSP, NH, LC Home Builder, Leading Energy
+     * @param  non-empty-string  $statCardLabel  e.g. CSP
      */
     public static function applyBranchExclusiveStatLabel(Builder $q, string $statCardLabel): void
     {

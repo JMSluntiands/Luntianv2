@@ -44,12 +44,8 @@ class ReportsController extends Controller
 
         $bphFamily = [
             'job_bph' => null, // CASE for BluInq below
-            'job_amt' => 'A&M',
             'job_fyrs' => 'REDISTAR',
             'job_csp' => 'CSP',
-            'job_nh' => 'NH',
-            'job_lc_home_builder' => 'LC Home Builder',
-            'job_leading_energy' => 'Leading Energy',
         ];
 
         foreach ($bphFamily as $table => $fixedLabel) {
@@ -65,24 +61,12 @@ class ReportsController extends Controller
                     END
                 ";
                 $alias = 'b';
-            } elseif ($table === 'job_amt') {
-                $alias = 'a';
-                $systemExpr = "CONVERT('A&M' USING utf8mb4) COLLATE {$utf8u}";
             } elseif ($table === 'job_fyrs') {
                 $alias = 'f';
                 $systemExpr = "CONVERT('REDISTAR' USING utf8mb4) COLLATE {$utf8u}";
-            } elseif ($table === 'job_csp') {
+            } else {
                 $alias = 'c';
                 $systemExpr = "CONVERT('CSP' USING utf8mb4) COLLATE {$utf8u}";
-            } elseif ($table === 'job_nh') {
-                $alias = 'n';
-                $systemExpr = "CONVERT('NH' USING utf8mb4) COLLATE {$utf8u}";
-            } elseif ($table === 'job_lc_home_builder') {
-                $alias = 'l';
-                $systemExpr = "CONVERT('LC Home Builder' USING utf8mb4) COLLATE {$utf8u}";
-            } else {
-                $alias = 'e';
-                $systemExpr = "CONVERT('Leading Energy' USING utf8mb4) COLLATE {$utf8u}";
             }
 
             $startedCol = Schema::hasColumn($table, 'created_at') ? "{$alias}.created_at" : "{$alias}.date";
@@ -503,12 +487,8 @@ class ReportsController extends Controller
                 ";
             }
             self::appendClientSelectUnionPart($clientUnionParts, 'job_bph', 'client_name', $utf8u);
-            self::appendClientSelectUnionPart($clientUnionParts, 'job_amt', 'client_name', $utf8u);
             self::appendClientSelectUnionPart($clientUnionParts, 'job_fyrs', 'client_name', $utf8u);
             self::appendClientSelectUnionPart($clientUnionParts, 'job_csp', 'client_name', $utf8u);
-            self::appendClientSelectUnionPart($clientUnionParts, 'job_nh', 'client_name', $utf8u);
-            self::appendClientSelectUnionPart($clientUnionParts, 'job_lc_home_builder', 'client_name', $utf8u);
-            self::appendClientSelectUnionPart($clientUnionParts, 'job_leading_energy', 'client_name', $utf8u);
 
             if (!empty($clientUnionParts)) {
                 $clientUnionSql = implode("\nUNION\n", $clientUnionParts);

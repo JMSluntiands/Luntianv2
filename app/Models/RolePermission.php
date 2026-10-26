@@ -170,7 +170,7 @@ class RolePermission extends Model
      */
     public static function dashboardStatCardLabels(): array
     {
-        return ['LBS', self::GENERIC_ASSESSMENT_STAT_LABEL, 'LUNTIAN', 'BPH', 'BluInq', 'A&M', 'REDISTAR', 'CSP', 'NH', 'LC Home Builder', 'Efficient Living', 'Leading Energy'];
+        return ['LBS', self::GENERIC_ASSESSMENT_STAT_LABEL, 'LUNTIAN', 'BPH', 'BluInq', 'REDISTAR', 'CSP', 'Efficient Living'];
     }
 
     /**
@@ -196,20 +196,13 @@ class RolePermission extends Model
             'luntian' => 'LUNTIAN',
             'bph' => 'BPH',
             'bluinq' => 'BluInq',
-            'amt' => 'A&M',
-            'a&m' => 'A&M',
             'redistar' => 'REDISTAR',
             'fyrs' => 'REDISTAR',
             'fyrs energywise' => 'REDISTAR',
             'fyrs energy wise' => 'REDISTAR',
             'csp' => 'CSP',
-            'nh' => 'NH',
-            'lc home builder' => 'LC Home Builder',
-            'lc_home_builder' => 'LC Home Builder',
             'efficient living' => 'Efficient Living',
             'efficient_living' => 'Efficient Living',
-            'leading energy' => 'Leading Energy',
-            'leading_energy' => 'Leading Energy',
         ];
 
         if (isset($aliases[$b])) {
@@ -278,9 +271,6 @@ class RolePermission extends Model
         if ($anyMay(['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash'])) {
             $allowed['BluInq'] = true;
         }
-        if ($anyMay(['amt.add', 'amt.rfq', 'amt.purchase', 'amt.list', 'amt.completed', 'amt.review', 'amt.mailbox', 'amt.trash'])) {
-            $allowed['A&M'] = true;
-        }
         if ($anyMay(['fyrs.add', 'fyrs.list', 'fyrs.completed', 'fyrs.review', 'fyrs.mailbox', 'fyrs.trash'])) {
             $allowed['REDISTAR'] = true;
         }
@@ -289,24 +279,6 @@ class RolePermission extends Model
             'csp.update', 'csp.job.emailPreview', 'csp.job.sendMailboxEmail', 'csp.job.printCompliance',
         ])) {
             $allowed['CSP'] = true;
-        }
-        if ($anyMay([
-            'nh.add', 'nh.store', 'nh.list', 'nh.completed', 'nh.review', 'nh.mailbox', 'nh.trash', 'nh.update',
-            'nh.job.sendSlack', 'nh.job.sendSubmissionEmail', 'nh.job.emailPreview', 'nh.job.sendMailboxEmail', 'nh.job.printCompliance',
-        ])) {
-            $allowed['NH'] = true;
-        }
-        if ($anyMay([
-            'lc_home_builder.add', 'lc_home_builder.store', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.mailbox', 'lc_home_builder.trash',
-            'lc_home_builder.update', 'lc_home_builder.job.sendSlack', 'lc_home_builder.job.sendSubmissionEmail', 'lc_home_builder.job.emailPreview', 'lc_home_builder.job.sendMailboxEmail',
-        ])) {
-            $allowed['LC Home Builder'] = true;
-        }
-        if ($anyMay([
-            'leading_energy.add', 'leading_energy.store', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash',
-            'leading_energy.update', 'leading_energy.job.sendSlack', 'leading_energy.job.sendSubmissionEmail', 'leading_energy.job.emailPreview', 'leading_energy.job.sendMailboxEmail',
-        ])) {
-            $allowed['Leading Energy'] = true;
         }
 
         $keys = array_keys($allowed);

@@ -7,19 +7,14 @@
     $luntianOpen = in_array($active, ['luntian.add', 'luntian.list', 'luntian.completed', 'luntian.review', 'luntian.mailbox', 'luntian.trash']) || str_starts_with((string)$active, 'luntian.');
     $bphOpen = in_array($active, ['bph.add', 'bph.list', 'bph.completed', 'bph.review', 'bph.mailbox', 'bph.trash']) || str_starts_with((string)$active, 'bph.');
     $bluinqOpen = in_array($active, ['bluinq.add', 'bluinq.list', 'bluinq.completed', 'bluinq.review', 'bluinq.mailbox', 'bluinq.trash']) || str_starts_with((string)$active, 'bluinq.');
-    $amtOpen = in_array($active, ['amt.add', 'amt.list', 'amt.completed', 'amt.review', 'amt.mailbox', 'amt.trash']) || str_starts_with((string)$active, 'amt.');
     $fyrsOpen = in_array($active, ['fyrs.add', 'fyrs.list', 'fyrs.completed', 'fyrs.review', 'fyrs.mailbox', 'fyrs.trash']) || str_starts_with((string)$active, 'fyrs.');
     $cspOpen = in_array($active, ['csp.add', 'csp.list', 'csp.completed', 'csp.review', 'csp.trash']) || str_starts_with((string)$active, 'csp.');
-    $nhOpen = in_array($active, ['nh.add', 'nh.list', 'nh.completed', 'nh.review', 'nh.trash']) || str_starts_with((string)$active, 'nh.');
-    $lcHomeBuilderOpen = in_array($active, ['lc_home_builder.add', 'lc_home_builder.list', 'lc_home_builder.completed', 'lc_home_builder.review', 'lc_home_builder.trash']) || str_starts_with((string)$active, 'lc_home_builder.');
     $efficientLivingOpen = in_array($active, ['efficient_living.add', 'efficient_living.list', 'efficient_living.completed', 'efficient_living.review', 'efficient_living.mailbox', 'efficient_living.trash']) || str_starts_with((string)$active, 'efficient_living.');
-    $leadingEnergyOpen = in_array($active, ['leading_energy.add', 'leading_energy.list', 'leading_energy.completed', 'leading_energy.review', 'leading_energy.mailbox', 'leading_energy.trash']) || str_starts_with((string)$active, 'leading_energy.');
     $taskOpen = in_array($active, ['task_management', 'task_management.job_notes'], true);
     $jobOpen = in_array($active, ['compliance.index', 'compliance.create', 'compliance.edit', 'priority.index', 'priority.create', 'priority.edit', 'status.index', 'status.create', 'status.edit', 'job_request.index', 'job_request.create', 'job_request.edit', 'job_module_client.index', 'client.index', 'client.create', 'client.edit']) || str_starts_with((string)$active, 'compliance.') || str_starts_with((string)$active, 'priority.') || str_starts_with((string)$active, 'status.') || str_starts_with((string)$active, 'job_request.') || str_starts_with((string)$active, 'job_module_client.') || str_starts_with((string)$active, 'client.');
     $branchOpen = in_array($active, ['branch.index', 'branch.create', 'branch.edit', 'branch.archive']) || str_starts_with((string)$active, 'branch.');
     $accountsOpen = in_array($active, ['users.index', 'users.create', 'users.edit', 'users.archive', 'accounts.clients.index', 'accounts.clients.create', 'accounts.clients.edit']) || str_starts_with((string)$active, 'users.') || str_starts_with((string)$active, 'accounts.clients.');
     $bphEmailOpen = in_array($active, ['bph_client_email.index', 'bph_client_email.create', 'bph_client_email.edit']) || str_starts_with((string)$active, 'bph_client_email.');
-    $amtEmailOpen = in_array($active, ['amt_client_email.index', 'amt_client_email.create', 'amt_client_email.edit']) || str_starts_with((string)$active, 'amt_client_email.');
     $lbsListCount = $lbs_list_count ?? 0;
     $lbsReviewCount = $lbs_review_count ?? 0;
     $lbsMailboxCount = $lbs_mailbox_count ?? 0;
@@ -38,25 +33,12 @@
     $bluinqListCount = $bluinq_list_count ?? 0;
     $bluinqReviewCount = $bluinq_review_count ?? 0;
     $bluinqMailboxCount = $bluinq_mailbox_count ?? 0;
-    $amtListCount = $amt_list_count ?? 0;
-    $amtReviewCount = $amt_review_count ?? 0;
-    $amtMailboxCount = $amt_mailbox_count ?? 0;
     $fyrsListCount = $fyrs_list_count ?? 0;
     $fyrsReviewCount = $fyrs_review_count ?? 0;
     $fyrsMailboxCount = $fyrs_mailbox_count ?? 0;
     $cspListCount = $csp_list_count ?? 0;
     $cspReviewCount = $csp_review_count ?? 0;
     $cspMailboxCount = $csp_mailbox_count ?? 0;
-    $nhListCount = $nh_list_count ?? 0;
-    $nhReviewCount = $nh_review_count ?? 0;
-    $nhMailboxCount = $nh_mailbox_count ?? 0;
-    $lcHomeBuilderListCount = $lc_home_builder_list_count ?? 0;
-    $lcHomeBuilderReviewCount = $lc_home_builder_review_count ?? 0;
-    $lcHomeBuilderMailboxCount = $lc_home_builder_mailbox_count ?? 0;
-    $leadingEnergyListCount = $leading_energy_list_count ?? 0;
-    $leadingEnergyReviewCount = $leading_energy_review_count ?? 0;
-    $leadingEnergyMailboxCount = $leading_energy_mailbox_count ?? 0;
-
     $may = function (string $route) {
         return \App\Models\RolePermission::userMayAccessRoute($route);
     };
@@ -92,18 +74,13 @@
         'fyrs.job.uploadFiles', 'fyrs.job.deleteFile', 'fyrs.job.file', 'fyrs.job.mergeFile', 'fyrs.job.printCompliance',
         'fyrs.job.checkerUploads', 'fyrs.job.runComment', 'fyrs.job.comment', 'fyrs.job.archive',
     ]) || $roleNormForNav === 'admin';
-    // A&M, CSP, NH, LC Home Builder, and Leading Energy are hidden from the sidebar; their pages still exist.
-    $showAmtNav = false;
+    // CSP is hidden from the sidebar; its pages still exist.
     $showCspNav = false;
-    $showNhNav = false;
-    $showLcHomeBuilderNav = false;
-    $showLeadingEnergyNav = false;
-    $showJobManagement = $showLbsNav || $showGeneralAssemblyNav || $showLuntianNav || $showBphNav || $showEfficientLivingNav || $showBluinqNav || $showAmtNav || $showFyrsNav || $showCspNav || $showNhNav || $showLcHomeBuilderNav || $showLeadingEnergyNav;
+    $showJobManagement = $showLbsNav || $showGeneralAssemblyNav || $showLuntianNav || $showBphNav || $showEfficientLivingNav || $showBluinqNav || $showFyrsNav || $showCspNav;
     $showJobMasterNav = $anyMay(['compliance.index', 'priority.index', 'status.index', 'job_request.index', 'job_module_client.index', 'client.index']);
     $showBranchNav = $anyMay(['branch.index', 'branch.archive']);
     $showAccountsNav = $anyMay(['users.index', 'accounts.clients.index', 'users.archive']);
     $showBphEmailNav = $showJobNavFromConfig('bph_email');
-    $showAmtEmailNav = false;
     $announcementRoutes = \App\Models\RolePermission::allowedRoutesForRole((string) ($userRole ?? ''), session('user_branch'));
     $showAnnouncementNav = in_array('announcement.index', $announcementRoutes, true);
     $showReportsNav = $may('reports') || $may('hr') || $may('timesheet');
@@ -117,8 +94,7 @@
         || $showJobMasterNav
         || $showBranchNav
         || $showAccountsNav
-        || $showBphEmailNav
-        || $showAmtEmailNav;
+        || $showBphEmailNav;
     $showNotificationControls = $may('settings.notifications');
     $settingsOpen = in_array($active, ['settings.jotform_config', 'settings.email_config', 'settings.slack_config', 'settings.notifications', 'settings.standalone_form', 'settings.logo_management']);
 @endphp
@@ -616,83 +592,6 @@
             </div>
         </div>
         @endif
-        @if($showAmtNav)
-        <div class="group nav-dropdown {{ $amtOpen ? 'open' : '' }}" data-dropdown>
-            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $amtOpen ? 'true' : 'false' }}" aria-controls="nav-sub-amt">
-                <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'amt', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'A&M'])
-                </span>
-                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-amt" role="region" aria-label="A&amp;M submenu">
-                <div class="space-y-0.5 py-1 pb-2 pl-1">
-                    @if($isStaff)
-                        @if($may('amt.rfq'))
-                        <a href="{{ route('amt.rfq') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.rfq' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">RFQ</a>
-                        @endif
-                        @if($may('amt.purchase'))
-                        <a href="{{ route('amt.purchase') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.purchase' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Purchase</a>
-                        @endif
-                        @if($may('amt.list'))
-                        <a href="{{ route('amt.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $amtListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('amt.completed'))
-                        <a href="{{ route('amt.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('amt.review'))
-                        <a href="{{ route('amt.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">For Review</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $amtReviewCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('amt.mailbox'))
-                        <a href="{{ route('amt.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">Mailbox</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $amtMailboxCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('amt.trash'))
-                        <a href="{{ route('amt.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @else
-                        @if($may('amt.add'))
-                        <a href="{{ route('amt.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['amt.add', 'amt.rfq']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">RFQ</a>
-                        @endif
-                        @if($may('amt.purchase'))
-                        <a href="{{ route('amt.purchase') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.purchase' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Purchase</a>
-                        @endif
-                        @if($may('amt.list'))
-                        <a href="{{ route('amt.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $amtListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('amt.completed'))
-                        <a href="{{ route('amt.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('amt.review'))
-                        <a href="{{ route('amt.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">For Review</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $amtReviewCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('amt.mailbox'))
-                        <a href="{{ route('amt.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">Mailbox</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $amtMailboxCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('amt.trash'))
-                        <a href="{{ route('amt.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
         @if($showFyrsNav)
         <div class="group nav-dropdown {{ $fyrsOpen ? 'open' : '' }}" data-dropdown>
             <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $fyrsOpen ? 'true' : 'false' }}" aria-controls="nav-sub-fyrs">
@@ -799,195 +698,6 @@
                         @endif
                         @if($may('csp.trash'))
                         <a href="{{ route('csp.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'csp.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-        @if($showNhNav)
-        <div class="group nav-dropdown {{ $nhOpen ? 'open' : '' }}" data-dropdown>
-            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $nhOpen ? 'true' : 'false' }}" aria-controls="nav-sub-nh">
-                <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'nh', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'NH'])
-                </span>
-                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-nh" role="region" aria-label="NH submenu">
-                <div class="space-y-0.5 py-1 pb-2 pl-1">
-                    @if($isStaff)
-                        @if($may('nh.list'))
-                        <a href="{{ route('nh.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $nhListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('nh.completed'))
-                        <a href="{{ route('nh.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('nh.review'))
-                        <a href="{{ route('nh.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">For Review</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $nhReviewCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('nh.mailbox'))
-                        <a href="{{ route('nh.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">Mailbox</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $nhMailboxCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('nh.trash'))
-                        <a href="{{ route('nh.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @else
-                        @if($may('nh.add'))
-                        <a href="{{ route('nh.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.add' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Add New</a>
-                        @endif
-                        @if($may('nh.list'))
-                        <a href="{{ route('nh.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $nhListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('nh.completed'))
-                        <a href="{{ route('nh.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('nh.review'))
-                        <a href="{{ route('nh.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">For Review</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $nhReviewCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('nh.mailbox'))
-                        <a href="{{ route('nh.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">Mailbox</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $nhMailboxCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('nh.trash'))
-                        <a href="{{ route('nh.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'nh.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-        @if($showLcHomeBuilderNav)
-        <div class="group nav-dropdown {{ $lcHomeBuilderOpen ? 'open' : '' }}" data-dropdown>
-            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $lcHomeBuilderOpen ? 'true' : 'false' }}" aria-controls="nav-sub-lc-home-builder">
-                <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'lc_home_builder', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'LC Home Builder'])
-                </span>
-                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-lc-home-builder" role="region" aria-label="LC Home Builder submenu">
-                <div class="space-y-0.5 py-1 pb-2 pl-1">
-                    @if($isStaff)
-                        @if($may('lc_home_builder.list'))
-                        <a href="{{ route('lc_home_builder.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('lc_home_builder.completed'))
-                        <a href="{{ route('lc_home_builder.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('lc_home_builder.review'))
-                        <a href="{{ route('lc_home_builder.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">For Review</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderReviewCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('lc_home_builder.mailbox'))
-                        <a href="{{ route('lc_home_builder.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">Mailbox</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderMailboxCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('lc_home_builder.trash'))
-                        <a href="{{ route('lc_home_builder.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @else
-                        @if($may('lc_home_builder.add'))
-                        <a href="{{ route('lc_home_builder.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.add' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Add New</a>
-                        @endif
-                        @if($may('lc_home_builder.list'))
-                        <a href="{{ route('lc_home_builder.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('lc_home_builder.completed'))
-                        <a href="{{ route('lc_home_builder.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('lc_home_builder.review'))
-                        <a href="{{ route('lc_home_builder.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">For Review</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderReviewCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('lc_home_builder.mailbox'))
-                        <a href="{{ route('lc_home_builder.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">Mailbox</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $lcHomeBuilderMailboxCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('lc_home_builder.trash'))
-                        <a href="{{ route('lc_home_builder.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'lc_home_builder.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-        @if($showLeadingEnergyNav)
-        <div class="group nav-dropdown {{ $leadingEnergyOpen ? 'open' : '' }}" data-dropdown>
-            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $leadingEnergyOpen ? 'true' : 'false' }}" aria-controls="nav-sub-leading-energy">
-                <span class="nav-trigger-inner flex items-center gap-2.5">
-                    @include('layouts.partials.client-logo-icon', ['key' => 'leading_energy', 'class' => 'nav-icon h-5 w-5 flex-shrink-0 opacity-90', 'label' => 'Leading Energy'])
-                </span>
-                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-leading-energy" role="region" aria-label="Leading Energy submenu">
-                <div class="space-y-0.5 py-1 pb-2 pl-1">
-                    @if($isStaff)
-                        @if($may('leading_energy.list'))
-                        <a href="{{ route('leading_energy.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">List</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyListCount }}</span></a>
-                        @endif
-                        @if($may('leading_energy.completed'))
-                        <a href="{{ route('leading_energy.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('leading_energy.review'))
-                        <a href="{{ route('leading_energy.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">For Review</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyReviewCount }}</span></a>
-                        @endif
-                        @if($may('leading_energy.mailbox'))
-                        <a href="{{ route('leading_energy.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">Mailbox</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyMailboxCount }}</span></a>
-                        @endif
-                        @if($may('leading_energy.trash'))
-                        <a href="{{ route('leading_energy.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
-                        @endif
-                    @else
-                        @if($may('leading_energy.add'))
-                        <a href="{{ route('leading_energy.add') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.add' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Add New</a>
-                        @endif
-                        @if($may('leading_energy.list'))
-                        <a href="{{ route('leading_energy.list') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.list' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">
-                            <span class="nav-subitem-label">List</span>
-                            <span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyListCount }}</span>
-                        </a>
-                        @endif
-                        @if($may('leading_energy.completed'))
-                        <a href="{{ route('leading_energy.completed') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.completed' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Completed</a>
-                        @endif
-                        @if($may('leading_energy.review'))
-                        <a href="{{ route('leading_energy.review') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.review' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">For Review</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyReviewCount }}</span></a>
-                        @endif
-                        @if($may('leading_energy.mailbox'))
-                        <a href="{{ route('leading_energy.mailbox') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.mailbox' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}"><span class="nav-subitem-label">Mailbox</span><span class="nav-badge inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">{{ $leadingEnergyMailboxCount }}</span></a>
-                        @endif
-                        @if($may('leading_energy.trash'))
-                        <a href="{{ route('leading_energy.trash') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'leading_energy.trash' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Archive</a>
                         @endif
                     @endif
                 </div>
@@ -1162,27 +872,6 @@
                     @endif
                     @if($may('bph_client_email.index'))
                     <a href="{{ route('bph_client_email.index') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['bph_client_email.index', 'bph_client_email.edit']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">List</a>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-        @if($showAmtEmailNav)
-        <div class="group nav-dropdown {{ $amtEmailOpen ? 'open' : '' }}" data-dropdown>
-            <button type="button" class="nav-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border-0 bg-transparent px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-expanded="{{ $amtEmailOpen ? 'true' : 'false' }}" aria-controls="nav-sub-amt-email">
-                <span class="nav-trigger-inner flex items-center gap-2.5">
-                    <svg class="nav-icon h-5 w-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    A&amp;M Email
-                </span>
-                <svg class="h-4 w-4 flex-shrink-0 opacity-60 transition-transform duration-200 group-[.open]:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-out group-[.open]:max-h-80" id="nav-sub-amt-email" role="region" aria-label="A&amp;M Email submenu">
-                <div class="space-y-0.5 py-1 pb-2 pl-1">
-                    @if($may('amt_client_email.create'))
-                    <a href="{{ route('amt_client_email.create') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active === 'amt_client_email.create' ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">Create Email</a>
-                    @endif
-                    @if($may('amt_client_email.index'))
-                    <a href="{{ route('amt_client_email.index') }}" class="nav-subitem relative z-10 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 pl-10 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ in_array($active, ['amt_client_email.index', 'amt_client_email.edit']) ? 'nav-item-active border-l-4 border-emerald-500 bg-emerald-500/10 font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 pl-9 dark:pl-9' : '' }}">List</a>
                     @endif
                 </div>
             </div>

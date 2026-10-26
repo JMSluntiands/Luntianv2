@@ -311,13 +311,9 @@ const BRANCH_ORDER = [
   'LUNTIAN',
   'BPH',
   'BluInq',
-  'A&M',
   'REDISTAR',
   'CSP',
-  'NH',
-  'LC Home Builder',
   'Efficient Living',
-  'Leading Energy',
 ] as const;
 
 function parseDashboardStats(): DashboardStatsPayload | null {
@@ -380,13 +376,9 @@ const BRANCH_ROUTE_PREFIX: Record<string, string> = {
   LUNTIAN: 'luntian',
   BPH: 'bph',
   BluInq: 'bluinq',
-  'A&M': 'amt',
   'REDISTAR': 'fyrs',
   CSP: 'csp',
-  NH: 'nh',
-  'LC Home Builder': 'lc-home-builder',
   'Efficient Living': 'efficient-living',
-  'Leading Energy': 'leading-energy',
 };
 
 /** Short display label for branch names on dashboard UI. */

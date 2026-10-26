@@ -26,12 +26,8 @@ class JobModuleClient extends Model
             'efficient_living' => 'EL01',
             'luntian' => 'LT01',
             'bluinq' => 'BLQ01',
-            'amt' => 'AMT01',
             'fyrs' => 'FYRS01',
             'csp' => 'CSP01',
-            'nh' => 'NH01',
-            'leading_energy' => 'LE01',
-            'lc_home_builder' => 'LC_HB01',
         ];
     }
 

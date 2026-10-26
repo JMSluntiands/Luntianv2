@@ -410,11 +410,6 @@ body.sidebar-open #sidebarNav {
     @apply opacity-100 pointer-events-auto;
 }
 
-/* Delete A&M client email modal visible state */
-#deleteAmtEmailModal.show {
-    @apply opacity-100 pointer-events-auto;
-}
-
 /* Hide scrollbar on sidebar nav */
 .scrollbar-hide {
     -ms-overflow-style: none;

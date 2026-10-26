@@ -5,7 +5,6 @@ use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AmtJobController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ForumThreadController;
 use App\Http\Controllers\FyrsJobController;
@@ -14,7 +13,6 @@ use App\Http\Controllers\BphJobController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\ClientAccountController;
-use App\Http\Controllers\ClientEmailAmtController;
 use App\Http\Controllers\ClientLogoController;
 use App\Http\Controllers\ClientEmailBphController;
 use App\Http\Controllers\ComplianceController;
@@ -29,9 +27,6 @@ use App\Http\Controllers\JobRequestController;
 use App\Http\Controllers\JobModuleClientController;
 use App\Http\Controllers\GeneralAssemblyJobController;
 use App\Http\Controllers\LbsJobController;
-use App\Http\Controllers\LcHomeBuilderJobController;
-use App\Http\Controllers\LeadingEnergyJobController;
-use App\Http\Controllers\NhJobController;
 use App\Http\Controllers\NotificationSettingsController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PriorityController;
@@ -262,13 +257,6 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::put('/dashboard/bph-client-email/{client_email_bph}', [ClientEmailBphController::class, 'update'])->name('bph_client_email.update');
     Route::delete('/dashboard/bph-client-email/{client_email_bph}', [ClientEmailBphController::class, 'destroy'])->name('bph_client_email.destroy');
 
-    Route::get('/dashboard/amt-client-email', [ClientEmailAmtController::class, 'index'])->name('amt_client_email.index');
-    Route::get('/dashboard/amt-client-email/create', [ClientEmailAmtController::class, 'create'])->name('amt_client_email.create');
-    Route::post('/dashboard/amt-client-email', [ClientEmailAmtController::class, 'store'])->name('amt_client_email.store');
-    Route::get('/dashboard/amt-client-email/{client_email_amt}/edit', [ClientEmailAmtController::class, 'edit'])->name('amt_client_email.edit');
-    Route::put('/dashboard/amt-client-email/{client_email_amt}', [ClientEmailAmtController::class, 'update'])->name('amt_client_email.update');
-    Route::delete('/dashboard/amt-client-email/{client_email_amt}', [ClientEmailAmtController::class, 'destroy'])->name('amt_client_email.destroy');
-
     Route::get('/dashboard/csp/add', function () {
         $bphClientEmails = ClientEmailBph::orderBy('email')->get(['id', 'email']);
 
@@ -315,31 +303,6 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/bluinq/review', [BluinqJobController::class, 'review'])->name('bluinq.review');
     Route::get('/dashboard/bluinq/trash', fn () => view('bluinq.trash', ['sidebar_active' => 'bluinq.trash']))->name('bluinq.trash');
 
-    Route::get('/dashboard/amt/add', [AmtJobController::class, 'addForm'])->name('amt.add');
-    Route::post('/dashboard/amt/store', [AmtJobController::class, 'store'])->name('amt.store');
-    Route::post('/dashboard/amt/job/{id}/send-slack', [AmtJobController::class, 'sendSlackNotification'])->name('amt.job.sendSlack');
-    Route::post('/dashboard/amt/job/{id}/send-submission-email', [AmtJobController::class, 'sendSubmissionEmail'])->name('amt.job.sendSubmissionEmail');
-    Route::get('/dashboard/amt/job/{id}/email-preview', [AmtJobController::class, 'emailPreview'])->name('amt.job.emailPreview');
-    Route::post('/dashboard/amt/job/{id}/send-mailbox-email', [AmtJobController::class, 'sendMailboxEmail'])->name('amt.job.sendMailboxEmail');
-    Route::get('/dashboard/amt/job/{id}', [AmtJobController::class, 'show'])->name('amt.view');
-    Route::put('/dashboard/amt/job/{id}', [AmtJobController::class, 'update'])->name('amt.update');
-    Route::post('/dashboard/amt/job/{id}/files', [AmtJobController::class, 'uploadFiles'])->name('amt.job.uploadFiles');
-    Route::post('/dashboard/amt/job/{id}/file/delete', [AmtJobController::class, 'deleteFile'])->name('amt.job.deleteFile');
-    Route::get('/dashboard/amt/job/{id}/file/{file}', [AmtJobController::class, 'downloadFile'])->name('amt.job.file');
-    Route::get('/dashboard/amt/job/{id}/merge-file', [AmtJobController::class, 'downloadMergeFile'])->name('amt.job.mergeFile');
-    Route::get('/dashboard/amt/job/{id}/print/compliance-summary', [AmtJobController::class, 'printComplianceSummary'])->name('amt.job.printCompliance');
-    Route::post('/dashboard/amt/job/{id}/checker-uploads', [AmtJobController::class, 'uploadCheckerFiles'])->name('amt.job.checkerUploads');
-    Route::post('/dashboard/amt/job/{id}/run-comment', [AmtJobController::class, 'addRunComment'])->name('amt.job.runComment');
-    Route::post('/dashboard/amt/job/{id}/comment', [AmtJobController::class, 'addJobComment'])->name('amt.job.comment');
-    Route::post('/dashboard/amt/job/{id}/archive', [AmtJobController::class, 'archiveJob'])->name('amt.job.archive');
-    Route::get('/dashboard/amt/mailbox', [AmtJobController::class, 'mailbox'])->name('amt.mailbox');
-    Route::get('/dashboard/amt/rfq', [AmtJobController::class, 'rfq'])->name('amt.rfq');
-    Route::get('/dashboard/amt/purchase', [AmtJobController::class, 'purchase'])->name('amt.purchase');
-    Route::get('/dashboard/amt/list', [AmtJobController::class, 'list'])->name('amt.list');
-    Route::get('/dashboard/amt/completed', [AmtJobController::class, 'completed'])->name('amt.completed');
-    Route::get('/dashboard/amt/review', [AmtJobController::class, 'review'])->name('amt.review');
-    Route::get('/dashboard/amt/trash', fn () => view('amt.trash', ['sidebar_active' => 'amt.trash']))->name('amt.trash');
-
     Route::get('/dashboard/fyrs/add', [FyrsJobController::class, 'addForm'])->name('fyrs.add');
     Route::post('/dashboard/fyrs/store', [FyrsJobController::class, 'store'])->name('fyrs.store');
     Route::post('/dashboard/fyrs/job/{id}/send-slack', [FyrsJobController::class, 'sendSlackNotification'])->name('fyrs.job.sendSlack');
@@ -362,33 +325,6 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/fyrs/completed', [FyrsJobController::class, 'completed'])->name('fyrs.completed');
     Route::get('/dashboard/fyrs/review', [FyrsJobController::class, 'review'])->name('fyrs.review');
     Route::get('/dashboard/fyrs/trash', fn () => view('fyrs.trash', ['sidebar_active' => 'fyrs.trash']))->name('fyrs.trash');
-
-    Route::get('/dashboard/nh/add', [NhJobController::class, 'addForm'])->name('nh.add');
-    Route::post('/dashboard/nh/store', [NhJobController::class, 'store'])->name('nh.store');
-    Route::put('/dashboard/nh/job/{id}', [NhJobController::class, 'update'])->name('nh.update');
-    Route::post('/dashboard/nh/job/{id}/send-slack', [NhJobController::class, 'sendSlackNotification'])->name('nh.job.sendSlack');
-    Route::post('/dashboard/nh/job/{id}/send-submission-email', [NhJobController::class, 'sendSubmissionEmail'])->name('nh.job.sendSubmissionEmail');
-    Route::get('/dashboard/nh/list', fn () => view('nh.list', array_merge(['sidebar_active' => 'nh.list'], User::assignmentInitialsViewData('nh'))))->name('nh.list');
-    Route::get('/dashboard/nh/completed', fn () => view('nh.completed', ['sidebar_active' => 'nh.completed']))->name('nh.completed');
-    Route::get('/dashboard/nh/review', fn () => view('nh.review', ['sidebar_active' => 'nh.review']))->name('nh.review');
-    Route::get('/dashboard/nh/mailbox', [NhJobController::class, 'mailbox'])->name('nh.mailbox');
-    Route::get('/dashboard/nh/job/{id}/email-preview', [NhJobController::class, 'emailPreview'])->name('nh.job.emailPreview');
-    Route::post('/dashboard/nh/job/{id}/send-mailbox-email', [NhJobController::class, 'sendMailboxEmail'])->name('nh.job.sendMailboxEmail');
-    Route::get('/dashboard/nh/job/{id}/print/compliance-summary', [NhJobController::class, 'printComplianceSummary'])->name('nh.job.printCompliance');
-    Route::get('/dashboard/nh/trash', fn () => view('nh.trash', ['sidebar_active' => 'nh.trash']))->name('nh.trash');
-
-    Route::get('/dashboard/lc-home-builder/add', [LcHomeBuilderJobController::class, 'addForm'])->name('lc_home_builder.add');
-    Route::post('/dashboard/lc-home-builder/store', [LcHomeBuilderJobController::class, 'store'])->name('lc_home_builder.store');
-    Route::post('/dashboard/lc-home-builder/job/{id}/send-slack', [LcHomeBuilderJobController::class, 'sendSlackNotification'])->name('lc_home_builder.job.sendSlack');
-    Route::post('/dashboard/lc-home-builder/job/{id}/send-submission-email', [LcHomeBuilderJobController::class, 'sendSubmissionEmail'])->name('lc_home_builder.job.sendSubmissionEmail');
-    Route::get('/dashboard/lc-home-builder/mailbox', [LcHomeBuilderJobController::class, 'mailbox'])->name('lc_home_builder.mailbox');
-    Route::get('/dashboard/lc-home-builder/job/{id}/email-preview', [LcHomeBuilderJobController::class, 'emailPreview'])->name('lc_home_builder.job.emailPreview');
-    Route::post('/dashboard/lc-home-builder/job/{id}/send-mailbox-email', [LcHomeBuilderJobController::class, 'sendMailboxEmail'])->name('lc_home_builder.job.sendMailboxEmail');
-    Route::get('/dashboard/lc-home-builder/list', [LcHomeBuilderJobController::class, 'list'])->name('lc_home_builder.list');
-    Route::put('/dashboard/lc-home-builder/job/{id}', [LcHomeBuilderJobController::class, 'update'])->name('lc_home_builder.update');
-    Route::get('/dashboard/lc-home-builder/completed', fn () => view('lc_home_builder.completed', ['sidebar_active' => 'lc_home_builder.completed']))->name('lc_home_builder.completed');
-    Route::get('/dashboard/lc-home-builder/review', fn () => view('lc_home_builder.review', ['sidebar_active' => 'lc_home_builder.review']))->name('lc_home_builder.review');
-    Route::get('/dashboard/lc-home-builder/trash', fn () => view('lc_home_builder.trash', ['sidebar_active' => 'lc_home_builder.trash']))->name('lc_home_builder.trash');
 
     Route::get('/dashboard/efficient-living/add', [LbsJobController::class, 'efficientLivingAddForm'])->name('efficient_living.add');
     Route::post('/dashboard/efficient-living', [LbsJobController::class, 'store'])->name('efficient_living.store');
@@ -419,20 +355,6 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/luntian/review', [LbsJobController::class, 'luntianReview'])->name('luntian.review');
     Route::get('/dashboard/luntian/mailbox', [LbsJobController::class, 'luntianMailbox'])->name('luntian.mailbox');
     Route::get('/dashboard/luntian/trash', [LbsJobController::class, 'luntianTrash'])->name('luntian.trash');
-
-    Route::get('/dashboard/leading-energy/add', [LeadingEnergyJobController::class, 'addForm'])->name('leading_energy.add');
-    Route::post('/dashboard/leading-energy/store', [LeadingEnergyJobController::class, 'store'])->name('leading_energy.store');
-    Route::post('/dashboard/leading-energy/job/{id}/send-slack', [LeadingEnergyJobController::class, 'sendSlackNotification'])->name('leading_energy.job.sendSlack');
-    Route::post('/dashboard/leading-energy/job/{id}/send-submission-email', [LeadingEnergyJobController::class, 'sendSubmissionEmail'])->name('leading_energy.job.sendSubmissionEmail');
-    Route::get('/dashboard/leading-energy/list', [LeadingEnergyJobController::class, 'list'])->name('leading_energy.list');
-    Route::get('/dashboard/leading-energy/job/{id}', [LeadingEnergyJobController::class, 'show'])->name('leading_energy.view');
-    Route::put('/dashboard/leading-energy/job/{id}', [LeadingEnergyJobController::class, 'update'])->name('leading_energy.update');
-    Route::get('/dashboard/leading-energy/mailbox', [LeadingEnergyJobController::class, 'mailbox'])->name('leading_energy.mailbox');
-    Route::get('/dashboard/leading-energy/job/{id}/email-preview', [LeadingEnergyJobController::class, 'emailPreview'])->name('leading_energy.job.emailPreview');
-    Route::post('/dashboard/leading-energy/job/{id}/send-mailbox-email', [LeadingEnergyJobController::class, 'sendMailboxEmail'])->name('leading_energy.job.sendMailboxEmail');
-    Route::get('/dashboard/leading-energy/completed', [LeadingEnergyJobController::class, 'completed'])->name('leading_energy.completed');
-    Route::get('/dashboard/leading-energy/review', [LeadingEnergyJobController::class, 'review'])->name('leading_energy.review');
-    Route::get('/dashboard/leading-energy/trash', [LeadingEnergyJobController::class, 'trash'])->name('leading_energy.trash');
 
     Route::get('/dashboard/reports', [ReportsController::class, 'index'])->name('reports');
     Route::get('/dashboard/reports/chart', [ReportsController::class, 'chart'])->name('reports.chart');

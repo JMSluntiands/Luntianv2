@@ -420,12 +420,8 @@ class DashboardJobStatsService
             'Efficient Living' => 'efficient_living',
             'BPH' => 'bph',
             'BluInq' => 'bluinq',
-            'A&M' => 'amt',
             'REDISTAR', 'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => 'fyrs',
             'CSP' => 'csp',
-            'NH' => 'nh',
-            'LC Home Builder' => 'lc_home_builder',
-            'Leading Energy' => 'leading_energy',
             default => null,
         };
     }
@@ -527,7 +523,7 @@ class DashboardJobStatsService
 
         $collect('jobs', 'job_status');
         $collect('job_general_assembly', 'job_status');
-        foreach (['job_bph', 'job_amt', 'job_fyrs', 'job_csp', 'job_nh', 'job_lc_home_builder', 'job_leading_energy'] as $table) {
+        foreach (['job_bph', 'job_fyrs', 'job_csp'] as $table) {
             $collect($table, 'status');
         }
 
@@ -722,7 +718,6 @@ class DashboardJobStatsService
             'Efficient Living' => self::countJobsTableLiveStatus($statusName, 'efficient_living'),
             'BPH' => self::countJobBphLiveStatus($statusName, 'bph'),
             'BluInq' => self::countJobBphLiveStatus($statusName, 'bluinq'),
-            'A&M' => self::countJobBphLiveStatus($statusName, 'amt'),
             'REDISTAR', 'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => self::countJobBphLiveStatus($statusName, 'fyrs'),
             default => 0,
         };
@@ -768,9 +763,7 @@ class DashboardJobStatsService
     private static function countJobBphLiveStatus(string $statusName, string $which): int
     {
         $table = 'job_bph';
-        if ($which === 'amt' && Schema::hasTable('job_amt')) {
-            $table = 'job_amt';
-        } elseif ($which === 'fyrs' && Schema::hasTable('job_fyrs')) {
+        if ($which === 'fyrs' && Schema::hasTable('job_fyrs')) {
             $table = 'job_fyrs';
         }
 
@@ -782,8 +775,6 @@ class DashboardJobStatsService
 
         if ($which === 'bluinq') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
-        } elseif ($which === 'amt' && $table === 'job_bph') {
-            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
         } elseif ($which === 'fyrs' && $table === 'job_bph') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
         } elseif ($which === 'bph') {
@@ -831,7 +822,6 @@ class DashboardJobStatsService
             'Efficient Living' => self::countJobsTable($bucket, 'efficient_living', $date, $statusName),
             'BPH' => self::countJobBph($bucket, 'bph', $date, $statusName),
             'BluInq' => self::countJobBph($bucket, 'bluinq', $date, $statusName),
-            'A&M' => self::countJobBph($bucket, 'amt', $date, $statusName),
             'REDISTAR', 'FYRS ENERGYWISE', 'FYRS ENERGY WISE' => self::countJobBph($bucket, 'fyrs', $date, $statusName),
             default => 0,
         };
@@ -938,9 +928,7 @@ class DashboardJobStatsService
     private static function countJobBph(string $bucket, string $which, ?string $date = null, ?string $statusName = null): int
     {
         $table = 'job_bph';
-        if ($which === 'amt' && Schema::hasTable('job_amt')) {
-            $table = 'job_amt';
-        } elseif ($which === 'fyrs' && Schema::hasTable('job_fyrs')) {
+        if ($which === 'fyrs' && Schema::hasTable('job_fyrs')) {
             $table = 'job_fyrs';
         }
 
@@ -954,8 +942,6 @@ class DashboardJobStatsService
 
         if ($which === 'bluinq') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['bluinq01']);
-        } elseif ($which === 'amt' && $table === 'job_bph') {
-            $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['amt01']);
         } elseif ($which === 'fyrs' && $table === 'job_bph') {
             $q->whereRaw('LOWER(TRIM(client_code)) = ?', ['fyrs01']);
         } elseif ($which === 'bph') {
