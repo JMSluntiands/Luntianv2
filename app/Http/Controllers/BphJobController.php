@@ -542,7 +542,7 @@ class BphJobController extends Controller
         $checked = $job->checked ?? '';
 
         SlackNewJobNotifier::send($this->slackProductLabelForPipelineJob($job), [
-            'Reference' => $reference,
+            'Job Reference Number' => $reference,
             'Job Number' => $jobNum,
             'Client' => $clientName,
             'Job Type' => $jobType,

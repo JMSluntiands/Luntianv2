@@ -17,6 +17,7 @@ class SlackConfig extends Model
         'new_job_slack_active',
         'assignment_slack_active',
         'new_job_branches',
+        'new_job_branch_colors',
     ];
 
     protected $casts = [
@@ -24,7 +25,19 @@ class SlackConfig extends Model
         'new_job_slack_active' => 'boolean',
         'assignment_slack_active' => 'boolean',
         'new_job_branches' => 'array',
+        'new_job_branch_colors' => 'array',
     ];
+
+    /**
+     * Saved Slack side-bar color for the branch, or null to use the default.
+     */
+    public function newJobBranchColor(string $branch): ?string
+    {
+        $colors = $this->new_job_branch_colors;
+        $color = is_array($colors) ? ($colors[$branch] ?? null) : null;
+
+        return is_string($color) && preg_match('/^#[0-9A-Fa-f]{6}$/', $color) ? strtoupper($color) : null;
+    }
 
     /**
      * Whether new-job Slack messages are enabled for the given branch label (NULL list = all branches).

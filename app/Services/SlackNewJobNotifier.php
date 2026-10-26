@@ -24,19 +24,27 @@ class SlackNewJobNotifier
     ];
 
     /**
-     * Side-bar color of the Slack message per branch; Slack cannot color the text itself.
+     * Default side-bar color of the Slack message per branch; Slack cannot color the text itself.
+     * Overridden per branch from Slack settings.
      */
-    private const BRANCH_COLORS = [
+    public const DEFAULT_BRANCH_COLORS = [
         'LBS' => '#1E88E5',
-        'Luntian' => '#2E7D32',
+        'Luntian' => '#F4511E',
         'Efficient Living' => '#00ACC1',
         'Gen EA' => '#8E24AA',
-        'BPH' => '#F4511E',
+        'BPH' => '#2E7D32',
         'BluInq' => '#3949AB',
         'Redistar' => '#E53935',
     ];
 
     private const DEFAULT_COLOR = '#757575';
+
+    public static function colorFor(string $branch, ?SlackConfig $config = null): string
+    {
+        return $config?->newJobBranchColor($branch)
+            ?? self::DEFAULT_BRANCH_COLORS[$branch]
+            ?? self::DEFAULT_COLOR;
+    }
 
     /**
      * @param  array<string, mixed>  $details  Label => value, in display order.
@@ -67,7 +75,7 @@ class SlackNewJobNotifier
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => json_encode([
                     'attachments' => [[
-                        'color' => self::BRANCH_COLORS[$branch] ?? self::DEFAULT_COLOR,
+                        'color' => self::colorFor($branch, $config),
                         'fallback' => 'New job: '.$branch,
                         'text' => implode("\n", $lines),
                         'mrkdwn_in' => ['text'],

@@ -35,6 +35,8 @@ class SlackConfigController extends Controller
             'webhook_assignment_url' => ['nullable', 'string', 'max:500', Rule::when($request->filled('webhook_assignment_url'), 'url')],
             'new_job_branches' => ['nullable', 'array'],
             'new_job_branches.*' => ['string', Rule::in(SlackNewJobNotifier::BRANCHES)],
+            'new_job_branch_colors' => ['nullable', 'array'],
+            'new_job_branch_colors.*' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -59,6 +61,18 @@ class SlackConfigController extends Controller
                 SlackNewJobNotifier::BRANCHES,
                 fn (string $branch) => in_array($branch, $checked, true)
             ));
+        }
+        unset($data['new_job_branch_colors']);
+        if ($request->boolean('new_job_branches_submitted') && Schema::hasColumn('slack_configs', 'new_job_branch_colors')) {
+            $submitted = (array) $request->input('new_job_branch_colors', []);
+            $colors = [];
+            foreach (SlackNewJobNotifier::BRANCHES as $branch) {
+                $color = $submitted[$branch] ?? null;
+                if (is_string($color) && preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) {
+                    $colors[$branch] = strtoupper($color);
+                }
+            }
+            $data['new_job_branch_colors'] = $colors;
         }
         $data['name'] = 'LBS Notifications';
 

@@ -772,7 +772,7 @@ class FyrsJobController extends Controller
         $checked = $job->checked ?? '';
 
         SlackNewJobNotifier::send('Redistar', [
-            'Reference' => $reference,
+            'Job Reference Number' => $reference,
             'Job Number' => $jobNum,
             'Client' => $clientName,
             'Job Type' => $jobType,

@@ -2654,7 +2654,7 @@ class GeneralAssemblyJobController extends Controller
         };
 
         SlackNewJobNotifier::send($branch, [
-            'Reference' => $reference,
+            'Job Reference Number' => $reference,
             'Client Ref #' => $client_ref,
             'Client' => $client_account_name,
             'Job Type' => $job_request_type,

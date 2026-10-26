@@ -139,26 +139,42 @@
                     $checkedBranches = old('new_job_branches_submitted')
                         ? (array) old('new_job_branches', [])
                         : (is_array($savedBranches) ? $savedBranches : \App\Services\SlackNewJobNotifier::BRANCHES);
+                    $hasBranchColors = \Illuminate\Support\Facades\Schema::hasColumn('slack_configs', 'new_job_branch_colors');
+                    $oldColors = (array) old('new_job_branch_colors', []);
                 @endphp
                 <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/50 overflow-hidden">
                     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                         <div>
                             <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">New job branches</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Only checked branches send a Slack message when a new job is added.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Only checked branches send a Slack message when a new job is added.@if($hasBranchColors) The color is the bar on the left of the Slack message.@endif</p>
                         </div>
                         <div class="flex gap-2 text-xs">
                             <button type="button" data-branch-toggle="1" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Select all</button>
                             <button type="button" data-branch-toggle="0" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Clear</button>
+                            @if($hasBranchColors)
+                                <button type="button" data-branch-colors-reset class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Reset colors</button>
+                            @endif
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-2 p-5 sm:grid-cols-2 md:grid-cols-3">
                         <input type="hidden" name="new_job_branches_submitted" value="1">
                         @foreach(\App\Services\SlackNewJobNotifier::BRANCHES as $branch)
-                            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50">
-                                <input type="checkbox" name="new_job_branches[]" value="{{ $branch }}" class="slack-branch-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                    @checked(in_array($branch, $checkedBranches, true))>
-                                <span>{{ $branch }}</span>
-                            </label>
+                            <div class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50">
+                                <label class="flex flex-1 cursor-pointer items-center gap-2.5">
+                                    <input type="checkbox" name="new_job_branches[]" value="{{ $branch }}" class="slack-branch-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                        @checked(in_array($branch, $checkedBranches, true))>
+                                    <span>{{ $branch }}</span>
+                                </label>
+                                @if($hasBranchColors)
+                                    @php
+                                        $defaultColor = \App\Services\SlackNewJobNotifier::colorFor($branch);
+                                        $branchColor = is_string($oldColors[$branch] ?? null) ? $oldColors[$branch] : \App\Services\SlackNewJobNotifier::colorFor($branch, $config);
+                                    @endphp
+                                    <input type="color" name="new_job_branch_colors[{{ $branch }}]" value="{{ $branchColor }}" data-default-color="{{ $defaultColor }}"
+                                        class="slack-branch-color h-7 w-9 flex-shrink-0 cursor-pointer rounded border border-slate-300 bg-transparent p-0.5 dark:border-slate-600"
+                                        title="Slack color for {{ $branch }}" aria-label="Slack color for {{ $branch }}">
+                                @endif
+                            </div>
                         @endforeach
                     </div>
                 </div>
@@ -193,6 +209,14 @@
                     form.querySelectorAll('.slack-branch-checkbox').forEach(function(cb) { cb.checked = on; });
                 });
             });
+            var resetColors = form.querySelector('[data-branch-colors-reset]');
+            if (resetColors) {
+                resetColors.addEventListener('click', function() {
+                    form.querySelectorAll('.slack-branch-color').forEach(function(input) {
+                        input.value = input.getAttribute('data-default-color');
+                    });
+                });
+            }
             form.addEventListener('submit', function() {
                 btn.disabled = true;
                 btn.innerHTML = '<span class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true"></span>Saving...';
