@@ -17,6 +17,7 @@ class SlackConfigController extends Controller
      */
     public function index()
     {
+        $this->ensureBranchColorsColumn();
         $config = SlackConfig::first();
 
         return view('settings.slack-config', [
@@ -63,6 +64,7 @@ class SlackConfigController extends Controller
             ));
         }
         unset($data['new_job_branch_colors']);
+        $this->ensureBranchColorsColumn();
         if ($request->boolean('new_job_branches_submitted') && Schema::hasColumn('slack_configs', 'new_job_branch_colors')) {
             $submitted = (array) $request->input('new_job_branch_colors', []);
             $colors = [];
@@ -145,5 +147,21 @@ class SlackConfigController extends Controller
         return redirect()
             ->back()
             ->with('success', "{$label} notifications turned {$state}.");
+    }
+
+    /**
+     * Servers deployed without running migrations still get the per-branch color column.
+     */
+    private function ensureBranchColorsColumn(): void
+    {
+        try {
+            if (Schema::hasTable('slack_configs') && ! Schema::hasColumn('slack_configs', 'new_job_branch_colors')) {
+                Schema::table('slack_configs', function ($table) {
+                    $table->text('new_job_branch_colors')->nullable();
+                });
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }
