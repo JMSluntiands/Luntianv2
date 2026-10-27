@@ -10,6 +10,7 @@ class ForumComment extends Model
     protected $fillable = [
         'forum_post_id',
         'user_id',
+        'parent_id',
         'body',
     ];
 

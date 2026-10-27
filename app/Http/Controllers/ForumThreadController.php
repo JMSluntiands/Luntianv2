@@ -381,13 +381,25 @@ class ForumThreadController extends Controller
 
         $data = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
+            'parent_id' => ['nullable', 'integer'],
         ]);
 
-        ForumComment::create([
+        $attributes = [
             'forum_post_id' => $post->id,
             'user_id' => $userId,
             'body' => trim($data['body']),
-        ]);
+        ];
+
+        if (! empty($data['parent_id']) && $this->ensureCommentParentColumn()) {
+            $parent = ForumComment::where('forum_post_id', $post->id)->find((int) $data['parent_id']);
+            if (! $parent) {
+                return $this->deny($request, 'The comment you replied to no longer exists.', 404);
+            }
+            // Replies stay one level deep: replying to a reply joins the same thread.
+            $attributes['parent_id'] = $parent->parent_id ?: $parent->id;
+        }
+
+        ForumComment::create($attributes);
 
         return redirect()
             ->route('forum_thread')
@@ -439,6 +451,9 @@ class ForumThreadController extends Controller
         }
 
         $postId = (int) $comment->forum_post_id;
+        if (Schema::hasColumn('forum_comments', 'parent_id')) {
+            ForumComment::where('parent_id', $comment->id)->delete();
+        }
         $comment->delete();
 
         return redirect()
@@ -456,6 +471,26 @@ class ForumThreadController extends Controller
         }
 
         return response()->file(Storage::disk('public')->path($full));
+    }
+
+    /**
+     * Servers deployed without running migrations still get the reply column.
+     */
+    private function ensureCommentParentColumn(): bool
+    {
+        try {
+            if (! Schema::hasColumn('forum_comments', 'parent_id')) {
+                Schema::table('forum_comments', function ($table) {
+                    $table->unsignedBigInteger('parent_id')->nullable()->index();
+                });
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return false;
+        }
     }
 
     private function storeCoverImage(\Illuminate\Http\UploadedFile $uploaded): ?string
