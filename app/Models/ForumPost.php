@@ -37,11 +37,6 @@ class ForumPost extends Model
         return $this->hasMany(ForumComment::class)->orderBy('created_at');
     }
 
-    public function allowsComments(): bool
-    {
-        return $this->normalizeType() === self::TYPE_DISCUSSION;
-    }
-
     public function isAnnouncement(): bool
     {
         return $this->normalizeType() === self::TYPE_ANNOUNCEMENT;

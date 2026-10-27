@@ -281,7 +281,6 @@
                         $canRemovePost = $isAdmin || ($canDeletePost && (int) $post->user_id === (int) $currentUserId);
                         $canEditPost = $canPost && ($isAdmin || (int) $post->user_id === (int) $currentUserId);
                         $imageUrl = $post->imageUrl();
-                        $allowsComments = $post->allowsComments();
                         $isAnnouncement = $post->isAnnouncement();
                         $isPinned = $post->isPinned();
                         $mayPin = $canPin ?? false;
@@ -384,20 +383,15 @@
                         @endif
 
                         <div class="mt-0 flex items-center gap-4 border-t border-slate-100 px-4 py-2 text-xs font-medium text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:px-5 {{ $imageUrl ? '' : 'mt-3' }}">
-                            @if($allowsComments)
-                                <span>{{ (int) $post->comments_count }} {{ (int) $post->comments_count === 1 ? 'comment' : 'comments' }}</span>
-                            @else
-                                <span>Comments disabled</span>
-                            @endif
+                            <span>{{ (int) $post->comments_count }} {{ (int) $post->comments_count === 1 ? 'comment' : 'comments' }}</span>
                         </div>
 
-                        {{-- Comments (discussion only) --}}
-                        @if($allowsComments)
                         <div class="space-y-3 border-t border-slate-100 px-4 py-3 dark:border-slate-700 sm:px-5">
                             @foreach($post->comments as $comment)
                                 @php
                                     $cAuthor = $comment->user;
                                     $canRemoveComment = $isAdmin || ($canDeleteComment && (int) $comment->user_id === (int) $currentUserId);
+                                    $canEditComment = $isAdmin || ($canComment && (int) $comment->user_id === (int) $currentUserId);
                                 @endphp
                                 <div class="flex gap-2.5">
                                     <div class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-[0.7rem] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
@@ -408,18 +402,34 @@
                                         @endif
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <div class="rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-900/60">
+                                        <div class="forum-comment rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-900/60">
                                             <div class="flex items-start justify-between gap-2">
                                                 <p class="text-xs font-semibold text-slate-900 dark:text-slate-100">{{ $displayName($cAuthor) }}</p>
-                                                @if($canRemoveComment)
-                                                    <form method="POST" action="{{ route('forum_thread.comment.destroy', $comment->id) }}" onsubmit="return confirm('Delete this comment?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="cursor-pointer text-[0.65rem] font-medium text-slate-400 hover:text-red-500">Delete</button>
-                                                    </form>
-                                                @endif
+                                                <div class="flex items-center gap-2">
+                                                    @if($canEditComment)
+                                                        <button type="button" class="forum-comment-edit-btn cursor-pointer text-[0.65rem] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">Edit</button>
+                                                    @endif
+                                                    @if($canRemoveComment)
+                                                        <form method="POST" action="{{ route('forum_thread.comment.destroy', $comment->id) }}" onsubmit="return confirm('Delete this comment?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="cursor-pointer text-[0.65rem] font-medium text-slate-400 hover:text-red-500">Delete</button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </div>
-                                            <p class="mt-0.5 whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-300">{{ $comment->body }}</p>
+                                            <p class="forum-comment-text mt-0.5 whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-300">{{ $comment->body }}</p>
+                                            @if($canEditComment)
+                                                <form method="POST" action="{{ route('forum_thread.comment.update', $comment->id) }}" class="forum-comment-edit-form mt-1.5 hidden space-y-2">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <textarea name="body" required maxlength="2000" rows="2" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-100">{{ $comment->body }}</textarea>
+                                                    <div class="flex gap-2">
+                                                        <button type="submit" class="cursor-pointer rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-500">Save</button>
+                                                        <button type="button" class="forum-comment-cancel-btn cursor-pointer rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancel</button>
+                                                    </div>
+                                                </form>
+                                            @endif
                                         </div>
                                         <p class="mt-1 px-1 text-[0.7rem] text-slate-400" title="{{ $comment->created_at?->timezone('Asia/Manila')->format('M j, Y g:i A') }}">
                                             {{ $comment->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A') }}
@@ -454,7 +464,6 @@
                                 </form>
                             @endif
                         </div>
-                        @endif
                     </article>
                 @endforeach
 
@@ -934,6 +943,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    document.querySelectorAll('.forum-comment').forEach(function (commentEl) {
+        var editBtn = commentEl.querySelector('.forum-comment-edit-btn');
+        var editForm = commentEl.querySelector('.forum-comment-edit-form');
+        var text = commentEl.querySelector('.forum-comment-text');
+        if (!editBtn || !editForm || !text) return;
+        var textarea = editForm.querySelector('textarea');
+        var original = textarea ? textarea.value : '';
+        function toggle(editing) {
+            editForm.classList.toggle('hidden', !editing);
+            text.classList.toggle('hidden', editing);
+            editBtn.classList.toggle('hidden', editing);
+        }
+        editBtn.addEventListener('click', function () {
+            toggle(true);
+            if (textarea) {
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        });
+        editForm.querySelector('.forum-comment-cancel-btn').addEventListener('click', function () {
+            if (textarea) textarea.value = original;
+            toggle(false);
+        });
+    });
 
     document.querySelectorAll('.forum-post-body').forEach(function (bodyEl) {
         bodyEl.addEventListener('click', function (e) {

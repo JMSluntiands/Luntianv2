@@ -379,10 +379,6 @@ class ForumThreadController extends Controller
 
         $post = ForumPost::findOrFail($id);
 
-        if (! $post->allowsComments()) {
-            return $this->deny($request, 'Comments are disabled for announcements.');
-        }
-
         $data = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
         ]);
@@ -397,6 +393,33 @@ class ForumThreadController extends Controller
             ->route('forum_thread')
             ->with('success', 'Comment added.')
             ->withFragment('post-'.$post->id);
+    }
+
+    public function updateComment(Request $request, int $id)
+    {
+        $comment = ForumComment::findOrFail($id);
+        $userId = (int) session('user_id', 0);
+        $isAdmin = strtolower(trim((string) session('user_role', ''))) === 'admin';
+
+        if (! $isAdmin) {
+            if (! RolePermission::userMayAccessRoute('forum_thread.comment')) {
+                return $this->deny($request, 'You do not have permission to edit comments.');
+            }
+            if ((int) $comment->user_id !== $userId) {
+                return $this->deny($request, 'You can only edit your own comments.');
+            }
+        }
+
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $comment->update(['body' => trim($data['body'])]);
+
+        return redirect()
+            ->route('forum_thread')
+            ->with('success', 'Comment updated.')
+            ->withFragment('post-'.$comment->forum_post_id);
     }
 
     public function destroyComment(Request $request, int $id)

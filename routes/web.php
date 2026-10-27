@@ -169,6 +169,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::put('/dashboard/forum-thread/post/{id}', [ForumThreadController::class, 'update'])->name('forum_thread.update');
     Route::delete('/dashboard/forum-thread/post/{id}', [ForumThreadController::class, 'destroy'])->name('forum_thread.destroy');
     Route::post('/dashboard/forum-thread/post/{id}/comment', [ForumThreadController::class, 'storeComment'])->name('forum_thread.comment.store');
+    Route::put('/dashboard/forum-thread/comment/{id}', [ForumThreadController::class, 'updateComment'])->name('forum_thread.comment.update');
     Route::delete('/dashboard/forum-thread/comment/{id}', [ForumThreadController::class, 'destroyComment'])->name('forum_thread.comment.destroy');
     Route::get('/dashboard/stats', DashboardStatsController::class)->name('dashboard.stats');
     Route::get('/dashboard/chart', [DashboardStatsController::class, 'chart'])->name('dashboard.chart');
