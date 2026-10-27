@@ -174,24 +174,8 @@ class ForumThreadController extends Controller
 
         $imagePath = null;
         if ($hasImage) {
-            try {
-                Storage::disk('public')->makeDirectory('forum');
-                $ext = strtolower($uploaded->getClientOriginalExtension() ?: 'jpg');
-                if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
-                    $ext = 'jpg';
-                }
-                $safeName = 'post_'.now('Asia/Manila')->format('YmdHis').'_'.Str::lower(Str::random(8)).'.'.$ext;
-                $stored = $uploaded->storeAs('forum', $safeName, 'public');
-                if (! $stored || ! Storage::disk('public')->exists($stored)) {
-                    return redirect()
-                        ->route('forum_thread')
-                        ->with('error', 'Could not save the image. Please try again.')
-                        ->withInput();
-                }
-                $imagePath = $stored;
-            } catch (\Throwable $e) {
-                report($e);
-
+            $imagePath = $this->storeCoverImage($uploaded);
+            if ($imagePath === null) {
                 return redirect()
                     ->route('forum_thread')
                     ->with('error', 'Could not save the image. Please try again.')
@@ -210,6 +194,95 @@ class ForumThreadController extends Controller
         return redirect()
             ->route('forum_thread')
             ->with('success', $postType === ForumPost::TYPE_ANNOUNCEMENT ? 'Announcement posted.' : 'Discussion posted.');
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $post = ForumPost::findOrFail($id);
+        $userId = (int) session('user_id', 0);
+        $isAdmin = strtolower(trim((string) session('user_role', ''))) === 'admin';
+
+        if (! $isAdmin) {
+            if (! RolePermission::userMayAccessRoute('forum_thread.post')) {
+                return $this->deny($request, 'You do not have permission to edit posts.');
+            }
+            if ((int) $post->user_id !== $userId) {
+                return $this->deny($request, 'You can only edit your own posts.');
+            }
+        }
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:200'],
+            'body' => ['nullable', 'string', 'max:20000'],
+            'post_type' => ['required', 'in:discussion,announcement'],
+            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:4096'],
+            'remove_image' => ['nullable', 'boolean'],
+        ], [
+            'title.required' => 'Please enter a title.',
+            'image.uploaded' => 'The image failed to upload. It may be too large — try a photo under 4MB (JPG, PNG, GIF, or WebP).',
+            'image.image' => 'The selected file must be an image (JPG, PNG, GIF, or WebP).',
+            'image.mimes' => 'The image must be a JPG, PNG, GIF, or WebP file.',
+            'image.max' => 'The cover image may not be greater than 4MB.',
+        ]);
+
+        $failed = fn (string $message) => redirect()
+            ->route('forum_thread')
+            ->with('error', $message)
+            ->withInput();
+
+        $title = trim((string) ($data['title'] ?? ''));
+        $body = $this->sanitizePostHtml((string) ($data['body'] ?? ''));
+        $postType = strtolower(trim((string) ($data['post_type'] ?? ForumPost::TYPE_DISCUSSION)));
+        if (! in_array($postType, [ForumPost::TYPE_DISCUSSION, ForumPost::TYPE_ANNOUNCEMENT], true)) {
+            $postType = ForumPost::TYPE_DISCUSSION;
+        }
+        $uploaded = $request->file('image');
+        $hasNewImage = $uploaded instanceof \Illuminate\Http\UploadedFile && $uploaded->isValid();
+
+        if ($uploaded && ! $hasNewImage) {
+            return $failed('The image failed to upload. It may be too large or the file is corrupted. Try a smaller JPG/PNG under 4MB.');
+        }
+        if ($title === '') {
+            return $failed('Please enter a title.');
+        }
+
+        $oldImagePath = trim((string) ($post->image_path ?? ''));
+        $keepsOldImage = $oldImagePath !== '' && ! $hasNewImage && ! $request->boolean('remove_image');
+        if ($this->isEmptyHtml($body) && ! $hasNewImage && ! $keepsOldImage) {
+            return $failed('Write a description or attach a cover image to post.');
+        }
+
+        $imagePath = $keepsOldImage ? $oldImagePath : null;
+        if ($hasNewImage) {
+            $imagePath = $this->storeCoverImage($uploaded);
+            if ($imagePath === null) {
+                return $failed('Could not save the image. Please try again.');
+            }
+        }
+
+        $removedInline = array_diff(
+            self::inlineImageNames((string) $post->body),
+            self::inlineImageNames($body)
+        );
+
+        $post->update([
+            'title' => $title,
+            'body' => $body,
+            'post_type' => $postType,
+            'image_path' => $imagePath,
+        ]);
+
+        if ($oldImagePath !== '' && $oldImagePath !== $imagePath && Storage::disk('public')->exists($oldImagePath)) {
+            Storage::disk('public')->delete($oldImagePath);
+        }
+        foreach ($removedInline as $inlineName) {
+            Storage::disk('public')->delete('forum/'.$inlineName);
+        }
+
+        return redirect()
+            ->route('forum_thread')
+            ->with('success', 'Post updated.')
+            ->withFragment('post-'.$post->id);
     }
 
     public function uploadInlineImage(Request $request)
@@ -360,6 +433,25 @@ class ForumThreadController extends Controller
         }
 
         return response()->file(Storage::disk('public')->path($full));
+    }
+
+    private function storeCoverImage(\Illuminate\Http\UploadedFile $uploaded): ?string
+    {
+        try {
+            Storage::disk('public')->makeDirectory('forum');
+            $ext = strtolower($uploaded->getClientOriginalExtension() ?: 'jpg');
+            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+                $ext = 'jpg';
+            }
+            $safeName = 'post_'.now('Asia/Manila')->format('YmdHis').'_'.Str::lower(Str::random(8)).'.'.$ext;
+            $stored = $uploaded->storeAs('forum', $safeName, 'public');
+
+            return $stored && Storage::disk('public')->exists($stored) ? $stored : null;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     private function deny(Request $request, string $message, int $status = 403)

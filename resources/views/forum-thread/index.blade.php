@@ -152,14 +152,24 @@
             <div class="lg:col-span-8">
                 {{-- Composer panel --}}
                 @if($canPost)
-                    @php $oldType = old('post_type', 'announcement'); @endphp
+                    @php
+                        $oldType = old('post_type', 'announcement');
+                        $editingId = (int) old('editing_post_id', 0);
+                        $composerLabel = $editingId > 0
+                            ? ($oldType === 'discussion' ? 'Edit Discussion' : 'Edit Announcement')
+                            : ($oldType === 'discussion' ? 'Post Discussion' : 'Post Announcement');
+                    @endphp
                     <div id="bulletinComposerPanel" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/70 sm:p-6">
-                        <form method="POST" action="{{ route('forum_thread.store') }}" enctype="multipart/form-data" class="space-y-5" id="forumComposerForm">
+                        <form method="POST" action="{{ $editingId > 0 ? route('forum_thread.update', $editingId) : route('forum_thread.store') }}" enctype="multipart/form-data" class="space-y-5" id="forumComposerForm"
+                            data-store-url="{{ route('forum_thread.store') }}">
                             @csrf
+                            <input type="hidden" name="_method" id="forumComposerMethod" value="PUT" @disabled($editingId <= 0)>
+                            <input type="hidden" name="editing_post_id" id="forumEditingPostId" value="{{ $editingId > 0 ? $editingId : '' }}" @disabled($editingId <= 0)>
+                            <input type="hidden" name="remove_image" id="forumRemoveImage" value="{{ old('remove_image') ? '1' : '0' }}">
 
                             <div class="flex flex-wrap items-center justify-between gap-3">
                                 <h2 id="forumComposerHeading" class="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                    {{ $oldType === 'discussion' ? 'Post Discussion' : 'Post Announcement' }}
+                                    {{ $composerLabel }}
                                 </h2>
                                 <div class="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-600 dark:bg-slate-900/40" role="group" aria-label="Post type">
                                     <label class="cursor-pointer">
@@ -245,7 +255,7 @@
                                     id="forumSubmitBtn"
                                     class="cursor-pointer inline-flex items-center justify-center rounded-md bg-slate-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/40 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
                                 >
-                                    {{ $oldType === 'discussion' ? 'Post Discussion' : 'Post Announcement' }}
+                                    {{ $editingId > 0 ? 'Save changes' : $composerLabel }}
                                 </button>
                                 <button
                                     type="button"
@@ -269,6 +279,7 @@
                     @php
                         $author = $post->user;
                         $canRemovePost = $isAdmin || ($canDeletePost && (int) $post->user_id === (int) $currentUserId);
+                        $canEditPost = $canPost && ($isAdmin || (int) $post->user_id === (int) $currentUserId);
                         $imageUrl = $post->imageUrl();
                         $allowsComments = $post->allowsComments();
                         $isAnnouncement = $post->isAnnouncement();
@@ -322,6 +333,20 @@
                                                     {{ $isPinned ? 'Unpin' : 'Pin' }}
                                                 </button>
                                             </form>
+                                        @endif
+                                        @if($canEditPost)
+                                            <button
+                                                type="button"
+                                                class="bulletin-edit-btn cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                                                data-post-id="{{ $post->id }}"
+                                                data-update-url="{{ route('forum_thread.update', $post->id) }}"
+                                                data-title="{{ $post->title }}"
+                                                data-post-type="{{ $post->normalizeType() }}"
+                                                data-image-url="{{ $imageUrl }}"
+                                            >
+                                                Edit
+                                            </button>
+                                            <template id="bulletinEditBody-{{ $post->id }}">{!! preg_match('/<(p|br|div|ul|ol|li|b|strong|i|em|u|a|img)\b/i', (string) $post->body) ? $post->body : nl2br(e((string) $post->body)) !!}</template>
                                         @endif
                                         @if($canRemovePost)
                                             <form method="POST" action="{{ route('forum_thread.destroy', $post->id) }}" onsubmit="return confirm('Delete this post?');">
@@ -466,6 +491,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var toolbarImageBtn = document.getElementById('forumToolbarImageBtn');
     var typeRadios = document.querySelectorAll('.forum-type-radio');
     var rtBtns = document.querySelectorAll('.forum-rt-btn');
+    var methodInput = document.getElementById('forumComposerMethod');
+    var editingIdInput = document.getElementById('forumEditingPostId');
+    var removeImageInput = document.getElementById('forumRemoveImage');
+
+    function editingPostId() {
+        return editingIdInput && !editingIdInput.disabled ? editingIdInput.value : '';
+    }
 
     function isEmptyHtml(html) {
         var tmp = document.createElement('div');
@@ -488,9 +520,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function syncTypeLabels() {
         var isDiscussion = selectedType() === 'discussion';
-        var label = isDiscussion ? 'Post Discussion' : 'Post Announcement';
+        var isEditing = editingPostId() !== '';
+        var label = (isEditing ? 'Edit ' : 'Post ') + (isDiscussion ? 'Discussion' : 'Announcement');
         if (heading) heading.textContent = label;
-        if (submitBtn) submitBtn.textContent = label;
+        if (submitBtn) submitBtn.textContent = isEditing ? 'Save changes' : label;
         if (editor) {
             editor.setAttribute('data-placeholder', isDiscussion
                 ? 'Write the discussion details...'
@@ -720,9 +753,28 @@ document.addEventListener('DOMContentLoaded', function () {
         if (input) input.value = '';
         if (preview) preview.src = '';
         if (wrap) wrap.classList.add('hidden');
+        if (removeImageInput && editingPostId() !== '') removeImageInput.value = '1';
+    }
+
+    function showImagePreview(url) {
+        if (!preview || !wrap || !url) return;
+        preview.src = url;
+        wrap.classList.remove('hidden');
+    }
+
+    function setEditing(btn) {
+        var id = btn ? btn.getAttribute('data-post-id') : '';
+        if (form) form.action = btn ? btn.getAttribute('data-update-url') : form.getAttribute('data-store-url');
+        if (methodInput) methodInput.disabled = !btn;
+        if (editingIdInput) {
+            editingIdInput.value = id || '';
+            editingIdInput.disabled = !btn;
+        }
+        if (removeImageInput) removeImageInput.value = '0';
     }
 
     function resetComposer() {
+        setEditing(null);
         if (titleInput) titleInput.value = '';
         if (editor) editor.innerHTML = '';
         syncBody();
@@ -852,7 +904,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function (e) {
             e.preventDefault();
+            var editedId = editingPostId();
             resetComposer();
+            if (editedId !== '') showDetail(editedId);
         });
     }
 
@@ -861,7 +915,8 @@ document.addEventListener('DOMContentLoaded', function () {
             syncBody();
             var hasTitle = titleInput && titleInput.value.trim() !== '';
             var hasText = body && !isEmptyHtml(body.value);
-            var hasImage = input && input.files && input.files.length > 0;
+            var hasImage = (input && input.files && input.files.length > 0)
+                || (editingPostId() !== '' && wrap && !wrap.classList.contains('hidden'));
             if (pendingUploads > 0) {
                 e.preventDefault();
                 toast('Please wait for the pictures to finish uploading.');
@@ -958,8 +1013,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (newPostBtn) {
         newPostBtn.addEventListener('click', function () {
+            if (editingPostId() !== '') resetComposer();
             showComposer();
         });
+    }
+
+    function startEdit(btn) {
+        if (!form || !btn) return;
+        resetComposer();
+        setEditing(btn);
+        if (titleInput) titleInput.value = btn.getAttribute('data-title') || '';
+        var typeRadio = document.querySelector('.forum-type-radio[value="' + (btn.getAttribute('data-post-type') === 'discussion' ? 'discussion' : 'announcement') + '"]');
+        if (typeRadio) typeRadio.checked = true;
+        var bodyTpl = document.getElementById('bulletinEditBody-' + btn.getAttribute('data-post-id'));
+        if (editor) editor.innerHTML = bodyTpl ? bodyTpl.innerHTML.trim() : '';
+        syncBody();
+        showImagePreview(btn.getAttribute('data-image-url'));
+        syncTypeLabels();
+        showComposer();
+        if (composerPanel && composerPanel.scrollIntoView) composerPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (titleInput) titleInput.focus();
+    }
+
+    document.querySelectorAll('.bulletin-edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            startEdit(this);
+        });
+    });
+
+    // After a failed save, the form comes back in edit mode; restore the saved cover preview.
+    var restoredEditId = editingPostId();
+    if (restoredEditId !== '' && removeImageInput && removeImageInput.value !== '1') {
+        var restoredBtn = document.querySelector('.bulletin-edit-btn[data-post-id="' + restoredEditId + '"]');
+        if (restoredBtn) showImagePreview(restoredBtn.getAttribute('data-image-url'));
     }
 
     // Open detail from hash (#post-N) or ?post=N on load
