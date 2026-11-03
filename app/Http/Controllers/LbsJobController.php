@@ -78,6 +78,25 @@ class LbsJobController extends Controller
         ];
     }
 
+    private function listFilterOptions(): array
+    {
+        $names = fn ($query, string $column) => $query
+            ->whereNotNull($column)
+            ->orderBy($column)
+            ->pluck($column)
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return [
+            'filterBuilders' => $names(ClientAccount::query(), 'client_account_name'),
+            'filterPriorities' => $names(Priority::query(), 'name'),
+            'priorityOptions' => Priority::query()->whereNotNull('name')->orderBy('id')->pluck('name')
+                ->map(fn ($v) => trim((string) $v))->filter()->unique()->values()->all(),
+        ];
+    }
+
     /**
      * LBS job detail vs Efficient Living / Luntian (same `jobs` row shape; vertical limits job type dropdown).
      */
@@ -1369,7 +1388,7 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statuses' => $statuses,
-        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('efficient_living')));
+        ], $this->listFilterOptions(), $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('efficient_living')));
     }
 
     public function efficientLivingCompleted()
@@ -1519,7 +1538,7 @@ class LbsJobController extends Controller
             'jobs' => $jobs,
             'priorityColors' => $priorityColors,
             'statuses' => $statuses,
-        ], $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('luntian')));
+        ], $this->listFilterOptions(), $this->statusBadgeColorMaps(), User::assignmentInitialsViewData('luntian')));
     }
 
     public function luntianCompleted()

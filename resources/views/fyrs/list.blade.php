@@ -37,7 +37,7 @@
             return \Illuminate\Support\Str::limit($plain, 80);
         };
         $columns = [
-            ['key' => 'row_num', 'label' => '#', 'width' => '52px', 'cellClass' => 'text-center tabular-nums'],
+            ['key' => 'log_date', 'label' => 'Log Date', 'width' => '140px'],
             ['key' => 'job_date', 'label' => 'Date', 'width' => '96px'],
             ['key' => 'job_number', 'label' => 'Job Ref #', 'width' => '140px'],
             ['key' => 'builder', 'label' => 'Builder', 'width' => '180px'],
@@ -59,13 +59,14 @@
         $assignmentStaffCodes = $assignmentStaffCodes ?? [];
     @endphp
 
-    <div class="block max-w-full pb-0">
-        <div class="mb-7">
+    <div class="flex max-w-full flex-col pb-0">
+        <div class="mb-5">
             <h1 class="m-0 mb-1.5 text-[1.625rem] font-bold tracking-tight text-slate-900 dark:text-white">Redistar List</h1>
             <p class="m-0 text-[0.9375rem] leading-snug text-slate-600 dark:text-slate-400">NatHERS and BASIX assessor workflow — same fields as the add form.</p>
         </div>
 
-        <div class="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mb-6 rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
                 <div class="relative flex items-center">
@@ -79,32 +80,34 @@
             </div>
             <div>
                 <label for="lbsFilterBuilder" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Builder</label>
-                <select id="lbsFilterBuilder" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" autocomplete="off">
+                <select id="lbsFilterBuilder" class="select2-single w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-700 dark:focus:ring-blue-700/25" autocomplete="off">
                     <option value="">All</option>
                     @foreach ($builderOptions as $builderName)
                         <option value="{{ $builderName }}">{{ $builderName }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="flex items-end">
-                <button type="button" id="lbsFilterReset" class="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">Reset</button>
+            <div>
+                <label class="mb-1.5 block select-none text-xs font-semibold text-transparent">Reset</label>
+                <button type="button" id="lbsFilterReset" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Reset</button>
             </div>
+        </div>
         </div>
 
         <div class="max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
             <div class="max-w-full overflow-x-auto">
                 <table class="lbs-table fyrs-list-table w-full min-w-[1800px] table-fixed border-collapse text-sm" id="lbsTable">
                     <colgroup>
-                        <col style="width: 90px">
+                        <col style="width: 110px">
                         @foreach ($columns as $col)
                             <col style="width: {{ $col['width'] ?? '120px' }}">
                         @endforeach
                     </colgroup>
                     <thead>
                         <tr>
-                            <th class="lbs-th-action w-[90px] cursor-default border-b border-slate-200 bg-slate-100 px-3 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">Action</th>
+                            <th class="lbs-th lbs-th-action cursor-default border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-sort=""><span>Action</span></th>
                             @foreach ($columns as $col)
-                                <th class="lbs-th fyrs-list-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-3 py-3 text-left align-middle text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200 {{ $col['headerClass'] ?? '' }}" data-sort="">
+                                <th class="lbs-th fyrs-list-th cursor-pointer select-none border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200 {{ $col['headerClass'] ?? '' }}" data-sort="">
                                     <span>{{ $col['label'] }}</span><span class="lbs-sort-icon ml-1 text-xs opacity-60" aria-hidden="true">↕</span>
                                 </th>
                             @endforeach
@@ -115,16 +118,11 @@
                             @php
                                 $jobId = (int) ($row->job_id ?? 0);
                                 $builderVal = trim((string) ($row->builder ?? $row->estate ?? ''));
-                                $logDateKey = '';
-                                try {
-                                    if (! empty($row->job_date)) {
-                                        $logDateKey = \Carbon\Carbon::parse($row->job_date)->format('Y-m-d');
-                                    }
-                                } catch (\Throwable $e) {
-                                    $logDateKey = '';
-                                }
+                                $logRaw = $row->created_at ?? null;
+                                $log = $logRaw ? \Carbon\Carbon::parse($logRaw, 'Asia/Manila') : null;
+                                $logDateKey = $log ? $log->format('Y-m-d') : '';
                                 $cellValues = [
-                                    'row_num' => $row->id ?? '—',
+                                    'log_date' => $log ? $log->format('F j, Y') : '—',
                                     'job_date' => $fmtDate($row->job_date ?? null),
                                     'job_number' => $fmtText($row->job_number ?? null),
                                     'builder' => $fmtText($builderVal),
@@ -162,8 +160,13 @@
                                         $val = $cellValues[$col['key']] ?? '—';
                                         $sortVal = $val;
                                     @endphp
-                                    @if ($col['key'] === 'assigned')
-                                        <td class="lbs-td border-b border-slate-200 px-3 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}" data-label="Staff" style="white-space: nowrap;">
+                                    @if ($col['key'] === 'log_date')
+                                        <td class="lbs-td lbs-td-log-date border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Log Date" data-sort="{{ $logRaw }}">
+                                            <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $val }}</span>
+                                            @if ($log)<span class="block text-[0.8125rem] text-slate-400">{{ $log->format('g:i A') }}</span>@endif
+                                        </td>
+                                    @elseif ($col['key'] === 'assigned')
+                                        <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}" data-label="Staff" style="white-space: nowrap;">
                                             @include('partials.assignment-initials-cell', [
                                                 'role' => 'staff',
                                                 'current' => $row->assigned ?? '',
@@ -171,7 +174,7 @@
                                             ])
                                         </td>
                                     @elseif ($col['key'] === 'stage')
-                                        <td class="lbs-td border-b border-slate-200 px-3 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}" data-label="Stage">
+                                        <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}" data-label="Stage">
                                             @include('partials.assignment-initials-cell', [
                                                 'role' => 'stage',
                                                 'current' => $row->stage ?? '',
@@ -179,7 +182,7 @@
                                             ])
                                         </td>
                                     @else
-                                        <td class="lbs-td border-b border-slate-200 px-3 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}">
+                                        <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200 {{ $col['cellClass'] ?? '' }}" data-sort="{{ $sortVal }}">
                                             {{ $val }}
                                         </td>
                                     @endif

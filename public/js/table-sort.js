@@ -265,6 +265,31 @@
 
     if (prepared) prepared.add(table);
     table.setAttribute('data-sort-ready', '1');
+    applyDefaultSort(table);
+  }
+
+  function applyDefaultSort(table) {
+    if (table.hasAttribute('data-default-sorted')) return;
+    table.setAttribute('data-default-sorted', '1');
+
+    var thead = table.tHead || table.querySelector('thead');
+    if (!thead) return;
+    var headers = Array.prototype.slice.call(thead.querySelectorAll('th'));
+    if (headers.some(function (h) { return currentDir(h) !== ''; })) return;
+
+    var logTh = headers.filter(function (h) {
+      return !isSkipHeader(h) && headerLabel(h) === 'log date';
+    })[0];
+    if (!logTh) return;
+
+    sortTable(table, logTh, 'asc');
+    if (
+      table.getAttribute('data-job-rownum-ready') === '1' &&
+      w.JobListPagination &&
+      typeof w.JobListPagination.refresh === 'function'
+    ) {
+      w.JobListPagination.refresh(table);
+    }
   }
 
   function onDocClick(e) {

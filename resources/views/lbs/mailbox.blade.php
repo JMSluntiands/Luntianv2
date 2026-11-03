@@ -319,7 +319,7 @@
                             if (typeof window.showSuccessToast === 'function') {
                                 window.showSuccessToast(result.data.message || 'Status updated to Completed.');
                             }
-                            window.setTimeout(function() { window.location.reload(); }, 350);
+                            if (window.JobListAutosave) window.JobListAutosave.refreshRow(self.closest('tr')); else window.location.reload();
                         } else {
                             alert(result.data && result.data.message ? result.data.message : 'Could not complete send.');
                             self.disabled = false;

@@ -437,9 +437,7 @@ $(function () {
         $select.attr('data-prev', val);
         var msg = (res && res.message) || (role === 'stage' ? 'Stage updated successfully.' : 'Staff/Checker updated successfully.');
         toastMsg(msg);
-        setTimeout(function () {
-          window.location.reload();
-        }, 800);
+        if (window.JobListAutosave) window.JobListAutosave.refreshRow($row[0]);
       })
       .fail(function (xhr) {
         var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update.';
@@ -502,36 +500,6 @@ $(function () {
 
   var statusTableSelector = '#lbsTable .lbs-status-option, #efficient_livingTable .lbs-status-option, #luntianTable .lbs-status-option';
 
-  function resolveAppBasePath() {
-    var path = String(window.location.pathname || '');
-    var idx = path.indexOf('/dashboard/');
-    return idx >= 0 ? path.slice(0, idx) : '';
-  }
-
-  function resolveStatusRedirectUrl(statusValue) {
-    var normalized = String(statusValue || '').toLowerCase().trim();
-    var pathname = String(window.location.pathname || '').toLowerCase();
-    var basePath = resolveAppBasePath();
-    var modulePrefix = pathname.indexOf('/dashboard/efficient-living/') !== -1
-      ? '/dashboard/efficient-living'
-      : '/dashboard/lbs';
-
-    if (normalized === 'completed') {
-      return basePath + modulePrefix + '/completed';
-    }
-    if (normalized === 'for review') {
-      return basePath + modulePrefix + '/review';
-    }
-    if (normalized === 'for email confirmation') {
-      return basePath + modulePrefix + '/mailbox';
-    }
-    if (normalized === 'archived') {
-      return basePath + modulePrefix + '/trash';
-    }
-
-    return null;
-  }
-
   function submitStatusChange($el, val, prevText, updateUrl, $row) {
     var currentUnits = 0;
     if ($row.length && $row.data('job-units') !== undefined) {
@@ -585,15 +553,10 @@ $(function () {
             else $el.removeClass('lbs-status-updating').addClass('lbs-status-success').text(val);
             var msg = (res && res.message) || 'Status updated to ' + val + '.';
             if (window.showSuccessToast) window.showSuccessToast(msg);
-            var redirectUrl = resolveStatusRedirectUrl(val);
             setTimeout(function () {
               if (!isSelect) $el.removeClass('lbs-status-success');
-              if (redirectUrl) {
-                window.location.href = redirectUrl;
-                return;
-              }
-              window.location.reload();
             }, 1500);
+            if (window.JobListAutosave) window.JobListAutosave.refreshRow($row[0]);
           })
           .fail(function (xhr) {
             var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Failed to update status.';

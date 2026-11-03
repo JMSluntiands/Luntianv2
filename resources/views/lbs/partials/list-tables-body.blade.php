@@ -1,3 +1,7 @@
+        @php
+            $listModule = $listModule ?? 'lbs';
+            $listLabel = $listLabel ?? 'LBS';
+        @endphp
         <section class="list-fold" data-list-fold="jobs">
             <div class="mb-3 flex items-center justify-between gap-2">
                 <button type="button" class="list-fold-toggle" aria-expanded="true">
@@ -132,13 +136,13 @@
                                 $complexity = is_numeric($job->plan_complexity ?? null) ? (int) $job->plan_complexity : 0;
                                 $complexity = max(0, min(5, $complexity));
                             @endphp
-                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ url()->route('lbs.job.update', ['id' => $job->job_id], false) }}" data-log-date-key="{{ $logDateFilter }}" data-builder="{{ $builderFilter }}" data-priority="{{ $priorityFilter }}">
+                            <tr class="lbs-data-row border-b border-slate-200 align-middle text-slate-800 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5" data-job-id="{{ $job->job_id }}" data-job-units="{{ (int) ($job->units ?? 0) }}" data-update-url="{{ url()->route($listModule.'.job.update', ['id' => $job->job_id], false) }}" data-log-date-key="{{ $logDateFilter }}" data-builder="{{ $builderFilter }}" data-priority="{{ $priorityFilter }}">
                                 <td class="lbs-td overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Action" style="white-space: nowrap;">
                                     <div class="relative z-10 flex flex-nowrap items-center justify-center gap-1.5">
-                                        <a href="{{ route('lbs.add', ['duplicate' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate" aria-label="Duplicate job to Add New form">
+                                        <a href="{{ route($listModule.'.add', ['duplicate' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-blue-900/25 hover:text-blue-300 dark:text-slate-400 dark:hover:bg-blue-900/25 dark:hover:text-blue-300" title="Duplicate" aria-label="Duplicate job to Add New form">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         </a>
-                                        <a href="{{ route('lbs.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View job {{ $job->job_reference_no }}">
+                                        <a href="{{ route($listModule.'.job.view', ['id' => $job->job_id]) }}" class="lbs-action-icon inline-flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-400 no-underline transition-colors hover:bg-green-500/15 hover:text-green-400 dark:text-slate-400 dark:hover:bg-green-500/15 dark:hover:text-green-400" title="View" aria-label="View job {{ $job->job_reference_no }}">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </a>
                                     </div>
@@ -152,7 +156,9 @@
                                     <span class="block text-[0.8125rem] text-slate-400">{{ $job->ncc_compliance ?? '' }}</span>
                                 </td>
                                 @php
-                                    $tableReference = $job->job_reference_no ?? $job->reference ?? '—';
+                                    $tableReference = $listModule === 'luntian'
+                                        ? \App\Support\JobReference::luntianDisplay($job->job_reference_no ?? null, $job->reference ?? null)
+                                        : ($job->job_reference_no ?? $job->reference ?? '—');
                                     $clientRefDisplay = trim((string) ($job->client_reference_no ?? ''));
                                 @endphp
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Reference" data-sort="{{ $tableReference }}" title="{{ $tableReference }}">{{ $tableReference }}</td>
@@ -194,13 +200,13 @@
                                     @endif
                                 </td>
                                 <td class="lbs-td border-b border-slate-200 px-4 py-3 align-middle text-slate-800 dark:border-slate-700 dark:text-slate-200" data-label="Complexity" data-sort="{{ $complexity }}" style="white-space: nowrap;">
-                                    @include('partials.lbs-inline-complexity-cell', ['rating' => $complexity, 'complexityModule' => 'lbs'])
+                                    @include('partials.lbs-inline-complexity-cell', ['rating' => $complexity, 'complexityModule' => $listModule])
                                 </td>
                             </tr>
 @empty
                             <tr>
                                 <td class="border-b border-slate-200 px-4 py-3 text-center text-slate-400 dark:border-slate-700 dark:text-slate-400" colspan="12">
-                                    No LBS jobs found.
+                                    No {{ $listLabel }} jobs found.
                                 </td>
                             </tr>
                         @endforelse

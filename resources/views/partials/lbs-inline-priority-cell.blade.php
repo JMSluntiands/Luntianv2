@@ -31,6 +31,7 @@
     } catch (\Throwable) {
         $priorityColorMap = [];
     }
+    $priorityColorMap = array_merge($priorityColorMap, $priorityColorOverrides ?? []);
 
     if (! $priorityBg && $priorityText !== '') {
         $priorityBg = $priorityColorMap[$priorityText] ?? null;

@@ -232,6 +232,63 @@
     else select.style.removeProperty('background-color');
   }
 
+  function refreshPagination(table) {
+    if (table && w.JobListPagination && typeof w.JobListPagination.refresh === 'function') {
+      w.JobListPagination.refresh(table);
+    }
+  }
+
+  function isDetailRow(el) {
+    return !!(el && el.tagName === 'TR' && el.classList.contains('lbs-row-detail'));
+  }
+
+  function removeRow(row) {
+    var table = row.closest('table');
+    var detail = row.nextElementSibling;
+    if (isDetailRow(detail)) detail.remove();
+    row.remove();
+    refreshPagination(table);
+  }
+
+  function refreshRow(row) {
+    if (!row) return;
+    var jobId = row.getAttribute('data-job-id');
+    var table = row.closest('table');
+    if (!jobId || !table) return;
+
+    fetch(w.location.href, {
+      credentials: 'same-origin',
+      headers: { Accept: 'text/html' },
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.text();
+      })
+      .then(function (html) {
+        if (!row.isConnected) return;
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var scope = (table.id && doc.getElementById(table.id)) || doc;
+        var selector = 'tr[data-job-id="' + String(jobId).replace(/"/g, '\\"') + '"]';
+        var fresh = scope.querySelector(selector);
+        if (!fresh || !rowOf(fresh)) {
+          removeRow(row);
+          return;
+        }
+
+        var newRow = d.importNode(fresh, true);
+        var rowNum = row.querySelector('[data-row-num-cell]');
+        if (rowNum) newRow.insertBefore(rowNum, newRow.firstChild);
+        if (row.hasAttribute('data-job-filter-match')) {
+          newRow.setAttribute('data-job-filter-match', row.getAttribute('data-job-filter-match'));
+        }
+        newRow.style.display = row.style.display;
+        row.parentNode.replaceChild(newRow, row);
+      })
+      .catch(function () {});
+  }
+
+  w.JobListAutosave = { refreshRow: refreshRow };
+
   function commitUpdate(select, url, fields, val, prev, okMsg, isPriority) {
     saving = true;
     select.disabled = true;
@@ -253,9 +310,7 @@
           if (row) row.setAttribute('data-job-units', String(fields.units));
         }
         toast((result.data && result.data.message) || okMsg);
-        setTimeout(function () {
-          w.location.reload();
-        }, 700);
+        refreshRow(rowOf(select));
       })
       .catch(function () {
         toast('Failed to save. Check your connection.');
