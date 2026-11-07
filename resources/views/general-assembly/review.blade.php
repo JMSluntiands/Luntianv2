@@ -184,5 +184,5 @@
 
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ asset('js/lbs-list.js') }}"></script>
+    <script src="{{ asset('js/lbs-list.js') }}?v={{ @filemtime(public_path('js/lbs-list.js')) ?: '1' }}"></script>
 @endpush

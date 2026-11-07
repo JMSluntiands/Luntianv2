@@ -138,6 +138,8 @@ $(function () {
 
   var $search = $('#lbsSearch');
   var $filterDate = $('#lbsFilterDate');
+  var $filterDateFrom = $('#lbsFilterDateFrom');
+  var $filterDateTo = $('#lbsFilterDateTo');
   var $filterBuilder = $('#lbsFilterBuilder');
   var $filterPriority = $('#lbsFilterPriority');
   var $filterReset = $('#lbsFilterReset');
@@ -242,6 +244,8 @@ $(function () {
 
     var q = ($search.length ? $.trim($search.val()) : '' || '').toLowerCase();
     var filterDate = ($filterDate.length ? String($filterDate.val() || '').trim() : '');
+    var filterDateFrom = ($filterDateFrom.length ? String($filterDateFrom.val() || '').trim() : '');
+    var filterDateTo = ($filterDateTo.length ? String($filterDateTo.val() || '').trim() : '');
     var filterBuilder = ($filterBuilder.length ? String($filterBuilder.val() || '').trim().toLowerCase() : '');
     var filterPriority = ($filterPriority.length ? String($filterPriority.val() || '').trim().toLowerCase() : '');
 
@@ -253,12 +257,16 @@ $(function () {
       var rowDate = String($row.attr('data-log-date-key') || '').trim();
       var rowBuilder = String($row.attr('data-builder') || '').trim().toLowerCase();
       var rowPriority = String($row.attr('data-priority') || '').trim().toLowerCase();
+      var rowRangeDate = String($row.attr('data-completion-date-key') || rowDate).trim();
 
       var matchSearch = !q || text.indexOf(q) !== -1;
       var matchDate = !filterDate || rowDate === filterDate;
+      var matchRange =
+        (!filterDateFrom || (rowRangeDate !== '' && rowRangeDate >= filterDateFrom)) &&
+        (!filterDateTo || (rowRangeDate !== '' && rowRangeDate <= filterDateTo));
       var matchBuilder = !filterBuilder || rowBuilder === filterBuilder;
       var matchPriority = !filterPriority || rowPriority === filterPriority;
-      var match = matchSearch && matchDate && matchBuilder && matchPriority;
+      var match = matchSearch && matchDate && matchRange && matchBuilder && matchPriority;
 
       $row.attr('data-job-filter-match', match ? '1' : '0');
       if (match) visible++;
@@ -297,6 +305,7 @@ $(function () {
       $empty.hide();
     }
 
+    saveTableFilters();
     recalcStatusSummary();
   }
 
@@ -317,6 +326,12 @@ $(function () {
     if ($filterDate.length) {
       $filterDate.off('.lbsFilter').on('change.lbsFilter input.lbsFilter', applyTableFilters);
     }
+    if ($filterDateFrom.length) {
+      $filterDateFrom.off('.lbsFilter').on('change.lbsFilter input.lbsFilter', applyTableFilters);
+    }
+    if ($filterDateTo.length) {
+      $filterDateTo.off('.lbsFilter').on('change.lbsFilter input.lbsFilter', applyTableFilters);
+    }
 
     var selectEvents = 'change.lbsFilter select2:select.lbsFilter select2:clear.lbsFilter select2:unselect.lbsFilter';
     if ($filterBuilder.length) {
@@ -329,6 +344,8 @@ $(function () {
       $filterReset.off('.lbsFilter').on('click.lbsFilter', function () {
         if ($search.length) $search.val('');
         if ($filterDate.length) $filterDate.val('');
+        if ($filterDateFrom.length) $filterDateFrom.val('');
+        if ($filterDateTo.length) $filterDateTo.val('');
         resetFilterSelect($filterBuilder);
         resetFilterSelect($filterPriority);
         applyTableFilters();
@@ -338,7 +355,57 @@ $(function () {
     applyTableFilters();
   }
 
+  var savedFiltersKey = (function () {
+    var meta = document.querySelector('meta[name="filter-storage-user"]');
+    var user = meta ? meta.getAttribute('content') || 'guest' : 'guest';
+    return 'luntian:filters:' + user + ':' + window.location.pathname;
+  })();
+  var restoringSavedFilters = false;
+
+  function saveTableFilters() {
+    if (restoringSavedFilters || !savedFiltersKey) return;
+    var state = {
+      date: $filterDate.length ? String($filterDate.val() || '') : '',
+      dateFrom: $filterDateFrom.length ? String($filterDateFrom.val() || '') : '',
+      dateTo: $filterDateTo.length ? String($filterDateTo.val() || '') : '',
+      builder: $filterBuilder.length ? String($filterBuilder.val() || '') : '',
+      priority: $filterPriority.length ? String($filterPriority.val() || '') : ''
+    };
+    try {
+      if (state.date || state.dateFrom || state.dateTo || state.builder || state.priority) {
+        localStorage.setItem(savedFiltersKey, JSON.stringify(state));
+      } else {
+        localStorage.removeItem(savedFiltersKey);
+      }
+    } catch (e) {}
+  }
+
+  function restoreTableFilters() {
+    var state = null;
+    try {
+      state = JSON.parse(localStorage.getItem(savedFiltersKey) || 'null');
+    } catch (e) {}
+    if (!state || typeof state !== 'object') return;
+
+    function setSelect($el, value) {
+      if (!$el.length || !value) return;
+      var exists = $el.find('option').filter(function () { return this.value === value; }).length > 0;
+      if (!exists) return;
+      $el.val(value);
+      if ($el.data('select2')) $el.trigger('change.select2');
+    }
+
+    restoringSavedFilters = true;
+    if ($filterDate.length && state.date) $filterDate.val(state.date);
+    if ($filterDateFrom.length && state.dateFrom) $filterDateFrom.val(state.dateFrom);
+    if ($filterDateTo.length && state.dateTo) $filterDateTo.val(state.dateTo);
+    setSelect($filterBuilder, String(state.builder || ''));
+    setSelect($filterPriority, String(state.priority || ''));
+    restoringSavedFilters = false;
+  }
+
   initFilterSelect2();
+  restoreTableFilters();
   bindTableFilters();
 
   function bindLbsMainTableInteractions() {

@@ -261,6 +261,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         $(function() {
+            var filterUserMeta = document.querySelector('meta[name="filter-storage-user"]');
+            var filterKeyPrefix = 'luntian:filters:' + (filterUserMeta ? filterUserMeta.getAttribute('content') || 'guest' : 'guest') + ':reports:';
+            function readSaved(name) {
+                try { return localStorage.getItem(filterKeyPrefix + name); } catch (e) { return null; }
+            }
+            function writeSaved(name, value) {
+                try { localStorage.setItem(filterKeyPrefix + name, value); } catch (e) {}
+            }
+
+            var savedReportQs = readSaved('report');
+            if (!window.location.search && savedReportQs) {
+                window.location.replace(window.location.pathname + '?' + savedReportQs);
+                return;
+            }
+
             $('.select2-single').select2({ width: '100%', allowClear: false });
 
             var rangeInput = document.getElementById('reportsDateRange');
@@ -348,7 +363,7 @@
             var chartFromHidden = document.getElementById('chartDateFrom');
             var chartToHidden = document.getElementById('chartDateTo');
             var chartRangeCalendar = document.getElementById('chartDateRangeCalendar');
-            bindDateRange(chartRangeInput, chartFromHidden, chartToHidden, chartRangeCalendar);
+            var syncChartRangeText = bindDateRange(chartRangeInput, chartFromHidden, chartToHidden, chartRangeCalendar);
 
             var applyBtn = document.querySelector('.reports-filter-card .reports-btn-apply');
             var clientSel = document.getElementById('reportsClient');
@@ -378,6 +393,7 @@
             if (applyBtn) {
                 applyBtn.addEventListener('click', function () {
                     var qs = buildReportParams().toString();
+                    writeSaved('report', qs);
                     window.location.href = window.location.pathname + (qs ? ('?' + qs) : '');
                 });
             }
@@ -483,6 +499,7 @@
                 params.set('chart_job_type', chartSelectValue('chartJobType') || 'all');
                 if (chartFromHidden && chartFromHidden.value) params.set('chart_date_from', chartFromHidden.value);
                 if (chartToHidden && chartToHidden.value) params.set('chart_date_to', chartToHidden.value);
+                writeSaved('chart', params.toString());
                 fetch(chartUrl + '?' + params.toString(), { headers: { 'Accept': 'application/json' } })
                     .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
                     .then(renderUnitsChart)
@@ -497,6 +514,22 @@
                     e.preventDefault();
                     loadChart();
                 });
+            }
+
+            var savedChartQs = readSaved('chart');
+            if (savedChartQs) {
+                var savedChart = new URLSearchParams(savedChartQs);
+                [['chartChecker', 'chart_checker'], ['chartClient', 'chart_client'], ['chartStaff', 'chart_staff'], ['chartJobType', 'chart_job_type']].forEach(function (pair) {
+                    var value = savedChart.get(pair[1]);
+                    var $sel = $('#' + pair[0]);
+                    if (!value || !$sel.length) return;
+                    var exists = $sel.find('option').filter(function () { return this.value === value; }).length > 0;
+                    if (exists) $sel.val(value).trigger('change.select2');
+                });
+                if (chartFromHidden) chartFromHidden.value = savedChart.get('chart_date_from') || '';
+                if (chartToHidden) chartToHidden.value = savedChart.get('chart_date_to') || '';
+                if (typeof syncChartRangeText === 'function') syncChartRangeText();
+                loadChart();
             }
 
             document.addEventListener('themechange', function () {

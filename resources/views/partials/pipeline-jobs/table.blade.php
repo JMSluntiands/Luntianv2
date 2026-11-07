@@ -131,7 +131,14 @@
                         @if($isEditable) data-update-url="{{ route($module.'.update', ['id' => $row->id], false) }}" @endif
                         data-log-date-key="{{ $log ? $log->format('Y-m-d') : '' }}"
                         data-builder="{{ $clientName }}"
-                        data-priority="{{ $priorityText }}">
+                        data-priority="{{ $priorityText }}"
+                        @if($isCompleted)
+                            data-completion-date-key="{{ $completion ? $completion->format('Y-m-d') : '' }}"
+                            data-export-date="{{ ($completion ?? $log)?->format('M d, Y') }}"
+                            data-export-address="{{ trim((string) ($row->address ?? '')) }}"
+                            data-export-client="{{ $clientName !== '' ? $clientName : $client }}"
+                            data-export-job-type="{{ $row->job_type ?? '' }}"
+                        @endif>
                         <td class="lbs-td overflow-visible px-4 py-3 text-center align-middle text-slate-800 dark:text-slate-200" data-label="Action" style="white-space: nowrap;">
                             <div class="relative z-10 flex flex-nowrap items-center justify-center gap-1.5">
                                 @if($allowDuplicate && ! $isTrash)

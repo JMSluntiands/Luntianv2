@@ -404,12 +404,14 @@ class ReportsController extends Controller
             if ($user === null || ($onlyUser !== null && strtoupper($user) !== $onlyUser)) {
                 return;
             }
-            $groupKey = (string) $job->completion_date."\0".strtoupper($user)."\0".(string) $job->job_type;
+            $jobTypeLabel = trim((string) preg_replace('/\s+/', ' ', (string) $job->job_type));
+            $jobTypeKey = strtolower((string) preg_replace('/\s*-\s*/', '-', $jobTypeLabel));
+            $groupKey = (string) $job->completion_date."\0".strtoupper($user)."\0".$jobTypeKey;
             if (! isset($groups[$groupKey])) {
                 $groups[$groupKey] = [
                     'completion_date' => $job->completion_date,
                     'user_code' => $user,
-                    'job_type' => $job->job_type,
+                    'job_type' => $jobTypeLabel,
                     'checked_units' => 0,
                     'modeled_units' => 0,
                 ];

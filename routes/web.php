@@ -379,6 +379,12 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::get('/dashboard/settings/standalone-form', [StandaloneFormSettingsController::class, 'index'])->name('settings.standalone_form');
     Route::post('/dashboard/settings/standalone-form/toggle', [StandaloneFormSettingsController::class, 'toggle'])->name('settings.standalone_form.toggle');
     Route::post('/dashboard/settings/standalone-form/options', [StandaloneFormSettingsController::class, 'saveOption'])->name('settings.standalone_form.options');
+    Route::get('/dashboard/settings/version-details', function () {
+        return view('settings.version-details', [
+            'sidebar_active' => 'settings.version_details',
+            'versions' => config('version_history', []),
+        ]);
+    })->name('settings.version_details');
     Route::get('/dashboard/settings/logo-management', [ClientLogoController::class, 'index'])->name('settings.logo_management');
     Route::post('/dashboard/settings/logo-management/{module}', [ClientLogoController::class, 'store'])->name('settings.logo_management.store');
     Route::delete('/dashboard/settings/logo-management/{module}', [ClientLogoController::class, 'destroy'])->name('settings.logo_management.destroy');

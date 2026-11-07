@@ -6,10 +6,11 @@
         ->sort(SORT_NATURAL | SORT_FLAG_CASE)
         ->values();
     $searchLabel = $searchLabel ?? 'Search jobs';
+    $showDateRange = (bool) ($showDateRange ?? false);
     $inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-700 dark:focus:ring-blue-700/25';
 @endphp
 <div class="mb-6 rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 {{ $showDateRange ? 'xl:grid-cols-7' : 'xl:grid-cols-5' }}">
         <div>
             <label for="lbsSearch" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Search</label>
             <div class="relative flex items-center">
@@ -21,6 +22,9 @@
             <label for="lbsFilterDate" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Date Logged</label>
             <input type="date" id="lbsFilterDate" class="{{ $inputClass }}">
         </div>
+        @if($showDateRange)
+            @include('partials.completed-date-range-filter')
+        @endif
         <div>
             <label for="lbsFilterBuilder" class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Builder</label>
             <select id="lbsFilterBuilder" class="select2-single {{ $inputClass }}">
