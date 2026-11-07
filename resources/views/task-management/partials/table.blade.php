@@ -72,6 +72,10 @@
                                 @if(!$isJob && ($task->visibility ?? '') === \App\Models\Task::VISIBILITY_PERSONAL)
                                     <span class="inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
                                 @endif
+                                @include('task-management.partials.shared-badge', ['task' => $task, 'isJob' => $isJob])
+                                @if(!$isJob && !empty($task->id))
+                                    @include('task-management.partials.comments-button', ['task' => $task])
+                                @endif
                             </div>
                         </td>
                         <td class="px-2 py-2.5 align-middle">
@@ -116,18 +120,14 @@
                                         'status' => $task->status,
                                     ];
                                 @endphp
-                                @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => $canManage])
+                                @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => !empty($task->can_edit)])
                             @endif
                         </td>
                         @if($canManage || !empty($canViewSelf))
                             <td class="px-2 py-2.5 text-right align-middle sm:px-4">
                                 @php
-                                    $isPersonalTask = !$isJob && strtolower(trim((string) ($task->visibility ?? ''))) === \App\Models\Task::VISIBILITY_PERSONAL;
-                                    $canEditTask = !$isJob && !empty($task->id) && (
-                                        $isPersonalTask
-                                            ? ((int) ($task->created_by ?? 0) === (int) ($currentUserId ?? 0))
-                                            : (bool) $canManage
-                                    );
+                                    $canEditTask = !$isJob && !empty($task->id) && !empty($task->can_edit);
+                                    $canDeleteTask = !$isJob && !empty($task->id) && !empty($task->can_delete);
                                     $dueValue = '';
                                     if (!$isJob && !empty($task->due_date)) {
                                         $dueValue = $task->due_date instanceof \Carbon\Carbon
@@ -135,7 +135,7 @@
                                             : \Illuminate\Support\Carbon::parse($task->due_date)->format('Y-m-d');
                                     }
                                 @endphp
-                                @if(!$isJob && !empty($task->id) && ($canEditTask || $canManage))
+                                @if($canEditTask || $canDeleteTask)
                                     <div class="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover/row:opacity-100">
                                         @if($canEditTask)
                                             <button
@@ -148,9 +148,10 @@
                                                 data-status="{{ $task->status ?? 'not_started' }}"
                                                 data-notes="{{ $task->notes ?? '' }}"
                                                 data-visibility="{{ $task->visibility ?? 'public' }}"
+                                                data-members="{{ implode(',', $task->member_ids ?? []) }}"
                                             >Edit</button>
                                         @endif
-                                        @if($canManage)
+                                        @if($canDeleteTask)
                                             <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');" class="inline">
                                                 @csrf
                                                 @method('DELETE')

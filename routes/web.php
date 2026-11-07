@@ -160,6 +160,9 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/task-management', [TaskController::class, 'store'])->name('task_management.store');
     Route::put('/dashboard/task-management/{id}', [TaskController::class, 'update'])->name('task_management.update');
     Route::delete('/dashboard/task-management/{id}', [TaskController::class, 'destroy'])->name('task_management.destroy');
+    Route::get('/dashboard/task-management/{id}/comments', [TaskController::class, 'comments'])->whereNumber('id')->name('task_management.comments');
+    Route::post('/dashboard/task-management/{id}/comments', [TaskController::class, 'storeComment'])->whereNumber('id')->name('task_management.comments.store');
+    Route::get('/dashboard/task-management/comment-notification/{id}', [TaskController::class, 'openCommentNotification'])->whereNumber('id')->name('task_management.comment.open');
     Route::get('/dashboard/forum-thread', [ForumThreadController::class, 'index'])->name('forum_thread');
     Route::get('/dashboard/forum-thread/recent', [ForumThreadController::class, 'recent'])->name('forum_thread.recent');
     Route::post('/dashboard/forum-thread', [ForumThreadController::class, 'store'])->name('forum_thread.store');
@@ -171,6 +174,7 @@ Route::middleware(['auth.session', 'check.permission'])->group(function () {
     Route::post('/dashboard/forum-thread/post/{id}/comment', [ForumThreadController::class, 'storeComment'])->name('forum_thread.comment.store');
     Route::put('/dashboard/forum-thread/comment/{id}', [ForumThreadController::class, 'updateComment'])->name('forum_thread.comment.update');
     Route::delete('/dashboard/forum-thread/comment/{id}', [ForumThreadController::class, 'destroyComment'])->name('forum_thread.comment.destroy');
+    Route::get('/dashboard/forum-thread/{type}/{id}/history', [ForumThreadController::class, 'history'])->whereIn('type', ['post', 'comment'])->whereNumber('id')->name('forum_thread.history');
     Route::get('/dashboard/stats', DashboardStatsController::class)->name('dashboard.stats');
     Route::get('/dashboard/chart', [DashboardStatsController::class, 'chart'])->name('dashboard.chart');
     Route::get('/dashboard/holidays/{year}', DashboardHolidayController::class)->name('dashboard.holidays');

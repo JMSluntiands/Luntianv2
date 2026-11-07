@@ -28,7 +28,7 @@
                     [
                         'key' => 'tasks',
                         'label' => 'Tasks',
-                        'hint' => 'Shared tasks',
+                        'hint' => 'Public and shared tasks',
                         'tasks' => $publicManualTasks,
                         'tone' => 'border-sky-200 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-slate-900 dark:text-sky-200',
                     ],
@@ -113,14 +113,11 @@
                                             @if(!$isJob && ($task->visibility ?? '') === Task::VISIBILITY_PERSONAL)
                                                 <span class="mt-1 inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-200 dark:text-slate-900">Personal</span>
                                             @endif
+                                            @include('task-management.partials.shared-badge', ['task' => $task, 'isJob' => $isJob])
                                         </div>
                                         @php
-                                            $isPersonalTask = !$isJob && strtolower(trim((string) ($task->visibility ?? ''))) === Task::VISIBILITY_PERSONAL;
-                                            $canEditTask = !$isJob && !empty($task->id) && (
-                                                $isPersonalTask
-                                                    ? ((int) ($task->created_by ?? 0) === (int) ($currentUserId ?? 0))
-                                                    : (bool) $canManage
-                                            );
+                                            $canEditTask = !$isJob && !empty($task->id) && !empty($task->can_edit);
+                                            $canDeleteTask = !$isJob && !empty($task->id) && !empty($task->can_delete);
                                             $dueValue = '';
                                             if (!$isJob && !empty($task->due_date)) {
                                                 $dueValue = $task->due_date instanceof \Carbon\Carbon
@@ -128,7 +125,7 @@
                                                     : \Illuminate\Support\Carbon::parse($task->due_date)->format('Y-m-d');
                                             }
                                         @endphp
-                                        @if($canEditTask || ($canManage && !$isJob && !empty($task->id)))
+                                        @if($canEditTask || $canDeleteTask)
                                             <div class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/card:opacity-100">
                                                 @if($canEditTask)
                                                     <button
@@ -142,11 +139,12 @@
                                                         data-status="{{ $task->status ?? 'not_started' }}"
                                                         data-notes="{{ $task->notes ?? '' }}"
                                                         data-visibility="{{ $task->visibility ?? 'public' }}"
+                                                        data-members="{{ implode(',', $task->member_ids ?? []) }}"
                                                     >
                                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                                     </button>
                                                 @endif
-                                                @if($canManage && !$isJob && !empty($task->id))
+                                                @if($canDeleteTask)
                                                     <form method="POST" action="{{ route('task_management.destroy', $task->id) }}" onsubmit="return confirm('Delete this task?');">
                                                         @csrf
                                                         @method('DELETE')
@@ -184,12 +182,15 @@
                                                     'status' => $task->status,
                                                 ];
                                             @endphp
-                                            @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => $canManage])
+                                            @include('task-management.partials.status-dropdown', ['task' => $taskModel, 'meta' => $meta, 'statusOptions' => $statusOptions, 'canManage' => !empty($task->can_edit)])
                                         @endif
                                     </div>
 
                                     @if(!$isJob && trim((string) ($task->notes ?? '')) !== '')
                                         <p class="mb-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ $task->notes }}</p>
+                                    @endif
+                                    @if(!$isJob && !empty($task->id))
+                                        @include('task-management.partials.comments-button', ['task' => $task])
                                     @endif
                                 @if($jobViewUrl !== '')
                                     </a>

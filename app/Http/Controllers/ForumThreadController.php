@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ForumComment;
 use App\Models\ForumPost;
+use App\Models\ForumRevision;
 use App\Models\RolePermission;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,9 +34,13 @@ class ForumThreadController extends Controller
         $isAdmin = $role === 'admin';
         $canPost = RolePermission::userMayAccessRoute('forum_thread.post');
 
+        $commentIds = $posts->getCollection()->flatMap(fn (ForumPost $post) => $post->comments->pluck('id'));
+
         return view('forum-thread.index', [
             'sidebar_active' => 'forum_thread',
             'posts' => $posts,
+            'postEditCounts' => ForumRevision::countsFor(ForumRevision::TYPE_POST, $posts->getCollection()->pluck('id')),
+            'commentEditCounts' => ForumRevision::countsFor(ForumRevision::TYPE_COMMENT, $commentIds),
             'currentUser' => $userId > 0 ? User::find($userId) : null,
             'canPost' => $canPost,
             'canPin' => $isAdmin || $canPost,
@@ -260,10 +265,20 @@ class ForumThreadController extends Controller
             }
         }
 
-        $removedInline = array_diff(
-            self::inlineImageNames((string) $post->body),
-            self::inlineImageNames($body)
-        );
+        $changed = $title !== (string) $post->title
+            || $body !== (string) $post->body
+            || $postType !== $post->normalizeType()
+            || (string) $imagePath !== $oldImagePath;
+        $keepsHistory = $changed && ForumRevision::ensureTable();
+
+        if ($keepsHistory) {
+            ForumRevision::snapshotPost($post, $userId);
+        } else {
+            $removedInline = array_diff(
+                self::inlineImageNames((string) $post->body),
+                self::inlineImageNames($body)
+            );
+        }
 
         $post->update([
             'title' => $title,
@@ -272,11 +287,14 @@ class ForumThreadController extends Controller
             'image_path' => $imagePath,
         ]);
 
-        if ($oldImagePath !== '' && $oldImagePath !== $imagePath && Storage::disk('public')->exists($oldImagePath)) {
-            Storage::disk('public')->delete($oldImagePath);
-        }
-        foreach ($removedInline as $inlineName) {
-            Storage::disk('public')->delete('forum/'.$inlineName);
+        // Images from older versions stay on disk while the edit history still shows them.
+        if (! $keepsHistory) {
+            if ($oldImagePath !== '' && $oldImagePath !== $imagePath && Storage::disk('public')->exists($oldImagePath)) {
+                Storage::disk('public')->delete($oldImagePath);
+            }
+            foreach ($removedInline as $inlineName) {
+                Storage::disk('public')->delete('forum/'.$inlineName);
+            }
         }
 
         return redirect()
@@ -351,13 +369,29 @@ class ForumThreadController extends Controller
             }
         }
 
-        if ($post->image_path && Storage::disk('public')->exists($post->image_path)) {
-            Storage::disk('public')->delete($post->image_path);
+        $coverPaths = [(string) $post->image_path];
+        $inlineNames = self::inlineImageNames((string) $post->body);
+        if (Schema::hasTable('forum_revisions')) {
+            $postRevisions = ForumRevision::query()
+                ->where('revisable_type', ForumRevision::TYPE_POST)
+                ->where('revisable_id', $post->id)
+                ->get(['body', 'image_path']);
+            foreach ($postRevisions as $revision) {
+                $coverPaths[] = (string) $revision->image_path;
+                $inlineNames = array_merge($inlineNames, self::inlineImageNames((string) $revision->body));
+            }
         }
-        foreach (self::inlineImageNames((string) $post->body) as $inlineName) {
+        foreach (array_unique(array_filter($coverPaths)) as $coverPath) {
+            if (Storage::disk('public')->exists($coverPath)) {
+                Storage::disk('public')->delete($coverPath);
+            }
+        }
+        foreach (array_unique($inlineNames) as $inlineName) {
             Storage::disk('public')->delete('forum/'.$inlineName);
         }
 
+        ForumRevision::deleteFor(ForumRevision::TYPE_COMMENT, $post->comments()->pluck('id'));
+        ForumRevision::deleteFor(ForumRevision::TYPE_POST, [$post->id]);
         $post->comments()->delete();
         $post->delete();
 
@@ -426,7 +460,11 @@ class ForumThreadController extends Controller
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
-        $comment->update(['body' => trim($data['body'])]);
+        $newBody = trim($data['body']);
+        if ($newBody !== (string) $comment->body) {
+            ForumRevision::snapshotComment($comment, $userId);
+            $comment->update(['body' => $newBody]);
+        }
 
         return redirect()
             ->route('forum_thread')
@@ -452,14 +490,87 @@ class ForumThreadController extends Controller
 
         $postId = (int) $comment->forum_post_id;
         if (Schema::hasColumn('forum_comments', 'parent_id')) {
-            ForumComment::where('parent_id', $comment->id)->delete();
+            $replies = ForumComment::where('parent_id', $comment->id);
+            ForumRevision::deleteFor(ForumRevision::TYPE_COMMENT, (clone $replies)->pluck('id'));
+            $replies->delete();
         }
+        ForumRevision::deleteFor(ForumRevision::TYPE_COMMENT, [$comment->id]);
         $comment->delete();
 
         return redirect()
             ->route('forum_thread')
             ->with('success', 'Comment deleted.')
             ->withFragment('post-'.$postId);
+    }
+
+    public function history(Request $request, string $type, int $id)
+    {
+        if (! RolePermission::userMayAccessRoute('forum_thread')) {
+            return $this->deny($request, 'You do not have permission to view the Bulletin.');
+        }
+
+        if ($type === ForumRevision::TYPE_POST) {
+            $current = ForumPost::findOrFail($id);
+        } else {
+            $current = ForumComment::findOrFail($id);
+        }
+
+        $revisions = Schema::hasTable('forum_revisions')
+            ? ForumRevision::query()
+                ->with('editor:id,fullname,username')
+                ->where('revisable_type', $type)
+                ->where('revisable_id', $id)
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->get()
+            : collect();
+
+        $editorName = static function ($user): string {
+            $name = trim((string) ($user?->fullname ?? ''));
+            if ($name === '') {
+                $name = trim((string) ($user?->username ?? ''));
+            }
+
+            return $name !== '' ? $name : 'User';
+        };
+        $formatTime = static fn ($time) => $time?->timezone('Asia/Manila')->format('M j, Y · g:i A');
+        $imageUrl = static function (?string $path): ?string {
+            $path = trim((string) $path);
+
+            return $path !== '' ? route('forum_thread.image', ['path' => basename($path)], false) : null;
+        };
+
+        // Each snapshot holds the content as it was until the next edit (or the current version).
+        $versions = [[
+            'label' => 'Current version',
+            'is_current' => true,
+            'title' => $type === ForumRevision::TYPE_POST ? (string) $current->title : null,
+            'body' => (string) $current->body,
+            'post_type' => $type === ForumRevision::TYPE_POST ? $current->normalizeType() : null,
+            'image_url' => $type === ForumRevision::TYPE_POST ? $imageUrl($current->image_path) : null,
+            'saved_at' => $formatTime($revisions->first()?->created_at ?? $current->updated_at),
+            'saved_by' => $revisions->isNotEmpty() ? $editorName($revisions->first()->editor) : null,
+        ]];
+
+        foreach ($revisions as $index => $revision) {
+            $older = $revisions->get($index + 1);
+            $versions[] = [
+                'label' => $older ? 'Version '.($revisions->count() - $index) : 'Original',
+                'is_current' => false,
+                'title' => $revision->title,
+                'body' => (string) $revision->body,
+                'post_type' => $revision->post_type,
+                'image_url' => $imageUrl($revision->image_path),
+                'saved_at' => $older ? $formatTime($older->created_at) : $formatTime($current->created_at),
+                'saved_by' => $older ? $editorName($older->editor) : null,
+            ];
+        }
+
+        return response()->json([
+            'type' => $type,
+            'edits' => $revisions->count(),
+            'versions' => $versions,
+        ]);
     }
 
     public function image(string $path): Response

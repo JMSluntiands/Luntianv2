@@ -46,6 +46,9 @@
             <span title="{{ $comment->created_at?->timezone('Asia/Manila')->format('M j, Y g:i A') }}">
                 {{ $comment->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A') }}
             </span>
+            @if(($commentEditCounts[$comment->id] ?? 0) > 0)
+                @include('forum-thread.partials.edited-label', ['historyType' => 'comment', 'historyId' => $comment->id, 'edits' => $commentEditCounts[$comment->id], 'editedAt' => $comment->updated_at])
+            @endif
             @if($canComment)
                 <button
                     type="button"

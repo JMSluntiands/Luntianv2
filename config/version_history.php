@@ -16,6 +16,10 @@ return [
             'Reports: same job type with different spacing (e.g. "2S DB Base Model - …" vs "2S DB Base Model- …") is now grouped into one row.',
             'Job list and Reports filters are remembered per user and restored on your next visit.',
             'Settings: Version Details page.',
+            'Task Database: Shared visibility — pick members who can see and update the task, plus a Visibility filter (Public / Shared / Personal).',
+            'Task Database: task comments with replies and notifications.',
+            'Job lists: read-only Address column.',
+            'Bulletin: edit history for posts and comments with an "Edited" label to view older versions.',
         ],
     ],
     [

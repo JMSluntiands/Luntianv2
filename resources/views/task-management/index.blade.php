@@ -88,10 +88,12 @@
     $currentUserId = (int) ($currentUserId ?? session('user_id', 0));
     $statusFilter = $statusFilter ?? '';
     $assigneeFilter = $assigneeFilter ?? null;
+    $visibilityFilter = $visibilityFilter ?? '';
     $viewMode = in_array(($viewMode ?? 'board'), ['table', 'board'], true) ? $viewMode : 'board';
     $queryBase = array_filter([
         'status' => $statusFilter !== '' ? $statusFilter : null,
         'assignee' => $assigneeFilter !== null ? $assigneeFilter : null,
+        'visibility' => $visibilityFilter !== '' ? $visibilityFilter : null,
     ], static fn ($v) => $v !== null && $v !== '');
 @endphp
 
@@ -186,11 +188,27 @@
                                 <span class="block px-2 py-2 text-center text-xs font-semibold text-slate-600 transition-colors peer-checked:bg-emerald-600 peer-checked:text-white dark:text-slate-300 dark:peer-checked:bg-emerald-600">Public</span>
                             </label>
                             <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="visibility" value="shared" class="peer sr-only">
+                                <span class="block px-2 py-2 text-center text-xs font-semibold text-slate-600 transition-colors peer-checked:bg-violet-600 peer-checked:text-white dark:text-slate-300 dark:peer-checked:bg-violet-600">Shared</span>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="visibility" value="personal" class="peer sr-only">
                                 <span class="block px-2 py-2 text-center text-xs font-semibold text-slate-600 transition-colors peer-checked:bg-slate-800 peer-checked:text-white dark:text-slate-300 dark:peer-checked:bg-slate-200 dark:peer-checked:text-slate-900">Personal</span>
                             </label>
                         </div>
                         <p id="taskVisibilityHint" class="mt-1 hidden text-[11px] leading-snug text-slate-500 dark:text-slate-400">Only you can see this task.</p>
+                        <p id="taskSharedHint" class="mt-1 hidden text-[11px] leading-snug text-slate-500 dark:text-slate-400">Only you, the assignee and the members below can see and update this task.</p>
+                    </div>
+                </div>
+                <div id="taskMembersPanel" class="mt-3 hidden">
+                    <span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">Members</span>
+                    <div class="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-600 dark:bg-slate-900/40">
+                        @foreach($staffUsers as $user)
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="member_ids[]" value="{{ $user->id }}" class="peer sr-only" data-task-member>
+                                <span class="inline-block rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition-colors peer-checked:border-violet-600 peer-checked:bg-violet-600 peer-checked:text-white dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ $displayName($user) }}</span>
+                            </label>
+                        @endforeach
                     </div>
                 </div>
                 <div class="mt-3">
@@ -215,6 +233,15 @@
                     @endforeach
                 </select>
             </label>
+            <label class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                Visibility
+                <select name="visibility" onchange="this.form.submit()" class="task-filter-select cursor-pointer border-0 bg-transparent py-0.5 pl-1 pr-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-0 dark:text-white">
+                    <option value="">All</option>
+                    <option value="public" @selected($visibilityFilter === 'public')>Public</option>
+                    <option value="shared" @selected($visibilityFilter === 'shared')>Shared</option>
+                    <option value="personal" @selected($visibilityFilter === 'personal')>Personal</option>
+                </select>
+            </label>
             @if(!empty($canViewAll))
             <label class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 Assignee
@@ -227,7 +254,7 @@
                 </select>
             </label>
             @endif
-            @if($statusFilter !== '' || (!empty($canViewAll) && $assigneeFilter !== null))
+            @if($statusFilter !== '' || $visibilityFilter !== '' || (!empty($canViewAll) && $assigneeFilter !== null))
                 <a href="{{ route('task_management', ['view' => $viewMode]) }}" class="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Clear filters</a>
             @endif
         </form>
@@ -254,6 +281,27 @@
                 'avatarUrl' => $avatarUrl,
             ])
         @endif
+    </div>
+
+    <div id="taskCommentsModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/50 p-4" role="dialog" aria-modal="true" aria-labelledby="taskCommentsTitle">
+        <div class="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-3 dark:border-slate-700">
+                <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Comments</p>
+                    <h2 id="taskCommentsTitle" class="truncate text-base font-semibold text-slate-800 dark:text-slate-100">Task</h2>
+                </div>
+                <button type="button" id="taskCommentsClose" class="cursor-pointer rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="taskCommentsList" class="flex-1 space-y-3 overflow-y-auto px-5 py-4"></div>
+            <form id="taskCommentsForm" class="border-t border-slate-200 px-5 py-3 dark:border-slate-700">
+                <textarea id="taskCommentsInput" rows="2" maxlength="5000" required placeholder="Write a comment…" class="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"></textarea>
+                <div class="mt-2 flex justify-end">
+                    <button type="submit" class="cursor-pointer rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Post comment</button>
+                </div>
+            </form>
+        </div>
     </div>
 @endsection
 
@@ -282,6 +330,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var addCancel = document.getElementById('taskAddCancel');
     var assigneeSelect = document.getElementById('taskAssignee');
     var visibilityHint = document.getElementById('taskVisibilityHint');
+    var sharedHint = document.getElementById('taskSharedHint');
+    var membersPanel = document.getElementById('taskMembersPanel');
     var formMethod = document.getElementById('taskFormMethod');
     var formHeading = document.getElementById('taskFormHeading');
     var formModeBadge = document.getElementById('taskFormModeBadge');
@@ -303,11 +353,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function setMembers(ids) {
+        var wanted = (ids || []).map(String);
+        document.querySelectorAll('#taskAddForm [data-task-member]').forEach(function (box) {
+            box.checked = wanted.indexOf(box.value) !== -1;
+        });
+    }
+
     function applyVisibilityUi() {
         var personal = isPersonalSelected();
+        var checked = document.querySelector('#taskAddForm input[name="visibility"]:checked');
+        var shared = !!checked && checked.value === 'shared';
         if (visibilityHint) {
             visibilityHint.classList.toggle('hidden', !personal);
         }
+        if (sharedHint) sharedHint.classList.toggle('hidden', !shared);
+        if (membersPanel) membersPanel.classList.toggle('hidden', !shared);
         if (!assigneeSelect) return;
         if (personal) {
             if (!assigneeSelect.disabled) {
@@ -346,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (status) status.value = status.options.length ? status.options[0].value : 'not_started';
         if (notes) notes.value = '';
         setVisibility('public');
+        setMembers([]);
         if (assigneeSelect) {
             assigneeSelect.disabled = false;
             lastPublicAssignee = (typeof assigneeId !== 'undefined' && assigneeId !== null && assigneeId !== '')
@@ -387,6 +449,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var visibility = btn.getAttribute('data-visibility') || 'public';
         setVisibility(visibility);
+        var membersAttr = btn.getAttribute('data-members') || '';
+        setMembers(membersAttr ? membersAttr.split(',') : []);
 
         var assignee = btn.getAttribute('data-assignee') || '';
         if (assigneeSelect) {
@@ -517,6 +581,210 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.addEventListener('click', function () { closeAllStatusMenus(); });
+
+    var commentsModal = document.getElementById('taskCommentsModal');
+    var commentsList = document.getElementById('taskCommentsList');
+    var commentsTitle = document.getElementById('taskCommentsTitle');
+    var commentsForm = document.getElementById('taskCommentsForm');
+    var commentsInput = document.getElementById('taskCommentsInput');
+    var commentsTaskId = null;
+
+    function commentsUrl(taskId) {
+        return updateUrlBase + '/' + taskId + '/comments';
+    }
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = text;
+        return node;
+    }
+
+    function renderComment(comment, isReply) {
+        var wrap = el('div', isReply
+            ? 'rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60'
+            : 'rounded-lg border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800');
+        wrap.setAttribute('data-comment-id', comment.id);
+        var head = el('div', 'mb-1 flex items-center justify-between gap-2');
+        head.appendChild(el('span', 'text-xs font-semibold text-slate-800 dark:text-slate-100', comment.author));
+        head.appendChild(el('span', 'text-[11px] text-slate-400', comment.created_at));
+        wrap.appendChild(head);
+        wrap.appendChild(el('p', 'm-0 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200', comment.body));
+
+        if (!isReply) {
+            var replies = el('div', 'mt-2 space-y-2 border-l-2 border-slate-200 pl-3 dark:border-slate-700');
+            replies.setAttribute('data-replies', '');
+            (comment.replies || []).forEach(function (reply) {
+                replies.appendChild(renderComment(reply, true));
+            });
+            if (!(comment.replies || []).length) replies.classList.add('hidden');
+            wrap.appendChild(replies);
+
+            var replyBtn = el('button', 'mt-1.5 cursor-pointer text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400', 'Reply');
+            replyBtn.type = 'button';
+            var replyForm = el('form', 'mt-2 hidden');
+            var replyInput = el('textarea', 'w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100');
+            replyInput.rows = 2;
+            replyInput.maxLength = 5000;
+            replyInput.required = true;
+            replyInput.placeholder = 'Write a reply…';
+            var replyActions = el('div', 'mt-1.5 flex justify-end gap-2');
+            var cancelBtn = el('button', 'cursor-pointer rounded-md px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700', 'Cancel');
+            cancelBtn.type = 'button';
+            var sendBtn = el('button', 'cursor-pointer rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-500', 'Reply');
+            sendBtn.type = 'submit';
+            replyActions.appendChild(cancelBtn);
+            replyActions.appendChild(sendBtn);
+            replyForm.appendChild(replyInput);
+            replyForm.appendChild(replyActions);
+
+            replyBtn.addEventListener('click', function () {
+                replyForm.classList.toggle('hidden');
+                if (!replyForm.classList.contains('hidden')) replyInput.focus();
+            });
+            cancelBtn.addEventListener('click', function () {
+                replyForm.classList.add('hidden');
+                replyInput.value = '';
+            });
+            replyForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                postComment(replyInput.value, comment.id, sendBtn).then(function (saved) {
+                    if (!saved) return;
+                    replies.classList.remove('hidden');
+                    replies.appendChild(renderComment(saved, true));
+                    replyInput.value = '';
+                    replyForm.classList.add('hidden');
+                });
+            });
+
+            wrap.appendChild(replyBtn);
+            wrap.appendChild(replyForm);
+        }
+
+        return wrap;
+    }
+
+    function renderEmpty() {
+        commentsList.innerHTML = '';
+        commentsList.appendChild(el('p', 'py-6 text-center text-sm text-slate-500 dark:text-slate-400', 'No comments yet. Start the conversation below.'));
+    }
+
+    function updateCommentCount(taskId, delta) {
+        document.querySelectorAll('.task-comments-open[data-task-id="' + taskId + '"] [data-comment-count]').forEach(function (label) {
+            var current = parseInt(label.getAttribute('data-count') || label.textContent, 10) || 0;
+            var next = current + delta;
+            label.setAttribute('data-count', String(next));
+            label.textContent = next > 0 ? next + (next === 1 ? ' comment' : ' comments') : 'Comment';
+        });
+    }
+
+    function postComment(body, parentId, button) {
+        body = String(body || '').trim();
+        if (!body || !commentsTaskId) return Promise.resolve(null);
+        var payload = new URLSearchParams();
+        payload.set('body', body);
+        if (parentId) payload.set('parent_id', parentId);
+        payload.set('_token', csrf);
+        if (button) button.disabled = true;
+        var taskId = commentsTaskId;
+        return fetch(commentsUrl(taskId), {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf },
+            credentials: 'same-origin',
+            body: payload
+        }).then(function (res) {
+            return res.json().then(function (json) { return { ok: res.ok, body: json }; });
+        }).then(function (result) {
+            if (!result.ok || !result.body || result.body.status !== 'success') {
+                if (window.showSuccessToast) window.showSuccessToast((result.body && result.body.message) || 'Could not post comment.');
+                return null;
+            }
+            updateCommentCount(taskId, 1);
+            return result.body.comment;
+        }).catch(function () {
+            if (window.showSuccessToast) window.showSuccessToast('Could not post comment.');
+            return null;
+        }).finally(function () {
+            if (button) button.disabled = false;
+        });
+    }
+
+    function openComments(taskId, title) {
+        if (!commentsModal || !taskId) return;
+        commentsTaskId = String(taskId);
+        commentsTitle.textContent = title || 'Task';
+        commentsList.innerHTML = '';
+        commentsList.appendChild(el('p', 'py-6 text-center text-sm text-slate-500 dark:text-slate-400', 'Loading…'));
+        commentsModal.classList.remove('hidden');
+        commentsModal.classList.add('flex');
+
+        fetch(commentsUrl(taskId), {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        }).then(function (res) {
+            return res.json().then(function (json) { return { ok: res.ok, body: json }; });
+        }).then(function (result) {
+            if (!result.ok || !result.body || result.body.status !== 'success') {
+                commentsList.innerHTML = '';
+                commentsList.appendChild(el('p', 'py-6 text-center text-sm text-red-500', (result.body && result.body.message) || 'Could not load comments.'));
+                return;
+            }
+            if (result.body.task && result.body.task.title) commentsTitle.textContent = result.body.task.title;
+            var comments = result.body.comments || [];
+            if (!comments.length) {
+                renderEmpty();
+                return;
+            }
+            commentsList.innerHTML = '';
+            comments.forEach(function (comment) {
+                commentsList.appendChild(renderComment(comment, false));
+            });
+        }).catch(function () {
+            commentsList.innerHTML = '';
+            commentsList.appendChild(el('p', 'py-6 text-center text-sm text-red-500', 'Could not load comments.'));
+        });
+        if (commentsInput) commentsInput.focus();
+    }
+
+    function closeComments() {
+        if (!commentsModal) return;
+        commentsModal.classList.add('hidden');
+        commentsModal.classList.remove('flex');
+        commentsTaskId = null;
+    }
+
+    document.querySelectorAll('.task-comments-open').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openComments(btn.getAttribute('data-task-id'), btn.getAttribute('data-task-title'));
+        });
+    });
+    var commentsClose = document.getElementById('taskCommentsClose');
+    if (commentsClose) commentsClose.addEventListener('click', closeComments);
+    if (commentsModal) {
+        commentsModal.addEventListener('click', function (e) {
+            if (e.target === commentsModal) closeComments();
+        });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeComments();
+    });
+    if (commentsForm) {
+        commentsForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var button = commentsForm.querySelector('button[type="submit"]');
+            postComment(commentsInput.value, null, button).then(function (saved) {
+                if (!saved) return;
+                if (commentsList.querySelector('[data-comment-id]') === null) commentsList.innerHTML = '';
+                commentsList.appendChild(renderComment(saved, false));
+                commentsInput.value = '';
+                commentsList.scrollTop = commentsList.scrollHeight;
+            });
+        });
+    }
+    var openFromQuery = new URLSearchParams(window.location.search).get('task_comments');
+    if (openFromQuery) openComments(openFromQuery, '');
 
     document.querySelectorAll('tr[data-job-url]').forEach(function (row) {
         row.addEventListener('click', function (e) {

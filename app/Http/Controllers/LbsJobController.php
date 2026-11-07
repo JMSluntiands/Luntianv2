@@ -1363,6 +1363,7 @@ class LbsJobController extends Controller
                     'j.checker_id',
                     'j.ncc_compliance',
                     'j.job_request_id',
+                    'j.address_client',
                     'j.job_type',
                     'j.priority',
                     'j.plan_complexity',

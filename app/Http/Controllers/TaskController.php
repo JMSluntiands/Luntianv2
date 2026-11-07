@@ -30,6 +30,11 @@ class TaskController extends Controller
         $assigneeFilter = $request->query('assignee');
         $assigneeFilter = $assigneeFilter === null || $assigneeFilter === '' ? null : (int) $assigneeFilter;
 
+        $visibilityFilter = strtolower(trim((string) $request->query('visibility', '')));
+        if ($visibilityFilter !== '' && ! in_array($visibilityFilter, Task::VISIBILITIES, true)) {
+            $visibilityFilter = '';
+        }
+
         $users = User::query()
             ->orderByRaw("CASE WHEN COALESCE(NULLIF(TRIM(unique_code), ''), '') = '' THEN 1 ELSE 0 END")
             ->orderBy('unique_code')
@@ -98,6 +103,15 @@ class TaskController extends Controller
                     $jobItems = collect(); // allocated jobs are not task statuses
                 }
 
+                if ($visibilityFilter !== '') {
+                    if ($visibilityFilter === Task::VISIBILITY_PUBLIC) {
+                        $manualQuery->where(fn ($q) => $q->where('visibility', Task::VISIBILITY_PUBLIC)->orWhereNull('visibility'));
+                    } else {
+                        $manualQuery->where('visibility', $visibilityFilter);
+                    }
+                    $jobItems = collect();
+                }
+
                 if ($assigneeFilter !== null) {
                     if ($assigneeFilter === 0) {
                         $manualQuery->whereNull('assignee_user_id');
@@ -110,7 +124,7 @@ class TaskController extends Controller
             } catch (\Throwable) {
                 $manualTasks = collect();
             }
-        } elseif ($statusFilter !== '') {
+        } elseif ($statusFilter !== '' || $visibilityFilter !== '') {
             $jobItems = collect();
         }
 
@@ -145,6 +159,7 @@ class TaskController extends Controller
             'assigneeUsers' => $assigneeUsers,
             'statusFilter' => $statusFilter,
             'assigneeFilter' => $assigneeFilter,
+            'visibilityFilter' => $visibilityFilter,
             'viewMode' => $view,
             'canManage' => $canManage,
             'canViewAll' => $canViewAll,
@@ -176,6 +191,28 @@ class TaskController extends Controller
                         'title' => 'Replied in this thread',
                         'time' => (string) ($reply->created_at ?? ''),
                         'href' => route('discussion.reply.open', $reply->id),
+                    ];
+                }
+            }
+
+            if ($userId > 0 && Schema::hasTable('task_comment_notifications')) {
+                $taskComments = DB::table('task_comment_notifications as n')
+                    ->join('task_comments as c', 'c.id', '=', 'n.comment_id')
+                    ->join('tasks as t', 't.id', '=', 'n.task_id')
+                    ->where('n.user_id', $userId)
+                    ->whereNull('n.read_at')
+                    ->orderByDesc('n.id')
+                    ->limit(30)
+                    ->get(['n.id', 'n.created_at', 'c.author_name', 'c.parent_id', 'c.body', 't.title']);
+                foreach ($taskComments as $note) {
+                    $author = trim((string) ($note->author_name ?? '')) ?: 'Someone';
+                    $items[] = [
+                        'id' => 'task-comment:'.(int) $note->id,
+                        'title' => $author.($note->parent_id ? ' replied on task: ' : ' commented on task: ').(string) $note->title,
+                        'author' => $author,
+                        'message' => (string) $note->body,
+                        'time' => (string) ($note->created_at ?? ''),
+                        'href' => route('task_management.comment.open', $note->id),
                     ];
                 }
             }
@@ -364,6 +401,8 @@ class TaskController extends Controller
             'status' => ['nullable', Rule::in(Task::STATUSES)],
             'notes' => ['nullable', 'string', 'max:5000'],
             'visibility' => ['nullable', Rule::in(Task::VISIBILITIES)],
+            'member_ids' => ['nullable', 'array'],
+            'member_ids.*' => ['integer', Rule::in($this->assignableStaffUserIds())],
         ]);
 
         $creatorId = (int) session('user_id', 0) ?: null;
@@ -373,7 +412,7 @@ class TaskController extends Controller
             $assigneeId = $creatorId;
         }
 
-        Task::create(array_filter([
+        $task = Task::create(array_filter([
             'title' => trim($data['title']),
             'assignee_user_id' => $assigneeId,
             'due_date' => $data['due_date'] ?? null,
@@ -382,6 +421,10 @@ class TaskController extends Controller
             'visibility' => Task::supportsVisibility() ? $visibility : null,
             'created_by' => $creatorId,
         ], static fn ($value) => $value !== null));
+
+        if ($task->isShared()) {
+            $task->syncMembers($data['member_ids'] ?? []);
+        }
 
         return redirect()
             ->route('task_management', $this->redirectQuery($request))
@@ -394,7 +437,8 @@ class TaskController extends Controller
 
         $mayUpdate = $this->mayManageTasks()
             || RolePermission::userMayAccessRoute('task_management.update')
-            || $this->mayViewSelfTasks();
+            || $this->mayViewSelfTasks()
+            || $this->isSharedParticipant($task);
 
         if (! $mayUpdate) {
             return $this->deny($request, 'You do not have permission to update tasks.');
@@ -410,13 +454,15 @@ class TaskController extends Controller
             'status' => ['sometimes', 'required', Rule::in(Task::STATUSES)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'visibility' => ['sometimes', Rule::in(Task::VISIBILITIES)],
+            'member_ids' => ['sometimes', 'nullable', 'array'],
+            'member_ids.*' => ['integer', Rule::in($this->assignableStaffUserIds())],
         ]);
 
         if (array_key_exists('title', $data)) {
             $task->title = trim($data['title']);
         }
         if (array_key_exists('assignee_user_id', $data)) {
-            if (! $this->mayViewAllTasks()) {
+            if (! $this->mayViewAllTasks() && ! $this->isSharedParticipant($task)) {
                 // View Self: cannot reassign away from self
                 $data['assignee_user_id'] = (int) session('user_id', 0) ?: $task->assignee_user_id;
             }
@@ -443,6 +489,14 @@ class TaskController extends Controller
         }
         $task->save();
 
+        if ($task->isShared()) {
+            if (array_key_exists('member_ids', $data) || array_key_exists('visibility', $data)) {
+                $task->syncMembers($data['member_ids'] ?? []);
+            }
+        } elseif (array_key_exists('visibility', $data) && Schema::hasTable('task_members')) {
+            DB::table('task_members')->where('task_id', $task->id)->delete();
+        }
+
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'status' => 'success',
@@ -461,6 +515,144 @@ class TaskController extends Controller
             ->with('success', 'Task updated.');
     }
 
+    public function comments(Request $request, int $id)
+    {
+        $task = Task::findOrFail($id);
+        $uid = (int) session('user_id', 0);
+        if (! $task->isVisibleTo($uid)) {
+            return $this->deny($request, 'You do not have access to this task.');
+        }
+
+        Task::ensureCommentTables();
+        if ($uid > 0) {
+            DB::table('task_comment_notifications')
+                ->where('user_id', $uid)
+                ->where('task_id', $task->id)
+                ->whereNull('read_at')
+                ->update(['read_at' => now(), 'updated_at' => now()]);
+        }
+
+        $rows = DB::table('task_comments')->where('task_id', $task->id)->orderBy('id')->get();
+        $comments = $rows->whereNull('parent_id')->map(function (object $comment) use ($rows, $uid) {
+            return $this->commentPayload($comment, $uid) + [
+                'replies' => $rows->where('parent_id', $comment->id)
+                    ->map(fn (object $reply) => $this->commentPayload($reply, $uid))
+                    ->values()
+                    ->all(),
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'status' => 'success',
+            'task' => ['id' => $task->id, 'title' => $task->title],
+            'comments' => $comments,
+        ]);
+    }
+
+    public function storeComment(Request $request, int $id)
+    {
+        $task = Task::findOrFail($id);
+        $uid = (int) session('user_id', 0);
+        if ($uid <= 0 || ! $task->isVisibleTo($uid)) {
+            return $this->deny($request, 'You do not have access to this task.');
+        }
+
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+            'parent_id' => ['nullable', 'integer'],
+        ]);
+
+        Task::ensureCommentTables();
+
+        $parentId = null;
+        if (! empty($data['parent_id'])) {
+            $parent = DB::table('task_comments')
+                ->where('id', (int) $data['parent_id'])
+                ->where('task_id', $task->id)
+                ->first();
+            if (! $parent) {
+                return response()->json(['status' => 'error', 'message' => 'Comment not found.'], 422);
+            }
+            $parentId = $parent->parent_id ? (int) $parent->parent_id : (int) $parent->id;
+        }
+
+        $user = User::query()->find($uid);
+        $author = strtoupper(trim((string) ($user->unique_code ?? '')));
+        if ($author === '') {
+            $author = trim((string) ($user->fullname ?? $user->username ?? 'User'));
+        }
+
+        $now = now();
+        $commentId = DB::table('task_comments')->insertGetId([
+            'task_id' => $task->id,
+            'parent_id' => $parentId,
+            'user_id' => $uid,
+            'author_name' => $author,
+            'body' => trim($data['body']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $recipients = collect($task->participantIds())
+            ->merge(DB::table('task_comments')->where('task_id', $task->id)->whereNotNull('user_id')->pluck('user_id'))
+            ->map(static fn ($id) => (int) $id)
+            ->filter(static fn ($id) => $id > 0 && $id !== $uid)
+            ->unique()
+            ->values();
+        foreach ($recipients as $recipientId) {
+            DB::table('task_comment_notifications')->insert([
+                'user_id' => $recipientId,
+                'task_id' => $task->id,
+                'comment_id' => $commentId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $comment = DB::table('task_comments')->where('id', $commentId)->first();
+
+        return response()->json([
+            'status' => 'success',
+            'comment' => $this->commentPayload($comment, $uid) + ['replies' => []],
+        ]);
+    }
+
+    public function openCommentNotification(Request $request, int $id)
+    {
+        $uid = (int) session('user_id', 0);
+        Task::ensureCommentTables();
+        $notification = DB::table('task_comment_notifications')
+            ->where('id', $id)
+            ->where('user_id', $uid)
+            ->first();
+        if (! $notification) {
+            return redirect()->route('task_management');
+        }
+
+        DB::table('task_comment_notifications')
+            ->where('user_id', $uid)
+            ->where('task_id', $notification->task_id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now(), 'updated_at' => now()]);
+
+        return redirect()->route('task_management', ['task_comments' => (int) $notification->task_id]);
+    }
+
+    /**
+     * @return array{id: int, parent_id: ?int, author: string, body: string, created_at: string, is_mine: bool}
+     */
+    private function commentPayload(object $comment, int $uid): array
+    {
+        return [
+            'id' => (int) $comment->id,
+            'parent_id' => $comment->parent_id !== null ? (int) $comment->parent_id : null,
+            'author' => (string) ($comment->author_name ?? 'User'),
+            'body' => (string) $comment->body,
+            'created_at' => $comment->created_at ? \Illuminate\Support\Carbon::parse($comment->created_at)->timezone('Asia/Manila')->format('M j, Y g:i A') : '',
+            'is_mine' => $uid > 0 && (int) ($comment->user_id ?? 0) === $uid,
+        ];
+    }
+
     public function destroy(Request $request, int $id)
     {
         if (! $this->mayManageTasks() && ! RolePermission::userMayAccessRoute('task_management.destroy')) {
@@ -471,7 +663,15 @@ class TaskController extends Controller
         if (! $this->mayMutateTask($task)) {
             return $this->deny($request, 'You can only delete your own tasks.');
         }
+        $taskId = (int) $task->id;
         $task->delete();
+        if (Schema::hasTable('task_members')) {
+            DB::table('task_members')->where('task_id', $taskId)->delete();
+        }
+        if (Schema::hasTable('task_comments')) {
+            DB::table('task_comments')->where('task_id', $taskId)->delete();
+            DB::table('task_comment_notifications')->where('task_id', $taskId)->delete();
+        }
 
         return redirect()
             ->route('task_management', $this->redirectQuery($request))
@@ -689,12 +889,49 @@ class TaskController extends Controller
                 'notes' => null,
                 'visibility' => Task::VISIBILITY_PUBLIC,
                 'created_by' => null,
+                'member_ids' => [],
+                'member_codes' => [],
+                'comment_count' => 0,
+                'can_edit' => false,
+                'can_delete' => false,
                 'view_url' => $job->view_url ?? null,
                 'sort_at' => $job->sort_at,
             ];
         });
 
-        $fromManual = $manualTasks->map(function (Task $task) {
+        $taskIds = $manualTasks->pluck('id')->map(static fn ($id) => (int) $id)->all();
+        $membersByTask = [];
+        if ($taskIds !== [] && Schema::hasTable('task_members')) {
+            foreach (DB::table('task_members')->whereIn('task_id', $taskIds)->get(['task_id', 'user_id']) as $member) {
+                $membersByTask[(int) $member->task_id][] = (int) $member->user_id;
+            }
+        }
+        $commentCounts = [];
+        if ($taskIds !== [] && Schema::hasTable('task_comments')) {
+            $commentCounts = DB::table('task_comments')
+                ->whereIn('task_id', $taskIds)
+                ->groupBy('task_id')
+                ->selectRaw('task_id, COUNT(*) AS c')
+                ->pluck('c', 'task_id')
+                ->map(static fn ($c) => (int) $c)
+                ->all();
+        }
+        $uid = (int) session('user_id', 0);
+        $canManage = $this->mayManageTasks();
+
+        $fromManual = $manualTasks->map(function (Task $task) use ($membersByTask, $commentCounts, $userMap, $uid, $canManage) {
+            $visibility = $task->visibility ?: Task::VISIBILITY_PUBLIC;
+            $memberIds = $membersByTask[(int) $task->id] ?? [];
+            $isShared = $visibility === Task::VISIBILITY_SHARED;
+            $isParticipant = $uid > 0 && in_array($uid, array_merge($memberIds, [(int) $task->created_by, (int) $task->assignee_user_id]), true);
+            if ($visibility === Task::VISIBILITY_PERSONAL) {
+                $canEdit = $uid > 0 && (int) $task->created_by === $uid;
+            } elseif ($isShared) {
+                $canEdit = $isParticipant;
+            } else {
+                $canEdit = $canManage;
+            }
+
             return (object) [
                 'row_type' => 'manual',
                 'key' => 'task:'.$task->id,
@@ -708,8 +945,17 @@ class TaskController extends Controller
                 'due_date' => $task->due_date,
                 'status' => $task->status,
                 'notes' => $task->notes,
-                'visibility' => $task->visibility ?: Task::VISIBILITY_PUBLIC,
+                'visibility' => $visibility,
                 'created_by' => $task->created_by,
+                'member_ids' => $memberIds,
+                'member_codes' => collect($memberIds)
+                    ->map(fn ($id) => strtoupper(trim((string) ($userMap->get($id)->unique_code ?? ''))))
+                    ->filter()
+                    ->values()
+                    ->all(),
+                'comment_count' => $commentCounts[(int) $task->id] ?? 0,
+                'can_edit' => $canEdit,
+                'can_delete' => $canManage && $canEdit,
                 'view_url' => null,
                 'sort_at' => optional($task->updated_at)?->toDateTimeString() ?? '',
             ];
@@ -859,11 +1105,22 @@ class TaskController extends Controller
             return $uid > 0 && (int) ($task->created_by ?? 0) === $uid;
         }
 
+        if ($task->isShared()) {
+            return $this->isSharedParticipant($task);
+        }
+
         if ($this->mayViewAllTasks()) {
             return true;
         }
 
         return $uid > 0 && (int) ($task->assignee_user_id ?? 0) === $uid;
+    }
+
+    private function isSharedParticipant(Task $task): bool
+    {
+        $uid = (int) session('user_id', 0);
+
+        return $uid > 0 && $task->isShared() && in_array($uid, $task->participantIds(), true);
     }
 
     private function deny(Request $request, string $message, int $status = 403)

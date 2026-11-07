@@ -53,7 +53,7 @@
     }
     $columns[] = 'Client';
     if ($isList) {
-        array_push($columns, 'Reference', 'Client reference');
+        array_push($columns, 'Reference', 'Client reference', 'Address');
     } else {
         array_push($columns, 'Client Name', 'Reference');
     }
@@ -61,7 +61,7 @@
 
     $widths = [
         'Action' => 110, 'Log Date' => 140, 'Completion Date' => 150, 'Client' => 200,
-        'Reference' => 140, 'Client reference' => 220, 'Client Name' => 220, 'Job Type' => 200,
+        'Reference' => 140, 'Client reference' => 220, 'Client Name' => 220, 'Address' => 240, 'Job Type' => 200,
         'Priority' => 150, 'Staff' => 70, 'Checker' => 70, 'Status' => 200, 'Due Date' => 155, 'Complexity' => 95,
     ];
     $thBase = 'border-b border-slate-200 bg-slate-100 px-5 py-3 text-left align-middle font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400';
@@ -180,9 +180,12 @@
                             <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $clientName ?: '—' }}</span>
                             @if($clientEmail !== '')<span class="block truncate text-[0.8125rem] text-slate-400">{{ $clientEmail }}</span>@endif
                         </td>
-                        @unless($isList)
+                        @if($isList)
+                            @php $addressDisplay = trim((string) ($row->address ?? '')); @endphp
+                            <td class="{{ $tdBase }}" data-label="Address" data-sort="{{ $addressDisplay }}" title="{{ $addressDisplay !== '' ? $addressDisplay : '—' }}">{{ $addressDisplay !== '' ? $addressDisplay : '—' }}</td>
+                        @else
                             <td class="{{ $tdBase }}" data-label="Reference" data-sort="{{ $reference }}" title="{{ $reference ?: '—' }}">{{ $reference ?: '—' }}</td>
-                        @endunless
+                        @endif
                         <td class="{{ $tdBase }}" data-label="Job Type">
                             <span class="block font-medium text-slate-800 dark:text-slate-200">{{ $row->job_type ?? '—' }}</span>
                         </td>

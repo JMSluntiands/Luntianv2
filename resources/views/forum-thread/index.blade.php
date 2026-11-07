@@ -315,8 +315,11 @@
                                                 <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">Discussion</span>
                                             @endif
                                         </div>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400" title="{{ $post->created_at?->timezone('Asia/Manila')->format('M j, Y g:i A') }}">
-                                            {{ $post->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A') }}
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                                            <span title="{{ $post->created_at?->timezone('Asia/Manila')->format('M j, Y g:i A') }}">{{ $post->created_at?->timezone('Asia/Manila')->format('M j, Y · g:i A') }}</span>
+                                            @if(($postEditCounts[$post->id] ?? 0) > 0)
+                                                @include('forum-thread.partials.edited-label', ['historyType' => 'post', 'historyId' => $post->id, 'edits' => $postEditCounts[$post->id], 'editedAt' => $post->updated_at])
+                                            @endif
                                         </p>
                                     </div>
                                     <div class="flex shrink-0 items-center gap-1">
@@ -389,7 +392,7 @@
                         <div class="space-y-3 border-t border-slate-100 px-4 py-3 dark:border-slate-700 sm:px-5">
                             @php
                                 $repliesByParent = $post->comments->filter(fn ($c) => ! empty($c->parent_id))->groupBy('parent_id');
-                                $commentPartialData = compact('isAdmin', 'canComment', 'canDeleteComment', 'currentUserId', 'displayName', 'initials', 'avatarUrl');
+                                $commentPartialData = compact('isAdmin', 'canComment', 'canDeleteComment', 'currentUserId', 'displayName', 'initials', 'avatarUrl', 'commentEditCounts');
                             @endphp
                             @foreach($post->comments->filter(fn ($c) => empty($c->parent_id)) as $comment)
                                 <div class="space-y-2">
@@ -463,6 +466,21 @@
                     </div>
                 @endif
             </div>
+        </div>
+    </div>
+
+    <div id="forumHistoryModal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="forumHistoryTitle">
+        <div class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3 dark:border-slate-700">
+                <div>
+                    <h2 id="forumHistoryTitle" class="text-base font-bold text-slate-900 dark:text-slate-100">Edit history</h2>
+                    <p id="forumHistorySubtitle" class="text-xs text-slate-500 dark:text-slate-400"></p>
+                </div>
+                <button type="button" class="forum-history-close cursor-pointer rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200" aria-label="Close">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="forumHistoryList" class="space-y-3 overflow-y-auto px-5 py-4"></div>
         </div>
     </div>
 @endsection
@@ -1111,6 +1129,112 @@ document.addEventListener('DOMContentLoaded', function () {
     if (initialId && document.getElementById('bulletinDetail-' + initialId)) {
         showDetail(initialId);
     }
+
+    var historyModal = document.getElementById('forumHistoryModal');
+    var historyList = document.getElementById('forumHistoryList');
+    var historySubtitle = document.getElementById('forumHistorySubtitle');
+    var richTagPattern = /<(p|br|div|ul|ol|li|b|strong|i|em|u|a|img)\b/i;
+
+    function closeHistory() {
+        if (!historyModal) return;
+        historyModal.classList.add('hidden');
+        historyModal.classList.remove('flex');
+    }
+
+    function historyMessage(text) {
+        historyList.innerHTML = '';
+        var p = document.createElement('p');
+        p.className = 'py-6 text-center text-sm text-slate-500 dark:text-slate-400';
+        p.textContent = text;
+        historyList.appendChild(p);
+    }
+
+    function renderVersion(version, type) {
+        var card = document.createElement('div');
+        card.className = 'rounded-xl border px-4 py-3 ' + (version.is_current
+            ? 'border-emerald-300 bg-emerald-50/60 dark:border-emerald-500/40 dark:bg-emerald-500/10'
+            : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40');
+
+        var head = document.createElement('div');
+        head.className = 'flex flex-wrap items-center justify-between gap-2';
+        var label = document.createElement('span');
+        label.className = 'text-xs font-bold uppercase tracking-wide ' + (version.is_current ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-300');
+        label.textContent = version.label;
+        head.appendChild(label);
+        var meta = document.createElement('span');
+        meta.className = 'text-[0.7rem] text-slate-500 dark:text-slate-400';
+        meta.textContent = (version.saved_at || '') + (version.saved_by ? ' · edited by ' + version.saved_by : '');
+        head.appendChild(meta);
+        card.appendChild(head);
+
+        if (type === 'post') {
+            if (version.title) {
+                var title = document.createElement('h3');
+                title.className = 'mt-2 text-sm font-bold text-slate-900 dark:text-slate-100';
+                title.textContent = version.title + (version.post_type ? ' (' + version.post_type + ')' : '');
+                card.appendChild(title);
+            }
+            if (version.image_url) {
+                var img = document.createElement('img');
+                img.src = version.image_url;
+                img.alt = 'Cover image';
+                img.className = 'mt-2 max-h-48 rounded-lg border border-slate-200 object-contain dark:border-slate-700';
+                card.appendChild(img);
+            }
+        }
+
+        var body = document.createElement('div');
+        body.className = 'mt-1.5 break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200 [&_a]:text-sky-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_img]:my-2 [&_img]:max-h-60 [&_img]:max-w-full [&_img]:rounded-lg';
+        var text = version.body || '';
+        if (type === 'post' && richTagPattern.test(text)) {
+            body.innerHTML = text;
+        } else {
+            body.classList.add('whitespace-pre-wrap');
+            body.textContent = text !== '' ? text : '(no text)';
+        }
+        card.appendChild(body);
+        return card;
+    }
+
+    function openHistory(url) {
+        if (!historyModal || !url) return;
+        historyModal.classList.remove('hidden');
+        historyModal.classList.add('flex');
+        historySubtitle.textContent = '';
+        historyMessage('Loading…');
+        fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                var edits = Number(data.edits || 0);
+                historySubtitle.textContent = (data.type === 'post' ? 'Post' : 'Comment') + ' edited ' + edits + ' ' + (edits === 1 ? 'time' : 'times');
+                historyList.innerHTML = '';
+                (data.versions || []).forEach(function (version) {
+                    historyList.appendChild(renderVersion(version, data.type));
+                });
+            })
+            .catch(function () {
+                historyMessage('Could not load the edit history. Please try again.');
+            });
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.forum-history-btn');
+        if (trigger) {
+            e.preventDefault();
+            e.stopPropagation();
+            openHistory(trigger.getAttribute('data-history-url'));
+            return;
+        }
+        if (e.target === historyModal || e.target.closest('.forum-history-close')) {
+            closeHistory();
+        }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && historyModal && !historyModal.classList.contains('hidden')) closeHistory();
+    });
 });
 </script>
 @endpush
