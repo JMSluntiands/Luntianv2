@@ -402,7 +402,7 @@ class TaskController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
             'visibility' => ['nullable', Rule::in(Task::VISIBILITIES)],
             'member_ids' => ['nullable', 'array'],
-            'member_ids.*' => ['integer', Rule::in($this->assignableStaffUserIds())],
+            'member_ids.*' => ['integer', Rule::in($this->shareableMemberUserIds())],
         ]);
 
         $creatorId = (int) session('user_id', 0) ?: null;
@@ -455,7 +455,7 @@ class TaskController extends Controller
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'visibility' => ['sometimes', Rule::in(Task::VISIBILITIES)],
             'member_ids' => ['sometimes', 'nullable', 'array'],
-            'member_ids.*' => ['integer', Rule::in($this->assignableStaffUserIds())],
+            'member_ids.*' => ['integer', Rule::in($this->shareableMemberUserIds())],
         ]);
 
         if (array_key_exists('title', $data)) {
@@ -689,6 +689,57 @@ class TaskController extends Controller
             ->whereRaw('LOWER(TRIM(COALESCE(role, ""))) NOT IN (?, ?)', ['admin', 'branch'])
             ->whereNotNull('unique_code')
             ->whereRaw('TRIM(unique_code) != ?', [''])
+            ->pluck('id')
+            ->map(static fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * User ids allowed as Shared visibility members (must match the Members picker).
+     * Includes Admin-role staff (e.g. PEP) that assignableStaffUserIds() excludes,
+     * since the UI lists them via assigneeEligibleUsers / job assignees.
+     *
+     * @return list<int>
+     */
+    private function shareableMemberUserIds(): array
+    {
+        $blockedBranchCodes = collect();
+        if (Schema::hasTable('branches')) {
+            $blockedBranchCodes = $blockedBranchCodes->merge(DB::table('branches')->pluck('branch_name'));
+        }
+        if (Schema::hasTable('clients')) {
+            $blockedBranchCodes = $blockedBranchCodes->merge(DB::table('clients')->pluck('client_code'));
+        }
+        $blockedBranchCodes = $blockedBranchCodes
+            ->map(static fn ($code) => strtoupper(trim((string) $code)))
+            ->filter()
+            ->unique();
+
+        return User::query()
+            ->whereNotNull('unique_code')
+            ->whereRaw('TRIM(unique_code) != ?', [''])
+            ->get(['id', 'role', 'unique_code', 'task'])
+            ->filter(static function (User $user) use ($blockedBranchCodes) {
+                $role = strtolower(trim((string) ($user->role ?? '')));
+                if ($role === 'branch') {
+                    return false;
+                }
+
+                $code = strtoupper(trim((string) ($user->unique_code ?? '')));
+                if ($code === '') {
+                    return false;
+                }
+
+                // Keep pure branch/client portal codes out unless they are Admin staff.
+                if ($role !== 'admin' && $blockedBranchCodes->contains($code)) {
+                    return false;
+                }
+
+                $task = strtolower(trim((string) ($user->task ?? '')));
+
+                return $task !== 'archived';
+            })
             ->pluck('id')
             ->map(static fn ($id) => (int) $id)
             ->values()
